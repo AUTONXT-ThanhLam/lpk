@@ -1,0 +1,219 @@
+{
+  "type": "graph",
+  "view": "iso",
+  "title": "ONEBOX architecture",
+  "sub": "HW + SW, CPD checkpoint 3",
+  "groups": [
+    {
+      "id": "box",
+      "title": "ONEBOX",
+      "sub": "Orange Pi",
+      "row": 0,
+      "col": 1,
+      "rowspan": 2,
+      "colspan": 3
+    }
+  ],
+  "nodes": [
+    {
+      "id": "dash",
+      "title": "Phone Dashboard",
+      "icon": "smartphone",
+      "accent": "lavender",
+      "in": "box",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "tcu",
+      "title": "TCU SW",
+      "icon": "radio-tower",
+      "accent": "lavender",
+      "in": "box",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "perc",
+      "title": "Sensor Fusion",
+      "icon": "scan-eye",
+      "accent": "lavender",
+      "in": "box",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "app",
+      "title": "CPD Application",
+      "icon": "app-window",
+      "accent": "lavender",
+      "in": "box",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "broker",
+      "title": "DataBroker",
+      "icon": "database-zap",
+      "in": "box",
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "dsp",
+      "title": "Camera DSP",
+      "icon": "aperture",
+      "accent": "lavender",
+      "in": "box",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "drv",
+      "title": "I/O Driver",
+      "icon": "circuit-board",
+      "accent": "lavender",
+      "in": "box",
+      "row": 2,
+      "col": 0
+    },
+    {
+      "id": "io",
+      "title": "I/O Logic",
+      "icon": "cpu",
+      "accent": "lavender",
+      "in": "box",
+      "row": 2,
+      "col": 1
+    },
+    {
+      "id": "led",
+      "title": "LED Lights",
+      "icon": "lightbulb",
+      "accent": "sage",
+      "row": 2,
+      "col": 1
+    },
+    {
+      "id": "spk",
+      "title": "Speaker",
+      "icon": "volume-2",
+      "accent": "sage",
+      "row": 2,
+      "col": 2
+    },
+    {
+      "id": "pwr",
+      "title": "Power Status",
+      "icon": "plug-zap",
+      "accent": "blue",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "temp",
+      "title": "Temperature",
+      "icon": "thermometer",
+      "accent": "blue",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "cam",
+      "title": "In-Cabin Camera",
+      "icon": "cctv",
+      "accent": "blue",
+      "row": 2,
+      "col": 3
+    },
+    {
+      "id": "phone",
+      "title": "Phone",
+      "icon": "smartphone",
+      "accent": "blue",
+      "float": true,
+      "row": 0,
+      "col": 4
+    }
+  ],
+  "edges": [
+    {
+      "from": "cam",
+      "to": "dsp",
+      "label": "USB",
+      "main": true
+    },
+    {
+      "from": "dsp",
+      "to": "perc",
+      "main": true
+    },
+    {
+      "from": "perc",
+      "to": "broker",
+      "main": true
+    },
+    {
+      "from": "broker",
+      "to": "app",
+      "main": true
+    },
+    {
+      "from": "broker",
+      "to": "dash"
+    },
+    {
+      "from": "broker",
+      "to": "tcu"
+    },
+    {
+      "from": "io",
+      "to": "broker",
+      "both": true
+    },
+    {
+      "from": "drv",
+      "to": "io",
+      "both": true
+    },
+    {
+      "from": "temp",
+      "to": "drv"
+    },
+    {
+      "from": "pwr",
+      "to": "drv"
+    },
+    {
+      "from": "drv",
+      "to": "led",
+      "label": "GPIO"
+    },
+    {
+      "from": "drv",
+      "to": "spk"
+    },
+    {
+      "from": "tcu",
+      "to": "phone",
+      "label": "wireless",
+      "dashed": true,
+      "both": true
+    }
+  ],
+  "key": [
+    {
+      "label": "Containerized SW",
+      "accent": "lavender"
+    },
+    {
+      "label": "Sensor",
+      "accent": "blue"
+    },
+    {
+      "label": "Actuator",
+      "accent": "sage"
+    }
+  ],
+  "keyTitle": "Parts"
+}

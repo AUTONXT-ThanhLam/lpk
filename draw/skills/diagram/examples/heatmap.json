@@ -1,0 +1,8 @@
+{
+  "type": "matrix",
+  "title": "Agent runs per day",
+  "heat": true,
+  "columns": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  "rows": ["Support bot", "Sales assistant", "Report writer"],
+  "cells": [[120, 140, 160, 150, 90], [40, 55, 60, 52, 30], [5, 8, 30, 6, 4]]
+}

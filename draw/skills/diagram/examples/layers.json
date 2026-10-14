@@ -1,0 +1,26 @@
+{
+  "type": "graph",
+  "title": "Agent platform layers",
+  "groups": [
+    {"id": "ui", "title": "Interfaces", "icon": "layout-dashboard", "row": 0, "col": 0},
+    {"id": "svc", "title": "Services", "icon": "server", "row": 1, "col": 0},
+    {"id": "store", "title": "Storage", "icon": "database", "row": 2, "col": 0}
+  ],
+  "nodes": [
+    {"id": "admin", "title": "Admin UI", "icon": "monitor", "in": "ui", "row": 0, "col": 0},
+    {"id": "spaces", "title": "Spaces UI", "icon": "panels-top-left", "in": "ui", "row": 0, "col": 1},
+    {"id": "cli", "title": "Bundle CLI", "icon": "terminal", "in": "ui", "row": 0, "col": 2},
+    {"id": "agents", "title": "Agent service", "icon": "bot", "in": "svc", "row": 0, "col": 0},
+    {"id": "versions", "title": "Version service", "icon": "git-branch", "tone": "new", "in": "svc", "row": 0, "col": 1},
+    {"id": "runner", "title": "Runner", "icon": "play", "in": "svc", "row": 0, "col": 2},
+    {"id": "obj", "title": "Object store", "icon": "hard-drive", "in": "store", "row": 0, "col": 0},
+    {"id": "pg", "kind": "db", "title": "Postgres", "icon": "database", "in": "store", "row": 0, "col": 1},
+    {"id": "logs", "title": "Run logs", "icon": "scroll-text", "in": "store", "row": 0, "col": 2}
+  ],
+  "edges": [
+    {"from": "spaces", "to": "versions", "main": true},
+    {"from": "versions", "to": "pg", "main": true},
+    {"from": "cli", "to": "runner"},
+    {"from": "runner", "to": "logs"}
+  ]
+}

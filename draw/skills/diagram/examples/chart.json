@@ -1,0 +1,7 @@
+{
+  "type": "chart",
+  "chart": "bar",
+  "title": "Review findings per run",
+  "categories": ["Lead self-review", "Fresh spec reviewer"],
+  "series": [{"name": "confirmed in code", "values": [3, 9]}, {"name": "rejected", "values": [1, 2], "tone": "grey"}]
+}

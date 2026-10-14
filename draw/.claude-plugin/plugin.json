@@ -1,0 +1,9 @@
+{
+  "name": "drawio",
+  "version": "0.4.0",
+  "description": "Technical diagrams and charts as editable draw.io files plus PNG in one signature style: white cards on a soft canvas, Inter type, a glowing blue main path, tones for meaning and soft accents for grouping. Architecture (flat or isometric), platform stacks, cube fields, deployment, flowchart, sequence, state, ERD, swimlane, tree, mind map, matrix, quadrant, timeline, charts and boards, laid out and checked for overlaps and crossing arrows.",
+  "author": {
+    "name": "lam"
+  },
+  "license": "Apache-2.0"
+}

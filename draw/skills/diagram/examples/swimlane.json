@@ -1,0 +1,23 @@
+{
+  "type": "swimlane",
+  "title": "Rolling back an agent",
+  "lanes": [
+    {"id": "admin", "title": "Admin", "icon": "user-round"},
+    {"id": "ui", "title": "Admin UI", "icon": "layout-dashboard"},
+    {"id": "svc", "title": "Version service", "icon": "git-branch", "tone": "new"},
+    {"id": "runs", "title": "Agent runs", "icon": "play"}
+  ],
+  "steps": [
+    {"id": "open", "lane": "admin", "title": "Open history", "icon": "list"},
+    {"id": "diff", "lane": "ui", "title": "Show diff", "desc": "v8 against v5", "icon": "file-diff"},
+    {"id": "confirm", "lane": "admin", "title": "Confirm", "icon": "circle-check", "tone": "warn", "desc": "one click"},
+    {"id": "activate", "lane": "svc", "title": "Activate v5", "icon": "rotate-ccw", "tone": "new", "desc": "records who, when"},
+    {"id": "next", "lane": "runs", "title": "Next run uses v5", "icon": "play"}
+  ],
+  "edges": [
+    {"from": "open", "to": "diff", "main": true},
+    {"from": "diff", "to": "confirm", "main": true},
+    {"from": "confirm", "to": "activate", "main": true},
+    {"from": "activate", "to": "next", "main": true}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "type": "chart",
+  "chart": "donut",
+  "title": "Where agent edits come from",
+  "center": "edits a week",
+  "categories": ["Admin form", "Skill edit", "Bundle import", "Restore"],
+  "series": [{"name": "Edits", "values": [58, 25, 12, 5]}]
+}

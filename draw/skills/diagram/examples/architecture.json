@@ -1,0 +1,210 @@
+{
+  "type": "graph",
+  "title": "Agent versioning",
+  "groups": [
+    {
+      "id": "writers",
+      "title": "Who changes an agent",
+      "icon": "users",
+      "row": 0,
+      "col": 0,
+      "rowspan": 2
+    },
+    {
+      "id": "svc",
+      "title": "Version service",
+      "sub": "new, in kx-agent-spaces",
+      "icon": "git-branch",
+      "note": "append only: nothing is overwritten or deleted",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "ui",
+      "title": "History",
+      "sub": "both UIs",
+      "icon": "rotate-ccw",
+      "row": 1,
+      "col": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "admin",
+      "in": "writers",
+      "title": "Admin saves",
+      "icon": "user",
+      "desc": "form or wizard,\nrequest unchanged",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "skill",
+      "in": "writers",
+      "title": "Skill edit",
+      "icon": "book-open",
+      "desc": "each agent using it\ngets a new version",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "import",
+      "in": "writers",
+      "title": "Bundle import",
+      "icon": "file-up",
+      "row": 2,
+      "col": 0
+    },
+    {
+      "id": "direct",
+      "in": "writers",
+      "kind": "warn",
+      "title": "Restore, boot seed",
+      "icon": "triangle-alert",
+      "desc": "write rows directly",
+      "row": 3,
+      "col": 0
+    },
+    {
+      "id": "reconcile",
+      "in": "svc",
+      "kind": "warn",
+      "title": "Reconcile",
+      "icon": "scan-search",
+      "desc": "rows differ from active:\nsave them as a version",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "version",
+      "in": "svc",
+      "kind": "new",
+      "title": "New version v8",
+      "icon": "lock",
+      "desc": "frozen: prompt, model,\ntools, skill versions",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "activate",
+      "in": "svc",
+      "kind": "new",
+      "title": "Activate",
+      "icon": "circle-check",
+      "desc": "records who and when",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "list",
+      "in": "ui",
+      "title": "Versions and diff",
+      "icon": "list",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "rollback",
+      "in": "ui",
+      "kind": "warn",
+      "title": "Roll back to v5",
+      "icon": "undo-2",
+      "desc": "one confirm",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "run",
+      "kind": "new",
+      "title": "Agent run",
+      "icon": "play",
+      "desc": "uses the active version,\nrecords v8 on the run",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "db",
+      "kind": "db",
+      "title": "Postgres",
+      "icon": "database",
+      "sections": [
+        {
+          "label": "New, append only",
+          "tone": "blue",
+          "chips": [
+            "agent_versions",
+            "skill_versions",
+            "activations"
+          ]
+        },
+        {
+          "label": "New column",
+          "tone": "blue",
+          "chips": [
+            "agent_runs.agent_version_id"
+          ]
+        },
+        {
+          "label": "Unchanged",
+          "chips": [
+            "agents",
+            "agent_prompts",
+            "skills"
+          ]
+        }
+      ],
+      "row": 1,
+      "col": 2
+    }
+  ],
+  "edges": [
+    {
+      "from": "admin",
+      "to": "version",
+      "main": true
+    },
+    {
+      "from": "skill",
+      "to": "version"
+    },
+    {
+      "from": "import",
+      "to": "version"
+    },
+    {
+      "from": "direct",
+      "to": "reconcile",
+      "tone": "orange"
+    },
+    {
+      "from": "reconcile",
+      "to": "version"
+    },
+    {
+      "from": "version",
+      "to": "activate",
+      "main": true
+    },
+    {
+      "from": "activate",
+      "to": "run",
+      "label": "active",
+      "main": true
+    },
+    {
+      "from": "activate",
+      "to": "db",
+      "dashed": true
+    },
+    {
+      "from": "list",
+      "to": "rollback"
+    },
+    {
+      "from": "rollback",
+      "to": "activate",
+      "label": "activate v5",
+      "tone": "orange"
+    }
+  ]
+}

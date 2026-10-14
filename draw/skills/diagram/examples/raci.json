@@ -1,0 +1,13 @@
+{
+  "type": "matrix",
+  "title": "Who does what in a release",
+  "legend": {"new": "changes owner"},
+  "columns": ["Platform lead", "Backend", "Frontend", "QA"],
+  "rows": ["Spec", "Migration", "History UI", "Rollback test"],
+  "cells": [
+    ["A", "R", "C", "I"],
+    ["A", "R", "I", "C"],
+    ["I", "C", "R", "C"],
+    ["I", "C", "C", {"text": "R", "tone": "new"}]
+  ]
+}

@@ -1,0 +1,1 @@
+{ "name": "lpk-eval-harness", "version": "1.0.0", "description": "Runs the hidden checks of an lpk eval case when the session stops and writes verdict.txt." }

@@ -1,0 +1,17 @@
+{
+  "type": "graph",
+  "title": "Agent platform in context",
+  "nodes": [
+    {"id": "admin", "kind": "circle", "title": "Admin", "icon": "user-round", "row": 0, "col": 0},
+    {"id": "sys", "title": "Agent platform", "desc": "builds, versions and runs agents", "icon": "bot", "tone": "new", "row": 0, "col": 1},
+    {"id": "llm", "title": "LLM API", "desc": "model calls", "icon": "sparkles", "tone": "external", "row": 0, "col": 2},
+    {"id": "sso", "title": "Company SSO", "icon": "key-round", "tone": "external", "row": 1, "col": 1},
+    {"id": "slack", "title": "Slack", "icon": "message-square", "tone": "external", "row": 1, "col": 2}
+  ],
+  "edges": [
+    {"from": "admin", "to": "sys", "label": "edits", "main": true},
+    {"from": "sys", "to": "llm", "label": "prompts", "main": true},
+    {"from": "sys", "to": "sso", "label": "signs in"},
+    {"from": "sys", "to": "slack", "label": "notifies", "dashed": true}
+  ]
+}

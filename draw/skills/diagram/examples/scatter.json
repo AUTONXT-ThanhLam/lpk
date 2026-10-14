@@ -1,0 +1,13 @@
+{
+  "type": "chart",
+  "chart": "scatter",
+  "title": "Agents: size against failure rate",
+  "x": {"title": "Prompt size", "unit": "k tokens"},
+  "y": {"title": "Failed runs", "unit": "%"},
+  "points": [
+    {"x": 2, "y": 1.5, "label": "Support bot"},
+    {"x": 5, "y": 2.1, "label": "Sales assistant"},
+    {"x": 12, "y": 6.8, "label": "Report writer", "tone": "warn"},
+    {"x": 8, "y": 3.0, "label": "Onboarding"}
+  ]
+}

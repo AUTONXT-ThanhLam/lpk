@@ -1,0 +1,18 @@
+{
+  "type": "graph",
+  "title": "Version states",
+  "nodes": [
+    {"id": "s", "kind": "start", "row": 0, "col": 0},
+    {"id": "draft", "title": "Saved", "icon": "save", "desc": "frozen, not running", "row": 0, "col": 1},
+    {"id": "active", "tone": "new", "title": "Active", "icon": "circle-check", "desc": "new runs use it", "row": 0, "col": 2},
+    {"id": "old", "title": "Previous", "icon": "archive", "desc": "kept forever", "row": 1, "col": 2},
+    {"id": "e", "kind": "end", "row": 2, "col": 2}
+  ],
+  "edges": [
+    {"from": "s", "to": "draft", "label": "save"},
+    {"from": "draft", "to": "active", "label": "activate", "main": true},
+    {"from": "active", "to": "old", "label": "another activated"},
+    {"from": "old", "to": "active", "label": "roll back", "tone": "warn"},
+    {"from": "old", "to": "e", "label": "agent deleted", "dashed": true}
+  ]
+}

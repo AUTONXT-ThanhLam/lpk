@@ -1,0 +1,138 @@
+{
+  "type": "graph",
+  "title": "A support question is answered by one agent that looks things up before it replies",
+  "groups": [
+    {
+      "id": "agent",
+      "title": "Support agent",
+      "sub": "runs on our servers",
+      "icon": "bot",
+      "note": "replies only with facts a tool returned",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "tools",
+      "title": "Tools it may call",
+      "icon": "wrench",
+      "row": 0,
+      "col": 3
+    }
+  ],
+  "nodes": [
+    {
+      "id": "user",
+      "title": "Customer",
+      "icon": "user",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "chat",
+      "title": "Chat widget",
+      "icon": "message-square",
+      "desc": "on the help page",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "loop",
+      "in": "agent",
+      "title": "Plans the answer",
+      "icon": "brain",
+      "desc": "decides which tool\nto call next",
+      "tone": "new",
+      "row": 0,
+      "col": 0,
+      "agent": true
+    },
+    {
+      "id": "memory",
+      "in": "agent",
+      "title": "Conversation memory",
+      "icon": "logo:redis",
+      "desc": "last 20 messages,\nkept 24 h",
+      "kind": "db",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "llm",
+      "title": "Claude",
+      "icon": "logo:anthropic",
+      "desc": "writes the reply,\np95 4 s",
+      "tone": "external",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "docs",
+      "in": "tools",
+      "title": "Search help articles",
+      "icon": "logo:postgresql",
+      "desc": "pgvector, top 5",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "orders",
+      "in": "tools",
+      "title": "Look up the order",
+      "icon": "logo:stripe",
+      "desc": "read only",
+      "tone": "external",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "ticket",
+      "in": "tools",
+      "title": "Hand over to a person",
+      "icon": "logo:jira",
+      "desc": "when unsure after\n3 tool calls",
+      "tone": "warn",
+      "row": 2,
+      "col": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "user",
+      "to": "chat",
+      "label": "asks",
+      "main": true
+    },
+    {
+      "from": "chat",
+      "to": "loop",
+      "main": true
+    },
+    {
+      "from": "loop",
+      "to": "docs"
+    },
+    {
+      "from": "loop",
+      "to": "orders"
+    },
+    {
+      "from": "loop",
+      "to": "ticket"
+    },
+    {
+      "from": "loop",
+      "to": "memory",
+      "both": true
+    },
+    {
+      "from": "loop",
+      "to": "llm",
+      "label": "prompt + tool results",
+      "main": true
+    }
+  ],
+  "legend": {
+    "new": "the agent loop",
+    "warn": "a person takes over"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "quadrant",
+  "title": "What to build first",
+  "legend": {"new": "in this change", "warn": "needs care", "muted": "out of scope"},
+  "x": {"title": "Effort", "low": "small", "high": "large"},
+  "y": {"title": "Value", "low": "low", "high": "high"},
+  "quadrants": ["Do first", "Plan", "Maybe", "Skip"],
+  "highlight": 0,
+  "items": [
+    {"title": "Rollback", "x": 0.2, "y": 0.85, "icon": "rotate-ccw", "tone": "new"},
+    {"title": "Diff view", "x": 0.35, "y": 0.65, "icon": "file-diff"},
+    {"title": "Git backend", "x": 0.85, "y": 0.6, "icon": "git-branch", "tone": "warn"},
+    {"title": "Version labels", "x": 0.25, "y": 0.3, "icon": "tag"},
+    {"title": "Per-skill branches", "x": 0.8, "y": 0.2, "icon": "split", "tone": "muted"}
+  ]
+}

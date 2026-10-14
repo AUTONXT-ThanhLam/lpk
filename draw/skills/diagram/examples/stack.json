@@ -1,0 +1,70 @@
+{
+  "type": "stack",
+  "title": "The edge platform",
+  "sub": "three layers, one main path",
+  "layers": [
+    {
+      "title": "Hardware",
+      "sub": "Orange Pi, sensors"
+    },
+    {
+      "title": "Runtime",
+      "sub": "containers, broker"
+    },
+    {
+      "title": "Applications",
+      "accent": "lavender"
+    }
+  ],
+  "items": [
+    {
+      "id": "perc",
+      "title": "Perception",
+      "icon": "eye",
+      "accent": "blue"
+    },
+    {
+      "id": "tcu",
+      "title": "Telemetry",
+      "icon": "radio"
+    },
+    {
+      "id": "dash",
+      "title": "Dashboard",
+      "icon": "layout-dashboard"
+    },
+    {
+      "id": "dsp",
+      "title": "Audio DSP",
+      "icon": "audio-lines"
+    }
+  ],
+  "panels": [
+    {
+      "id": "cloud",
+      "title": "Fleet cloud",
+      "icon": "cloud"
+    },
+    {
+      "id": "phone",
+      "title": "Driver app",
+      "icon": "smartphone"
+    }
+  ],
+  "links": [
+    {
+      "from": "perc",
+      "to": "cloud",
+      "main": true
+    },
+    {
+      "from": "tcu",
+      "to": "cloud"
+    },
+    {
+      "from": "dash",
+      "to": "phone",
+      "dashed": true
+    }
+  ]
+}

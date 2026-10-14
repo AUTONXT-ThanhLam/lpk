@@ -1,0 +1,48 @@
+{
+  "type": "board",
+  "title": "Agent versioning at a glance",
+  "panels": [
+    {
+      "title": "Where a version comes from", "icon": "git-branch", "row": 0, "col": 0, "colspan": 2,
+      "type": "graph",
+      "nodes": [
+        {"id": "admin", "title": "Admin saves", "icon": "user-round", "row": 0, "col": 0},
+        {"id": "ver", "title": "New version", "desc": "frozen snapshot", "icon": "lock", "tone": "new", "row": 0, "col": 1},
+        {"id": "act", "title": "Activate", "desc": "records who, when", "icon": "circle-check", "tone": "new", "row": 0, "col": 2},
+        {"id": "run", "title": "Agent run", "icon": "play", "row": 0, "col": 3},
+        {"id": "pg", "kind": "db", "title": "agent_versions", "icon": "database", "row": 1, "col": 1},
+        {"id": "seed", "title": "Restore, boot seed", "desc": "writes rows directly", "icon": "triangle-alert", "tone": "warn", "row": 1, "col": 0}
+      ],
+      "edges": [
+        {"from": "admin", "to": "ver", "main": true},
+        {"from": "ver", "to": "act", "main": true},
+        {"from": "act", "to": "run", "main": true, "label": "active"},
+        {"from": "ver", "to": "pg"},
+        {"from": "seed", "to": "pg", "tone": "warn"}
+      ]
+    },
+    {
+      "title": "Why a version table", "icon": "scale", "row": 1, "col": 0,
+      "type": "matrix",
+      "columns": ["Copy rows", {"title": "Version table", "tone": "new"}, "Git repo"],
+      "rows": ["One-step rollback", "Runs record version", "No new service"],
+      "cells": [[false, true, true], [false, true, true], [true, true, false]]
+    },
+    {
+      "title": "Edits a week, by source", "icon": "chart-pie", "row": 1, "col": 1,
+      "type": "chart", "chart": "donut", "center": "edits",
+      "categories": ["Admin form", "Skill edit", "Bundle import", "Restore"],
+      "series": [{"name": "Edits", "values": [58, 25, 12, 5]}]
+    },
+    {
+      "title": "Agents on the active version", "icon": "boxes", "row": 2, "col": 0, "colspan": 2,
+      "type": "cubes", "size": [16, 5],
+      "groups": [
+        {"title": "Active version", "accent": "blue", "count": 52},
+        {"title": "Pinned to an old version", "accent": "sand", "count": 7}
+      ],
+      "labels": [{"title": "Newest agent", "icon": "sparkles", "at": [15, 4], "below": true}]
+    }
+  ],
+  "legend": {"new": "new in this change"}
+}

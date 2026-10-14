@@ -1,0 +1,12 @@
+{
+  "type": "tree",
+  "arrows": true,
+  "title": "Which store for a new table?",
+  "root": {"title": "Written per run?", "kind": "decision", "children": [
+    {"via": "yes", "title": "Read back by runs?", "kind": "decision", "children": [
+      {"via": "yes", "title": "Postgres", "icon": "database", "tone": "ok", "desc": "indexed, transactional"},
+      {"via": "no", "title": "Event log", "icon": "scroll-text", "desc": "append, query later"}
+    ]},
+    {"via": "no", "title": "Config file", "icon": "file-cog", "tone": "muted", "desc": "kept in the repo"}
+  ]}
+}

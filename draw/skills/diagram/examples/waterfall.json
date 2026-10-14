@@ -1,0 +1,10 @@
+{
+  "type": "chart",
+  "chart": "waterfall",
+  "title": "Monthly cost after versioning",
+  "prefix": "$",
+  "better": "down",
+  "categories": ["Today", "Version rows", "Activations", "Fewer bad runs"],
+  "series": [{"name": "Cost", "values": [1200, 60, 10, -180]}],
+  "total": "After"
+}

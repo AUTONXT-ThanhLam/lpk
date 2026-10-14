@@ -1,0 +1,10 @@
+{
+  "type": "tree",
+  "direction": "RIGHT",
+  "title": "Agent versioning: what it touches",
+  "root": {"title": "Agent versions", "icon": "git-branch", "tone": "new", "children": [
+    {"title": "Storage", "icon": "database", "children": [{"title": "agent_versions"}, {"title": "activations"}]},
+    {"title": "Writers", "icon": "pencil", "children": [{"title": "Admin save"}, {"title": "Skill edit"}, {"title": "Bundle import"}]},
+    {"title": "Risks", "icon": "triangle-alert", "tone": "warn", "children": [{"title": "Direct row writes", "tone": "warn"}]}
+  ]}
+}

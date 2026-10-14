@@ -1,0 +1,19 @@
+{
+  "name": "lpk-dev",
+  "owner": {
+    "name": "lam"
+  },
+  "description": "Local development marketplace for the lpk and drawio plugins.",
+  "plugins": [
+    {
+      "name": "lpk",
+      "source": "./lpk",
+      "description": "One coding request to a delivered change: facts first, a design checked against the code, test-first build with exact self-checks, then proof on the running surface and a tech-lead review on the same commit. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
+    },
+    {
+      "name": "drawio",
+      "source": "./draw",
+      "description": "Technical diagrams and charts as editable draw.io files plus PNG in one signature style, flat or isometric, where tones carry meaning and accents group."
+    }
+  ]
+}

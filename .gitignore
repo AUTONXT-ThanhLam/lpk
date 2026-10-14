@@ -1,0 +1,18 @@
+node_modules/
+*.bak
+.DS_Store
+
+# Read-only idea sources, not part of this deliverable: an `ocr` checkout and an interview
+# transcript that is somebody else's words.
+/open-code-review/
+/pstack/
+/transcript.txt
+/lpk/transcript.txt
+
+# Kept on disk as reading references, outside the plugin folder: v0's superseded design
+# document and the raw results of the v1 `claude plugin eval` runs.
+/.archive/
+
+# Local output of `claude plugin eval` runs.
+/evals/results/
+/evals/cases/results/

@@ -1,0 +1,389 @@
+elkjs 0.12.0 (EPL-2.0): vendor/elk.bundled.js
+lucide-static 1.52.0 (ISC): vendor/lucide.json
+simple-icons 16.34.0 (CC0-1.0): vendor/simple-icons.json, the icons with no license of their own
+  or a permissive one (listed at the end of this file); each logo is a trademark of its owner,
+  used only to name that product.
+Inter (OFL-1.1): vendor/inter.json holds only advance widths measured from the font, used to size labels;
+  no font file is shipped. The style names Inter and loads it from Google Fonts when draw.io shows it.
+
+# Eclipse Public License - v 2.0
+
+THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+PUBLIC LICENSE (“AGREEMENT”). ANY USE, REPRODUCTION OR DISTRIBUTION OF
+THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+
+ISC License
+
+Copyright (c) 2026 Lucide Icons and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+---
+
+The following Lucide icons are derived from the Feather project:
+
+airplay, alert-circle, alert-octagon, alert-triangle, aperture, arrow-down-circle, arrow-down-left, arrow-down-right, arrow-down, arrow-left-circle, arrow-left, arrow-right-circle, arrow-right, arrow-up-circle, arrow-up-left, arrow-up-right, arrow-up, at-sign, calendar, cast, check, chevron-down, chevron-left, chevron-right, chevron-up, chevrons-down, chevrons-left, chevrons-right, chevrons-up, circle, clipboard, clock, code, columns, command, compass, corner-down-left, corner-down-right, corner-left-down, corner-left-up, corner-right-down, corner-right-up, corner-up-left, corner-up-right, crosshair, database, divide-circle, divide-square, dollar-sign, download, external-link, feather, frown, hash, headphones, help-circle, info, italic, key, layout, life-buoy, link-2, link, loader, lock, log-in, log-out, maximize, meh, minimize, minimize-2, minus-circle, minus-square, minus, monitor, moon, more-horizontal, more-vertical, move, music, navigation-2, navigation, octagon, pause-circle, percent, plus-circle, plus-square, plus, power, radio, rss, search, server, share, shopping-bag, sidebar, smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x, zoom-in, zoom-out
+
+The MIT License (MIT) (for the icons listed above)
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Simple Icons logos under their own licenses (title, slug, license, source):
+
+- 30 seconds of code (logo:30secondsofcode): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/Chalarangelo/30-seconds-of-code/blob/44c0ba94857a7796026c6795c47e964126876d5a/logo/logo-resources/logo.svg
+- AB Download Manager (logo:abdownloadmanager): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://abdownloadmanager.com
+- AIOHTTP (logo:aiohttp): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/aio-libs/aiohttp/blob/fb5fe72b1bca3b899af579d376f5fe45745410e4/docs/aiohttp-plain.svg
+- Airbrake (logo:airbrake): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/airbrake/slate/blob/c116f2968bcf4dfda126511de0a2d0f0dc8b6a8e/source/images/logo.svg
+- Ajv (logo:ajv): MIT, https://spdx.org/licenses/MIT; source https://github.com/ajv-validator/ajv/blob/95b15b683dfb60f63c5129b0426629b968d53af8/docs/.vuepress/public/img/ajv.svg
+- Alacritty (logo:alacritty): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/alacritty/alacritty/blob/6d8db6b9dfadd6164c4be7a053f25db8ef6b7998/extra/logo/alacritty-simple.svg
+- Android (logo:android): CC-BY-3.0, https://spdx.org/licenses/CC-BY-3.0; source https://partnermarketinghub.withgoogle.com/brands/android/visual-identity/visual-identity/logo-lock-ups
+- Angular (logo:angular): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://angular.dev/press-kit
+- Apache (logo:apache): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://www.apache.org/foundation/press/kit
+- Apache Airflow (logo:apacheairflow): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Ant (logo:apacheant): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Arrow (logo:apachearrow): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://arrow.apache.org/visual_identity
+- Apache Avro (logo:apacheavro): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Cassandra (logo:apachecassandra): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://www.apache.org/logos
+- Apache CloudStack (logo:apachecloudstack): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Cordova (logo:apachecordova): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://cordova.apache.org/artwork
+- Apache CouchDB (logo:apachecouchdb): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache DolphinScheduler (logo:apachedolphinscheduler): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Doris (logo:apachedoris): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Druid (logo:apachedruid): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache ECharts (logo:apacheecharts): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Flink (logo:apacheflink): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache FreeMarker (logo:apachefreemarker): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://www.apache.org/logos
+- Apache Groovy (logo:apachegroovy): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Guacamole (logo:apacheguacamole): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Hadoop (logo:apachehadoop): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache HBase (logo:apachehbase): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Hive (logo:apachehive): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache JMeter (logo:apachejmeter): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Kafka (logo:apachekafka): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Kylin (logo:apachekylin): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Lucene (logo:apachelucene): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Maven (logo:apachemaven): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache NetBeans IDE (logo:apachenetbeanside): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache NiFi (logo:apachenifi): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache OpenOffice (logo:apacheopenoffice): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Parquet (logo:apacheparquet): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache PDFBox (logo:apachepdfbox): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Pulsar (logo:apachepulsar): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache RocketMQ (logo:apacherocketmq): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Solr (logo:apachesolr): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Spark (logo:apachespark): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Storm (logo:apachestorm): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Superset (logo:apachesuperset): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Apache Tomcat (logo:apachetomcat): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://apache.org/logos
+- Authelia (logo:authelia): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/authelia/authelia/blob/8316cd4eb7a6f0778c8f480c61ad76a88416fc3a/docs/static/images/branding/logo.svg
+- Backbone.js (logo:backbonedotjs): MIT, https://spdx.org/licenses/MIT; source https://commons.wikimedia.org/wiki/File:Backbone.js_logo.svg
+- Bootstrap (logo:bootstrap): MIT, https://spdx.org/licenses/MIT; source https://getbootstrap.com/docs/5.3/about/brand
+- Cheerio (logo:cheerio): MIT, https://spdx.org/licenses/MIT; source https://github.com/cheeriojs/cheerio/blob/60b538772c34f2dd93e9c62e410b2751d0a69ff3/website/static/img/orange-c.svg
+- Conventional Commits (logo:conventionalcommits): MIT, https://spdx.org/licenses/MIT; source https://www.conventionalcommits.org
+- Deno (logo:deno): MIT, https://spdx.org/licenses/MIT; source https://github.com/denoland/docs/blob/5dee713844c7447f80acd4093caa9d350d80bf36/static/img/logo.svg
+- OWASP Dependency-Check (logo:dependencycheck): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/jeremylong/DependencyCheck/blob/8ee82149179c6faeca78727e57039e987c387e26/src/site/resources/images/logo.svg
+- Development Containers (logo:developmentcontainers): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/microsoft/fluentui-system-icons/blob/3e1e525f4499a22d46039ef54e9b9a86b809bc66/assets/Cube/SVG/ic_fluent_cube_24_regular.svg
+- Exercism (logo:exercism): CC-BY-3.0, https://spdx.org/licenses/CC-BY-3.0; source https://github.com/exercism/website-icons/blob/2ad12baa465acfaa74efc5da27a6a12f8b05e3d0/exercism/logo-icon.svg
+- Flatpak (logo:flatpak): CC-BY-3.0, https://spdx.org/licenses/CC-BY-3.0; source https://flatpak.org/press
+- Fluentd (logo:fluentd): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://docs.fluentd.org/quickstart/logo
+- Gin (logo:gin): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/gin-gonic/logo/blob/eecb3150aa7ce5a77b97fd834276b2b6958eaa9d/wb.svg
+- Git (logo:git): CC-BY-3.0, https://spdx.org/licenses/CC-BY-3.0; source https://git-scm.com/community/logos
+- GitHub Copilot (logo:githubcopilot): MIT, https://spdx.org/licenses/MIT; source https://primer.style/foundations/icons/copilot-24
+- Gleam (logo:gleam): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://gleam.run
+- GNU Bash (logo:gnubash): MIT, https://spdx.org/licenses/MIT; source https://github.com/odb/official-bash-logo/tree/61eff022f2dad3c7468f5deb4f06652d15f2c143
+- Godot Engine (logo:godotengine): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://godotengine.org/press
+- Gradle Play Publisher (logo:gradleplaypublisher): MIT, https://spdx.org/licenses/MIT; source https://github.com/Triple-T/gradle-play-publisher/blob/df4eadf1ca6b5bad50e21be0b21816722ed50342/assets/logo.svg
+- Have I Been Pwned (logo:haveibeenpwned): BSD-3-Clause, https://spdx.org/licenses/BSD-3-Clause; source https://github.com/HaveIBeenPwned/Branding/blob/d5a5d3c252a461c6c7e2ae60942fc80e50d2755d/Logos/Icon/Icon.svg
+- Iconify (logo:iconify): MIT, https://spdx.org/licenses/MIT; source https://iconify.design
+- Jabber (logo:jabber): CC-BY-2.5, https://spdx.org/licenses/CC-BY-2.5; source https://commons.wikimedia.org/wiki/File:Jabber-bulb.svg
+- JavaScript (logo:javascript): MIT, https://spdx.org/licenses/MIT; source https://github.com/voodootikigod/logo.js/blob/1544bdeed6d618a6cfe4f0650d04ab8d9cfa76d9/js.svg
+- Jekyll (logo:jekyll): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/jekyll/brand/blob/8302ad3ecf045054a095020729a8d2cc7005faf8/jekyll-logo-black.svg
+- JHipster (logo:jhipster): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/jhipster/jhipster-artwork/blob/1085d85ab6d819b9ef7f6cc710ec8a4977b95e90/logos/JHipster%20bowtie.svg
+- Kando (logo:kando): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/kando-menu/design/blob/6506e2656f791b710b49a4774e7ebeaf419a1236/icons/source/blossom_tiny.svg
+- Lobsters (logo:lobsters): BSD-3-Clause, https://spdx.org/licenses/BSD-3-Clause; source https://github.com/lobsters/lobsters/blob/dcd56c1d3f7190e33a73b86b77e7feb2665ddc50/app/assets/images/logo-color.svg
+- Mantine (logo:mantine): MIT, https://spdx.org/licenses/MIT; source https://github.com/mantinedev/mantine/blob/f2da0287bfcda19dcf7866f4d03a05d1ee7b49f7/docs/src/images/logo.svg
+- Material Design Icons (logo:materialdesignicons): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://materialdesignicons.com/icon/vector-square
+- Nano Stores (logo:nanostores): MIT, https://spdx.org/licenses/MIT; source https://github.com/nanostores/nanostores/blob/7fb5cd871fa00f484ebc866fdf330b56cab2aa20/img/logo-auto.svg
+- NgRx (logo:ngrx): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://ngrx.io
+- NixOS (logo:nixos): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://brand.nixos.org/logos/nixos-logomark-black-flat-minimal.svg
+- Omarchy (logo:omarchy): MIT, https://spdx.org/licenses/MIT; source https://omarchy.org
+- OpenJDK (logo:openjdk): BSD-3-Clause, https://spdx.org/licenses/BSD-3-Clause; source https://hg.openjdk.java.net/duke/duke/file/ca00f100dafc/vector/Agent.svg
+- OpenTelemetry (logo:opentelemetry): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://cncf-branding.netlify.app/projects/opentelemetry/
+- Packagist (logo:packagist): MIT, https://spdx.org/licenses/MIT; source https://github.com/composer/packagist/issues/1147#issuecomment-747951608
+- Pelican (logo:pelican): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://blog.getpelican.com/pages/gratitude.html
+- Phosphor Icons (logo:phosphoricons): MIT, https://spdx.org/licenses/MIT; source https://phosphoricons.com
+- PureScript (logo:purescript): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/purescript/logo/tree/1e7a57affdaeaf88ff594c08bd2b5a78fe2ed13c
+- Radiant Earth (logo:radiantearth): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://radiant.earth
+- RocksDB (logo:rocksdb): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/facebook/rocksdb/blob/9ed96703d11a1cf4af0e1c1db0e4a6057a8e5d42/docs/static/logo.svg
+- Rook (logo:rook): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://github.com/rook/artwork/blob/d252db9f43753e6abf64db0ce12d38916a5de464/logo/Rook_Icon.svg
+- ROOT (logo:root): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://root.cern/assets/images/logos/svg/ROOT.svg
+- Salt Project (logo:saltproject): Apache-2.0, https://spdx.org/licenses/Apache-2.0; source https://saltproject.io
+- Sanity (logo:sanity): MIT, https://spdx.org/licenses/MIT; source https://github.com/sanity-io/logos/blob/e298a1ac2757c83910fe08b496a115bc9aef06bd/src/sanityMonogram.tsx
+- Setuptools (logo:setuptools): MIT, https://spdx.org/licenses/MIT; source https://github.com/pypa/setuptools/blob/c3f486f0f7ebf8fa141dfd7314cbcaba7370db0b/docs/images/logo.svg
+- Solidity (logo:solidity): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://docs.soliditylang.org/en/v0.8.6/brand-guide.html
+- Sphinx (logo:sphinx): BSD-3-Clause, https://spdx.org/licenses/BSD-3-Clause; source https://github.com/sphinx-doc/sphinx/blob/ed84d63e6f2c4fd43b97fc43ee8be4156a13af9e/doc/_static/favicon.svg
+- SQLAlchemy (logo:sqlalchemy): MIT, https://spdx.org/licenses/MIT; source https://commons.wikimedia.org/wiki/File:SQLAlchemy.svg
+- StopStalk (logo:stopstalk): MIT, https://spdx.org/licenses/MIT; source https://github.com/stopstalk/media-resources/blob/265b728c26ba597b957e72134a3b49a10dc0c91d/stopstalk-small-black.svg
+- Storybook (logo:storybook): MIT, https://spdx.org/licenses/MIT; source https://github.com/storybookjs/brand/tree/6f4d67f65f8275c53c310a73a8da6c6e96c8488c
+- Textual (logo:textual): MIT, https://spdx.org/licenses/MIT; source https://github.com/Textualize/textual/blob/e66c098588360515864ce88982de494c64d2c097/docs/images/icons/logo%20light%20transparent.svg
+- TypeORM (logo:typeorm): MIT, https://spdx.org/licenses/MIT; source https://github.com/typeorm/typeorm/blob/e7649d2746f907ff36b1efb600402dedd5f5a499/resources/logo_big.png
+- Umami (logo:umami): MIT, https://spdx.org/licenses/MIT; source https://github.com/umami-software/umami/blob/3572df0a09503f357a06fe7f816295ba2c878325/assets/logo.svg
+- V (logo:v): MIT, https://spdx.org/licenses/MIT; source https://github.com/vlang/v-logo/blob/eec050c901ed3afefce8cbe56092d55ed6770706/dist/v-logo.svg
+- Vala (logo:vala): MIT, https://spdx.org/licenses/MIT; source https://commons.wikimedia.org/wiki/File:Vala_Logo.svg
+- Vega (logo:vega): BSD-3-Clause, https://spdx.org/licenses/BSD-3-Clause; source https://github.com/vega/logos/blob/af32bc29f0c09c8de826aaafb037935fb69e960a/assets/VG_Black.svg
+- Vivaldi (logo:vivaldi): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://vivaldi.com/press
+- Vuetify (logo:vuetify): MIT, https://spdx.org/licenses/MIT; source https://vuetifyjs.com/resources/brand-kit
+- Wayland (logo:wayland): MIT, https://spdx.org/licenses/MIT; source https://gitlab.freedesktop.org/wayland/weston/-/blob/77ede00a938b8137bd638ce67b6f58cb52b1d1b0/data/wayland.svg
+- WebGPU (logo:webgpu): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://www.w3.org/2023/02/webgpu-logos.html
+- Yarn (logo:yarn): CC-BY-4.0, https://spdx.org/licenses/CC-BY-4.0; source https://github.com/yarnpkg/assets/blob/76d30ca2aebed5b73ea8131d972218fb860bd32d/yarn-kitten-circle.svg
+- Zod (logo:zod): MIT, https://spdx.org/licenses/MIT; source https://github.com/colinhacks/zod/blob/ff89187172ac6aa4a6264592980d1628ee785242/logo/Logo%20White.ai
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.

@@ -1,0 +1,18 @@
+{
+  "type": "timeline",
+  "title": "Order of work",
+  "unit": "Day",
+  "lanes": [
+    {"id": "db", "title": "Database"},
+    {"id": "api", "title": "agent-spaces server"},
+    {"id": "ui", "title": "UIs"}
+  ],
+  "tasks": [
+    {"title": "Version tables, v1 for all", "lane": "db", "start": 0, "end": 1.5, "kind": "new"},
+    {"title": "Every save makes a version", "lane": "api", "start": 1.5, "end": 3.5, "kind": "new"},
+    {"title": "Reconcile seed rows", "lane": "api", "start": 3.5, "end": 4.5, "kind": "warn"},
+    {"title": "Runs record their version", "lane": "db", "start": 3.5, "end": 4.5, "kind": "new"},
+    {"title": "History and rollback, both UIs", "lane": "ui", "start": 4.5, "end": 7, "kind": "new"}
+  ],
+  "milestones": [{"title": "API ready", "at": 4.5}, {"title": "Release", "at": 7}]
+}

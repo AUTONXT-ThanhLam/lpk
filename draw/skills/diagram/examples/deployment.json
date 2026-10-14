@@ -1,0 +1,24 @@
+{
+  "type": "graph",
+  "title": "Where it runs",
+  "legend": {"external": "managed by the cloud", "new": "added by this change"},
+  "groups": [
+    {"id": "vpc", "title": "Production VPC", "icon": "shield", "row": 0, "col": 1, "rowspan": 2},
+    {"id": "k8s", "title": "Kubernetes", "icon": "boxes", "in": "vpc", "row": 0, "col": 0},
+    {"id": "data", "title": "Managed data", "icon": "cloud", "tone": "external", "in": "vpc", "row": 0, "col": 1}
+  ],
+  "nodes": [
+    {"id": "users", "title": "Browsers", "icon": "globe", "row": 0, "col": 0},
+    {"id": "lb", "title": "Load balancer", "icon": "network", "tone": "external", "row": 1, "col": 0},
+    {"id": "api", "title": "API pods", "desc": "3 replicas", "icon": "server", "in": "k8s", "row": 0, "col": 0},
+    {"id": "worker", "title": "Version worker", "desc": "1 replica", "icon": "cpu", "tone": "new", "in": "k8s", "row": 1, "col": 0},
+    {"id": "pg", "kind": "db", "title": "Postgres", "icon": "database", "in": "data", "row": 0, "col": 0},
+    {"id": "s3", "title": "Object store", "icon": "hard-drive", "in": "data", "row": 1, "col": 0}
+  ],
+  "edges": [
+    {"from": "users", "to": "lb", "main": true},
+    {"from": "lb", "to": "api", "main": true},
+    {"from": "api", "to": "pg", "main": true},
+    {"from": "worker", "to": "s3", "label": "bundles"}
+  ]
+}

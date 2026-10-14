@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { check } from "../lib/check.mjs";
+import { exportPng } from "../lib/export.mjs";
+import { findIcons } from "../lib/style.mjs";
+import { caption, key, legend } from "../lib/legend.mjs";
+import { build } from "../lib/types.mjs";
+
+const USAGE = "usage: drawio render <spec.json> [-o <out.drawio>] [--no-png] | drawio icons <words>";
+
+const [cmd, ...args] = process.argv.slice(2);
+if (cmd === "icons" && args.length) {
+  const found = findIcons(args.join(" "));
+  console.log(found.length ? found.join("\n") : `no icon matches "${args.join(" ")}"; try a broader word`);
+} else if (cmd === "render" && args[0]) {
+  const file = resolve(args[0]);
+  const oi = args.indexOf("-o");
+  const out = oi > 0 ? resolve(args[oi + 1]) : file.replace(/\.json$/, "") + ".drawio";
+  let spec;
+  try { spec = JSON.parse(readFileSync(file, "utf8")); } catch (e) { fail(`cannot read ${file}: ${e.message}`); }
+  let m;
+  try { m = await build(spec); key(m, spec); } catch (e) { fail(e.message); }
+  legend(m, spec);
+  caption(m, spec);
+  writeFileSync(out, m.xml());
+  const r = check(m, spec);
+  console.log(`wrote ${out}`);
+  if (!args.includes("--no-png")) {
+    const p = exportPng(out);
+    console.log(p.png ? `wrote ${p.png}` : p.error);
+  }
+  console.log(`size ${r.size}, ${r.crossings} arrow crossing${r.crossings === 1 ? "" : "s"}`);
+  if (r.counts) console.log(r.counts);
+  if (m.defaults.size) console.log(`built-in English words drawn: ${[...m.defaults].join(", ")}; set those keys when the picture is in another language`);
+  for (const f of r.facts) console.log(`- ${f}`);
+  if (!r.facts.length) console.log("no overlaps, no arrow through a box, no label on a box");
+} else fail(USAGE);
+
+function fail(msg) {
+  console.error(msg);
+  process.exit(2);
+}

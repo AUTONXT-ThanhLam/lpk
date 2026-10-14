@@ -1,0 +1,17 @@
+{
+  "type": "tree",
+  "title": "Who owns the agent platform",
+  "root": {"title": "Platform lead", "icon": "user-round", "desc": "approves releases", "children": [
+    {"title": "Agent runtime", "icon": "cpu", "main": true, "tone": "new", "desc": "versions, runs", "children": [
+      {"title": "Versioning", "icon": "git-branch", "tone": "new", "main": true},
+      {"title": "Scheduler", "icon": "clock"}
+    ]},
+    {"title": "Admin UI", "icon": "layout-dashboard", "children": [
+      {"title": "Agent editor", "icon": "pencil"},
+      {"title": "History view", "icon": "rotate-ccw", "tone": "new"}
+    ]},
+    {"title": "Data", "icon": "database", "children": [
+      {"title": "Migrations", "icon": "file-diff", "tone": "warn", "desc": "one owner, reviewed"}
+    ]}
+  ]}
+}

@@ -1,0 +1,11 @@
+{
+  "type": "chart",
+  "chart": "bar",
+  "stacked": true,
+  "title": "Agent runs per week, by trigger",
+  "categories": ["W1", "W2", "W3", "W4"],
+  "series": [
+    {"name": "Scheduled", "values": [320, 340, 360, 380], "tone": "blue"},
+    {"name": "Manual", "values": [120, 90, 110, 95], "tone": "grey"}
+  ]
+}

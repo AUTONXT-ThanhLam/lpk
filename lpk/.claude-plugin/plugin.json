@@ -1,0 +1,9 @@
+{
+  "name": "lpk",
+  "version": "1.2.0",
+  "description": "One coding request to a delivered change, in a repo of any language: gather exact facts, brief and check the design against the code, build test-first, self-check with exact tools (rules, candidates, route census, mutation), then prove on the running surface and pass a tech-lead review on the same commit, fix once, deliver. Ships a rule catalog, the lpk Chrome DevTools server and a push guard.",
+  "author": {
+    "name": "lam"
+  },
+  "license": "Apache-2.0"
+}

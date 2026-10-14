@@ -1,0 +1,17 @@
+{
+  "type": "graph",
+  "title": "Version events",
+  "nodes": [
+    {"id": "svc", "title": "Version service", "icon": "git-branch", "tone": "new", "row": 0, "col": 0},
+    {"id": "q", "kind": "queue", "title": "version.activated", "icon": "mail", "row": 0, "col": 1},
+    {"id": "cache", "title": "Run cache", "desc": "drops old prompt", "icon": "refresh-cw", "row": 0, "col": 2},
+    {"id": "audit", "title": "Audit log", "desc": "who, when, which", "icon": "scroll-text", "row": 1, "col": 2},
+    {"id": "notify", "title": "Slack notice", "icon": "bell", "tone": "external", "row": 2, "col": 2}
+  ],
+  "edges": [
+    {"from": "svc", "to": "q", "label": "publish", "main": true},
+    {"from": "q", "to": "cache", "main": true},
+    {"from": "q", "to": "audit", "dashed": true},
+    {"from": "q", "to": "notify", "dashed": true}
+  ]
+}

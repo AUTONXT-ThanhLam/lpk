@@ -1,0 +1,14 @@
+{
+  "type": "matrix",
+  "title": "Where to keep agent versions",
+  "legend": {"new": "recommended", "warn": "costs more"},
+  "columns": ["Copy rows per save", {"title": "Version table", "tone": "new", "icon": "git-branch"}, "Git repo per agent"],
+  "rows": ["Rollback in one step", "Runs record their version", "Works with bundle import", "New infrastructure", "Effort"],
+  "cells": [
+    [false, true, true],
+    [false, true, true],
+    [true, true, false],
+    ["none", "none", {"text": "git service", "tone": "warn"}],
+    ["S", "M", {"text": "L", "tone": "warn"}]
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "sequence",
+  "title": "Rollback",
+  "participants": [
+    {"id": "admin", "title": "Admin", "icon": "user"},
+    {"id": "ui", "title": "History page", "icon": "monitor"},
+    {"id": "api", "title": "agent-spaces API", "icon": "server", "kind": "new"},
+    {"id": "db", "title": "Postgres", "icon": "database"},
+    {"id": "run", "title": "Next agent run", "icon": "play"}
+  ],
+  "steps": [
+    {"from": "admin", "to": "ui", "label": "Roll back to v5"},
+    {"from": "ui", "to": "ui", "label": "confirm dialog"},
+    {"id": "activate", "from": "ui", "to": "api", "label": "POST /versions/5/activate", "main": true},
+    {"from": "api", "to": "db", "label": "insert activation", "main": true},
+    {"from": "api", "to": "db", "label": "copy v5 into agent rows", "main": true},
+    {"id": "active", "from": "api", "to": "ui", "label": "200 active = v5", "reply": true},
+    {"note": "a run already going keeps the version it started with", "over": ["api", "run"]},
+    {"from": "run", "to": "db", "label": "read active version"},
+    {"from": "db", "to": "run", "label": "v5 prompt, model, tools", "reply": true}
+  ],
+  "frames": [{"kind": "opt", "label": "admin confirms", "from": "activate", "to": "active"}]
+}

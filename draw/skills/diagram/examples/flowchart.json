@@ -1,0 +1,23 @@
+{
+  "type": "graph",
+  "title": "Saving an agent",
+  "direction": "DOWN",
+  "nodes": [
+    {"id": "s", "kind": "start"},
+    {"id": "save", "title": "Admin saves", "icon": "save"},
+    {"id": "same", "kind": "decision", "title": "Same as active?"},
+    {"id": "skip", "title": "Nothing to do", "tone": "muted", "icon": "circle-minus"},
+    {"id": "freeze", "title": "Freeze new version", "icon": "lock", "tone": "new"},
+    {"id": "act", "title": "Activate it", "icon": "circle-check", "tone": "new"},
+    {"id": "e", "kind": "end"}
+  ],
+  "edges": [
+    {"from": "s", "to": "save"},
+    {"from": "save", "to": "same", "main": true},
+    {"from": "same", "to": "freeze", "label": "no", "main": true},
+    {"from": "same", "to": "skip", "label": "yes"},
+    {"from": "freeze", "to": "act", "main": true},
+    {"from": "act", "to": "e"},
+    {"from": "skip", "to": "e"}
+  ]
+}

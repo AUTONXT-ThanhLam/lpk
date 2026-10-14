@@ -1,0 +1,16 @@
+{
+  "type": "graph",
+  "title": "Version tables",
+  "direction": "RIGHT",
+  "nodes": [
+    {"id": "agents", "kind": "table", "title": "agents", "icon": "bot", "fields": [{"name": "id", "type": "uuid", "key": "PK"}, {"name": "name", "type": "text"}, {"name": "llm_model", "type": "text"}]},
+    {"id": "versions", "kind": "table", "tone": "new", "title": "agent_versions", "icon": "lock", "fields": [{"name": "id", "type": "uuid", "key": "PK"}, {"name": "agent_id", "type": "uuid", "key": "FK"}, {"name": "number", "type": "int"}, {"name": "snapshot", "type": "jsonb"}, {"name": "hash", "type": "text"}, {"name": "source", "type": "text"}]},
+    {"id": "acts", "kind": "table", "tone": "new", "title": "activations", "icon": "circle-check", "fields": [{"name": "id", "type": "uuid", "key": "PK"}, {"name": "version_id", "type": "uuid", "key": "FK"}, {"name": "reason", "type": "text"}, {"name": "by", "type": "text"}]},
+    {"id": "runs", "kind": "table", "title": "agent_runs", "icon": "play", "fields": [{"name": "id", "type": "uuid", "key": "PK"}, {"name": "agent_id", "type": "uuid", "key": "FK"}, {"name": "agent_version_id", "type": "uuid", "key": "FK", "new": true}]}
+  ],
+  "edges": [
+    {"from": "versions", "to": "agents", "label": "n : 1"},
+    {"from": "acts", "to": "versions", "label": "n : 1"},
+    {"from": "runs", "to": "versions", "label": "n : 1", "main": true}
+  ]
+}

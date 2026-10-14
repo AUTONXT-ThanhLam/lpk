@@ -1,0 +1,16 @@
+{
+  "type": "cubes",
+  "title": "Fleet health",
+  "sub": "one cube per vehicle",
+  "size": [14, 9],
+  "groups": [
+    {"title": "Needs service", "accent": "coral", "count": 9},
+    {"title": "Update pending", "accent": "lavender", "count": 16},
+    {"title": "Pilot group", "accent": "blue", "cells": [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]}
+  ],
+  "labels": [
+    {"title": "Pilot: 6 buses", "icon": "bus", "at": [1, 0]},
+    {"title": "Depot B", "icon": "warehouse", "at": [13, 8], "below": true}
+  ],
+  "keyTitle": "Status"
+}
