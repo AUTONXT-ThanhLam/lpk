@@ -1,11 +1,11 @@
 export const meta = {
   name: 'review',
-  description: 'Review a frozen lpk commit: tech lead, regression, /code-review, /security-review, OpenCodeReview, claims, mutants and the prover at once, then one verifier per finding',
+  description: 'Review a frozen lpk commit: tech lead, regression, /code-review, /security-review, OpenCodeReview, claims, the designer, mutants and the prover at once, then one verifier per finding',
   whenToUse: 'Step 6 of the lpk skill, on the committed and verified change',
   phases: [{ title: 'Review', detail: 'tech lead, regression, /code-review, /security-review, OpenCodeReview and claims at once; prover, then mutants' }, { title: 'Verify', detail: 'reproduce each finding' }],
 }
 
-// args: { repo, base, commit, bundle, request, scenarios, failureModes, surface, main, testCmd, e2e }
+// args: { repo, base, commit, bundle, request, scenarios, failureModes, surface, main, ui, testCmd, e2e }
 // testCmd runs the tests related to the changed files (vitest related, jest --findRelatedTests ...).
 const a = args || {}
 const need = ['repo', 'base', 'commit', 'bundle', 'request', 'scenarios', 'testCmd']
@@ -62,6 +62,8 @@ const reviewers = [
   { name: 'security', run: () => agent(`${change}\nRun \`lpk code-review --security --repo ${a.repo} --base ${a.base} --out ${a.bundle}/sec1\` with a Bash timeout of 600000 ms and wait for it. Read the markdown file it names and return each vulnerability in it as a finding: its file and line, what is wrong as the claim, and its exploit scenario as repro. Return an empty list if it reports none; if the command fails, return one finding with path "lpk code-review" and its error as the claim.`, { ...opts('security', undefined, FINDINGS), model: 'haiku', effort: 'low' }) },
   { name: 'ocr', run: ocr },
   { name: 'claims', run: () => agent(`${change}\nCheck every claim in words this change makes against its code.`, opts('claims', 'lpk:claims', FINDINGS)) },
+  // The designer reviews the screens the change touches on the running UI, in review mode.
+  ...(a.ui && a.surface ? [{ name: 'designer', run: () => agent(`${change}\nReview mode. Running UI: ${a.surface}\nScreens the change touches: ${a.ui}\nProof directory: ${a.bundle}/design`, opts('designer', 'lpk:designer', FINDINGS)) }] : []),
 ]
 // The mutant runs the tests over and over: after the prover, so the two never share a database or port.
 const mutant = { name: 'mutant', run: () => agent(`${change}\nCommand that runs the tests related to the changed files: ${a.testCmd}\nReturn each mutant no test catches as a finding: path and line of the mutated code, the behaviour it breaks as the claim, the mutant diff and the missing test as repro.`, opts('mutant', 'lpk:mutant', FINDINGS)) }

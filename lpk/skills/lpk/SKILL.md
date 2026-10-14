@@ -111,7 +111,9 @@ then start these at once, in the background:
 - `lpk:design-critic` with the brief path, the repo path, the base branch and the `lpk precedent`
   output;
 - `lpk:test-author` with the repo path (the branch checked out), the brief and the test command:
-  it writes the failing acceptance tests, and e2e scripts where the repo runs them, test files only.
+  it writes the failing acceptance tests, and e2e scripts where the repo runs them, test files only;
+- `lpk:designer` in design mode when the change touches a screen, with the brief path and the
+  repo: put the UI section it returns in the brief and build the screens to it.
 The build does not wait for the verdict: start the run (step 5) and build the approach as written
 in the checkout while they work; the test author writes only test files there, so you do not
 collide. Fix each blocker the critic reproduces in the brief and the code (or show with evidence
@@ -173,7 +175,8 @@ agent's report says how). Then run the `lpk:review` workflow with the Workflow t
 background while you do step 7), with `args`: `repo` (the frozen tree), `base`, `commit`,
 `bundle`, `request`, `scenarios` (each with the request sentence it serves), `failureModes` (the
 table), `surface` (URL, start command and each login with its role, or empty when nothing runs),
-`main` (the reference instance, if one runs), `testCmd` (the command that runs the tests related
+`main` (the reference instance, if one runs), `ui` (the screens the change touches, empty when
+none: the designer reviews them on the surface), `testCmd` (the command that runs the tests related
 to the changed files) and `e2e` (the test-author's scripts). It runs the reviewers and the prover
 at once, the mutant after the prover, and one `lpk:verifier` per finding as it arrives, and returns
 `confirmed`, `unverified`, `preexisting`, `dropped`, the prover's results and the reviewers that

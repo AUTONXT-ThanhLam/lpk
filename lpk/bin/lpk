@@ -13,11 +13,14 @@ import { buildBundle } from '../lib/facts.mjs';
 import { ciCommands, defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
 import { decide, MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
-import { afterTool, beforeCommit, beforeStop, beforeWrite, onPrompt, onSessionStart } from '../lib/hooks.mjs';
+import { afterTool, beforeCommit, beforeStop, beforeWrite, onPrompt, onSessionStart, onTick } from '../lib/hooks.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
 import { fetchReviews } from '../lib/reviews.mjs';
 import { changeOf } from '../lib/rules.mjs';
-import { endRun, promptsOf, readRun, startRun, statusLine, verify } from '../lib/run.mjs';
+import { activeRun, endRun, promptsOf, readRun, runId, startRun, statusLine, verify } from '../lib/run.mjs';
+import { serve } from '../lib/serve.mjs';
+import { ensureServer, keepEnded, liveRuns, PORT, snapshot } from '../lib/status.mjs';
+import { summarize } from '../lib/summary.mjs';
 
 const [cmd, ...argv] = process.argv.slice(2);
 const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? undefined : argv[i + 1]; };
@@ -37,8 +40,10 @@ const USAGE = `usage:
   lpk precedent [<path>...] [--repo <dir>] [--base <ref>]
   lpk setup        (fetches gitleaks once and says which outside tool is missing)
   lpk push-check   (PreToolUse hook; reads the hook JSON on stdin)
-  lpk statusline   (for a status line command: the session's run, its age and last verify; JSON on stdin)
-  lpk hook post | stop | commit | write | start | prompt   (the hooks of an lpk run; JSON on stdin)`;
+  lpk status       (the page of every live lpk run on this machine: starts its server, prints its URL)
+  lpk status serve [--port <n>] [--stay]  |  lpk status summarize --marker <run.json> --transcript <file.jsonl>
+  lpk statusline   (for a status line command: the session's run, its age and last verify, linked to the status page; JSON on stdin)
+  lpk hook post | stop | commit | write | start | prompt | tick   (the hooks of an lpk run; JSON on stdin)`;
 
 function resolveBase(repo) {
   const ref = opt('--base') || defaultBranch(repo);
@@ -150,7 +155,10 @@ if (cmd === 'facts') {
     console.log(`lpk run started in ${repo} against ${r.run.base.slice(0, 12)}. Until \`lpk run end\`: candidates on lines you add come back after each edit, the main session commits only a tree with a green \`lpk verify\`, and the turn cannot end on unverified source. Checks: ${r.run.verify.map((c) => `\`${c}\``).join(', ')}`);
     const ci = ciCommands(repo);
     console.log(ci.length ? ['CI runs these; each one that checks the code you will touch belongs among the checks:', ...ciLines(ci)].join('\n') : 'CI: no GitHub Actions or GitLab CI steps found; the checks are the repo\'s own test, lint and typecheck commands.');
+    console.log(`The owner follows this run at ${ensureServer()}`);
   } else if (sub === 'end') {
+    const open = readRun(repo);
+    if (open) keepEnded(open, opt('--reason'));
     const r = endRun(repo, opt('--reason'));
     if (r.error) { console.error(`lpk: ${r.error}`); process.exit(1); }
     const said = existsSync(promptsOf(r.run.marker)) ? readFileSync(promptsOf(r.run.marker), 'utf8').split('\n').filter(Boolean).length : 0;
@@ -171,7 +179,9 @@ if (cmd === 'facts') {
   // A hook never fails the tool call it watches: any error means silence.
   try {
     const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
-    const out = ({ stop: beforeStop, commit: beforeCommit, write: beforeWrite, start: onSessionStart, prompt: onPrompt }[argv[0]] || afterTool)(input);
+    // The summarizer's own `claude -p` is not an lpk session.
+    if (process.env.LPK_SUMMARY) process.exit(0);
+    const out = ({ stop: beforeStop, commit: beforeCommit, write: beforeWrite, start: onSessionStart, prompt: onPrompt, tick: onTick }[argv[0]] || afterTool)(input);
     if (out) console.log(JSON.stringify(out));
   } catch { /* silent */ }
 } else if (cmd === 'reviews') {
@@ -189,7 +199,21 @@ if (cmd === 'facts') {
   const paths = given.length ? given : changeOf(repo, resolveBase(repo)).map((f) => f.path);
   console.log(precedentText({ repo, paths }));
 } else if (cmd === 'statusline') {
-  try { process.stdout.write(statusLine(JSON.parse(readFileSync(0, 'utf8') || '{}').session_id)); } catch { /* silent */ }
+  try {
+    const session = JSON.parse(readFileSync(0, 'utf8') || '{}').session_id;
+    const line = statusLine(session);
+    // An OSC 8 link: ctrl+click (cmd+click) opens this run on the status page in terminals that support it.
+    if (line) process.stdout.write(`\x1b]8;;${ensureServer()}#${runId(activeRun(session, false).marker)}\x1b\\${line}\x1b]8;;\x1b\\`);
+  } catch { /* silent */ }
+} else if (cmd === 'status') {
+  if (argv[0] === 'serve') serve(Number(opt('--port')) || PORT, { stay: argv.includes('--stay') });
+  else if (argv[0] === 'summarize') {
+    if (!opt('--marker') || !opt('--transcript')) { console.error(USAGE); process.exit(2); }
+    console.log(JSON.stringify(summarize(opt('--marker'), opt('--transcript'))));
+  } else if (argv.length) { console.error(USAGE); process.exit(2); } else {
+    console.log(`lpk status page: ${ensureServer()}`);
+    for (const r of liveRuns().map(snapshot)) console.log(`  ${r.name} (${r.branch}): ${r.narrative?.headline || 'no summary yet'} · verify ${!r.verify ? 'not run' : r.verify.green ? 'green' : 'RED'}`);
+  }
 } else if (cmd === 'setup') {
   console.log(setup().join('\n'));
 } else if (cmd === 'push-check') {

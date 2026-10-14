@@ -27,6 +27,16 @@ the same on demand and prints which tool is missing.
 - `/lpk:lpk <request, ticket or PR>` runs the whole flow; a PR with review comments runs the
   feedback flow.
 - `/lpk:learn` turns defects found late (review comments, a run's evidence) into rules.
+- `http://lpk.localhost:9339/` shows every live lpk run on this machine: what each delivers, its
+  step, what is done and next, its last verify, commits and your messages, and the repo's own
+  progress page when it has `.lpk/status/index.html`. `lpk run start` and `lpk status` print the
+  link, and `lpk statusline` (for a `statusLine` command) makes the run's status line a link to
+  it. A small model (`claude -p --model haiku`) writes the summary in the background every ten
+  tool calls and at the end of each turn; the server listens on 127.0.0.1 only
+  (`LPK_STATUS_PORT` changes the port) and stops half an hour after the last run ends.
+  `LPK_STATUS_URL` is the address to print and accept instead, for a name of your own (a hosts
+  entry forwarded to the port), and `lpk status serve --stay` keeps the server up for a login
+  service.
 - `node <plugin>/bin/lpk` with no arguments prints every command (`facts`, `rules`, `check`,
   `map`, `mutate`, `compare`, `code-review`, `verify`, ...).
 

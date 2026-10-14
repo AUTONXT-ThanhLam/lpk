@@ -12,8 +12,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LPK = join(ROOT, 'bin', 'lpk');
 const HOOKS = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
 const tmp = mkdtempSync(join(tmpdir(), 'lpk-run-'));
-after(() => rmSync(tmp, { recursive: true, force: true }));
-const ENV = { ...process.env, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), CLAUDE_PLUGIN_ROOT: ROOT };
+after(() => {
+  try { process.kill(JSON.parse(readFileSync(join(tmp, 'state', 'lpk', 'status', 'server.json'), 'utf8')).pid); } catch { /* never started */ }
+  rmSync(tmp, { recursive: true, force: true });
+});
+const ENV = { ...process.env, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), CLAUDE_PLUGIN_ROOT: ROOT, LPK_STATUS_URL: '', LPK_STATUS_PORT: String(40000 + (process.pid % 20000)) };
 const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 const write = (dir, path, text) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), text); };
 // lpk runs from the session's own shell, which Claude Code gives the session id.
@@ -73,7 +76,7 @@ test('the turn cannot end with changed source until lpk verify is green on that 
   assert.equal(lpk(repo, 'verify').status, 0);
   assert.equal(hook('Stop', repo, {}), null);
   const line = spawnSync('node', [LPK, 'statusline'], { cwd: tmp, env: ENV, input: JSON.stringify({ session_id: session }), encoding: 'utf8' }).stdout;
-  assert.equal(line, 'lpk 0m · verify green 0m ago', 'the owner sees the run in the status line');
+  assert.match(line, /^\x1b\]8;;http:\/\/lpk\.localhost:\d+\/#[0-9a-f]{16}\x1b\\lpk 0m · verify green 0m ago\x1b\]8;;\x1b\\$/, 'the owner sees the run in the status line, linked to its status page');
   write(repo, 'src/b.mjs', 'export const b = 1;\n');
   assert.match(hook('Stop', repo, {}).reason, /the code changed after the last `lpk verify`/);
   assert.match(lpk(repo, 'run', 'end', '--reason', 'b.mjs is a stub').stdout, /ended: b\.mjs is a stub/);
