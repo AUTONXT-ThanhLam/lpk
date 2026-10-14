@@ -12,7 +12,8 @@ const DAY = 24 * 3600 * 1000;
 // One file per live run, naming its marker: the hooks' only cost outside a run is listing it, and
 // a session working in a submodule of the directory it started in still finds its run.
 export const ACTIVE = join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'lpk', 'active');
-const activeFile = (marker) => join(ACTIVE, createHash('sha1').update(marker).digest('hex').slice(0, 16));
+export const runId = (marker) => createHash('sha1').update(marker).digest('hex').slice(0, 16);
+const activeFile = (marker) => join(ACTIVE, runId(marker));
 
 // Shared by every worktree of the repo, so builders in their own worktrees see the same run.
 export function markerOf(repo) {
@@ -24,7 +25,7 @@ export function readRun(repo) {
   return readMarker(markerOf(repo));
 }
 
-function readMarker(m) {
+export function readMarker(m) {
   if (!m || !existsSync(m)) return null;
   try { return { ...JSON.parse(readFileSync(m, 'utf8')), marker: m }; } catch { return null; }
 }
@@ -82,6 +83,7 @@ export function startRun(repo, { base, verify }) {
   const run = { marker, repo, base, verify, started: Date.now(), seen: [], ...(process.env.CLAUDE_CODE_SESSION_ID ? { session: process.env.CLAUDE_CODE_SESSION_ID } : {}) };
   writeRun(run);
   writeFileSync(promptsOf(marker), '');
+  for (const f of ['status.json', 'ticks', 'transcript']) rmSync(join(marker, '..', f), { force: true });
   mkdirSync(ACTIVE, { recursive: true });
   writeFileSync(activeFile(marker), marker);
   return { run };
@@ -99,7 +101,7 @@ export function endRun(repo, reason) {
   const r = readRun(repo);
   if (!r) return { error: 'no lpk run in this repo' };
   rmSync(r.marker, { force: true });
-  rmSync(join(r.marker, '..', 'brief.md'), { force: true });
+  for (const f of ['brief.md', 'status.json', 'ticks', 'transcript']) rmSync(join(r.marker, '..', f), { force: true });
   rmSync(activeFile(r.marker), { force: true });
   return { run: r, reason };
 }

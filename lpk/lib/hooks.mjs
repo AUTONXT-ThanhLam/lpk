@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { git, runsGit, siblings, top } from './git.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
 import { activeRun, notePrompt, runFor, treeOf, writeRun } from './run.mjs';
+import { tick } from './summary.mjs';
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'lpk', 'SKILL.md');
 
@@ -91,10 +92,18 @@ export function onPrompt(input) {
   return null;
 }
 
+// Every tool call of the run's session, and the end of each turn, feed the status page's summary.
+// Runs async, so the session never waits on it; a run no session holds yet is left alone.
+export function onTick(input) {
+  const { run } = runOf(input, false);
+  if (run) tick(run, input.transcript_path, input.hook_event_name === 'Stop');
+  return null;
+}
+
 // Each agent writes only where its role allows, so a promise in its prompt holds as a fact: a
 // builder only in its own worktree (in a main checkout the git directory is the common one), the
 // test author only test files, and the reviewing agents nowhere inside a checkout.
-const READ_ONLY = /(^|:)(techlead|claims|verifier|design-critic|prover|mutant|ocr|regression)$/;
+const READ_ONLY = /(^|:)(techlead|claims|verifier|design-critic|designer|prover|mutant|ocr|regression)$/;
 export function beforeWrite(input) {
   const type = input.agent_type || '';
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;

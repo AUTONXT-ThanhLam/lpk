@@ -55,6 +55,16 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook tick",
+            "async": true,
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
@@ -64,6 +74,16 @@
             "type": "command",
             "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook stop",
             "timeout": 120
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook tick",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
