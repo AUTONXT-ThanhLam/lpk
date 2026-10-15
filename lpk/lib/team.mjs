@@ -3,7 +3,7 @@
 // Which rule in them matters to the change is the agent's call.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import { superproject } from './git.mjs';
+import { repoName, superproject } from './git.mjs';
 
 const ROOT_FILES = ['CLAUDE.md', 'CLAUDE.local.md', '.claude/CLAUDE.md', 'AGENTS.md', 'CONTRIBUTING.md', '.github/copilot-instructions.md'];
 const FOLDER_FILES = ['CLAUDE.md', 'AGENTS.md'];
@@ -42,10 +42,10 @@ function folders(paths) {
   return [...set].sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b));
 }
 
-// Names a rule file can use for this change: the checkout's folder name and each changed path
-// with its file name, so a file that names one is about this change.
-function namesOf(checkout, changed) {
-  const names = new Set([basename(checkout)]);
+// Names a rule file can use for this change: the repo's name and each changed path with its file
+// name, so a file that names one is about this change.
+function namesOf(repo, changed) {
+  const names = new Set([repoName(repo)]);
   for (const p of changed) { names.add(p); if (basename(p).length >= 6) names.add(basename(p)); }
   return [...names];
 }
@@ -66,7 +66,7 @@ export function teamFiles(repo, changed = []) {
     // Links are followed from the files written for agents; CONTRIBUTING links out to translations and policies.
     for (const f of own.filter((x) => isFile(x) && !/CONTRIBUTING\.md$/.test(x))) for (const l of linked(f, root)) add(l.abs, `linked from ${show(repo, f)}`, l.at);
   }
-  const names = namesOf(checkout, changed);
+  const names = namesOf(repo, changed);
   const all = [...seen].map(([abs, { from, at }]) => {
     const text = readFileSync(abs, 'utf8');
     return { path: show(repo, abs), lines: text.split('\n').length - (text.endsWith('\n') ? 1 : 0), from, at, names: names.filter((n) => text.includes(n)).slice(0, 4) };

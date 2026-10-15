@@ -21,27 +21,40 @@ function runOf(input, claim = true) {
   return other ? { repo: other.repo, run: other } : {};
 }
 
+// The candidates on the change (literal pattern matches and env names no deploy file mentions)
+// that are not in `seen`, the keys of those already reported to this agent. Returns the text it
+// reads, at most SHOW of them ('' when none is new), and `seen` with the shown ones added, so the
+// rest come back on the next call.
+const SHOW = 15;
+export function freshCandidates(repo, base, seen = [], sibs = siblings(repo)) {
+  const files = changeOf(repo, base);
+  const found = [
+    ...candidates(loadRules(repo), files).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
+    ...envWiring(repo, files, sibs).filter((e) => !e.seen.length)
+      .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
+  ];
+  const old = new Set(seen);
+  const fresh = found.filter((f) => !old.has(f.key));
+  const shown = fresh.slice(0, SHOW);
+  const text = shown.length ? [
+    'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
+    ...shown.map((f) => `- ${f.line}`),
+    ...(fresh.length > SHOW ? [`${fresh.length - SHOW} more: run lpk check`] : []),
+  ].join('\n') : '';
+  return { text, seen: [...new Set([...old, ...shown.map((f) => f.key)])] };
+}
+
 // A subagent shares the session id, so its tool calls reach this hook too: only the main session
 // and a builder (on its own worktree) are handed candidates, since the others cannot fix them.
 export function afterTool(input) {
   if (input.agent_id && !/(^|:)builder$/.test(input.agent_type || '')) return null;
   const { repo, run } = runOf(input);
   if (!run) return null;
-  const files = changeOf(repo, run.base);
-  const found = [
-    ...candidates(loadRules(repo), files).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
-    ...envWiring(repo, files, siblings(repo)).filter((e) => !e.seen.length)
-      .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
-  ];
-  const seen = new Set(run.seen);
-  const fresh = found.filter((f) => !seen.has(f.key));
-  if (!fresh.length) return null;
-  run.seen = [...seen, ...fresh.map((f) => f.key)];
+  const { text, seen } = freshCandidates(repo, run.base, run.seen);
+  if (!text) return null;
+  run.seen = seen;
   writeRun(run);
-  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: [
-    'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
-    ...fresh.map((f) => `- ${f.line}`),
-  ].join('\n') } };
+  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } };
 }
 
 // Why the run's current state is not verified, or '' when it is. `key` is the part of the tree

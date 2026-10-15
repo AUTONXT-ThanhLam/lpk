@@ -54,7 +54,10 @@ test('in a run, a candidate comes back once, right after the edit that adds it',
   write(repo, 'src/a.mjs', 'export const a = 1;\nload().catch(() => undefined);\n');
   assert.equal(hook('PostToolUse', repo, { tool_name: 'Bash', agent_id: 'r1', agent_type: 'lpk:techlead', tool_input: { command: 'ls' } }), null, 'a reviewer takes the session\'s candidate');
   const first = hook('PostToolUse', repo, { tool_name: 'Write', tool_input: { file_path: join(repo, 'src/a.mjs') } });
-  assert.match(first.hookSpecificOutput.additionalContext, /no-silent-failure {2}src\/a\.mjs:2 {2}load\(\)\.catch/);
+  assert.equal(first.hookSpecificOutput.additionalContext, [
+    'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
+    '- no-silent-failure  src/a.mjs:2  load().catch(() => undefined);',
+  ].join('\n'));
   assert.equal(hook('PostToolUse', repo, { tool_name: 'Bash', tool_input: { command: 'ls' } }), null, 'reported twice');
   assert.equal(hook('PostToolUse', repo, { tool_name: 'Bash', session_id: 'other', tool_input: { command: 'ls' } }), null);
 });

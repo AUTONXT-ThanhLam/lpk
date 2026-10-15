@@ -4,16 +4,16 @@
 // lists every route and every use of a name, `lpk mutate` shows which changes no test depends on,
 // `lpk compare` runs one command on main and on the change over many inputs,
 // `lpk code-review` runs the bundled /code-review (or /security-review) on it, `lpk push-check` is the push and PR-title hook.
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { runCodeReview, runSecurityReview } from '../lib/codereview.mjs';
 import { compareText } from '../lib/compare.mjs';
 import { buildBundle } from '../lib/facts.mjs';
 import { ciCommands, defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
 import { decide, MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
-import { afterTool, beforeCommit, beforeStop, beforeWrite, onPrompt, onSessionStart } from '../lib/hooks.mjs';
+import { afterTool, beforeCommit, beforeStop, beforeWrite, freshCandidates, onPrompt, onSessionStart } from '../lib/hooks.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
 import { fetchReviews } from '../lib/reviews.mjs';
 import { changeOf } from '../lib/rules.mjs';
@@ -24,8 +24,8 @@ const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? undefined : argv[
 const all = (k) => argv.flatMap((a, i) => (a === k ? [argv[i + 1]] : []));
 const USAGE = `usage:
   lpk facts [--repo <dir>] [--base <ref>] [--cached] [--sibling <dir>]... [--out <dir>] [--json]
-  lpk rules [--repo <dir>] [--base <ref>] [--all | --list]
-  lpk check [--repo <dir>] [--base <ref>] [--sibling <dir>]...
+  lpk rules [--repo <dir>] [--base <ref>] [--all | --list | --id <id>[,<id>]...]
+  lpk check [--repo <dir>] [--base <ref>] [--sibling <dir>]... [--fresh <state file>]
   lpk map <name>... [--routes] [--guard <name>]... [--repo <dir>] [--sibling <dir>]...
   lpk mutate --test "<command>" [--hunks | --patch <mutant.diff>...] [--repo <dir>] [--base <ref>] [--file <path>]... [--timeout <s>]
   lpk compare --run "<command>" --inputs <dir> [--repo <dir>] [--base <ref>] [--timeout <s>] [--jobs <n>]
@@ -106,12 +106,30 @@ if (cmd === 'facts') {
   ].join('\n'));
 } else if (cmd === 'rules' || cmd === 'check' || cmd === 'map' || cmd === 'mutate') {
   const repo = top(resolve(opt('--repo') || '.'));
-  const catalogOnly = cmd === 'rules' && (argv.includes('--all') || argv.includes('--list'));
+  const catalogOnly = cmd === 'rules' && (argv.includes('--all') || argv.includes('--list') || argv.includes('--id'));
   if (!repo && !catalogOnly) { console.error('lpk: not inside a git repository'); process.exit(2); }
   const sibs = repo ? siblings(repo, all('--sibling')) : [];
-  if (cmd === 'rules') {
+  if (cmd === 'rules' && argv.includes('--id')) {
+    const ids = all('--id').flatMap((v) => (v || '').split(',')).map((x) => x.trim()).filter(Boolean);
+    if (!ids.length || argv.includes('--all') || argv.includes('--list')) { console.error(USAGE); process.exit(2); }
+    const r = rulesText({ repo, mode: 'id', ids });
+    if (r.missing.length) { console.error(`lpk: no rule ${r.missing.join(', ')}; \`lpk rules --list\` names them all`); process.exit(2); }
+    console.log(r.text);
+  } else if (cmd === 'rules') {
     const mode = argv.includes('--all') ? 'all' : argv.includes('--list') ? 'list' : 'diff';
     console.log(rulesText({ repo, base: mode === 'diff' ? resolveBase(repo) : '', mode }));
+  } else if (cmd === 'check' && argv.includes('--fresh')) {
+    // Only what this state file's agent has not been shown; the file keeps what was shown.
+    const state = opt('--fresh');
+    if (!state || state.startsWith('--')) { console.error(USAGE); process.exit(2); }
+    let seen = [];
+    try { if (existsSync(state)) seen = JSON.parse(readFileSync(state, 'utf8')); } catch { seen = null; }
+    if (!Array.isArray(seen)) { console.error(`lpk: ${state} is not an lpk check state file (a JSON list); remove it to start over`); process.exit(2); }
+    const r = freshCandidates(repo, resolveBase(repo), seen, sibs);
+    mkdirSync(dirname(resolve(state)), { recursive: true });
+    writeFileSync(`${state}.${process.pid}`, JSON.stringify(r.seen));
+    renameSync(`${state}.${process.pid}`, state);
+    console.log(r.text || 'lpk check: no new candidates since the last report.');
   } else if (cmd === 'check') console.log(checkText({ repo, base: resolveBase(repo), sibs }));
   else if (cmd === 'map') {
     const flags = new Set(['--repo', '--sibling', '--guard']);

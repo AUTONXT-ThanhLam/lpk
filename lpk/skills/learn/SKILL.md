@@ -55,11 +55,12 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
 4. Decide where each one goes: `all.md` when the rule holds in any codebase, the repo's file when
    it names this repo's vocabulary or layout. Drop one only when it duplicates a rule after all.
 5. Append each rule or line to `~/.local/share/lpk/rules/all.md` or
-   `~/.local/share/lpk/rules/<repo>.md` (the repo directory's name). `lpk rules` loads both
+   `~/.local/share/lpk/rules/<repo>.md` (the folder name of the repo's main checkout, also
+   when you work in a worktree of it). `lpk rules` loads both
    from then on. Prove each one loads: `lpk rules --all` shows the new rule, or `extended by:` and
    the new trigger under the existing one, and lists nothing for that file under "patterns
    skipped". Run it with `--repo <the local checkout of that repo>` for a repo-only rule, since
-   `<repo>.md` is chosen by that directory's name. Then show the trigger matches the commented
+   `<repo>.md` is chosen by that repo's name. Then show the trigger matches the commented
    line: `node -e 'console.log(/<regex>/i.test(process.argv[1]))' '<the line>'` prints true.
 
 A defect no rule on lines can catch (a step done out of order, a check skipped, a wait that cost

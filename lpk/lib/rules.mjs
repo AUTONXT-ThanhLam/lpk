@@ -2,9 +2,9 @@
 // Every answer is an exact fact about the diff; whether a candidate is a defect is the agent's call.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { git, superproject, VENDORED } from './git.mjs';
+import { git, repoName, superproject, VENDORED } from './git.mjs';
 
 // The plugin's rules: catalog.md, then every other file in rules/ in name order.
 export const CATALOG = join(dirname(fileURLToPath(import.meta.url)), '..', 'rules');
@@ -77,7 +77,7 @@ export function loadRules(repo) {
   const own = readdirSync(CATALOG).filter((n) => n.endsWith('.md')).sort((a, b) => (b === 'catalog.md') - (a === 'catalog.md') || a.localeCompare(b));
   for (const f of own) merge(rules, parseRules(readFileSync(join(CATALOG, f), 'utf8'), f === 'catalog.md' ? 'catalog' : `catalog/${f}`));
   if (existsSync(LEARNED)) {
-    const name = basename(repo || '');
+    const name = repoName(repo);
     for (const f of readdirSync(LEARNED).filter((n) => n === 'all.md' || n === `${name}.md`).sort())
       merge(rules, parseRules(readFileSync(join(LEARNED, f), 'utf8'), join(LEARNED, f)));
   }

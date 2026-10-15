@@ -27,16 +27,22 @@ const full = (r, why) => [
   '',
 ].join('\n');
 
-// `mode` is 'diff' (rules this change loads), 'all' (every rule in full) or 'list' (one line each).
-export function rulesText({ repo, base, mode = 'diff' }) {
+// `mode` is 'diff' (rules this change loads), 'all' (every rule in full), 'list' (one line each)
+// or 'id' (the rules named in `ids`, in full; `missing` lists ids no rule has).
+export function rulesText({ repo, base, mode = 'diff', ids = [] }) {
   const rules = loadRules(repo);
+  if (mode === 'id') {
+    const missing = ids.filter((id) => !rules.some((r) => r.id === id));
+    return { missing, text: missing.length ? '' : ids.map((id) => full(rules.find((r) => r.id === id))).join('\n').trimEnd() };
+  }
   if (mode === 'list') return [...rules.map((r) => `${r.id} (${r.blocks}): ${r.title}`), ...skippedPatterns(), ...teamText(repo, [])].join('\n');
   if (mode === 'all') return [...rules.map((r) => full(r)), ...skippedPatterns(), ...teamText(repo, [])].join('\n');
   const files = changeOf(repo, base);
   const hit = triggered(rules, files).sort((a, b) => ORDER[a.rule.blocks] - ORDER[b.rule.blocks]);
   const skipped = rules.filter((r) => !hit.some((h) => h.rule === r)).map((r) => r.id);
   return [
-    `${hit.length} of ${rules.length} rules apply to this change (${files.length} files against ${base.slice(0, 12)}).`,
+    `${hit.length} of ${rules.length} rules apply to this change (${files.length} files against ${base.slice(0, 12)}). One rule's full text: \`lpk rules --id <id>[,<id>]\`.`,
+    ...hit.map((h) => `  ${h.rule.id} (${h.rule.blocks}): ${h.rule.title}`),
     '',
     ...hit.map((h) => full(h.rule, h.why)),
     `not loaded (no trigger in the diff): ${skipped.join(', ') || 'none'}`,

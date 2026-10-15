@@ -41,7 +41,8 @@ surfaces you expect the change to touch: dependencies, services, the app and the
 ready while you read. Then read the ticket (the tracker is read-only unless the owner asks), the code
 involved, and what `main` does today. A bug: follow `diagnose.md` in this skill's directory
 before designing the fix. If
-`~/.local/share/lpk/profiles/<repo>.md` exists, read it: how to start the app, log in, run what CI
+`~/.local/share/lpk/profiles/<repo>.md` exists (`<repo>` is the folder name of the main checkout,
+also from a worktree), read it: how to start the app, log in, run what CI
 runs, the tech lead's GitHub login, which checks are already red on main, and the repo's
 conventions (how it handles errors, logs, calls other services, names things and writes tests, each
 with a file to copy from).
