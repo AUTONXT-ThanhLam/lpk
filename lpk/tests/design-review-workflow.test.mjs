@@ -29,12 +29,13 @@ async function run(args, answer) {
 const finding = (severity, lines) => ({ severity, lines, claim: `a ${severity} claim`, evidence: '[ran] exit 1', fix: 'say what happens' });
 const answers = (by) => (o) => ({ findings: [], stages: [{ stage: 'build', minutes: 12, basis: '[inferred]' }], totalMinutes: 30, trace: [], ...by[o.agentType] });
 
-test('a round starts the critic, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
-  const { out, calls } = await run(ARGS, answers({ 'lpk:plan-sim': { findings: [finding('Medium', [4])] } }));
+test('a first round starts the critic, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
+  const { changed, ...first } = ARGS;
+  const { out, calls } = await run({ ...first, round: 1 }, answers({ 'lpk:plan-sim': { findings: [finding('Medium', [4])] } }));
   assert.deepEqual(calls.map((c) => [c.opts.agentType, c.running]), [['lpk:design-critic', 0], ['lpk:plan-sim', 1], ['lpk:plan-trace', 2]]);
   for (const c of calls) assert.doesNotMatch(c.prompt, /round|earlier|previous/i);
   assert.match(calls[2].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
-  assert.equal(out.round, 2);
+  assert.equal(out.round, 1);
   assert.equal(out.verdict, 'pass');
   assert.deepEqual(out.counts, { High: 0, Medium: 1, Low: 0 });
   assert.equal(out.findings[0].angle, 'plan-sim');
@@ -62,4 +63,18 @@ test('a later round without changed is refused', async () => {
   assert.equal((await run({ ...ARGS, changed: [] }, answers({}))).out.verdict, 'pass');
   // Round 1, and the round 1 again after a change of approach, has no previous revision.
   assert.equal((await run({ ...noChanged, round: 1 }, answers({}))).out.verdict, 'pass');
+});
+
+test('a later round asks each angle for the changed lines and whether the Highs it raised last round are gone', async () => {
+  const previous = [{ angle: 'design-critic', ...finding('High', [9]), claim: 'the lock is never released' }, { angle: 'design-critic', ...finding('Medium', [4]), claim: 'a vague step' },
+    { angle: 'plan-trace', ...finding('High', [20]), claim: 'R3 has no source' }];
+  const { calls } = await run({ ...ARGS, changed: [8, 9, 31], previous }, answers({}));
+  const prompt = Object.fromEntries(calls.map((c) => [c.opts.label, c.prompt]));
+  for (const p of Object.values(prompt)) assert.match(p, /\b8, 9, 31\b/);
+  assert.match(prompt['design-critic'], /the lock is never released/);
+  assert.doesNotMatch(prompt['design-critic'], /a vague step|R3 has no source/);
+  assert.match(prompt['plan-trace'], /R3 has no source/);
+  assert.doesNotMatch(prompt['plan-sim'], /the lock is never released|R3 has no source/);
+  // Without the previous findings, the angles still check only the changed lines.
+  for (const c of (await run({ ...ARGS, changed: [8, 9, 31] }, answers({}))).calls) assert.match(c.prompt, /\b8, 9, 31\b/);
 });
