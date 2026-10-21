@@ -34,7 +34,7 @@ export async function waive($: Host, e: CommandRunInput, options: PluginOptions)
   const { ids, why } = asked
   const findings = ids.filter((id) => /^F\d+$/.test(id))
   if (findings.length)
-    return { text: `${findings.join(', ')}: finding ids are not waived: unsettled findings and rulings not made by the verifier do not block, and \`lpk report\` lists them for the owner to read. Nothing was recorded.` }
+    return { text: `${findings.join(', ')}: a finding id is not waived; the findings gate is \`/lpk-waive findings\`. Nothing was recorded.` }
   const root = await lpkRoot($, options)
   if (!root) return { text: 'lpk is not installed, or the mod\'s lpkRoot setting names no lpk; nothing was recorded.' }
   const cwd = await $.session.cwd()
