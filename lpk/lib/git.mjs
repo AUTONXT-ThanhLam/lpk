@@ -15,9 +15,6 @@ export function git(args, cwd) {
   }
 }
 
-// Whether commit `a` is in the history of `b`; a commit git cannot find is in no history.
-export const isAncestor = (repo, a, b) => spawnSync('git', ['merge-base', '--is-ancestor', a, b], { cwd: repo, stdio: 'ignore' }).status === 0;
-
 export const top = (cwd) => git(['rev-parse', '--show-toplevel'], cwd).trim();
 
 // The git directory git reports (`--git-common-dir`, `--git-dir`) as an absolute path: it answers

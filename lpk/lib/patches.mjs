@@ -57,9 +57,5 @@ export function rangesOf({ base, list }, shas) {
   return out;
 }
 
-// Whether two commits carry the same change (`git patch-id --stable`); a commit with no diff matches none.
-const patchId = (repo, sha) => spawnSync('git', ['patch-id', '--stable'], { cwd: repo, input: git(['show', '--format=', sha], repo), encoding: 'utf8' }).stdout.split(' ')[0];
-export const samePatch = (repo, a, b) => { const id = patchId(repo, a); return Boolean(id) && id === patchId(repo, b); };
-
 // Whether the commit changes any file matching `re`.
 export const touches = (repo, sha, re) => git(['diff-tree', '--no-commit-id', '--name-only', '-r', '--root', sha], repo).split('\n').some((p) => p && re.test(p));

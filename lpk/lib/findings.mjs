@@ -5,9 +5,8 @@
 // records exact and says which rulings the owner should read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { absGitPath, git, isAncestor } from './git.mjs';
+import { absGitPath, git } from './git.mjs';
 import { locked } from './lock.mjs';
-import { samePatch } from './patches.mjs';
 import { readRun } from './run.mjs';
 
 export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed'];
@@ -144,8 +143,7 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary }) {
 
 // Closes a confirmed finding with the commit that fixed it and how that is known: a repro now
 // green, a test that fails before the fix, or the verifier's ruling. The commit must exist and must
-// not be the reviewed commit itself. A fixed finding is closed again only by the same patch rebuilt:
-// HEAD holds the new commit, no longer holds the old one, and the two have one patch-id.
+// not be the reviewed commit itself.
 export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
   if (!CLOSED_BY.includes(closedBy)) return { error: `closedBy is one of ${CLOSED_BY.join(', ')}` };
   const why = text(evidence);
@@ -156,9 +154,7 @@ export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
   return locked(ledgerDir(repo), () => {
     const f = readLedger(repo).findings.find((x) => x.id === text(id));
     if (!f) return { error: `no finding ${text(id)}` };
-    if (f.state === 'fixed' && !git(['rev-parse', '--verify', '--quiet', `${f.fixedCommit}^{commit}`], repo).trim()) return { error: `${f.id} is fixed in ${f.fixedCommit}, a commit git cannot find here` };
-    const rebuilt = f.state === 'fixed' && !isAncestor(repo, f.fixedCommit, 'HEAD') && isAncestor(repo, sha, 'HEAD') && samePatch(repo, f.fixedCommit, sha);
-    if (f.state !== 'confirmed' && !rebuilt) return { error: `${f.id} is ${f.state}${f.state === 'fixed' ? ` in ${f.fixedCommit}` : ''}; only a confirmed finding is fixed` };
+    if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
     const reviewed = git(['rev-parse', '--verify', '--quiet', `${f.at.split('..').pop()}^{commit}`], repo).trim();
     if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
     append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by) });

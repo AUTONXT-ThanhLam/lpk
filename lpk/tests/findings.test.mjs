@@ -118,42 +118,6 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   assert.deepEqual([counts(readLedger(dir).findings).fixed, counts(readLedger(dir).findings).duplicate], [5, 3]);
 });
 
-test('a fix rebuilt on a new base is closed again with its new commit; another commit, or one still in history, is refused', () => {
-  const { dir, head } = repoWithRun('rebuilt');
-  raise(dir, head);
-  ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'exit 1', by: VERIFIER });
-  const fix = { id: 'F1', fix: 'guard closed', closedBy: 'repro', evidence: 'repro green', by: 'main' };
-  sh(dir, 'switch', '-qc', 'feat', head);
-  const first = commit(dir, 'fix');
-  markFixed(dir, { ...fix, commit: first });
-  assert.match(markFixed(dir, { ...fix, commit: first }).error, /F1 is fixed/);
-  sh(dir, 'switch', '-qc', 'rebuilt', head);
-  writeFileSync(join(dir, 'g.txt'), 'new base\n'); sh(dir, 'add', '.'); sh(dir, 'commit', '-qm', 'new base');
-  writeFileSync(join(dir, 'h.txt'), 'another change\n'); sh(dir, 'add', '.'); sh(dir, 'commit', '-qm', 'another change');
-  const other = sh(dir, 'rev-parse', 'HEAD').trim();
-  assert.match(markFixed(dir, { ...fix, commit: other }).error, /F1 is fixed/, 'not the same patch');
-  sh(dir, 'cherry-pick', first);
-  const again = sh(dir, 'rev-parse', 'HEAD').trim();
-  assert.match(markFixed(dir, { ...fix, commit: first }).error, /F1 is fixed/, 'the new fix is a commit HEAD holds');
-  const f = markFixed(dir, { ...fix, commit: again }).finding;
-  assert.deepEqual([f?.state, f?.fixedCommit], ['fixed', again]);
-  assert.match(markFixed(dir, { ...fix, commit: again }).error, /F1 is fixed/);
-});
-
-test('a fixed finding whose fix commit git cannot find is not closed again', () => {
-  const { dir, head } = repoWithRun('pruned');
-  raise(dir, head);
-  ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'exit 1', by: VERIFIER });
-  const fix = { id: 'F1', fix: 'guard closed', closedBy: 'repro', evidence: 'repro green', by: 'main' };
-  sh(dir, 'switch', '-qc', 'feat', head);
-  const first = commit(dir, 'fix');
-  markFixed(dir, { ...fix, commit: first });
-  sh(dir, 'switch', '-qc', 'rebuilt', head); sh(dir, 'branch', '-D', 'feat');
-  sh(dir, 'reflog', 'expire', '--expire=now', '--all'); sh(dir, 'gc', '-q', '--prune=now');
-  const again = commit(dir, 'fix, rebuilt');
-  assert.match(markFixed(dir, { ...fix, commit: again }).error, new RegExp(`F1 is fixed in ${first}, a commit git cannot find`));
-});
-
 test('a new run archives the old ledger under its run id and never deletes one', () => {
   const { dir, head } = repoWithRun('archive');
   raise(dir, head);
