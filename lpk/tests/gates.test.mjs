@@ -167,6 +167,18 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   assert.match(markFixed(repo, { id: 'F1', commit: head(repo), closedBy: 'repro', evidence: 'x', by: 'main' }).error, /no finding F1/);
 });
 
+test('an unsettled finding shows the owner the ruling asked and the area that kept it open, and the gate row names its id first', () => {
+  const S = 'unsettled-session';
+  const repo = quickRun('unsettled', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'the cookie is readable', repro: 'r', kind: 'defect', severity: 'important', area: 'security' });
+  assert.equal(ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'not-reproduced', evidence: 'the repro passed', by: 'lpk:verifier' }).finding.state, 'unsettled');
+  assert.match(lpk(repo, S, 'report').stdout, /^- F1 unsettled \([^)]*dropped[^)]*not-reproduced[^)]*security\)[^\n]*the cookie is readable/m);
+  const row = JSON.parse(lpk(repo, S, 'gates', '--json').stdout).find((r) => r.gate === 'findings');
+  assert.deepEqual([row.holds, row.why.slice(0, 2)], [true, 'F1']);
+});
+
 test('a branch the run never noted is its branch: work merged in after a start on main meets the gates at handover and push, also after the run ends', () => {
   const S = 'merge-session';
   const repo = repoWith('merged', { 'src/a.mjs': 'export const a = 1;\n' });

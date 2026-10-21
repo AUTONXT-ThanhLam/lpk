@@ -36,7 +36,7 @@ function findingsGate(repo, run) {
   // named here and in `lpk report`, for the owner to read.
   const owner = all.filter(needsOwner);
   const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
-  const note = owner.length ? `for the owner to read (not blocking): unsettled, or ruled by someone other than the verifier: ${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}` : '';
+  const note = owner.length ? `${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}: for the owner to read, not blocking` : '';
   // The ledger tools read only the live ledger: once a later run has archived this ended run's
   // findings, no agent can rule on or close them, and only the owner's waiver is left.
   const archived = why.length && run.ended && !readLedger(repo).findings.some((f) => f.run === run.id);
