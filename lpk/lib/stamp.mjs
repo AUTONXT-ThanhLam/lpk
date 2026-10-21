@@ -3,24 +3,32 @@
 // the agent's id and the range under review. Whatever the agent put in those fields is replaced, so
 // the ledger records who called, not who the caller said it was.
 import { top } from './git.mjs';
-import { readRun } from './run.mjs';
+import { activeRun, readRun } from './run.mjs';
 
 export const FINDING_TOOL = /^mcp__plugin_lpk_lpk__finding_(add|list|get|verdict|fixed)$/;
 const STAMPED = ['repo', 'run', 'from', 'agentId', 'at', 'by'];
 
-// The call's input with the stamps in place, or null for a tool that is not a finding tool. Outside
-// an lpk run of this session only the repo is stamped, so the server refuses to add or rule and
-// says why.
+// The call's input with the stamps in place, or null for a tool that is not a finding tool. The run
+// is the one of the repo the call runs in when this session may use it, else the run this session
+// holds wherever it is, as the other hooks take it (hooks.mjs runOf): an agent starts in the
+// session's directory, which may hold no run (the superproject of the submodule the run works in)
+// or another session's. Outside an lpk run of this session only the repo is stamped, so the server
+// refuses to add or rule and says why.
 export function stampFinding(input) {
   const tool = FINDING_TOOL.exec(input?.tool_name ?? '');
   if (!tool) return null;
   const out = { ...(input.tool_input ?? {}) };
   for (const k of STAMPED) delete out[k];
-  const repo = input.cwd ? top(input.cwd) : '';
+  let repo = input.cwd ? top(input.cwd) : '';
+  let run = repo ? readRun(repo) : null;
+  const mine = (r) => r?.id && (!r.session || r.session === input.session_id);
+  if (!mine(run)) {
+    const held = activeRun(input.session_id, false);
+    if (held) { repo = held.repo; run = held; }
+  }
   if (!repo) return out;
   out.repo = repo;
-  const run = readRun(repo);
-  if (!run?.id || (run.session && run.session !== input.session_id)) return out;
+  if (!mine(run)) return out;
   out.run = run.id;
   const who = input.agent_type || 'main';
   if (tool[1] === 'add') {

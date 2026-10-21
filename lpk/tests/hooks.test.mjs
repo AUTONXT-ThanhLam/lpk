@@ -114,3 +114,44 @@ test('a deleted test file, removed test lines and an added skip marker come back
   assert.match(out, /test-skipped {2}tests\/a\.test\.mjs:1 {2}test\.only\(1\);/);
   assert.equal(hook('PostToolUse', 'post', { tool_name: 'Bash', session_id: 'tests', cwd: repo, tool_input: { command: 'ls' } }), null, 'told once');
 });
+
+test('a finding raised from outside the run\'s checkout, as from a superproject, lands in the run its session holds', async () => {
+  const outer = repoWith('stamp-outer', { 'README.md': 'x\n' });
+  const inner = repoWith('stamp-outer/services/inner', { 'src/a.mjs': 'export const a = 1;\n' });
+  const dir = startRun(inner, 'stamp');
+  const run = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+  writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, reviewRange: 'main..feat' }));
+  const call = { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'stamp', cwd: outer, agent_type: 'lpk:bug-hunter', agent_id: 'a1', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } };
+  const stamped = hook('PreToolUse', 'stamp', call).hookSpecificOutput.updatedInput;
+  assert.deepEqual([stamped.repo, stamped.run, stamped.from, stamped.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
+  const { addFinding, readLedger } = await import('../lib/findings.mjs');
+  const { repo, ...args } = stamped;
+  assert.equal(addFinding(repo, args).error, undefined);
+  assert.deepEqual(readLedger(inner).findings.map((f) => [f.run, f.from]), [[run.id, 'lpk:bug-hunter']]);
+  // Another session calling from the same place gets no run to write into.
+  assert.equal(hook('PreToolUse', 'stamp', { ...call, session_id: 'other' }).hookSpecificOutput.updatedInput.run, undefined);
+});
+
+test('the finding hook keeps the run of the repo the call runs in, else takes the one its session holds', () => {
+  const stamp = (cwd, session) => hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_list', session_id: session, cwd, tool_input: {} }).hookSpecificOutput.updatedInput;
+  const runId = (dir) => JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')).id;
+  const here = repoWith('stamp-here', { 'a.mjs': '1\n' });
+  const there = repoWith('stamp-there', { 'a.mjs': '1\n' });
+  const foreign = repoWith('stamp-foreign', { 'a.mjs': '1\n' });
+  const loose = repoWith('stamp-loose', { 'a.mjs': '1\n' });
+  const plain = join(tmp, 'stamp-plain');
+  mkdirSync(plain);
+  const hereRun = runId(startRun(here, 'two'));
+  const thereRun = runId(startRun(there, 'two'));
+  startRun(foreign, 'someone-else');
+  const looseDir = startRun(loose, '');
+  // One unreadable entry in the index of live runs is skipped, not a failed hook.
+  mkdirSync(join(tmp, 'state', 'lpk', 'active', 'unreadable'), { recursive: true });
+  assert.deepEqual([stamp(here, 'two').repo, stamp(here, 'two').run], [here, hereRun], 'the cwd repo\'s own run wins over a newer one elsewhere');
+  assert.deepEqual([stamp(plain, 'two').repo, stamp(plain, 'two').run], [there, thereRun], 'outside any repo, the newest run the session holds');
+  assert.deepEqual([stamp(foreign, 'two').repo, stamp(foreign, 'two').run], [there, thereRun], 'from a repo with another session\'s run, this session\'s own');
+  assert.deepEqual(stamp(foreign, 'nobody'), { repo: foreign }, 'a session with no run gets none');
+  assert.equal(stamp(loose, 'two').run, runId(looseDir), 'an unbound run in the cwd repo is used');
+  assert.equal(stamp(plain, 'three').run, undefined, 'an unbound run elsewhere is not taken');
+  assert.equal(JSON.parse(readFileSync(join(looseDir, 'run.json'), 'utf8')).session, undefined, 'and is not bound by a finding call');
+});

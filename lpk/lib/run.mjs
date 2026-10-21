@@ -62,7 +62,8 @@ export function activeRun(session, bind = true, cwd = '') {
   let names = [];
   try { names = readdirSync(ACTIVE); } catch { return null; }
   const runs = names.map((n) => {
-    const r = parse(readFileSync(join(ACTIVE, n), 'utf8').trim()).run;
+    let m; try { m = readFileSync(join(ACTIVE, n), 'utf8').trim(); } catch { return null; } // removed meanwhile, or unreadable
+    const r = parse(m).run;
     if (r && (r.session || Date.now() - r.started <= DAY)) return r;
     rmSync(join(ACTIVE, n), { force: true });
     return null;
