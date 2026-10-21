@@ -1,6 +1,6 @@
 // `lpk finding list|get|verdict|fixed|counts`: the run's findings ledger from a shell. A ruling or a
 // closure made here is recorded as by `cli`: the CLI cannot tell which agent ran it, so a drop,
-// pre-existing, duplicate or verifier closure made here waits for the owner.
+// pre-existing, duplicate or verifier closure made here is listed for the owner to read.
 import { resolve } from 'node:path';
 import { counts, findingsText, getFinding, markFixed, readLedger, ruleOn } from '../findings.mjs';
 import { top } from '../git.mjs';

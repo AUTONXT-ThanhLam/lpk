@@ -1,6 +1,6 @@
 // `lpk waive <id>... --why "<text>"`: the owner's release of what a gate or tripwire holds, one
-// record per id (`gate:<name>`, `connector:<tool>`, `git:<command>` or a finding id; a bare gate row
-// name becomes `gate:<row>`). It is the owner's channel: /lpk-waive calls it with `--via /lpk-waive`.
+// record per id (`gate:<name>`, `connector:<tool>` or `git:<command>`; a bare gate row name becomes
+// `gate:<row>`). It is the owner's channel: /lpk-waive calls it with `--via /lpk-waive`.
 // Run by an agent it records `via: cli`, which no gate accepts as the owner's waiver.
 import { parseArgs, repoOf } from '../out.mjs';
 import { appendRecord } from '../records.mjs';
