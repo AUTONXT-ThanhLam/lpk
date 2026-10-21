@@ -1,0 +1,30 @@
+{
+  "name": "lpk-mod",
+  "version": "0.3.0",
+  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch, /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
+  "author": {
+    "name": "lam"
+  },
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "lpkRoot": {
+      "type": "string",
+      "title": "lpk plugin folder",
+      "description": "The folder holding lpk's bin/lpk. Empty: the installed lpk plugin.",
+      "default": ""
+    },
+    "memoryFloorGb": {
+      "type": "number",
+      "title": "Memory floor (GB)",
+      "description": "Below this much available memory, a second agent at once draws a hint to run the parts one at a time. lpk's own field of this name wins when it has one.",
+      "default": 6
+    },
+    "quotaFloorPercent": {
+      "type": "number",
+      "title": "Quota floor (% left)",
+      "description": "Below this share of a rate-limit window left, a new agent draws a hint. lpk's own field of this name wins when it has one.",
+      "default": 15
+    }
+  }
+}

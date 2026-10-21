@@ -1,7 +1,7 @@
 // Exact facts from git and the files in a checkout. No judgement lives here.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 
 // Paths come back unquoted (core.quotepath=off), so non-ASCII file names match the diff headers.
 // Directories of vendored or generated code: never the change's own source.
@@ -16,6 +16,14 @@ export function git(args, cwd) {
 }
 
 export const top = (cwd) => git(['rev-parse', '--show-toplevel'], cwd).trim();
+
+// The git directory git reports (`--git-common-dir`, `--git-dir`) as an absolute path: it answers
+// with a path relative to the repo, or with a Windows drive path that the posix `isAbsolute`
+// does not recognise.
+export function absGitPath(repo, p) {
+  if (!p) return '';
+  return isAbsolute(p) || /^[A-Za-z]:[\\/]/.test(p) ? p : join(repo, p);
+}
 
 // The branch the change will merge into: origin's default branch, else main, else master.
 export function defaultBranch(repo) {
@@ -71,6 +79,14 @@ export function superproject(repo) {
   if (!wt) return { sup: '', checkout: repo };
   const checkout = resolve(common, wt);
   return { sup: git(['rev-parse', '--show-superproject-working-tree'], checkout).trim(), checkout };
+}
+
+// The name a repo's learned rules and profile are kept under: the main checkout's folder, also
+// from a linked worktree (whose own folder is named for its slice) and a submodule's worktree.
+export function repoName(repo) {
+  if (!repo) return '';
+  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], repo).trim();
+  return basename(common) === '.git' ? basename(dirname(common)) : basename(superproject(repo).checkout);
 }
 
 // Where each sibling is read: one found in the superproject at its default branch, the code that

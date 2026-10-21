@@ -1,18 +1,20 @@
 // The in-loop hooks of an lpk run. After each edit or command, the literal candidates on lines
-// added since the last report go back to the model at once; the main session cannot commit a tree,
-// or end a turn on source, that has no green `lpk verify`. Outside a run all are silent.
+// added since the last report, and the tests the change deleted or skipped, go back to the model as
+// hints; the end of a turn on unverified source is told, never held; the main session cannot commit
+// a tree that has no green `lpk verify`. Outside a run all are silent.
 import { existsSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { git, runsGit, siblings, top } from './git.mjs';
+import { dirname, resolve } from 'node:path';
+import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
+import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
-import { activeRun, notePrompt, runFor, treeOf, writeRun } from './run.mjs';
+import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
-const SKILL = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'lpk', 'SKILL.md');
+export { writeGuard as beforeWrite } from './safety.mjs';
+export { resumeCard as onSessionStart } from './card.mjs';
 
 // The run of the repo the tool touched, else this session's run wherever it is. `claim` false
 // takes only a run this session already holds, never an unbound one.
-function runOf(input, claim = true) {
+export function runOf(input, claim = true) {
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
   const repo = top(file ? dirname(file) : input.cwd || '.');
   const run = repo && runFor(repo, input.session_id, claim);
@@ -21,63 +23,92 @@ function runOf(input, claim = true) {
   return other ? { repo: other.repo, run: other } : {};
 }
 
+// Whether the call is inside a run, read so that a damaged run file still counts: a run file of the
+// repo the session is in, or a live run this session holds.
+export function inRun(input) {
+  const repo = top(input.cwd || '.');
+  if (repo && existsSync(markerOf(repo))) return true;
+  try { return Boolean(activeRun(input.session_id, false, input.cwd)); } catch { return false; }
+}
+
+// The run directory (`<git-common-dir>/lpk/`), shared by every worktree of the repo.
+export { runDir as runDirOf } from './run.mjs';
+
+// Where the run's change starts: the base it recorded, else where HEAD left its target branch.
+export const baseOf = (repo, run) => run.base || (run.target ? mergeBase(repo, run.target) : '');
+
+// The run's records file, through its own module.
+export const records = () => import('./records.mjs');
+
+// Test files the change deletes, test lines it removes, and skip or focus markers it adds: each is a
+// place where the suite may have stopped checking something. A fixed list, printed as a hint.
+export const SKIPS = /\.(skip|only|todo)\(|\b(xit|xdescribe|xtest|fit|fdescribe)\(|@pytest\.mark\.(skip|xfail)|\bpytest\.skip\(|@unittest\.skip|\bt\.Skip(Now|f)?\(|#\[ignore\]|@Ignore\b|@Disabled\b/;
+export function testLoss(files) {
+  return files.filter((f) => TEST.test(f.path)).flatMap((f) => [
+    ...(f.status === 'deleted' ? [{ key: `gone|${f.path}`, line: `test-deleted  ${f.path} is deleted` }]
+      : f.removed ? [{ key: `cut|${f.path}|${f.removed}`, line: `test-lines-removed  ${f.path}: ${f.removed} line(s) removed from the base` }] : []),
+    ...f.added.filter((a) => SKIPS.test(a.text)).map((a) => ({ key: `skip|${f.path}|${a.text.trim()}`, line: `test-skipped  ${f.path}:${a.n}  ${a.text.trim().slice(0, 160)}` })),
+  ]);
+}
+
+// The candidates on the change (literal pattern matches, env names no deploy file mentions, and the
+// test losses above) that are not in `seen`, the keys of those already reported to this agent.
+// Returns the text it reads, at most SHOW of them ('' when none is new), and `seen` with the shown
+// ones added, so the rest come back on the next call.
+const SHOW = 15;
+export function freshCandidates(repo, base, seen = [], sibs = siblings(repo)) {
+  const files = changeOf(repo, base);
+  const found = [
+    ...candidates(loadRules(repo), files).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
+    ...envWiring(repo, files, sibs).filter((e) => !e.seen.length)
+      .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
+    ...testLoss(files),
+  ];
+  const old = new Set(seen);
+  const fresh = found.filter((f) => !old.has(f.key));
+  const shown = fresh.slice(0, SHOW);
+  const text = shown.length ? [
+    'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
+    ...shown.map((f) => `- ${f.line}`),
+    ...(fresh.length > SHOW ? [`${fresh.length - SHOW} more: run lpk check`] : []),
+  ].join('\n') : '';
+  return { text, seen: [...new Set([...old, ...shown.map((f) => f.key)])] };
+}
+
 // A subagent shares the session id, so its tool calls reach this hook too: only the main session
 // and a builder (on its own worktree) are handed candidates, since the others cannot fix them.
 export function afterTool(input) {
   if (input.agent_id && !/(^|:)builder$/.test(input.agent_type || '')) return null;
   const { repo, run } = runOf(input);
   if (!run) return null;
-  const files = changeOf(repo, run.base);
-  const found = [
-    ...candidates(loadRules(repo), files).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
-    ...envWiring(repo, files, siblings(repo)).filter((e) => !e.seen.length)
-      .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
-  ];
-  const seen = new Set(run.seen);
-  const fresh = found.filter((f) => !seen.has(f.key));
-  if (!fresh.length) return null;
-  run.seen = [...seen, ...fresh.map((f) => f.key)];
+  const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen);
+  if (!text) return null;
+  run.seen = seen;
   writeRun(run);
-  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: [
-    'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
-    ...fresh.map((f) => `- ${f.line}`),
-  ].join('\n') } };
+  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } };
 }
 
 // Why the run's current state is not verified, or '' when it is. `key` is the part of the tree
 // that must match: `tree` (every file) or `source` (non-test code only).
 function unverified(repo, run, key) {
-  if (!changeOf(repo, run.base).some((f) => CODE.test(f.path) && !TEST.test(f.path))) return '';
+  if (!changeOf(repo, baseOf(repo, run)).some((f) => CODE.test(f.path) && !TEST.test(f.path))) return '';
   const now = treeOf(repo)[key];
   const v = run.verified;
   if (v && v[key] === now && v.green) return '';
   return !v ? 'no `lpk verify` has run in this lpk run'
     : v[key] !== now ? `the ${key === 'tree' ? 'files' : 'code'} changed after the last \`lpk verify\``
-      : `the last \`lpk verify\` failed: ${v.results.filter((x) => x.exit !== 0).map((x) => `\`${x.cmd}\` exit ${x.exit}`).join(', ')}`;
+      : `the last \`lpk verify\` failed: ${(v.results ?? []).filter((x) => x.exit !== 0).map((x) => `\`${x.cmd}\` exit ${x.exit}`).join(', ')}`;
 }
 
-// Test-file edits while reviewers read the frozen commit do not hold the turn; the commit gate
-// verifies them before they are committed.
+// The end of a turn on source no green verify covers is told, not held: the delivery gates hold at
+// handover, and a turn may end to wait for the owner or a background agent. It is said once per
+// stop: `stop_hook_active` means this stop already continued on a hook's word.
 export function beforeStop(input) {
+  if (input.stop_hook_active === true) return null;
   const { repo, run } = runOf(input);
   const why = run && unverified(repo, run, 'source');
   if (!why) return null;
-  return { decision: 'block', reason: `lpk: this change is not verified on the current tree (${why}). Run \`lpk verify\` and fix what it reports. If it cannot go green for a reason outside this change, end the run with \`lpk run end --reason "<why>"\` and say so in the report.` };
-}
-
-// After the context is compacted or the session resumes, the run's state comes back to the model.
-export function onSessionStart(input) {
-  const { repo, run } = runOf(input, false);
-  if (!run) return null;
-  const v = run.verified;
-  const now = treeOf(repo).tree;
-  const last = !v ? 'never ran' : `${v.green ? 'green' : 'RED'} on ${v.tree === now ? 'the current tree' : 'an older tree (files changed since)'}`;
-  return { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: [
-    `lpk: you are inside an lpk run in ${repo}, started ${new Date(run.started).toISOString()}, base ${run.base.slice(0, 12)}.`,
-    `Checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}. Last \`lpk verify\`: ${last}.`,
-    ...(existsSync(join(run.marker, '..', 'brief.md')) ? [`Design Brief: ${join(run.marker, '..', 'brief.md')}; read it again before going on.`] : []),
-    `Carry on with the lpk skill from the step you were in; re-read ${SKILL} if the summary does not say which. The commit, push and end-of-turn gates stay on until \`lpk run end\`.`,
-  ].join('\n') } };
+  return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: `lpk: this change is not verified on the current tree (${why}). Before it is handed over, run \`lpk verify\` and fix what it reports.` } };
 }
 
 // Every message the owner sends during the run is kept verbatim for lpk:learn. What the harness
@@ -91,25 +122,6 @@ export function onPrompt(input) {
   return null;
 }
 
-// Each agent writes only where its role allows, so a promise in its prompt holds as a fact: a
-// builder only in its own worktree (in a main checkout the git directory is the common one), the
-// test author only test files, and the reviewing agents nowhere inside a checkout.
-const READ_ONLY = /(^|:)(techlead|claims|verifier|design-critic|prover|mutant|ocr|regression)$/;
-export function beforeWrite(input) {
-  const type = input.agent_type || '';
-  const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
-  if (!file || !/(^|:)(builder|test-author)$/.test(type) && !READ_ONLY.test(type)) return null;
-  let dir = dirname(file);
-  while (dir.length > 1 && !existsSync(dir)) dir = dirname(dir);
-  const [repo, gitDir, common] = git(['rev-parse', '--path-format=absolute', '--show-toplevel', '--git-dir', '--git-common-dir'], dir).trim().split('\n');
-  if (!repo) return null;
-  const rel = relative(repo, file);
-  const why = READ_ONLY.test(type) ? `${type} never edits a checkout, and ${file} is in ${repo}. Write scratch files under /tmp or the cache.`
-    : /test-author$/.test(type) ? (CODE.test(rel) && !TEST.test(rel) ? `the test author writes only tests, fixtures and e2e scripts, and ${rel} is production code. Report what the code must provide instead.` : '')
-      : gitDir === common ? `a builder writes only in its own worktree, and ${file} is in the main checkout. Create one from the branch head (\`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD\`) and write there.` : '';
-  return why ? { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: ${why}` } } : null;
-}
-
 // Reviewers read what is committed, so the main session commits only a verified tree. Subagents
 // (builders committing in their own worktrees) and a commit of staged test files alone pass.
 const BARE_COMMIT = /^\s*(cd\s+("[^"]*"|'[^']*'|[^\s;&|]+)\s*&&\s*)?git(\s+-C\s+("[^"]*"|'[^']*'|\S+))?\s+commit(\s+(-m|--message)(\s+|=)("[^"]*"|'[^']*'|[^\s;&|]+))+\s*$/;
@@ -118,10 +130,11 @@ export function beforeCommit(input) {
   if (input.agent_id || !runsGit(cmd, 'commit')) return null;
   // Only the run of the repo being committed in (the last `cd <dir>` or `git -C <dir>` before the
   // commit, else the session's directory): a run elsewhere never gates this repo.
-  const before = cmd.slice(0, cmd.search(/\bcommit(?![\w-])/));
-  const dirs = [...before.matchAll(/(?:^|[;&|(\s])(?:cd|-C)\s+("([^"]*)"|'([^']*)'|([^\s;&|)]+))/g)].map((m) => m[2] ?? m[3] ?? m[4]);
-  const repo = top(resolve(input.cwd || '.', dirs.at(-1) ?? '.'));
+  const repo = commitRepo(input);
   const run = repo && runFor(repo, input.session_id);
+  // A run file that is there but cannot be read is an error of the gate, not the absence of a run.
+  const damaged = !run && repo && runState(repo).error;
+  if (damaged) throw new Error(damaged);
   if (!run) return null;
   // Staged tests alone commit only through a bare `git commit -m <msg>`: a pathspec, -a, -i or a
   // `git add` in the same command would commit source the staged list does not show.
@@ -130,4 +143,20 @@ export function beforeCommit(input) {
   const why = unverified(repo, run, 'tree');
   if (!why) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, the tree is not verified (${why}). Run \`lpk verify\`, fix what it reports, then commit. To commit test files alone (acceptance tests before the code), stage only them, then run exactly \`git commit -m <message>\` with nothing before or after it.` } };
+}
+
+function commitRepo(input) {
+  const cmd = String(input.tool_input?.command || '');
+  const before = cmd.slice(0, cmd.search(/\bcommit(?![\w-])/));
+  const dirs = [...before.matchAll(/(?:^|[;&|(\s])(?:cd|-C)\s+("([^"]*)"|'([^']*)'|([^\s;&|)]+))/g)].map((m) => m[2] ?? m[3] ?? m[4]);
+  return top(resolve(input.cwd || '.', dirs.at(-1) ?? '.'));
+}
+
+export function afterCommit(input) {
+  if (!runsGit(String(input.tool_input?.command || ''), 'commit')) return null;
+  const repo = commitRepo(input);
+  const range = repo && pushRange(repo);
+  const long = range ? commits(repo, range).filter((c) => c.length > MAX_SUBJECT) : [];
+  if (!long.length) return null;
+  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `lpk: a push refuses a commit subject over ${MAX_SUBJECT} characters. Shorten it now, while it is unpushed (\`git commit --amend\` for HEAD):${long.map((c) => `\n- ${c.sha} (${c.length}): "${c.subject}"`).join('')}` } };
 }

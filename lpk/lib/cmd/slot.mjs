@@ -1,0 +1,44 @@
+// `lpk slot [--mb <n>] -- <command>`: runs a heavy command (a build, an e2e suite, an install) only
+// when one of the machine's heavy-job slots is free, so parallel agents do not run out of memory.
+// Slots = free memory / memory per slot (2048 MB unless `--mb` or LPK_SLOT_MB says), at least one;
+// each is an flock(1) lock under the user's cache, released when the command ends or is killed.
+// `lpk slot --count` prints the number of slots, for a workflow's `maxParallel`.
+import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { constants, freemem, homedir } from 'node:os';
+import { join } from 'node:path';
+import { release, takeLock } from '../flock.mjs';
+import { parseArgs } from '../out.mjs';
+
+const USAGE = 'usage: lpk slot [--mb <MB per slot>] -- <command>  |  lpk slot --count [--mb <MB per slot>]';
+const DIR = () => join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'slots');
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Memory the kernel can hand out now (MemAvailable counts reclaimable cache), in MB.
+export function availableMb() {
+  try { return Math.floor(Number(readFileSync('/proc/meminfo', 'utf8').match(/^MemAvailable:\s+(\d+)/m)[1]) / 1024); } catch { return Math.floor(freemem() / 2 ** 20); }
+}
+
+export const slotCount = (mb) => Math.max(1, Math.floor(availableMb() / mb));
+
+export async function main(argv) {
+  const a = parseArgs(argv, ['--mb'], ['--count']);
+  const mb = Number(a.opt?.('--mb') || process.env.LPK_SLOT_MB || 2048);
+  if (a.error || a.words.length || !(mb > 0) || (!a.cmd && !a.flags.has('--count'))) { console.error(a.error ? `lpk: ${a.error}\n${USAGE}` : USAGE); return 2; }
+  if (a.flags.has('--count')) { console.log(`${slotCount(mb)} slot(s): ${availableMb()} MB available, ${mb} MB per slot`); return 0; }
+  let fd = null, said = false;
+  for (;;) {
+    const n = slotCount(mb);
+    for (let i = 0; i < n && fd === null; i++) fd = takeLock(join(DIR(), `slot-${i}.lock`));
+    if (fd !== null) break;
+    if (!said) { console.error(`lpk slot: all ${n} slot(s) busy; waiting`); said = true; }
+    await pause(1000);
+  }
+  // The command runs in its own process group; an interrupt to lpk reaches the whole group.
+  const child = spawn('bash', ['-c', a.cmd], { stdio: 'inherit', detached: true });
+  const stop = (sig) => { try { process.kill(-child.pid, sig); } catch { /* gone */ } };
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => stop(sig));
+  const code = await new Promise((r) => child.on('close', (c, s) => r(c ?? 128 + (constants.signals[s] || 1))));
+  release(fd);
+  return code;
+}

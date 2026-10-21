@@ -7,11 +7,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { broken, loadRules } from '../lib/rules.mjs';
 
 const LPK = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'lpk');
 const tmp = mkdtempSync(join(tmpdir(), 'lpk-rules-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
+// The learned rules are read from XDG_DATA_HOME when rules.mjs loads: point it at the scratch dir
+// first, so no test reads the owner's own learned rules.
+process.env.XDG_DATA_HOME = join(tmp, 'data');
+const { broken, loadRules } = await import('../lib/rules.mjs');
 const ENV = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_CACHE_HOME: join(tmp, 'cache'), XDG_DATA_HOME: join(tmp, 'data') };
 // The fixture's own `node --test` must not report into this runner as a subtest.
 delete ENV.NODE_TEST_CONTEXT;

@@ -8,12 +8,17 @@
     {
       "name": "lpk",
       "source": "./lpk",
-      "description": "One coding request to a delivered change: facts first, a design checked against the code, test-first build with exact self-checks, then proof on the running surface and a tech-lead review on the same commit. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
+      "description": "One coding request to a delivered change: a design reviewed in rounds until no High finding, a test-first build with rules and a self-review per slice, a dense parallel review net with a verifier per finding, and delivery gates that read only evidence. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
     },
     {
       "name": "drawio",
       "source": "./draw",
       "description": "Technical diagrams and charts as editable draw.io files plus PNG in one signature style, flat or isometric, where tones carry meaning and accents group."
+    },
+    {
+      "name": "lpk-mod",
+      "source": "./lpk-mod",
+      "description": "The owner's lpk commands in Claude Code: /lpk-switch changes account and resumes the run, /lpk-waive releases a gate; a spawn hint and compaction instructions."
     }
   ]
 }

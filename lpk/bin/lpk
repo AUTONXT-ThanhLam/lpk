@@ -1,44 +1,52 @@
 #!/usr/bin/env node
-// lpk: facts for the agent. `lpk facts` builds the review bundle of the current change,
-// `lpk rules` and `lpk check` say which rules it loads and where their patterns occur, `lpk map`
-// lists every route and every use of a name, `lpk mutate` shows which changes no test depends on,
-// `lpk compare` runs one command on main and on the change over many inputs,
-// `lpk code-review` runs the bundled /code-review (or /security-review) on it, `lpk push-check` is the push and PR-title hook.
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+// lpk: exact facts and checks for an lpk run. Each command in `lib/cmd/` runs from its own module;
+// the fact commands that predate them (facts, rules, check, map, mutate, compare, precedent,
+// statusline, setup) are handled here.
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
-import { runCodeReview, runSecurityReview } from '../lib/codereview.mjs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { compareText } from '../lib/compare.mjs';
-import { buildBundle } from '../lib/facts.mjs';
-import { ciCommands, defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
-import { decide, MAX_SUBJECT } from '../lib/push.mjs';
+import { alreadyFixed, alreadyFixedText, buildBundle } from '../lib/facts.mjs';
+import { defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
+import { MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
-import { afterTool, beforeCommit, beforeStop, beforeWrite, onPrompt, onSessionStart } from '../lib/hooks.mjs';
+import { freshCandidates } from '../lib/hooks.mjs';
+import { parseArgs } from '../lib/out.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
-import { fetchReviews } from '../lib/reviews.mjs';
 import { changeOf } from '../lib/rules.mjs';
-import { endRun, promptsOf, readRun, startRun, statusLine, verify } from '../lib/run.mjs';
 
 const [cmd, ...argv] = process.argv.slice(2);
+// A command added as its own module (`lib/cmd/<name>.mjs`, exporting `main(argv)` that returns the
+// exit code) runs here; the rest are handled below.
+const CMD = new URL(`../lib/cmd/${cmd}.mjs`, import.meta.url);
+if (cmd && /^[a-z-]+$/.test(cmd) && existsSync(CMD)) process.exit(await (await import(CMD)).main(process.argv.slice(3)) ?? 0);
 const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? undefined : argv[i + 1]; };
 const all = (k) => argv.flatMap((a, i) => (a === k ? [argv[i + 1]] : []));
-const USAGE = `usage:
+const USAGE = `usage (each command prints its own usage when called wrongly):
+ facts and rules
   lpk facts [--repo <dir>] [--base <ref>] [--cached] [--sibling <dir>]... [--out <dir>] [--json]
-  lpk rules [--repo <dir>] [--base <ref>] [--all | --list]
-  lpk check [--repo <dir>] [--base <ref>] [--sibling <dir>]...
+  lpk facts --about <path>... [--base <target>]   (is a bug already fixed, before any change exists)
+  lpk rules [--repo <dir>] [--base <ref>] [--all | --list | --id <id>[,<id>]...]
+  lpk check [--repo <dir>] [--base <ref>] [--sibling <dir>]... [--fresh <state file>]
   lpk map <name>... [--routes] [--guard <name>]... [--repo <dir>] [--sibling <dir>]...
-  lpk mutate --test "<command>" [--hunks | --patch <mutant.diff>...] [--repo <dir>] [--base <ref>] [--file <path>]... [--timeout <s>]
-  lpk compare --run "<command>" --inputs <dir> [--repo <dir>] [--base <ref>] [--timeout <s>] [--jobs <n>]
-  lpk code-review --out <dir> [--repo <dir>] [--base <commit>] [--level high | --security]
-  lpk run start --verify "<command>"... [--repo <dir>] [--base <ref>]
-  lpk run end [--reason "<why>"] [--repo <dir>]  |  lpk run status [--repo <dir>]
-  lpk verify [--repo <dir>] [--timeout <s>]
-  lpk reviews fetch --reviewer <login> [--repo <dir>]
   lpk precedent [<path>...] [--repo <dir>] [--base <ref>]
-  lpk setup        (fetches gitleaks once and says which outside tool is missing)
-  lpk push-check   (PreToolUse hook; reads the hook JSON on stdin)
-  lpk statusline   (for a status line command: the session's run, its age and last verify; JSON on stdin)
-  lpk hook post | stop | commit | write | start | prompt   (the hooks of an lpk run; JSON on stdin)`;
+  lpk cochange [<file>...]  |  lpk floor  |  lpk fixlines [<fix commit>]
+ a run
+  lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<text>"]... [--scenario "<cmd>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push]
+  lpk run end [--abandon "<why>"]  |  lpk run status  |  lpk run lane full  |  lpk run start --take
+  lpk verify  |  lpk go  |  lpk decide "<what>" --why "<why>"  |  lpk handoff <slice>
+ review and proof
+  lpk review start <from>..<to>  |  lpk reviews owed  |  lpk reviews fetch --reviewer <login>
+  lpk code-review [--range <from>..<to> | --base <ref>] [--security | --slice]
+  lpk finding list|get|verdict|fixed|counts
+  lpk repro <finding id> | --cmd "<command>" --at commit|base  |  lpk repeat -- <command>
+  lpk mutate --test "<command>" --patch <mutant.diff>...  |  lpk compare --run "<command>" --inputs <dir>
+  lpk prove --all | <scenario id>...  |  lpk spawn --port <port> -- <command>  |  lpk reap
+ delivery
+  lpk gates  |  lpk report  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
+ the machine
+  lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
+  lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)`;
 
 function resolveBase(repo) {
   const ref = opt('--base') || defaultBranch(repo);
@@ -47,6 +55,21 @@ function resolveBase(repo) {
   const mb = mergeBase(repo, ref);
   if (!mb) { console.error(`lpk: no merge base between ${ref} and HEAD`); process.exit(2); }
   return mb;
+}
+
+// `lpk mutate` takes only the options its code path reads (its own, `--cached` read by resolveBase and
+// `--sibling` read by the shared setup): a stray word or a quoted run of options would otherwise drop a
+// mutant without a word. A patch path must exist and not be a directory; a pipe such as `<(git diff)`
+// is a patch too.
+const MUTATE_USAGE = 'usage: lpk mutate --test "<command>" [--patch <mutant.diff>]... [--file <path>]... [--timeout <s>] [--hunks] [--repo <dir>] [--base <ref>] [--cached]';
+function mutateArgs() {
+  const a = parseArgs(argv, ['--test', '--patch', '--file', '--timeout', '--repo', '--base', '--sibling'], ['--hunks', '--cached']);
+  if (a.error) return { error: a.error };
+  const stray = a.words[0] ?? (argv.includes('--') ? '--' : undefined);
+  if (stray !== undefined) return { error: `unknown argument ${stray}` };
+  if (!a.opt('--test')) return { error: '--test "<command>" is required' };
+  const bad = a.all('--patch').map((p) => { try { return statSync(p).isDirectory() ? `--patch ${p} is a directory` : ''; } catch { return `--patch ${p} does not exist`; } }).find(Boolean);
+  return bad ? { error: bad } : a;
 }
 
 // One line per CI job: its commands, a multi-line script's lines joined in brackets.
@@ -77,21 +100,38 @@ function mergeLine(repo) {
   return `merge: ${m.behind} commit(s) behind ${m.target} (${age}), ${state}${m.behind ? `; rebase onto ${m.target} and rerun \`lpk verify\` before the PR` : ''}`;
 }
 
+// The words after each `--about`, up to the next option, as paths from the repo root. A path is read
+// from the current directory, as git reads one.
+function aboutPaths(repo) {
+  const paths = [];
+  argv.forEach((a, i) => { if (a === '--about') for (let j = i + 1; j < argv.length && !argv[j].startsWith('--'); j++) paths.push(argv[j]); });
+  return paths.map((p) => { const abs = resolve(p); try { return relative(repo, realpathSync(abs)); } catch { return relative(repo, abs); } });
+}
+
 if (cmd === 'facts') {
   const repo = top(resolve(opt('--repo') || '.'));
   if (!repo) { console.error('lpk: not inside a git repository'); process.exit(2); }
+  const target = opt('--base') || defaultBranch(repo);
+  // A bug checked before any change exists: only whether it is already fixed elsewhere.
+  if (argv.includes('--about')) {
+    const paths = aboutPaths(repo);
+    const outside = paths.filter((p) => !p || p.startsWith('..'));
+    if (!paths.length || outside.length) { console.error(paths.length ? `lpk: not inside ${repo}: ${outside.join(', ') || '(the repo itself)'}` : 'usage: lpk facts --about <path>... [--base <target>] [--repo <dir>]'); process.exit(2); }
+    console.log(alreadyFixedText(alreadyFixed(repo, paths, target)));
+    process.exit(0);
+  }
   const base = resolveBase(repo);
   const cached = argv.includes('--cached');
   const head = cached ? 'staged' : git(['rev-parse', '--short=12', 'HEAD'], repo).trim();
   const out = resolve(opt('--out') || join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', repo.split('/').pop(), head));
   const sibs = siblings(repo, all('--sibling'));
-  const s = buildBundle({ repo, base, out, cached, sibs, refs: siblingRefs(sibs, all('--sibling')) });
+  const s = buildBundle({ repo, base, out, cached, sibs, refs: siblingRefs(sibs, all('--sibling')), target });
   writeFileSync(join(out, 'precedent.md'), `${precedentText({ repo, paths: s.files.filter((f) => !f.skipped).map((f) => f.path) })}\n`);
   if (argv.includes('--json')) { console.log(JSON.stringify(s)); process.exit(0); }
   const live = s.files.filter((f) => !f.skipped);
   const flagged = s.commits.filter((c) => c.length > MAX_SUBJECT || c.merge);
   console.log([
-    `bundle: ${out}  (bundle.json, full.diff, impact.md, precedent.md, base/, g*.diff)`,
+    `bundle: ${out}  (bundle.json, full.diff, impact.md, precedent.md, already-fixed.md, base/, g*.diff)`,
     `base: ${base.slice(0, 12)}  head: ${head}`,
     ...(!cached && git(['status', '--porcelain', '--untracked-files=no'], repo).trim() ? ['uncommitted changes are not in this bundle: commit them, or stage them and use --cached'] : []),
     `files: ${live.length} reviewed (+${live.reduce((n, f) => n + f.added, 0)}/-${live.reduce((n, f) => n + f.removed, 0)}), ${s.files.length - live.length} skipped (lockfiles, build output, binary)`,
@@ -102,16 +142,35 @@ if (cmd === 'facts') {
     'CI runs:',
     ...(s.ci.length ? ciLines(s.ci) : ['  (no GitHub Actions or GitLab CI steps found; read the repo\'s own CI config, Makefile and package scripts)']),
     mergeLine(repo),
+    ...alreadyFixedText(s.alreadyFixed).split('\n').slice(2),
     `dead-code finders on this machine: ${scanners(repo).join(', ') || 'none found'}`,
   ].join('\n'));
 } else if (cmd === 'rules' || cmd === 'check' || cmd === 'map' || cmd === 'mutate') {
   const repo = top(resolve(opt('--repo') || '.'));
-  const catalogOnly = cmd === 'rules' && (argv.includes('--all') || argv.includes('--list'));
+  const catalogOnly = cmd === 'rules' && (argv.includes('--all') || argv.includes('--list') || argv.includes('--id'));
   if (!repo && !catalogOnly) { console.error('lpk: not inside a git repository'); process.exit(2); }
   const sibs = repo ? siblings(repo, all('--sibling')) : [];
-  if (cmd === 'rules') {
+  if (cmd === 'rules' && argv.includes('--id')) {
+    const ids = all('--id').flatMap((v) => (v || '').split(',')).map((x) => x.trim()).filter(Boolean);
+    if (!ids.length || argv.includes('--all') || argv.includes('--list')) { console.error(USAGE); process.exit(2); }
+    const r = rulesText({ repo, mode: 'id', ids });
+    if (r.missing.length) { console.error(`lpk: no rule ${r.missing.join(', ')}; \`lpk rules --list\` names them all`); process.exit(2); }
+    console.log(r.text);
+  } else if (cmd === 'rules') {
     const mode = argv.includes('--all') ? 'all' : argv.includes('--list') ? 'list' : 'diff';
     console.log(rulesText({ repo, base: mode === 'diff' ? resolveBase(repo) : '', mode }));
+  } else if (cmd === 'check' && argv.includes('--fresh')) {
+    // Only what this state file's agent has not been shown; the file keeps what was shown.
+    const state = opt('--fresh');
+    if (!state || state.startsWith('--')) { console.error(USAGE); process.exit(2); }
+    let seen = [];
+    try { if (existsSync(state)) seen = JSON.parse(readFileSync(state, 'utf8')); } catch { seen = null; }
+    if (!Array.isArray(seen)) { console.error(`lpk: ${state} is not an lpk check state file (a JSON list); remove it to start over`); process.exit(2); }
+    const r = freshCandidates(repo, resolveBase(repo), seen, sibs);
+    mkdirSync(dirname(resolve(state)), { recursive: true });
+    writeFileSync(`${state}.${process.pid}`, JSON.stringify(r.seen));
+    renameSync(`${state}.${process.pid}`, state);
+    console.log(r.text || 'lpk check: no new candidates since the last report.');
   } else if (cmd === 'check') console.log(checkText({ repo, base: resolveBase(repo), sibs }));
   else if (cmd === 'map') {
     const flags = new Set(['--repo', '--sibling', '--guard']);
@@ -119,9 +178,10 @@ if (cmd === 'facts') {
     if (!names.length && !argv.includes('--routes')) { console.error(USAGE); process.exit(2); }
     console.log(mapText({ roots: [repo, ...sibs], refs: siblingRefs(sibs, all('--sibling')), names, routeMode: argv.includes('--routes'), guards: all('--guard') }));
   } else {
-    if (!opt('--test')) { console.error(USAGE); process.exit(2); }
+    const m = mutateArgs();
+    if (m.error) { console.error(`lpk: ${m.error}\n${MUTATE_USAGE}`); process.exit(2); }
     const sub = relative(repo, realpathSync(process.cwd()));
-    const r = await mutateText({ repo, base: resolveBase(repo), cmd: opt('--test'), sub: sub.startsWith('..') ? '' : sub, only: all('--file'), timeout: Number(opt('--timeout') || 600), hunks: argv.includes('--hunks'), patches: all('--patch').map((p) => resolve(p)) });
+    const r = await mutateText({ repo, base: resolveBase(repo), cmd: m.opt('--test'), sub: sub.startsWith('..') ? '' : sub, only: m.all('--file'), timeout: Number(m.opt('--timeout') || 600), hunks: m.flags.has('--hunks'), patches: m.all('--patch').map((p) => resolve(p)) });
     console.log(r.text);
     process.exit(r.code);
   }
@@ -132,71 +192,14 @@ if (cmd === 'facts') {
   const r = await compareText({ repo, base: resolveBase(repo), cmd: opt('--run'), inputs: resolve(opt('--inputs')), sub: sub.startsWith('..') ? '' : sub, timeout: Number(opt('--timeout') || 30), jobs: Number(opt('--jobs') || 4) });
   console.log(r.text);
   process.exit(r.code);
-} else if (cmd === 'code-review') {
-  const repo = top(resolve(opt('--repo') || '.'));
-  const out = opt('--out');
-  if (!repo || !out) { console.error(USAGE); process.exit(2); }
-  const r = argv.includes('--security') ? runSecurityReview({ repo, base: resolveBase(repo), out: resolve(out) })
-    : runCodeReview({ repo, base: resolveBase(repo), out: resolve(out), level: opt('--level') || 'high' });
-  console.log(JSON.stringify(r));
-  process.exit(r.error ? 1 : 0);
-} else if (cmd === 'run') {
-  const repo = top(resolve(opt('--repo') || '.'));
-  if (!repo) { console.error('lpk: not inside a git repository'); process.exit(2); }
-  const sub = argv[0];
-  if (sub === 'start') {
-    const r = startRun(repo, { base: resolveBase(repo), verify: all('--verify') });
-    if (r.error) { console.error(`lpk: ${r.error}`); process.exit(2); }
-    console.log(`lpk run started in ${repo} against ${r.run.base.slice(0, 12)}. Until \`lpk run end\`: candidates on lines you add come back after each edit, the main session commits only a tree with a green \`lpk verify\`, and the turn cannot end on unverified source. Checks: ${r.run.verify.map((c) => `\`${c}\``).join(', ')}`);
-    const ci = ciCommands(repo);
-    console.log(ci.length ? ['CI runs these; each one that checks the code you will touch belongs among the checks:', ...ciLines(ci)].join('\n') : 'CI: no GitHub Actions or GitLab CI steps found; the checks are the repo\'s own test, lint and typecheck commands.');
-  } else if (sub === 'end') {
-    const r = endRun(repo, opt('--reason'));
-    if (r.error) { console.error(`lpk: ${r.error}`); process.exit(1); }
-    const said = existsSync(promptsOf(r.run.marker)) ? readFileSync(promptsOf(r.run.marker), 'utf8').split('\n').filter(Boolean).length : 0;
-    console.log(`lpk run ended${r.reason ? `: ${r.reason}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${promptsOf(r.run.marker)} (hand them to lpk:learn)` : ''}.`);
-  } else if (sub === 'status') {
-    const r = readRun(repo);
-    console.log(r ? JSON.stringify({ base: r.base, verify: r.verify, started: new Date(r.started).toISOString(), session: r.session || null, verified: r.verified ? { green: r.verified.green, tree: r.verified.tree } : null, reported: r.seen.length }, null, 1) : 'no lpk run in this repo');
-  } else { console.error(USAGE); process.exit(2); }
-} else if (cmd === 'verify') {
-  const repo = top(resolve(opt('--repo') || '.'));
-  const r = repo ? verify(repo, Number(opt('--timeout') || 1200)) : { error: 'not inside a git repository' };
-  if (r.error) { console.error(`lpk: ${r.error}`); process.exit(2); }
-  for (const x of r.verified.results) console.log(`${x.exit === 0 ? 'ok  ' : 'FAIL'} \`${x.cmd}\` exit ${x.exit} in ${Math.round(x.ms / 1000)}s${x.exit === 0 ? '' : `\n${x.tail.split('\n').map((l) => `  | ${l}`).join('\n')}`}`);
-  if (r.changedDuring.length) console.log(`Files changed while the checks ran (${r.changedDuring.slice(0, 5).join(', ')}): an edit landed, or a check rewrote code, so this result counts for nothing. Run it again on a still tree.`);
-  console.log(r.verified.green ? `verified: green on tree ${r.verified.tree.slice(0, 12)}` : 'verified: NOT green');
-  process.exit(r.verified.green ? 0 : 1);
-} else if (cmd === 'hook') {
-  // A hook never fails the tool call it watches: any error means silence.
-  try {
-    const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
-    const out = ({ stop: beforeStop, commit: beforeCommit, write: beforeWrite, start: onSessionStart, prompt: onPrompt }[argv[0]] || afterTool)(input);
-    if (out) console.log(JSON.stringify(out));
-  } catch { /* silent */ }
-} else if (cmd === 'reviews') {
-  const repo = top(resolve(opt('--repo') || '.'));
-  const reviewer = opt('--reviewer') || process.env.LPK_REVIEWER;
-  if (!repo || argv[0] !== 'fetch' || !reviewer) { console.error(USAGE); process.exit(2); }
-  let r;
-  try { r = fetchReviews(repo, reviewer); } catch (e) { r = { error: `gh failed (${e.code === 'ENOENT' ? 'not installed' : String(e.stderr || e.message).trim().split('\n')[0]}); install it and run \`gh auth login\`` }; }
-  if (r.error) { console.error(`lpk: ${r.error}`); process.exit(1); }
-  console.log(`${r.fresh.length} new comments by ${reviewer} on ${r.slug}; ${r.total} stored in ${r.file}`);
 } else if (cmd === 'precedent') {
   const repo = top(resolve(opt('--repo') || '.'));
   if (!repo) { console.error('lpk: not inside a git repository'); process.exit(2); }
   const given = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--')));
   const paths = given.length ? given : changeOf(repo, resolveBase(repo)).map((f) => f.path);
   console.log(precedentText({ repo, paths }));
-} else if (cmd === 'statusline') {
-  try { process.stdout.write(statusLine(JSON.parse(readFileSync(0, 'utf8') || '{}').session_id)); } catch { /* silent */ }
 } else if (cmd === 'setup') {
   console.log(setup().join('\n'));
-} else if (cmd === 'push-check') {
-  let input = {};
-  try { input = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { process.exit(0); }
-  const d = decide(input);
-  if (d) console.log(JSON.stringify(d));
 } else {
   console.error(USAGE);
   process.exit(cmd ? 2 : 0);
