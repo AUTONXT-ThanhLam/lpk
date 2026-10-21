@@ -141,4 +141,11 @@ test('inside a run, lpk facts without --base diffs against the run target, not t
   const facts = JSON.parse(ok(lpk(repo, 's', 'facts', '--json', '--out', join(tmp, 'to-target-bundle'))));
   assert.deepEqual(facts.files.map((f) => f.path), ['src/a.mjs']);
   assert.match(ok(lpk(repo, 's', 'facts', '--out', join(tmp, 'to-target-text'))), /merge: 0 commit\(s\) behind studio /);
+  const named = JSON.parse(ok(lpk(repo, 's', 'facts', '--json', '--base', 'main', '--out', join(tmp, 'to-target-named'))));
+  assert.deepEqual(named.files.map((f) => f.path).sort(), ['src/a.mjs', 'src/studio.mjs'], 'an explicit --base wins over the run');
+  const other = join(tmp, 'to-target-other');
+  sh(repo, 'worktree', 'add', '-qb', 'other', other, 'main');
+  write(other, 'src/o.mjs', 'export const o = 1;\n'); sh(other, 'add', '.'); sh(other, 'commit', '-qm', 'other');
+  const elsewhere = JSON.parse(ok(lpk(other, 's', 'facts', '--json', '--out', join(tmp, 'to-target-elsewhere'))));
+  assert.deepEqual(elsewhere.files.map((f) => f.path), ['src/o.mjs'], 'a worktree on a branch the run never noted uses the default branch');
 });

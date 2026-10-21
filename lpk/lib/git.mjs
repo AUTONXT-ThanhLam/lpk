@@ -43,6 +43,8 @@ export function mergeBase(repo, ref) {
 // behind, and the files a merge would conflict on (empty when it merges cleanly).
 export function mergeState(repo, target = defaultBranch(repo)) {
   if (!target) return null;
+  // A local branch that has a remote twin is compared as the remote has it: fetch moves only that.
+  if (!target.includes('/') && git(['rev-parse', '--verify', '--quiet', `origin/${target}`], repo).trim()) target = `origin/${target}`;
   const behind = Number(git(['rev-list', '--count', `HEAD..${target}`], repo).trim() || 0);
   const r = spawnSync('git', ['merge-tree', '--write-tree', '--name-only', '--no-messages', target, 'HEAD'], { cwd: repo, encoding: 'utf8' });
   const conflicts = r.status === 1 ? r.stdout.split('\n').slice(1).filter(Boolean) : [];
