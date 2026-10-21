@@ -3,7 +3,7 @@ name: regression
 description: Finds what a committed change breaks for what already worked. Lists every behaviour the change alters against the base (defaults, limits, timeouts, output and error shapes, fields, statuses, routes, accepted input, ordering), follows each to every consumer here and in sibling repos, and runs base and commit side by side where that is cheap. Give it the repo, the base commit, the commit, the facts bundle directory and the request. It never edits.
 model: sonnet
 effort: medium
-disallowedTools: Edit, NotebookEdit
+disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: yellow
 ---
 

@@ -1,8 +1,9 @@
 ---
 name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, reviews its own slice, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
-model: opus
+model: sonnet
 effort: high
+disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: blue
 ---
 

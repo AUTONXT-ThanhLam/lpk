@@ -3,6 +3,7 @@ name: test-author
 description: Writes the acceptance tests for a change before the code exists, from the Design Brief alone, and shows each one failing. Give it the repo path, the brief (scenarios, entry points, failure modes, test plan) and the test command. It edits only test files and e2e scripts.
 model: sonnet
 effort: high
+disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 background: true
 color: yellow
 ---

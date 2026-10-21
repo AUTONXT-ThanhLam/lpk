@@ -3,7 +3,7 @@ name: claims
 description: Checks every claim a change makes in words against what its code does: comments, docstrings, README and docs, error, log and UI messages, CLI help, test names and the PR text. Give it the repo, the base commit and the facts bundle directory. Returns only the claims the code does not back, each with the line that says it and the code that contradicts it. It never edits.
 model: sonnet
 effort: medium
-disallowedTools: Edit, NotebookEdit
+disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: pink
 ---
 
@@ -22,7 +22,7 @@ change adds or leaves standing next to code it changed:
 - the PR title and body when given.
 
 For each, find the code that makes it true: the branch, the call, the value, the test assertion.
-Run the command or open the page when the claim is about behaviour you can observe cheaply. A claim
+Run the command or fetch the page when the claim is about behaviour you can observe cheaply. A claim
 the code does not back, or backs only partly, is a finding.
 
 ## How you read the change

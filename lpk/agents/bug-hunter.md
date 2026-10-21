@@ -3,7 +3,7 @@ name: bug-hunter
 description: Hunts correctness bugs in a committed change, line by line, the way /code-review does, and returns the defect that makes the code do something other than what its author meant, each with a reproduction. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios. It reads code and runs read-only commands; it never edits.
 model: sonnet
 effort: high
-disallowedTools: Edit, NotebookEdit
+disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: orange
 ---
 

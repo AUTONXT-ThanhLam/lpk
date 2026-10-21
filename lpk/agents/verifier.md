@@ -3,7 +3,7 @@ name: verifier
 description: Tries to reproduce one review finding against a committed change, on the commit and on the base, and rules it CONFIRMED, PRE-EXISTING, DROPPED, DUPLICATE or UNSETTLED with the evidence, or rules a fix closed. Give it the repo, the commit, the base and the finding (its ledger id, file:line, claim and the reviewer's repro). It writes only in its repro worktree; it never edits the checkout.
 model: sonnet
 effort: high
-disallowedTools: Edit, NotebookEdit
+disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: purple
 ---
 
