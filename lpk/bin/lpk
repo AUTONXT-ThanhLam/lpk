@@ -57,17 +57,19 @@ function resolveBase(repo) {
   return mb;
 }
 
-// `lpk mutate` takes only its own options: a stray word or a quoted run of options would otherwise
-// drop a mutant without a word, and a patch that is not a file would run nothing.
-const MUTATE_USAGE = 'usage: lpk mutate --test "<command>" [--patch <mutant.diff>]... [--file <path>]... [--timeout <s>] [--hunks] [--repo <dir>] [--base <ref>]';
+// `lpk mutate` takes only the options its code path reads (its own, `--cached` read by resolveBase and
+// `--sibling` read by the shared setup): a stray word or a quoted run of options would otherwise drop a
+// mutant without a word. A patch path must exist and not be a directory; a pipe such as `<(git diff)`
+// is a patch too.
+const MUTATE_USAGE = 'usage: lpk mutate --test "<command>" [--patch <mutant.diff>]... [--file <path>]... [--timeout <s>] [--hunks] [--repo <dir>] [--base <ref>] [--cached]';
 function mutateArgs() {
-  const a = parseArgs(argv, ['--test', '--patch', '--file', '--timeout', '--repo', '--base'], ['--hunks']);
+  const a = parseArgs(argv, ['--test', '--patch', '--file', '--timeout', '--repo', '--base', '--sibling'], ['--hunks', '--cached']);
   if (a.error) return { error: a.error };
   const stray = a.words[0] ?? (argv.includes('--') ? '--' : undefined);
   if (stray !== undefined) return { error: `unknown argument ${stray}` };
   if (!a.opt('--test')) return { error: '--test "<command>" is required' };
-  const notFile = a.all('--patch').find((p) => { try { return !statSync(p).isFile(); } catch { return true; } });
-  return notFile === undefined ? a : { error: `--patch ${notFile} is not a file` };
+  const bad = a.all('--patch').map((p) => { try { return statSync(p).isDirectory() ? `--patch ${p} is a directory` : ''; } catch { return `--patch ${p} does not exist`; } }).find(Boolean);
+  return bad ? { error: bad } : a;
 }
 
 // One line per CI job: its commands, a multi-line script's lines joined in brackets.
