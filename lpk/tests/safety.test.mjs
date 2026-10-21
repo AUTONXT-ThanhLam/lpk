@@ -1,7 +1,7 @@
 // The safety tripwires as Claude Code runs them: the PreToolUse hook from hooks.json, fed the call.
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, HOME, hook, reaches, reason, repoWith, sh, startRun, tmp } from './hooks-env.mjs';
 import { remapWarning } from '../lib/safety.mjs';
@@ -78,6 +78,18 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   assert.match(context(told), /a builder works in its own worktree/);
   assert.match(context(edit('lpk:test-author', join(repo, 'src/a.ts'))), /production code/);
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
+  // An architect writes its brief under the git directory, never in the checkout.
+  assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(edit('lpk:architect', join(repo, '.git', 'lpk', 'duel', 'small', 'brief.md')), null);
+  // A submodule keeps its git directory in the superproject's .git/modules, outside its work tree.
+  const sub = repoWith('sub', { 'a.ts': 'a\n' });
+  const gitDir = join(tmp, 'super', '.git', 'modules', 'sub');
+  mkdirSync(dirname(gitDir), { recursive: true });
+  renameSync(join(sub, '.git'), gitDir);
+  writeFileSync(join(sub, '.git'), `gitdir: ${gitDir}\n`);
+  sh(sub, 'config', 'core.worktree', sub);
+  assert.equal(edit('lpk:architect', join(gitDir, 'lpk', 'duel', 'small', 'brief.md')), null);
+  assert.equal(edit('lpk:architect', join(sub, 'a.ts')).hookSpecificOutput.permissionDecision, 'deny');
 });
 
 test('a spawn of an lpk agent runs on its role\'s model, whatever model the call names', () => {

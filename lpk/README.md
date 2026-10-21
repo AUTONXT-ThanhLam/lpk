@@ -47,10 +47,11 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 ## Roles
 
 Each agent's model and effort are set in its file under `agents/`, chosen by measured results:
-Opus where judgement sets the quality (the plan simulator, the designer, the Prover), Sonnet where
-another layer checks the output (building, reviewing, verifying, and the four design critics, one
-focus each, that together found more than one Opus critic at less cost), Haiku for the environment. The reviewing roles cannot edit
-files.
+Opus where judgement sets the quality (the three architects, the plan simulator, the designer, the
+Prover), Sonnet where another layer checks the output (building, reviewing, verifying, and the four
+design critics, one focus each, that together found more than one Opus critic at less cost), Haiku
+for the environment. The reviewing roles cannot edit files, and the architects write only their
+own briefs.
 
 What lpk writes for you stays on your machine, under `~/.local/share/lpk/`: `profiles/<repo>.md`
 (how to start the app, log in, run what CI runs, and the tech lead's GitHub login, which turns on

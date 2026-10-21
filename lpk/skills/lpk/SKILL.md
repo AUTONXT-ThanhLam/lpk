@@ -26,9 +26,9 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
    verifier's ruling, one fix round and one delta review, and the full review net.
 
 **Why the flow has this shape.** Past runs showed where defects come from and where time goes:
-- 57% of the fixed findings were born in the plan or the design, so before anything is built the
-  design is checked against the code, the way the run will go and the owner's words, in rounds
-  until no High finding remains;
+- 57% of the fixed findings were born in the plan or the design, so before anything is built
+  three rival designs attack each other with runs, and the one that survives is checked against
+  the code, the way the run will go and the owner's words, in rounds until no High finding remains;
 - most of the rest were born in the build, so each builder starts with the rules for its files,
   gets `lpk check` hints after each edit, and reviews its own slice before it reports done;
 - recall grows with reviewer diversity, so a dense review net runs every lens at once, and the net
@@ -76,8 +76,8 @@ Read each step's file when the step starts; each file states its goal and how it
 
 1. **Understand** the request, with the environment coming up meanwhile: `understand.md` in this
    skill's directory. A bug also follows `diagnose.md` in this skill's directory first.
-2. **Design**: gather the facts, choose the lane, write the brief, and have it checked while the
-   tests are written: `design.md` in this skill's directory.
+2. **Design**: gather the facts, choose the lane, let rival architects write the brief, and have it
+   checked while the tests are written: `design.md` in this skill's directory.
 3. **Build** test-first, with every line checked as it is written: `build.md` in this skill's
    directory, and `slices.md` in this skill's directory when the brief has more than one slice.
 4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:

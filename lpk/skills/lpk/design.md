@@ -32,9 +32,28 @@ sources, write the failure table for what the change calls or stores (a few rows
 
 ## Write the Design Brief (Full lane)
 
-Write it to `$(git rev-parse --git-common-dir)/lpk/brief.md`, where it outlives a compaction and
-every agent reads the same text, and post it in chat on one screen. Follow `writing.md` in this
-skill's directory. It holds:
+Save what the brief must trace to, verbatim, under `$(git rev-parse --git-common-dir)/lpk/sources/`:
+the owner's request, each ticket or document it links, and the owner's answers so far.
+
+Three architects write it, not you alone: a brief written alone meets its defects one review round
+at a time, and three briefs from different approach cards, attacking each other with runs, meet
+most of them before the first round. Run the `lpk:design-duel` workflow with `repo`, `base`,
+`skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
+`lpk precedent` output, when there is one) and `dir` (`$(git rev-parse --git-common-dir)/lpk/duel`).
+Without the Workflow tool, start the `lpk:architect` agents yourself, one per card (`small`,
+`failure`, `pattern`), in its three steps (write, attack, revise), each step's three in one message.
+It returns the briefs, the judge's `pick` and the attacks each brief still lets happen.
+
+Read the picked brief whole and the ranking. Take the pick, unless a High the judge left open in it
+is one another brief closes: then take that brief, or carry its mechanism over and cite it. With no
+pick (the judge never answered), read the briefs and choose by the same rule. When the duel returns
+an `error` (fewer than two briefs), take the one brief written, or write it yourself. Copy the
+chosen `brief.md` and `brief.json` to `$(git rev-parse --git-common-dir)/lpk/`, where they outlive a
+compaction and every agent reads the same text, record the choice with `lpk decide`, and post the
+brief in chat on one screen. The briefs you did not take are the alternatives a `redesign` starts
+from.
+
+The brief follows `writing.md` in this skill's directory. It holds:
 - who uses the change, where they meet it, and the before and after in their terms;
 - the requirements, numbered `R1`, `R2`… in one list, each with its source (a quote, a document
   and section, or `inferred`). Every sentence of the owner's that asks for, forbids or limits
@@ -70,9 +89,7 @@ that names it on a line the change adds to a test file, with `lpk verify` green.
 
 ## Check it and write the tests at the same time
 
-Save what the brief must trace to, verbatim, under `$(git rev-parse --git-common-dir)/lpk/sources/`:
-the owner's request, each ticket or document it links, and the owner's answers so far. Create the
-branch, named the way the repo names them, then start these in the background at once:
+Create the branch, named the way the repo names them, then start these in the background at once:
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
   `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
@@ -104,9 +121,9 @@ The design is reviewed in rounds until no High remains. After each round:
    changed, from
    `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 4. `redesign`: a High sits on lines the previous revision changed, so the design is wrong at its
-   root. Choose a different approach, from the alternatives the brief weighed or a new one, never a
-   third patch, and review it as round 1 again (no `changed`). A second `redesign` goes to the
-   owner as one question, with the evidence.
+   root. Choose a different approach, from the briefs the duel did not take, the alternatives the
+   brief weighed or a new one, never a third patch, and review it as round 1 again (no `changed`).
+   A second `redesign` goes to the owner as one question, with the evidence.
 5. A High raised again after the brief answered it with a run is still disputed: ask the owner one
    plain question, with both sides' evidence, and keep reviewing the rest.
 

@@ -4,7 +4,7 @@
 
 // Job titles by agent type. A type not listed reads as its own name, spaced and capitalised.
 const TITLES = {
-  builder: 'Builder', techlead: 'Tech lead', verifier: 'Verifier', prover: 'Prover', 'design-critic': 'Design critic',
+  architect: 'Architect', builder: 'Builder', techlead: 'Tech lead', verifier: 'Verifier', prover: 'Prover', 'design-critic': 'Design critic',
   'plan-sim': 'Plan simulator', 'plan-trace': 'Plan tracer', 'bug-hunter': 'Bug hunter', security: 'Security reviewer',
   regression: 'Regression reviewer', claims: 'Claims checker', ocr: 'OpenCodeReview', mutant: 'Mutation tester',
   'test-author': 'Test author', designer: 'Designer', a11y: 'Accessibility reviewer', perf: 'Performance reviewer',

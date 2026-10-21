@@ -86,6 +86,12 @@ export function writeGuard(input) {
   const type = input.agent_type || '';
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
   if (!WRITES.test(input.tool_name || '') || !file) return null;
+  // In a submodule the git directory sits outside the work tree, yet git names that work tree as its top.
+  if (/^(lpk:)?architect$/.test(type)) {
+    const at = checkoutOf(file);
+    if (!at || [at.gitDir, at.common].some((d) => `${file}/`.startsWith(`${d}/`))) return null;
+    return deny(`${type} writes only in its own directory under the run's git directory, and ${file} is in ${at.repo}.`);
+  }
   const ro = READ_ONLY.test(type);
   if (!ro && !/^(lpk:)?(builder|test-author)$/.test(type)) return null;
   if (ro && /verifier$/.test(type) && `${file}/`.startsWith(`${REPRO}/`)) return null;
