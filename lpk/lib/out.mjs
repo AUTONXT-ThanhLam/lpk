@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { defaultBranch, mergeBase, top } from './git.mjs';
-import { currentBranch, readRun, runDir } from './run.mjs';
+import { readRun, runDir } from './run.mjs';
 
 export const MAX_ROWS = 60;
 
@@ -61,12 +61,8 @@ export function baseOf(repo, ref) {
   return target ? mergeBase(repo, target) : '';
 }
 
-// The branch the change merges into: `ref`, else the run's target, else the default branch. The run
-// is shared by every worktree of the repo, so a checkout on a branch the run never noted is not its.
+// The branch the change merges into: `ref`, else the run's target, else the default branch.
 export function targetOf(repo, ref) {
-  if (ref) return ref;
   const run = readRun(repo);
-  const branch = currentBranch(repo);
-  const own = run && (!branch || [run.branch, ...(run.branches || [])].includes(branch));
-  return (own && (run.target || run.base)) || defaultBranch(repo);
+  return ref || run?.target || run?.base || defaultBranch(repo);
 }
