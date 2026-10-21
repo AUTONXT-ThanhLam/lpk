@@ -64,24 +64,16 @@ export function statusText(s) {
   return lines.join('\n');
 }
 
-// One line per band row, ANSI styled: the current step bold bright yellow behind a ▶, the steps
-// already visited dim behind a ✓, the steps still ahead dim, the waits chip bold red, and how many
-// agents run. Claude Code lists the running agents itself below the prompt, so a row is drawn only
-// for what that list does not say: an agent stalled (stalled in yellow) or failed (in red), its title
-// in cyan and its work plain; at most `max` rows, then a count.
-export function bandLines(s, { max = 6 } = {}) {
+// The band's lines, ANSI styled: the current step bold bright yellow behind a ▶, the steps already
+// visited dim behind a ✓, the steps still ahead dim, the waits chip bold red, then the step's own
+// line. Agents are left to Claude Code's own list below the prompt; `/lpk-status` shows the team.
+export function bandLines(s) {
   const v = s.view || viewOf(s);
-  const D = (t) => `\x1b[2m${t}\x1b[22m`, Y = (t) => `\x1b[33m${t}\x1b[39m`, R = (t) => `\x1b[31m${t}\x1b[39m`, C = (t) => `\x1b[36m${t}\x1b[39m`;
+  const D = (t) => `\x1b[2m${t}\x1b[22m`, Y = (t) => `\x1b[33m${t}\x1b[39m`;
   const NOW = (t) => `\x1b[1;93m▶ ${t}\x1b[0m`, ASK = (t) => `\x1b[1;31m${t}\x1b[0m`;
   const track = v.track.map((p) => (p.state === 'current' ? NOW(p.name) : p.state === 'visited' ? D(`✓ ${p.name}`) : D(p.name))).join(D(' › '));
-  const failed = (r) => r.note.startsWith('failed');
-  const odd = v.rows.filter((r) => failed(r) || r.note.startsWith('stalled'));
-  const running = v.rows.filter((r) => !failed(r)).length;
-  const head = `${v.head}${running ? ` · ${running} agent${running > 1 ? 's' : ''}` : ''}`;
-  const lines = [[track, v.quiet ? Y(v.quiet) : '', v.waits ? ASK(`waits on you: ${v.waits}`) : '', D(head)].filter(Boolean).join('  ')];
+  const lines = [[track, v.quiet ? Y(v.quiet) : '', v.waits ? ASK(`waits on you: ${v.waits}`) : '', D(v.head)].filter(Boolean).join('  ')];
   if (v.detail) lines.push(D(v.detail));
-  for (const r of odd.slice(0, max)) lines.push(`  ${C(r.title)}  ${[r.what, (failed(r) ? R : Y)(r.note)].filter(Boolean).join('  ')}`);
-  if (odd.length > max) lines.push(D(`  +${odd.length - max} more`));
   return lines;
 }
 
