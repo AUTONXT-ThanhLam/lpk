@@ -46,7 +46,7 @@ export function viewOf(s) {
   return {
     track: s.track.map((p, i) => ({ name: NAMES[p], state: i === at ? 'current' : s.phasesVisited.includes(p) ? 'visited' : 'next' })),
     quiet: s.stuck ? `nothing moved for ${mins(s.quietMs)}` : '',
-    head: `worked ${mins(s.activeMs)} · ${tokens(s.tokens.fresh)} tokens${s.lane ? ` · ${s.lane} lane` : ''}`,
+    head: `worked ${mins(s.activeMs)} · ${tokens(s.tokens.fresh)} tokens`,
     detail: detailText(s), rows,
     waits: s.waits.map((w) => w.what).join(', '),
     line: `lpk ${NAMES[s.phase]}${s.stuck ? ' · quiet' : ''} · ${mins(s.activeMs)}${s.waits.length ? ' · waits on you' : ''}`,
@@ -65,16 +65,14 @@ export function statusText(s) {
 }
 
 // The band's lines, ANSI styled: the current step bold bright yellow behind a ▶, the steps already
-// visited dim behind a ✓, the steps still ahead dim, the waits chip bold red, then the step's own
-// line. Agents are left to Claude Code's own list below the prompt; `/lpk-status` shows the team.
+// visited dim behind a ✓, the steps still ahead dim, the waits chip bold red, then the time worked
+// and tokens. Agents are left to Claude Code's own list below the prompt; `/lpk-status` shows the team.
 export function bandLines(s) {
   const v = s.view || viewOf(s);
   const D = (t) => `\x1b[2m${t}\x1b[22m`, Y = (t) => `\x1b[33m${t}\x1b[39m`;
   const NOW = (t) => `\x1b[1;93m▶ ${t}\x1b[0m`, ASK = (t) => `\x1b[1;31m${t}\x1b[0m`;
   const track = v.track.map((p) => (p.state === 'current' ? NOW(p.name) : p.state === 'visited' ? D(`✓ ${p.name}`) : D(p.name))).join(D(' › '));
-  const lines = [[track, v.quiet ? Y(v.quiet) : '', v.waits ? ASK(`waits on you: ${v.waits}`) : '', D(v.head)].filter(Boolean).join('  ')];
-  if (v.detail) lines.push(D(v.detail));
-  return lines;
+  return [[track, v.quiet ? Y(v.quiet) : '', v.waits ? ASK(`waits on you: ${v.waits}`) : '', v.head ? D(v.head) : ''].filter(Boolean).join('  ')];
 }
 
 // The band cache of a session: the last status `lpk status --write-cache` computed, with when.

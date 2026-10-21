@@ -14,7 +14,7 @@ const STATUS = {
   gates: { holding: 1, total: 2, rows: [{ gate: 'verify', holds: true, read: 'HEAD^{tree} abc', why: '' }, { gate: 'reviews', holds: false, read: 'owed lenses', why: 'techlead on a..b (has not run on it)' }] },
   findings: { total: 3, open: 1, confirmed: 1, fixed: 0, dropped: 1, unsettled: 0, needsOwner: 0 },
   waits: [], team: [{ id: 't1', title: 'Tech lead', what: 'techlead', state: 'running', elapsedMs: 180_000, action: 'Read kpi.tsx' }],
-  view: { track: [{ name: 'Understand', state: 'visited' }, { name: 'Review', state: 'current' }], quiet: '', head: 'worked 18m · 1.2M tokens · full lane', detail: '', rows: [], waits: '', line: '' },
+  view: { track: [{ name: 'Understand', state: 'visited' }, { name: 'Review', state: 'current' }], quiet: '', head: 'worked 18m · 1.2M tokens', detail: '', rows: [], waits: '', line: '' },
 }
 
 // A session in a repo, lpk installed, `lpk status` answering `answer`, the pane open or not.

@@ -1,10 +1,10 @@
 // `lpk statusline`: the run band for Claude Code's status line, from the status line's JSON on stdin
 // (session_id, cwd). While this session has an lpk run open (or invoked /lpk), it prints the band
-// lines: the step track, what waits on the owner, the time worked, tokens and lane; the step's own
-// line; the team at work. With no run it prints nothing. It never computes the band itself: it
-// prints the band `lpk status --write-cache` last kept for the session, and when that is older than
-// STALE_MS starts one such refresh in the background, detached. Before the first refresh it prints
-// the step track from cheap facts only (run.json, the review-start records, brief.md).
+// line: the step track, what waits on the owner, the time worked and tokens. With no run it prints
+// nothing. It never computes the band itself: it prints the band `lpk status --write-cache` last
+// kept for the session, and when that is older than STALE_MS starts one such refresh in the
+// background, detached. Before the first refresh it prints the step track from cheap facts only
+// (run.json, the review-start records, brief.md).
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,7 +30,7 @@ function cheapLine(run, repo, design) {
   const phase = !run ? 'design' : readRecords(repo, { run: run.id }).some((r) => r.kind === 'review-start') ? 'review' : 'build';
   const at = PHASES.indexOf(phase);
   const track = PHASES.filter((p, i) => i >= at ? !(p === 'design' && run?.lane === 'quick') : p === 'understand' || (p === 'design' && design));
-  const view = { track: track.map((p, i) => ({ name: NAMES[p], state: p === phase ? 'current' : i < track.indexOf(phase) ? 'visited' : 'next' })), quiet: '', waits: '', head: run ? `${run.lane} lane` : '', detail: '', rows: [] };
+  const view = { track: track.map((p, i) => ({ name: NAMES[p], state: p === phase ? 'current' : i < track.indexOf(phase) ? 'visited' : 'next' })), quiet: '', waits: '', head: '', detail: '', rows: [] };
   return bandLines({ view })[0];
 }
 

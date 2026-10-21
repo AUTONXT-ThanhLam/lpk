@@ -38,7 +38,7 @@ test('the status line prints the band from the session\'s cached status, well wi
   builderSession(S);
   assert.equal(lpk(repo, S, 'status', '--json', '--write-cache', '--session', S, '--repo', repo).status, 0);
   const { out, ms } = statusline(S, repo);
-  assert.match(plain(out), /^✓ Understand › ▶ Build › Review › Fix › Prove › Deliver {2}worked \d+m · 0 tokens · full lane$/, 'the agents are left to Claude Code\'s own list');
+  assert.match(plain(out), /^✓ Understand › ▶ Build › Review › Fix › Prove › Deliver {2}worked \d+m · 0 tokens$/, 'the agents are left to Claude Code\'s own list');
   assert.match(out, /\x1b\[1;93m▶ Build\x1b\[0m/, 'the current step is bold bright yellow behind a ▶');
   assert.match(out, /\x1b\[2m✓ Understand\x1b\[22m/, 'a visited step is dim behind a ✓');
   assert.ok(ms < 1000, `took ${ms} ms`);
@@ -53,7 +53,7 @@ test('a stale band is printed as it is while one refresh runs in the background'
   assert.equal(lpk(repo, S, 'status', '--json', '--write-cache', '--session', S, '--repo', repo).status, 0);
   const old = readBand(S);
   old.at -= 60_000;
-  old.status.view.head = 'worked 99m · 0 tokens · full lane';
+  old.status.view.head = 'worked 99m · 0 tokens';
   writeFileSync(bandFile(S), JSON.stringify(old));
   assert.match(plain(statusline(S, repo).out), /worked 99m/);
   assert.ok(waitFor(() => readBand(S).at > old.at + 30_000), 'the background refresh rewrote the band');
@@ -67,6 +67,6 @@ test('before any refresh the status line shows the step from cheap facts, and wi
   assert.equal(statusline(S, repo).out, '');
   assert.equal(existsSync(bandFile(S)), false, 'no run, no refresh');
   assert.equal(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true').status, 0);
-  assert.equal(plain(statusline(S, repo).out), '✓ Understand › ▶ Build › Review › Fix › Prove › Deliver  quick lane');
+  assert.equal(plain(statusline(S, repo).out), '✓ Understand › ▶ Build › Review › Fix › Prove › Deliver');
   assert.ok(waitFor(() => existsSync(bandFile(S))), 'the first call started a refresh');
 });

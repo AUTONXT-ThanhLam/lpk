@@ -63,7 +63,7 @@ test('three Builders at work in parallel show as three rows, each with its slice
   assert.equal(s.tokens.fresh, total(meter(S)).fresh, 'fresh tokens as lpk meter counts them');
   assert.deepEqual([s.stuck, s.waits], [false, []]);
   const text = ok(lpk(repo, S, 'status'));
-  assert.match(text, /^Understand › Design › \[Build\] › Review › Fix › Prove › Deliver · worked \d+m · 780 tokens · full lane\n● api {2}◐ ui {2}◐ docs {2}◐ cli\n/);
+  assert.match(text, /^Understand › Design › \[Build\] › Review › Fix › Prove › Deliver · worked \d+m · 780 tokens\n● api {2}◐ ui {2}◐ docs {2}◐ cli\n/);
   assert.match(text, /\n {2}Builder {2}slice cli {2}stalled 8m {2}10m/);
 });
 
