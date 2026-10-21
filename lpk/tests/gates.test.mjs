@@ -134,13 +134,17 @@ test('after a later run starts, the gates of an ended run read its archived ledg
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a is 2 for every caller', repro: 'r', kind: 'defect', severity: 'important' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
   ok(lpk(repo, S, 'prove', '--all'));
-  const id = readRun(repo).id;
   ok(lpk(repo, S, 'run', 'end'));
   sh(repo, 'switch', '-q', 'main');
   ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
   sh(repo, 'switch', '-q', 'feat');
-  assert.match(ok(lpk(repo, S, 'gates')), new RegExp(`^run ${id},[\\s\\S]*^findings +holds +ledger: 1 findings of run ${id}`, 'm'));
   assert.equal(hookBash(repo, 'next-session', 'gh pr ready'), null);
+  // A query judges the open run, and adopts no branch into it.
+  const next = readRun(repo).id;
+  assert.match(lpk(repo, 'next-session', 'gates').stdout, new RegExp(`^run ${next},`));
+  sh(repo, 'switch', '-qc', 'scratch');
+  for (const verb of [['gates'], ['report'], ['reviews', 'owed']]) lpk(repo, 'next-session', ...verb);
+  assert.deepEqual(readRun(repo).branches, []);
 });
 
 test('a branch the run never noted is its branch: work merged in after a start on main meets the gates at handover and push, also after the run ends', () => {

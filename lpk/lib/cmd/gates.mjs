@@ -5,12 +5,11 @@ import { git } from '../git.mjs';
 import { parseArgs, repoOf } from '../out.mjs';
 import { currentBranch, runForBranch, runState } from '../run.mjs';
 
-// The run this checkout delivers: the run the push and ready guard judges on the current branch,
-// else (on the target branch or a detached HEAD) the open run.
+// The run this checkout delivers: the open one, else the ended run of the current branch.
 export function runHere(repo) {
   const st = runState(repo);
   if (st.error) throw new Error(st.error);
-  return runForBranch(repo, currentBranch(repo)) || st.run;
+  return st.run || runForBranch(repo, currentBranch(repo));
 }
 
 export async function main(argv) {
