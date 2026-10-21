@@ -47,5 +47,7 @@ Answer in this shape and nothing else:
 - `login`: each isolatedContext name with its user and role, or why it failed;
 - `main`: the reference instance's URL and the commit it runs, or why there is none;
 - `tests`: the command, and the tests already red before the change;
+- `db`: the database and port the test command uses and the ones the app uses, as the env files
+  and config each loads set them, or `same`;
 - `stop`: the exact commands that stop everything you started.
 Never edit tracked files; anything you write goes under `/tmp` or the cache.

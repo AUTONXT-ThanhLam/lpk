@@ -1,8 +1,10 @@
 // The fact verbs that read git: which lines a fix rewrites, what owes the full net, what changes
 // together, and whether the target already holds a fix.
 import assert from 'node:assert/strict';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { commit, lpk, repoWith, sh, write } from './verbs-env.mjs';
+import { commit, lpk, repoWith, sh, tmp, write } from './verbs-env.mjs';
 
 const lines = (n, f = (i) => `line ${i}`) => `${Array.from({ length: n }, (_, i) => f(i + 1)).join('\n')}\n`;
 
@@ -64,4 +66,38 @@ test('lpk facts --about names the commits on the target that HEAD lacks touching
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /Commits on main that HEAD lacks, touching these files: \n- \w+ \S+ Fix the crash in a\n?$/);
   assert.match(r.stdout, /Open PRs touching these files: unknown \(.+\)/, 'a gh that cannot answer is named, not read as no PRs');
+});
+
+test('slot stops a command silent for longer than --idle', async () => {
+  const dir = join(tmp, 'slot-idle');
+  mkdirSync(dir, { recursive: true });
+  const t0 = Date.now();
+  // The subshell is the command's own child: it must die with the group, not write `late` later.
+  const r = lpk(dir, 'slot', '--idle', '1', '--', 'echo started; (sleep 2; echo late > marker) & sleep 5');
+  const took = Date.now() - t0;
+  assert.equal(r.status, 124, r.stderr);
+  assert.ok(took < 4000, `stopped after ${took} ms`);
+  assert.equal(r.stdout, 'started\n', 'output reaches the caller as it is printed');
+  assert.ok(r.stderr.includes('1 s') && r.stderr.includes('started'), `names the silence and the last line: ${r.stderr}`);
+  await new Promise((done) => setTimeout(done, 3500 - (Date.now() - t0)));
+  assert.equal(existsSync(join(dir, 'marker')), false, 'the whole process group is stopped');
+  assert.equal(lpk(dir, 'slot', '--idle', '5', '--', 'echo one; exit 3').status, 3, 'a command that ends in time keeps its exit code');
+  const left = Date.now();
+  const kept = lpk(dir, 'slot', '--idle', '60', '--', 'sleep 30 > /dev/null & echo $! > pid');
+  try { process.kill(Number(readFileSync(join(dir, 'pid'), 'utf8')), 'SIGKILL'); } catch { /* already gone */ }
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.ok(Date.now() - left < 10000, 'what a finished command left running is not waited on');
+  assert.equal(lpk(dir, 'slot', '--idle', 'soon', '--', 'true').status, 2);
+});
+
+test('mutate refuses an unknown argument and a patch that is not a file', () => {
+  const repo = repoWith('mutate-args', { 'a.js': 'export const a = 1;\n' });
+  write(repo, 'a.diff', '');
+  for (const args of [['--patch a.diff --patch b.diff'], ['--patch', 'missing.diff'], ['--patch', 'a.diff', 'b.diff'], ['--patch', '.'], ['--patches', 'a.diff']]) {
+    const r = lpk(repo, 'mutate', '--base', 'main', '--test', 'true', ...args);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stdout}${r.stderr}`);
+    assert.match(r.stderr, /usage: lpk mutate/, args.join(' '));
+  }
+  assert.match(lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'missing.diff').stderr, /missing\.diff/);
+  assert.match(lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'a.diff', 'b.diff').stderr, /b\.diff/);
 });

@@ -11,7 +11,9 @@ For each slice create a worktree from the branch head
 (`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD`) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its files, contract
 and tests, the test command, the brief and the profile path. You are notified as each one finishes.
-Glue that joins the slices is a slice of its own, or written after they are in. After go, a builder
+A slice waits for another only when the brief names the dependency the contract cannot cover: a
+past run built two slices in turn with none named and lost half an hour. Glue that joins the slices
+is a slice of its own, or written after they are in. After go, a builder
 may start early on a slice no open design review High touches; a slice a later High touches is
 rebuilt.
 
@@ -20,8 +22,9 @@ item. Rule on each contested item before you bring the slice in: the test or the
 the builder was wrong, with the reason.
 
 A builder whose slice is stuck (no new commit after its second failed attempt, or a report that it
-cannot meet the contract) is handed over with `lpk handoff <slice>`: it prints what the slice has
-done and what is left, for a fresh builder to start from.
+cannot meet the contract), or whose remaining work is the run's long pole, is handed off or split.
+`lpk handoff <slice>` prints what the slice has done and what is left, for a fresh builder to
+start from, or for you to split between two builders on disjoint files.
 
 A **high-risk** slice gets two builders, each told one of the two approaches the brief weighed;
 keep the one whose tests pass with the cleaner `lpk check` and the smaller diff, and say which and

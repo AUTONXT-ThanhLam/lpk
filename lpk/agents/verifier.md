@@ -28,7 +28,10 @@ it.
 
 Rule from what the runs showed:
 - **CONFIRMED**: the repro fails on the commit. A repro that a signal killed is a crash, and a crash
-  reproduces the finding. Never drop a finding whose repro still fails.
+  reproduces the finding. Never drop a finding whose repro still fails. Read the ledger
+  (`finding_list`, loaded the same way as `finding_verdict`) and end the evidence with
+  `same fix: <ids>`, the other findings this fix removes, because the lead staffs the fix round by
+  root cause.
 - **PRE-EXISTING**: the same failure on the base.
 - **DROPPED**, with its basis: `disproved` (the guard at `file:line`, the test that covers it, the
   input that cannot reach it) or `not-reproduced` (what you ran and what it showed). A finding in

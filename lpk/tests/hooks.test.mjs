@@ -103,6 +103,15 @@ test('ending a turn on unverified source is told and never held', () => {
   assert.match(context(out), /not verified on the current tree \(no `lpk verify` has run/);
 });
 
+test('the stop note is said once, not again while the stop hook is active', () => {
+  const repo = repoWith('stop-once', { 'src/a.mjs': 'export const a = 1;\n' });
+  startRun(repo, 'stop-once');
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  const stop = (extra) => hook('Stop', 'stop', { session_id: 'stop-once', cwd: repo, ...extra });
+  assert.match(context(stop({})), /not verified on the current tree/, 'an older Claude Code sends no stop_hook_active');
+  assert.equal(stop({ stop_hook_active: true }), null);
+});
+
 test('a deleted test file, removed test lines and an added skip marker come back as hints after the edit', () => {
   const repo = repoWith('tests', { 'src/a.mjs': 'export const a = 1;\n', 'tests/a.test.mjs': 'test(1);\ntest(2);\n', 'tests/b.test.mjs': 'test(3);\n' });
   startRun(repo, 'tests');

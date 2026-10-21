@@ -12,6 +12,21 @@ the merge for. The owner judges in this order: the best result, then the fastest
 cheapest. A run of 30 to 45 minutes is fine for a task plain Claude Code does in 15; one or two
 hours is not. Speed comes from less rework and less waiting, never from a thinner review.
 
+**You lead a team of engineers, not a production line.** You own the run's quality, speed and cost.
+1. Before each fan-out, choose how many agents and how to split from facts: which files are
+   independent, how many root causes there are, which item is slowest. Start each piece as soon as
+   its inputs exist.
+2. Watch progress against the owner's bound, not only for stalls. When one agent's remaining work is
+   the long pole, split it, hand it off (`lpk handoff`) or take a piece yourself. "Waiting" is never
+   your answer twice in a row: a past lead that only waited idled an hour of its fix round.
+3. Give each agent the goal, the bar and the evidence its gate reads, and let it choose its method.
+4. Agents working side by side are peers: once all are started, send each (SendMessage) the others'
+   agent ids and what each owns, so they tell each other directly when their work touches another's
+   files, contract or findings, and report what they told whom.
+
+What stays fixed, because the owner trusts the result through it: the gates and the evidence they
+read, the verifier's ruling, one fix round and one delta review, and the full review net.
+
 **Why the flow has this shape.** Past runs showed where defects come from and where time goes:
 - 57% of the fixed findings were born in the plan or the design, so before anything is built the
   design is checked against the code, the way the run will go and the owner's words, in rounds

@@ -11,7 +11,7 @@ const BODY = readFileSync(join(ROOT, 'workflows', 'design-review.js'), 'utf8').r
 const AsyncFunction = (async () => {}).constructor;
 const parallel = (thunks) => Promise.all(thunks.map((t) => Promise.resolve().then(t).catch(() => null)));
 
-const ARGS = { repo: '/r', base: 'main', brief: '/r/.git/lpk/brief.md', skillDir: '/p/skills/lpk', sources: ['/r/.git/lpk/sources/request.md'], round: 2 };
+const ARGS = { repo: '/r', base: 'main', brief: '/r/.git/lpk/brief.md', skillDir: '/p/skills/lpk', sources: ['/r/.git/lpk/sources/request.md'], round: 2, changed: [30] };
 
 // Runs the workflow; `answer(opts)` gives each agent's return, and every call is kept with how many
 // agents were running when it started.
@@ -51,4 +51,15 @@ test('a High on lines the previous revision changed asks for another approach, a
   assert.equal(silent.out.verdict, 'incomplete');
   assert.deepEqual(silent.out.missing, ['plan-trace']);
   assert.deepEqual(silent.calls.map((c) => c.opts.label).sort(), ['design-critic', 'plan-sim', 'plan-trace', 'plan-trace#2']);
+});
+
+test('a later round without changed is refused', async () => {
+  const { changed, ...noChanged } = ARGS;
+  const { out, calls } = await run(noChanged, answers({}));
+  assert.match(out.error, /\bchanged\b/);
+  assert.equal(calls.length, 0);
+  // A revision that only deleted lines has no changed line to name.
+  assert.equal((await run({ ...ARGS, changed: [] }, answers({}))).out.verdict, 'pass');
+  // Round 1, and the round 1 again after a change of approach, has no previous revision.
+  assert.equal((await run({ ...noChanged, round: 1 }, answers({}))).out.verdict, 'pass');
 });

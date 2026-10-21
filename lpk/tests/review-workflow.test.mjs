@@ -50,9 +50,9 @@ test('every owed lens starts at once, the /code-review children through a clampe
     return o.agentType === 'lpk:techlead' ? found('F1', 'F2') : found();
   });
   const review = calls.filter((c) => c.opts.phase === 'Review');
-  // All but the mutant start before any lens has answered; the mutant waits for the prover.
-  assert.deepEqual(review.slice(0, 7).map((c) => c.opts.label), ['techlead', 'code-review:sonnet', 'code-review:sonnet#2', 'code-review:opus', 'security-review', 'bug-hunter', 'prover']);
-  assert.ok(review.slice(0, 7).every((c, i) => c.running === i));
+  // Every lens, the mutant included, starts before any lens has answered.
+  assert.deepEqual(review.slice(0, 8).map((c) => c.opts.label), ['techlead', 'code-review:sonnet', 'code-review:sonnet#2', 'code-review:opus', 'security-review', 'bug-hunter', 'prover', 'mutant']);
+  assert.ok(review.slice(0, 8).every((c, i) => c.running === i));
   for (const c of review.filter((x) => x.opts.bashCommandClamp)) {
     assert.deepEqual(c.opts.bashCommandClamp, ['Bash(lpk code-review *)']);
     assert.deepEqual([c.opts.model, c.opts.effort], ['haiku', 'low']);
@@ -72,6 +72,24 @@ test('every owed lens starts at once, the /code-review children through a clampe
   assert.deepEqual(out.testGaps, ['F7']);
   assert.deepEqual(out.ungraded, []);
   assert.equal(out.lenses.find((l) => l.lens === 'code-review:opus').record, '/out/code-review:opus.json');
+});
+
+test('the mutant runs beside the prover unless told they share a database or port', async () => {
+  const order = async (flag) => {
+    const events = [];
+    const { calls } = await run({ ...ARGS, lenses: ['prover', 'mutant'], ...flag }, async (p, o) => {
+      if (o.agentType === 'lpk:prover') { await new Promise((r) => setTimeout(r, 30)); events.push('prover ends'); return { results: [] }; }
+      events.push('mutant answers');
+      return found();
+    });
+    return { events, mutant: calls.find((c) => c.opts.agentType === 'lpk:mutant') };
+  };
+  const atOnce = await order({});
+  assert.equal(atOnce.mutant.running, 1);
+  assert.deepEqual(atOnce.events, ['mutant answers', 'prover ends']);
+  const waits = await order({ mutantAfterProver: true });
+  assert.equal(waits.mutant.running, 0);
+  assert.deepEqual(waits.events, ['prover ends', 'mutant answers']);
 });
 
 test('a lens that fails runs once more, then is ungraded with the reason', async () => {
