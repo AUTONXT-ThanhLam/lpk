@@ -21,11 +21,11 @@ function statusline(session, cwd) {
   return { out: r.stdout, ms: Date.now() - t };
 }
 
-function builderSession(S) {
+function builderSession(S, last = -1) {
   mkdirSync(join(project, S, 'subagents'), { recursive: true });
   writeFileSync(join(project, `${S}.jsonl`), line({ type: 'user', timestamp: at(-20), message: { role: 'user', content: '<command-name>/lpk</command-name> go' } }));
   writeFileSync(join(project, S, 'subagents', 'agent-b1.jsonl'), line({ type: 'user', timestamp: at(-5), message: { role: 'user', content: 'Your slice: ui.' } }) +
-    line({ type: 'assistant', timestamp: at(-1), message: { id: 'm1', role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Edit', input: { file_path: '/w/kpi.tsx' } }], stop_reason: 'tool_use' } }));
+    line({ type: 'assistant', timestamp: at(last), message: { id: 'm1', role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Edit', input: { file_path: '/w/kpi.tsx' } }], stop_reason: 'tool_use' } }));
   writeFileSync(join(project, S, 'subagents', 'agent-b1.meta.json'), JSON.stringify({ agentType: 'lpk:builder', description: 'Build slice ui' }));
 }
 
@@ -38,10 +38,22 @@ test('the status line prints the band from the session\'s cached status, well wi
   builderSession(S);
   assert.equal(lpk(repo, S, 'status', '--json', '--write-cache', '--session', S, '--repo', repo).status, 0);
   const { out, ms } = statusline(S, repo);
-  assert.match(plain(out), /^Understand › Build › Review › Fix › Prove › Deliver {2}worked \d+m · 0 tokens · full lane\none slice \(no brief\.json slices\)\n {2}Builder {2}Build slice ui {2}Edit kpi\.tsx {2}\d+m$/);
-  assert.match(out, /\x1b\[1mBuild\x1b\[22m/, 'the current step is bold');
+  assert.match(plain(out), /^✓ Understand › ▶ Build › Review › Fix › Prove › Deliver {2}worked \d+m · 0 tokens · full lane · 1 agent$/, 'a working agent is left to Claude Code\'s own list');
+  assert.match(out, /\x1b\[1;93m▶ Build\x1b\[0m/, 'the current step is bold bright yellow behind a ▶');
+  assert.match(out, /\x1b\[2m✓ Understand\x1b\[22m/, 'a visited step is dim behind a ✓');
   assert.ok(ms < 1000, `took ${ms} ms`);
   assert.equal(existsSync(lockFile(S)), false, 'a fresh band starts no refresh');
+});
+
+test('an agent that stopped moving gets its own row in the status line, which Claude Code\'s list does not show', () => {
+  const S = 'sl-stalled';
+  const repo = repoWith('sl-stalled', { 'src/ui.tsx': '1\n' });
+  assert.equal(lpk(repo, S, 'run', 'start', '--verify', 'true').status, 0);
+  builderSession(S, -8);
+  assert.equal(lpk(repo, S, 'status', '--json', '--write-cache', '--session', S, '--repo', repo).status, 0);
+  const { out } = statusline(S, repo);
+  assert.match(plain(out), /full lane · 1 agent\n {2}Builder {2}Build slice ui {2}stalled 8m$/);
+  assert.match(out, /\x1b\[33mstalled 8m\x1b\[39m/, 'stalled in yellow');
 });
 
 test('a stale band is printed as it is while one refresh runs in the background', () => {
@@ -66,6 +78,6 @@ test('before any refresh the status line shows the step from cheap facts, and wi
   assert.equal(statusline(S, repo).out, '');
   assert.equal(existsSync(bandFile(S)), false, 'no run, no refresh');
   assert.equal(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true').status, 0);
-  assert.equal(plain(statusline(S, repo).out), 'Understand › Build › Review › Fix › Prove › Deliver  quick lane');
+  assert.equal(plain(statusline(S, repo).out), '✓ Understand › ▶ Build › Review › Fix › Prove › Deliver  quick lane');
   assert.ok(waitFor(() => existsSync(bandFile(S))), 'the first call started a refresh');
 });

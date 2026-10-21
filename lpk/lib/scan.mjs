@@ -8,7 +8,7 @@ import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { projectsDir, sessionFiles } from './meter.mjs';
 
-const V = 3;
+const V = 4;
 const PROMPT_MAX = 2000;
 const RELAY = '[Workflow harness — user request]';
 const ACTION_MAX = 70;
@@ -49,11 +49,12 @@ export function actionOf(name, input = {}) {
 const fresh = () => ({ spans: [], waiting: false, error: '', offset: 0, first: '', last: '', prompt: '', sawAssistant: false, end: 'open', action: '', toolAt: '', asks: [], notes: {}, results: [], lpkAt: '', interruptedAt: '', usage: {} });
 
 // Each API message's usage by its id, the largest of each count over its lines: a transcript writes
-// one line per content block, each carrying the same usage.
-function usage(st, m) {
+// one line per content block, each carrying the same usage. The fifth number is when the message
+// was first written, so a run counts only its own messages.
+function usage(st, m, at) {
   if (!m?.usage || !m.id || m.model === '<synthetic>') return;
-  const prev = st.usage[m.id] || [0, 0, 0, 0];
-  st.usage[m.id] = ['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens'].map((k, i) => Math.max(prev[i], m.usage[k] || 0));
+  const prev = st.usage[m.id] || [0, 0, 0, 0, Date.parse(at || '') || 0];
+  st.usage[m.id] = [...['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens'].map((k, i) => Math.max(prev[i], m.usage[k] || 0)), prev[4]];
 }
 
 const NOTE = /<task-id>([^<]+)<\/task-id>[\s\S]*?<status>([a-z_]+)<\/status>/g;
@@ -112,7 +113,7 @@ function facts(st, e) {
   }
   if (e.type !== 'assistant') return;
   st.sawAssistant = true;
-  usage(st, e.message);
+  usage(st, e.message, e.timestamp);
   const blocks = Array.isArray(content) ? content : [];
   for (const b of blocks.filter((x) => x?.type === 'tool_use')) {
     st.action = actionOf(b.name, b.input || {});
@@ -155,13 +156,13 @@ export function scanFile(prev, file) {
 }
 
 // The session's tokens as lib/meter.mjs counts them: files in its order, each message id once, a
-// message a fork replays from an earlier file left out.
-export function tokensOf(states) {
+// message a fork replays from an earlier file left out, and only messages written from `since` on.
+export function tokensOf(states, since = 0) {
   const seen = new Set();
   const t = { fresh: 0, cacheRead: 0 };
   for (const st of states) {
     const mine = Object.entries(st.usage).filter(([id]) => !seen.has(id));
-    for (const [, [input, cacheWrite, cacheRead, output]] of mine) { t.fresh += input + cacheWrite + output; t.cacheRead += cacheRead; }
+    for (const [, [input, cacheWrite, cacheRead, output, at]] of mine.filter(([, u]) => u[4] >= since)) { t.fresh += input + cacheWrite + output; t.cacheRead += cacheRead; }
     for (const id of Object.keys(st.usage)) seen.add(id);
   }
   return t;

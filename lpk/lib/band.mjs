@@ -17,7 +17,7 @@ export function detailText(s) {
   switch (s.phase) {
     case 'understand': return [d.doing, d.openQuestions ? `${d.openQuestions} open question` : ''].filter(Boolean).join(' · ');
     case 'design': return d.round ? `round ${d.round}: ${d.verdict}, ${d.high} High / ${d.medium} Medium / ${d.low} Low${d.running.length ? ` · running: ${d.running.join(', ')}` : ''}` : `brief written, no review round yet${d.running.length ? ` · running: ${d.running.join(', ')}` : ''}`;
-    case 'build': return d.slices.length ? d.slices.map((x) => `${MARK[x.state]} ${x.name}`).join('  ') : 'one slice (no brief.json slices)';
+    case 'build': return d.slices.length ? d.slices.map((x) => `${MARK[x.state]} ${x.name}`).join('  ') : '';
     case 'review': return `lenses ${d.lensesDone}/${d.lenses}${d.owed ? ` · ${d.owed} owed` : ''} · findings ${d.raised} raised · ${d.confirmed} confirmed · ${d.dropped} dropped${d.verifiersRunning ? ` · ${d.verifiersRunning} verifying` : ''}`;
     case 'fix': return `${d.left.length ? `to fix: ${d.left.join(' ')}` : 'nothing left to fix'} · ${d.fixed} fixed · delta review ${d.delta}`;
     case 'prove': return `scenarios ${d.scenarios?.passed ?? 0}/${d.scenarios?.total ?? 0} · requirements ${d.requirements?.proved ?? 0}/${d.requirements?.total ?? 0}`;
@@ -64,16 +64,24 @@ export function statusText(s) {
   return lines.join('\n');
 }
 
-// One line per band row, ANSI styled: the current step bold, visited steps dim, the waits chip in
-// yellow, the rest dim; at most `max` team rows, then a count.
+// One line per band row, ANSI styled: the current step bold bright yellow behind a ▶, the steps
+// already visited dim behind a ✓, the steps still ahead dim, the waits chip bold red, and how many
+// agents run. Claude Code lists the running agents itself below the prompt, so a row is drawn only
+// for what that list does not say: an agent stalled (stalled in yellow) or failed (in red), its title
+// in cyan and its work plain; at most `max` rows, then a count.
 export function bandLines(s, { max = 6 } = {}) {
   const v = s.view || viewOf(s);
-  const B = (t) => `\x1b[1m${t}\x1b[22m`, D = (t) => `\x1b[2m${t}\x1b[22m`, Y = (t) => `\x1b[33m${t}\x1b[39m`;
-  const track = v.track.map((p) => (p.state === 'current' ? B(p.name) : p.state === 'visited' ? D(p.name) : p.name)).join(D(' › '));
-  const lines = [[track, v.quiet, v.waits ? Y(`waits on you: ${v.waits}`) : '', D(v.head)].filter(Boolean).join('  ')];
+  const D = (t) => `\x1b[2m${t}\x1b[22m`, Y = (t) => `\x1b[33m${t}\x1b[39m`, R = (t) => `\x1b[31m${t}\x1b[39m`, C = (t) => `\x1b[36m${t}\x1b[39m`;
+  const NOW = (t) => `\x1b[1;93m▶ ${t}\x1b[0m`, ASK = (t) => `\x1b[1;31m${t}\x1b[0m`;
+  const track = v.track.map((p) => (p.state === 'current' ? NOW(p.name) : p.state === 'visited' ? D(`✓ ${p.name}`) : D(p.name))).join(D(' › '));
+  const failed = (r) => r.note.startsWith('failed');
+  const odd = v.rows.filter((r) => failed(r) || r.note.startsWith('stalled'));
+  const running = v.rows.filter((r) => !failed(r)).length;
+  const head = `${v.head}${running ? ` · ${running} agent${running > 1 ? 's' : ''}` : ''}`;
+  const lines = [[track, v.quiet ? Y(v.quiet) : '', v.waits ? ASK(`waits on you: ${v.waits}`) : '', D(head)].filter(Boolean).join('  ')];
   if (v.detail) lines.push(D(v.detail));
-  for (const r of v.rows.slice(0, max)) lines.push(`  ${r.title}  ${D([r.what, r.note, r.elapsed].filter(Boolean).join('  '))}`);
-  if (v.rows.length > max) lines.push(D(`  +${v.rows.length - max} more`));
+  for (const r of odd.slice(0, max)) lines.push(`  ${C(r.title)}  ${[r.what, (failed(r) ? R : Y)(r.note)].filter(Boolean).join('  ')}`);
+  if (odd.length > max) lines.push(D(`  +${odd.length - max} more`));
   return lines;
 }
 

@@ -67,6 +67,14 @@ test('three Builders at work in parallel show as three rows, each with its slice
   assert.match(text, /\n {2}Builder {2}slice cli {2}stalled 8m {2}10m/);
 });
 
+test('the tokens are the run\'s own: what the session spent before its /lpk is left out', () => {
+  const S = 'status-tokens';
+  const repo = repoWith('status-tokens', { 'a.mjs': '1\n' });
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'true'));
+  mainOf(S, [said(-120, 'an earlier task'), did(-119, [{ type: 'text', text: 'done' }], 'end_turn'), said(-20, `${LPK} the next task`), did(-5, tool('Read', { file_path: '/w/a.mjs' }))]);
+  assert.deepEqual(json(repo, S).tokens, { fresh: 130, cacheRead: 1000 });
+});
+
 test('the time worked is the union of the session\'s and its agents\' working spans, without the waits on the owner', async () => {
   const S = 'status-time';
   const repo = repoWith('status-time', { 'a.mjs': '1\n' });

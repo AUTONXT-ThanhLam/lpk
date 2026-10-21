@@ -30,7 +30,8 @@ function cheapLine(run, repo, design) {
   const phase = !run ? 'design' : readRecords(repo, { run: run.id }).some((r) => r.kind === 'review-start') ? 'review' : 'build';
   const at = PHASES.indexOf(phase);
   const track = PHASES.filter((p, i) => i >= at ? !(p === 'design' && run?.lane === 'quick') : p === 'understand' || (p === 'design' && design));
-  return `${track.map((p) => (p === phase ? `\x1b[1m${NAMES[p]}\x1b[22m` : NAMES[p])).join('\x1b[2m › \x1b[22m')}${run ? `  \x1b[2m${run.lane} lane\x1b[22m` : ''}`;
+  const view = { track: track.map((p, i) => ({ name: NAMES[p], state: p === phase ? 'current' : i < track.indexOf(phase) ? 'visited' : 'next' })), quiet: '', waits: '', head: run ? `${run.lane} lane` : '', detail: '', rows: [] };
+  return bandLines({ view })[0];
 }
 
 export function main() {

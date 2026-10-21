@@ -105,7 +105,7 @@ export async function status(repo, { session = '', now = Date.now(), withGates =
     ...findings.filter((x) => needsOwner(x) && !waived(repo, run.id, x.id)).map((x) => ({ what: x.id, why: `${x.state}${x.by ? ` by ${x.by}` : ''}` })),
     ...(g?.rows || []).filter((r) => !r.holds && String(r.wayOut || '').startsWith('or the owner waives')).map((r) => ({ what: `gate:${r.gate}`, why: String(r.why || '').split('\n')[0] })),
   ];
-  const tokens = scan ? tokensOf([main, ...scan.agents.map((a) => a.st)].filter(Boolean)) : { fresh: 0, cacheRead: 0 };
+  const tokens = scan ? tokensOf([main, ...scan.agents.map((a) => a.st)].filter(Boolean), started || now) : { fresh: 0, cacheRead: 0 };
   return {
     v: 1, repo, session, open: Boolean(mine && (run || lpkAt)), mine,
     run: run ? { id: run.id, lane: run.lane, target: run.target, branch: run.branch || null, started: new Date(run.started).toISOString() } : null,
