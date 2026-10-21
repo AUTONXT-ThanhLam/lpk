@@ -6,7 +6,7 @@ export const meta = {
 }
 
 // args: { repo, base, brief, briefJson, skillDir, sources, precedent, timeBound, baseSuite, round,
-//   changed, previous, stallMs }
+//   changed, stallMs }
 // - brief, briefJson: paths of the Design Brief and its brief.json.
 // - skillDir: the lpk skill's directory, whose step files say how the run goes.
 // - sources: paths of the files the brief must trace to: the request, each linked ticket or
@@ -17,12 +17,10 @@ export const meta = {
 // - changed: the brief's line numbers the previous revision changed; a High on one of them means
 //   the design is wrong at its root. Required from round 2 on (empty when the revision only deleted
 //   lines); omitted in round 1, which is also the round after a change of approach.
-// - previous: the findings the previous round returned, as it returned them (optional).
 // - stallMs: { <angle>: ms }.
-// Each angle starts fresh. From round 2 on, it checks the lines the revision changed and whether
-// each High it raised in the previous round is gone, instead of the whole brief again. Round 1, and
-// a later round with no changed line and no previous High, reviews the whole brief. Nothing here
-// reads the clock or chance, so resumeFromRunId replays every angle that already answered.
+// Each angle starts fresh and is never told about earlier rounds, so a finding that comes back is
+// raised again on the brief as it stands. Nothing here reads the clock or chance, so
+// resumeFromRunId replays every angle that already answered.
 const a = args || {}
 const missing = ['repo', 'base', 'brief', 'skillDir', 'round'].filter((k) => !a[k])
 if (!(a.sources || []).length) missing.push('sources')
@@ -49,17 +47,6 @@ const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite 
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
 Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.`
 
-// A later round's focus for one angle: the changed lines and the Highs that angle raised last round.
-const highs = (name) => (Array.isArray(a.previous) ? a.previous : []).filter((f) => f && f.severity === 'High' && (!f.angle || f.angle === name))
-const focus = (name) => {
-  const was = highs(name)
-  if (round < 2 || (!changed.size && !was.length)) return ''
-  const look = changed.size ? `The previous revision changed the brief's lines ${[...changed].join(', ')}: check those lines and what they touch for what your instructions look for` : 'The previous revision only deleted lines'
-  const gone = was.length ? `${changed.size ? ', and' : ': check'} whether each High finding you raised in the previous round, below, is gone (raise one that remains again, at its lines now)` : ''
-  const list = was.length ? `\nHigh findings of the previous round, with the lines the previous revision gave them:\n${was.map((f) => `- ${f.claim} [lines ${(f.lines || []).join(', ')}]`).join('\n')}` : ''
-  return `\n${look}${gone}. Do not review the rest of the brief again.${list}`
-}
-
 const ANGLES = [
   { name: 'design-critic', schema: CRITIC,
     ask: `Check the brief against the code and its real behaviour, running what the design relies on.${a.precedent ? ` The \`lpk precedent\` output is in ${a.precedent}.` : ''}` },
@@ -73,11 +60,10 @@ const ANGLES = [
 // named in `missing`, and the round does not pass without it.
 const ask = async (angle) => {
   const opts = { phase: 'Review', agentType: `lpk:${angle.name}`, schema: angle.schema, stallMs: (a.stallMs || {})[angle.name] }
-  const prompt = `${head}\n${angle.ask}${focus(angle.name)}`
-  const first = await agent(prompt, { ...opts, label: angle.name }).catch(() => null)
+  const first = await agent(`${head}\n${angle.ask}`, { ...opts, label: angle.name }).catch(() => null)
   if (first) return first
   log(`${angle.name} returned no answer; running it once more`)
-  return agent(prompt, { ...opts, label: `${angle.name}#2` })
+  return agent(`${head}\n${angle.ask}`, { ...opts, label: `${angle.name}#2` })
 }
 const answers = await parallel(ANGLES.map((angle) => () => ask(angle)))
 

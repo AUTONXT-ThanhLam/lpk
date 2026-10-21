@@ -90,8 +90,8 @@ The design is reviewed in rounds until no High remains. After each round:
 3. `revise`: fix each High in the brief, or answer it with a run, citing the command and its output
    in the brief beside the line it concerns: a disagreement is settled by a run, never by argument.
    Fix a Medium or Low when it is cheap, else list it for the report. Before editing, copy the brief
-   to `brief.r<n>.md` beside it; then run round n+1 with `previous` set to the `findings` array
-   round n returned, as is, and `changed` set to the lines the revision changed, from
+   to `brief.r<n>.md` beside it; then run round n+1 with `changed` set to the lines the revision
+   changed, from
    `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 4. `redesign`: a High sits on lines the previous revision changed, so the design is wrong at its
    root. Choose a different approach, from the alternatives the brief weighed or a new one, never a
