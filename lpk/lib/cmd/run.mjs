@@ -146,7 +146,6 @@ export async function main(argv) {
   }
   if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {
     if (!o.why) { console.error(`lpk: --why "<why>" is required\n${USAGE}`); return 2; }
-    // The push guard asks the run that delivers the branch, which can be one that already ended.
     const owner = sub === 'grant' ? runForBranch(repo, currentBranch(repo)) : null;
     if (owner?.ended) {
       owner.granted = { ...owner.granted, draftPush: true };

@@ -34,7 +34,6 @@ test('a round starts four focused critics, the plan simulator and the plan trace
   assert.deepEqual(calls.map((c) => [c.opts.label, c.opts.agentType, c.running]), [
     ['design-critic:state', 'lpk:design-critic', 0], ['design-critic:failures', 'lpk:design-critic', 1], ['design-critic:main', 'lpk:design-critic', 2],
     ['design-critic:proof', 'lpk:design-critic', 3], ['plan-sim', 'lpk:plan-sim', 4], ['plan-trace', 'lpk:plan-trace', 5]]);
-  // Each critic is told its own focus and to leave the rest to the others.
   assert.ok(calls.slice(0, 4).every((c) => /Your focus: answer only these questions/.test(c.prompt)));
   assert.equal(new Set(calls.slice(0, 4).map((c) => c.prompt)).size, 4);
   for (const c of calls) assert.doesNotMatch(c.prompt, /round|earlier|previous/i);

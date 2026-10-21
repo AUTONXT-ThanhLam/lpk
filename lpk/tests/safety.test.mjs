@@ -78,10 +78,8 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   assert.match(context(told), /a builder works in its own worktree/);
   assert.match(context(edit('lpk:test-author', join(repo, 'src/a.ts'))), /production code/);
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
-  // An architect writes its brief under the git directory, never in the checkout.
   assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(edit('lpk:architect', join(repo, '.git', 'lpk', 'duel', 'small', 'brief.md')), null);
-  // A submodule keeps its git directory in the superproject's .git/modules, outside its work tree.
   const sub = repoWith('sub', { 'a.ts': 'a\n' });
   const gitDir = join(tmp, 'super', '.git', 'modules', 'sub');
   mkdirSync(dirname(gitDir), { recursive: true });

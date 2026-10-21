@@ -1,5 +1,3 @@
-// The design duel workflow as the Workflow tool runs it: its script body with agent(), parallel()
-// and log() standing in for the runtime's, and the architects and the judge answering from a table.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

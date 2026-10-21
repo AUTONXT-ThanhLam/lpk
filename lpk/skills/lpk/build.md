@@ -28,8 +28,8 @@ once, or know the one line that says why it is right.
 4. Put each invariant in the lowest function every writer passes through.
 5. A test that starts a server, a process or a container closes it on every path, the failing ones
    included: a leaked server holds the port for the next run.
-6. A limit you choose on purpose gets a comment `shortcut: <the limit>, <when to revisit>` on its
-   line, so reviewers read it as a decision.
+6. Write no code comments, and leave the ones already there. A limit you choose on purpose goes in
+   the PR body as `shortcut: <the limit>, <when to revisit>`, so reviewers read it as a decision.
 7. Fix at the root, never around it. A test or a task that looks wrong is reported as
    `contested: <why>`, never edited to pass.
 

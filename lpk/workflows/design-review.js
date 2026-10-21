@@ -48,8 +48,6 @@ Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
 Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.
 Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
-// One critic covering every question goes deep on a few and samples the rest, so each later round
-// finds what the last one skipped. Four critics, one focus each, cover them all in one round.
 const FOCUS = {
   state: 'every durable value the design writes (database rows and columns, queue keys and jobs, files on disk): who writes it, is each transition guarded, and what happens when two writers, a retry, a replay, a re-delivered or late job, or a crash between two steps interleave. Separate stores share no transaction: walk each multi-step operation step by step and name the state left behind when it stops after each step.',
   failures: 'for each dependency and each new key, column or state, what happens when it is unreachable, slow, half-open, failing with an unexpected error type, garbled, unset, repeated or growing: what each route, worker and periodic pass does, what the user sees, what an anonymous caller can learn, and what is left behind. Follow every error path to where it is caught.',

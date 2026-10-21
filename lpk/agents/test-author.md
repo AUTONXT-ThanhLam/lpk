@@ -23,9 +23,9 @@ For each scenario and each failure mode you were given (your slice's, when you w
 - use the data shape the defect needs (the second page, the empty list, the concurrent call, the
   unset variable, the service that times out);
 - put it in a suite CI runs, under a name that says the behaviour;
-- name the requirement it proves (`R3`, from the brief) in the test name or in a `// R3` comment on
-  a line you add beside it: the requirements gate reads the ids on the lines the change adds to
-  test files, and a requirement no test, scenario or failure row names blocks the handover.
+- name the requirement it proves (`R3`, from the brief) in the test name, never in a comment: the
+  requirements gate reads the ids on the lines the change adds to test files, and a requirement no
+  test, scenario or failure row names blocks the handover. Write no code comments.
 Where the repo has an e2e runner (Playwright, Cypress) and the scenario is a UI flow, write the
 e2e script too, so the prover can run it instead of clicking.
 

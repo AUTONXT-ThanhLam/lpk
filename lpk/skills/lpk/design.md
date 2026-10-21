@@ -76,7 +76,7 @@ The brief follows `writing.md` in this skill's directory. It holds:
 - the slices: each with the files it owns and the contract between them. Mark a slice **high
   risk** when it decides who may do what or moves state that cannot be undone;
 - the test plan: which test drives which entry point and fails without the change, in a suite CI
-  runs, and the requirement id it proves (in the test's name or a `// R3` comment beside it).
+  runs, and the requirement id it proves (in the test's name).
 
 Write the same in `brief.json`, beside it, with only what code reads: `requirements` (each
 `{ id: "R1", text, source }`), `scenarios` (each with its `id`, its `text`, a `cmd` (and `expect`)

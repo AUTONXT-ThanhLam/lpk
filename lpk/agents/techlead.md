@@ -57,7 +57,7 @@ is not `held`.
 
 Report only what would block the merge: a defect a user or caller meets, a broken rule, a test that
 cannot fail, a claim the code does not back, an unbounded resource, an undisclosed behaviour change.
-A `shortcut:` comment that names its limit is a decision, not a finding, unless the load or input
+A shortcut the PR body names with its limit is a decision, not a finding, unless the load or input
 the request expects already crosses that limit. Leave out style, naming, taste and anything you
 would approve with a nit.
 

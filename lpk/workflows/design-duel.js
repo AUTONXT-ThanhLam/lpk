@@ -10,30 +10,17 @@ export const meta = {
   ],
 }
 
-// args: { repo, base, skillDir, sources, precedent, dir, stallMs }
-// - skillDir: the lpk skill's directory, whose design.md says what a brief holds.
-// - sources: paths of the request, each linked ticket or document and the owner's answers, saved
-//   verbatim.
-// - precedent: path of the `lpk precedent` output, when there is one.
-// - dir: where the briefs go, one directory per card (<dir>/<card>/brief.md, brief.json,
-//   attacks.md).
-// - stallMs: ms before an architect counts as stalled.
-// One brief written alone meets its defects one review round at a time. Three briefs from different
-// cards, attacking each other with runs, meet most of them before the first round. Nothing here
-// reads the clock or chance, so resumeFromRunId replays every architect that already answered.
 const a = args || {}
 const missing = ['repo', 'base', 'skillDir', 'dir'].filter((k) => !a[k])
 if (!(a.sources || []).length) missing.push('sources')
 if (missing.length) return { error: `lpk:design-duel needs ${missing.join(', ')} in args` }
 
-// Each card's text is in agents/architect.md, so an architect started by hand gets the same one.
 const cards = ['small', 'failure', 'pattern']
 const dirOf = (card) => `${a.dir}/${card}`
 const S = { type: 'string' }
 const REPLY = { type: 'object', properties: { summary: S }, required: ['summary'] }
 const list = (paths) => paths.map((p) => `- ${p}`).join('\n')
 
-// Each architect once, and once more when it returns nothing or fails.
 const call = async (card, mode, ask) => {
   const prompt = `Mode: ${mode}. Repo ${a.repo}, base branch ${a.base}. The lpk skill directory is ${a.skillDir}.
 Your directory: ${dirOf(card)}. Your approach card: ${card}.${a.precedent ? ` The \`lpk precedent\` output is in ${a.precedent}.` : ''}

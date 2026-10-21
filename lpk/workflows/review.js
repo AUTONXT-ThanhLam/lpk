@@ -30,7 +30,6 @@ const LPK = a.lpk || 'lpk'
 const S = { type: 'string' }
 const FINDING = { type: 'object', properties: { id: S, file: S, line: { type: 'integer' }, claim: S, repro: S }, required: ['id', 'claim', 'repro'] }
 const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: FINDING } }, required: ['findings'] }
-// A mutant's survivors are test gaps; the tests failing or flaking on the change itself are a defect.
 const MUTANTS = { type: 'object', properties: { findings: { type: 'array', items: { ...FINDING, properties: { ...FINDING.properties, kind: { type: 'string', enum: ['test-gap', 'defect'] } } } } }, required: ['findings'] }
 const covered = (key, item) => ({ type: 'object', properties: { findings: FINDINGS.properties.findings, [key]: { type: 'array', items: item } }, required: ['findings', key] })
 const BATCH = covered('files', { type: 'object', properties: { path: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, reason: S }, required: ['path', 'status'] })

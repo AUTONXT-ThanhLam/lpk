@@ -86,7 +86,6 @@ export function writeGuard(input) {
   const type = input.agent_type || '';
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
   if (!WRITES.test(input.tool_name || '') || !file) return null;
-  // In a submodule the git directory sits outside the work tree, yet git names that work tree as its top.
   if (/^(lpk:)?architect$/.test(type)) {
     const at = checkoutOf(file);
     if (!at || [at.gitDir, at.common].some((d) => `${file}/`.startsWith(`${d}/`))) return null;

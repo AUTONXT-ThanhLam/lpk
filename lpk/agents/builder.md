@@ -38,8 +38,10 @@ slices, so a file outside your slice is a conflict.
    report it as `contested:` with why, and build the rest.
 6. A test that starts a server, a process or a container closes it on every path, the failing ones
    included: a leaked server holds the port for every later run.
-7. A limit you choose on purpose gets a comment `shortcut: <the limit>, <when to revisit>` on its
-   line.
+7. Write no code comments: a comment nobody maintains drifts from the code and misleads the next
+   reader. Say it in a name, a test or the commit message. Leave the comments already there.
+8. A limit you choose on purpose goes in your report as `shortcut: <the limit>, <when to revisit>`,
+   so the PR body names it and reviewers read it as a decision.
 
 In a fix round your slice is a group of confirmed findings instead: their claims, repros and
 rulings are your contract, and your base is the reviewed commit. Make one commit per root cause: it
@@ -80,5 +82,6 @@ Answer in this shape and nothing else:
 - `self-review`: each `lpk code-review --slice` finding, fixed, or not fixed and why;
 - `contested:` each test or task that looks wrong, with why, or `none`;
 - `contract`: anything in the contract you found wrong, or `none`;
+- `shortcut:` each limit you chose on purpose, and when to revisit it, or `none`;
 - `noticed:` what the lead should re-plan on (a slow or shared test, a cause larger than its
   group, work left that makes you the long pole), and what you told which peer, or `none`.
