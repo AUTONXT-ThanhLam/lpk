@@ -57,7 +57,7 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   agent with a short brief rather than re-brief one whose context is mostly spent.
 - **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
   `finding_list`; load them with ToolSearch `select:mcp__plugin_lpk_lpk__finding_list`), and only a
-  verifier rules on one. A finding you rule on yourself needs the owner.
+  verifier rules on one. A finding you rule on yourself goes in the report with its evidence.
 - **Heavy jobs share the machine.** Start a test suite, a build or an app through
   `lpk slot -- <command>`: it waits for free memory, because sessions that ran this machine out of
   memory died with all their work. Never `sleep`: agents and workflows notify you when they finish,

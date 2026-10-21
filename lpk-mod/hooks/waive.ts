@@ -6,7 +6,7 @@ import type { CommandRunInput, CommandRunResult, PluginOptions } from 'claude-co
 import { type Host, lpkRoot, run, runLpk, runStatus, words } from './lpk'
 
 const USAGE =
-  'Usage: /lpk-waive <id>[,<id>...] --why <reason>. An id is a gate row (verify, findings, reviews, scenarios, requirements, ci), a finding id, or the id a deny named (`gate:commit`, `connector:<tool>`, "git:reset --hard"). Example: /lpk-waive ci --why "the CI runner is down"'
+  'Usage: /lpk-waive <id>[,<id>...] --why <reason>. An id is a gate row (verify, findings, reviews, scenarios, requirements, ci) or the id a deny named (`gate:commit`, `connector:<tool>`, "git:reset --hard"). Example: /lpk-waive ci --why "the CI runner is down"'
 
 // The gate rows lpk's delivery gate prints; a waiver of one is recorded as `gate:<row>`, the id
 // the gate looks for. Every other id is recorded exactly as typed, as the deny that named it said.
