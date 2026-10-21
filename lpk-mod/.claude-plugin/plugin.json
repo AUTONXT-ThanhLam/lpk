@@ -1,7 +1,7 @@
 {
   "name": "lpk-mod",
-  "version": "0.2.0",
-  "description": "Early-access extras for lpk: a band above the prompt with the run's step and the team at work, /lpk-status, /lpk-switch, /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
+  "version": "0.3.0",
+  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch, /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
   "author": {
     "name": "lam"
   },

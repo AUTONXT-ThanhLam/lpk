@@ -1,11 +1,10 @@
 // An lpk run as Claude Code drives it: `lpk run` and `lpk verify` from the session's shell, and the
 // hook commands hooks.json registers, fed the JSON Claude Code sends, in real git repos.
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, tmp, write } from './hooks-env.mjs';
+import { context, ENV, hook, lpk, reason, repoWith, sh, tmp, write } from './hooks-env.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const start = (repo, session, ...args) => ok(lpk(repo, session, 'run', 'start', '--target', 'main', ...(args.length ? args : ['--verify', 'true'])));
@@ -47,7 +46,7 @@ test('lpk run end never refuses: with no run, and with a damaged run file', () =
   assert.ok(!existsSync(runFile(repo)));
 });
 
-test('lpk verify records red, then green, on the exact tree it ran on; the status line shows it', () => {
+test('lpk verify records red, then green, on the exact tree it ran on', () => {
   const repo = repoWith('verify', { 'src/a.mjs': 'export const a = 1;\n', 'check.sh': 'grep -q "a = 2" src/a.mjs\n' });
   start(repo, 'v', '--verify', 'bash check.sh');
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
@@ -57,8 +56,6 @@ test('lpk verify records red, then green, on the exact tree it ran on; the statu
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   write(repo, 'src/new.mjs', 'export const n = 1;\n');
   assert.match(ok(lpk(repo, 'v', 'verify')), /Untracked code files in this tree: src\/new\.mjs[\s\S]*verified: green on tree/);
-  const line = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'statusline'], { cwd: tmp, env: ENV, input: JSON.stringify({ session_id: 'v' }), encoding: 'utf8' }).stdout;
-  assert.equal(line, 'lpk 0m · verify green 0m ago');
 });
 
 test('a check that rewrites code voids its own verify; files it writes beside the code do not', () => {

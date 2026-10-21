@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { git } from './git.mjs';
 import { appendRecord } from './records.mjs';
 import { CODE } from './rules.mjs';
-import { activeRun, noteBranch, readRun, writeRun } from './run.mjs';
+import { noteBranch, readRun, writeRun } from './run.mjs';
 import { treeOf } from './tree.mjs';
 
 export function verify(repo, timeout = 1200) {
@@ -28,13 +28,4 @@ export function verify(repo, timeout = 1200) {
   writeRun(r);
   appendRecord(repo, { kind: 'verify', run: r.id, tree: after.id, exit: green ? 0 : 1, green, untracked: after.untracked, results: results.map(({ cmd, exit, ms }) => ({ cmd, exit, ms })) });
   return { verified: r.verified, changedDuring: moved, untracked: after.untracked };
-}
-
-// One short line for the owner's status line: this session's run, its real age and its last verify.
-export function statusLine(session) {
-  const r = activeRun(session, false);
-  if (!r) return '';
-  const min = (t) => Math.round((Date.now() - t) / 60000);
-  const v = r.verified;
-  return `lpk ${min(r.started)}m · ${!v ? 'not verified yet' : `verify ${v.green ? 'green' : 'RED'} ${min(v.at)}m ago`}`;
 }

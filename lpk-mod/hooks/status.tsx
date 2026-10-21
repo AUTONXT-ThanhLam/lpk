@@ -1,68 +1,44 @@
-// The run at a glance: a band above the prompt while an lpk run is open in the session's repo (its
-// step, how long it worked, what waits on the owner, the team at work), the same in short on the
-// status line, and /lpk-status, a pane with the whole picture. Every fact comes from
-// `lpk status --json`; the mod only draws. It never blocks: hooks mark the status due and a timer
-// runs the CLI, one call at a time.
+// /lpk-status: a pane with the whole picture of the lpk run in the session's repo (the steps it went
+// through, the slices, the gates with what each read, the whole team, the findings). The run's band
+// itself is in the status line (`lpk statusline`). Every fact comes from `lpk status --json --gates`;
+// the mod only draws. It never blocks: hooks mark the pane due and a timer runs the CLI, one call at
+// a time, only while the pane is open.
 import { atom, read, update } from 'claude-code'
 import type { On, PluginOptions } from 'claude-code'
 
 import type { LpkStatus } from '../types'
-import { type Host, lpkRoot, runDir, runLpk } from './lpk'
+import { type Host, lpkRoot, runLpk } from './lpk'
 
-const status = atom({ plugin: 'lpk-mod', key: 'status' } as const, null)
 const full = atom({ plugin: 'lpk-mod', key: 'full' } as const, null)
 export const PANE = 'lpk-status'
 const TICK_MS = 1000
 const EVERY_MS = 3000
-const MAX_ROWS = 6
 const minutes = (ms: number) => `${Math.round(ms / 60_000)}m`
 
 // What the timer keeps between ticks; a reload of the module starts it over.
 let busy = false
 let due = true
 let last = 0
-// The session invoked /lpk; until `lpk run start` writes run.json only the CLI can tell it is open.
-let invoked = false
-// The repo's run directory for the session's directory, asked of git once per directory.
-let dirOf: { cwd: string; dir: string | undefined } = { cwd: '', dir: undefined }
 
 async function refresh($: Host, options: PluginOptions): Promise<void> {
   const now = await $.clock.now()
   if (busy || (!due && now - last < EVERY_MS)) return
   busy = true
-  due = false
-  last = now
   try {
+    if (!(await $.ui.panes()).some((p) => p.id === PANE)) return
+    due = false
+    last = now
     const cwd = await $.session.cwd()
-    if (dirOf.cwd !== cwd) dirOf = { cwd, dir: await runDir($, cwd) }
-    const dir = dirOf.dir
-    const files = dir ? (await $.fs.exists(`${dir}/run.json`)) || (await $.fs.exists(`${dir}/brief.md`)) : false
-    if (!files && !invoked) return await clear($)
     const root = await lpkRoot($, options)
-    if (!root) return await clear($)
-    const pane = (await $.ui.panes()).some((p) => p.id === PANE)
-    const args = ['status', '--json', '--session', await $.session.id(), '--repo', cwd, ...(pane ? ['--gates'] : [])]
-    const r = await runLpk($, root, args, { cwd, timeoutMs: 20_000 })
+    if (!root) return
+    const r = await runLpk($, root, ['status', '--json', '--gates', '--session', await $.session.id(), '--repo', cwd], { cwd, timeoutMs: 20_000 })
     const s = JSON.parse(r.stdout) as LpkStatus
-    if (!s.open) {
-      if (!files) invoked = false
-      return await clear($)
-    }
-    await update($, status, () => s)
-    if (pane) await update($, full, () => s)
-    $.ui.status(s.view.line)
+    await update($, full, () => (s.open ? s : null))
   } catch (err) {
     $.ui.log(`lpk status skipped: ${String(err)}`, { to: 'debug' })
   } finally {
     busy = false
   }
-}
-
-async function clear($: Host): Promise<void> {
-  if ((await read($, status)) === null && (await read($, full)) === null) return
-  await update($, status, () => null)
-  await update($, full, () => null)
-  $.ui.status(undefined)
 }
 
 // A new agent may move the run: the next tick reads it at once (register.ts's agent.spawn hook).
@@ -80,12 +56,6 @@ export function registerStatus(on: On): void {
   // A tool call may move the run: the next tick reads it at once.
   on('tool.call', async ($, e, next) => {
     due = true
-    if (e.tool === 'Skill' && /^(lpk:)?lpk$/.test(String((e as { skill?: unknown }).skill ?? ''))) invoked = true
-    return next(e)
-  })
-  on('prompt.submit', async ($, e, next) => {
-    if (/^\/(lpk:)?lpk(\s|$)/.test(e.text)) invoked = true
-    due = true
     return next(e)
   })
 
@@ -95,40 +65,9 @@ export function registerStatus(on: On): void {
     return { text: 'The lpk run pane is open.' }
   }).catch(() => ({ text: '/lpk-status could not open its pane.' }))
 
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const s = await read($, status)
-    if (e.props.hasSurvey || !s?.open) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
-    const v = s.view
-    const rows = v.rows.slice(0, MAX_ROWS)
-    return (
-      <Box flexDirection="column">
-        <Text wrap="truncate-end">
-          {v.track.map((step, i) => (
-            <Text>
-              {i ? <Text dimColor> › </Text> : null}
-              {step.state === 'current' ? <Text bold>{step.name}</Text> : <Text dimColor={step.state === 'visited'}>{step.name}</Text>}
-            </Text>
-          ))}
-          {v.quiet ? <Text>{`  ${v.quiet}`}</Text> : null}
-          {v.waits ? <Text color="warning">{`  waits on you: ${v.waits}`}</Text> : null}
-          <Text dimColor>{`  ${v.head}`}</Text>
-        </Text>
-        {v.detail ? <Text dimColor wrap="truncate-end">{v.detail}</Text> : null}
-        {rows.map((r) => (
-          <Text wrap="truncate-end">
-            {`  ${r.title}`}
-            <Text dimColor>{`  ${[r.what, r.note, r.elapsed].filter(Boolean).join('  ')}`}</Text>
-          </Text>
-        ))}
-        {v.rows.length > MAX_ROWS ? <Text dimColor>{`  +${v.rows.length - MAX_ROWS} more`}</Text> : null}
-      </Box>
-    )
-  })
-
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    const s = (await read($, full)) ?? (await read($, status))
+    const s = await read($, full)
     if (!s?.open) return <Text dimColor>No lpk run is open in this session's repo.</Text>
     const f = s.findings
     return (

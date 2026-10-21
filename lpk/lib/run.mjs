@@ -10,7 +10,7 @@ import { archiveLedger } from './findings.mjs';
 import { absGitPath, git } from './git.mjs';
 
 export { codeOfCommit, treeOf } from './tree.mjs';
-export { statusLine, verify } from './verify.mjs';
+export { verify } from './verify.mjs';
 
 const DAY = 24 * 3600 * 1000;
 // One file per live run, naming its marker: the hooks' only cost outside a run is listing it.

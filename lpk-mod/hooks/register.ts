@@ -1,7 +1,8 @@
-// lpk-mod: early-access extras for lpk, never required by it. The run's band, status line and pane
-// (status.tsx), two owner-only commands (/lpk-switch, /lpk-waive), a hint before a fan-out the
-// machine or the quota cannot carry, and compaction instructions that keep an lpk run's state. Every hook lets the session go on when it
-// fails: a broken mod costs its own extra, never the owner's turn or an agent's start.
+// lpk-mod: early-access extras for lpk, never required by it. The lpk run pane (status.tsx), two
+// owner-only commands (/lpk-switch, /lpk-waive), a hint before a fan-out the machine or the quota
+// cannot carry, and compaction instructions that keep an lpk run's state. Every hook lets the
+// session go on when it fails: a broken mod costs its own extra, never the owner's turn or an
+// agent's start.
 import type { Register } from 'claude-code'
 
 import { compactInstructions } from './compact'

@@ -1,5 +1,5 @@
-// What `lpk status --json` prints and the band and the /lpk-status pane draw. The CLI computes every
-// fact and words the band (`view`); the mod only draws.
+// What `lpk status --json` prints and the /lpk-status pane draws. The CLI computes every fact and
+// words the band (`view`); the mod only draws.
 export type TrackStep = { name: string; state: 'current' | 'visited' | 'next' }
 export type BandRow = { title: string; what: string; note: string; elapsed: string }
 export type TeamRow = {
@@ -24,6 +24,6 @@ export type LpkStatus = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'lpk-mod': { status: LpkStatus | null; full: LpkStatus | null }
+    'lpk-mod': { full: LpkStatus | null }
   }
 }

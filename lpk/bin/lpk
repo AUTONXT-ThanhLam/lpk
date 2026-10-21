@@ -13,7 +13,6 @@ import { setup } from '../lib/tools.mjs';
 import { freshCandidates } from '../lib/hooks.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
 import { changeOf } from '../lib/rules.mjs';
-import { statusLine } from '../lib/run.mjs';
 
 const [cmd, ...argv] = process.argv.slice(2);
 // A command added as its own module (`lib/cmd/<name>.mjs`, exporting `main(argv)` that returns the
@@ -182,8 +181,6 @@ if (cmd === 'facts') {
   const given = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1].startsWith('--')));
   const paths = given.length ? given : changeOf(repo, resolveBase(repo)).map((f) => f.path);
   console.log(precedentText({ repo, paths }));
-} else if (cmd === 'statusline') {
-  try { process.stdout.write(statusLine(JSON.parse(readFileSync(0, 'utf8') || '{}').session_id)); } catch { /* silent */ }
 } else if (cmd === 'setup') {
   console.log(setup().join('\n'));
 } else {
