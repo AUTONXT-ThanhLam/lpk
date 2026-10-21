@@ -76,8 +76,9 @@ branch, named the way the repo names them, then start these in the background at
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
   `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
-  suite's time, once known) and `round: 1`. It runs the design critic, the plan simulator and the
-  plan tracer at once, each fresh, and returns their findings rated High, Medium or Low;
+  suite's time, once known) and `round: 1`. It runs four design critics (one focus each), the plan
+  simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
+  or Low;
 - one `lpk:test-author` per slice of the brief, all in one message, each with the repo (the branch
   checked out), the brief's path, the test command, and only its slice's scenarios, failure rows and
   files; slices whose tests share a test file, helper, fixture, database or port share one test

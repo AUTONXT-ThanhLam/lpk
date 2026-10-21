@@ -1,7 +1,7 @@
 ---
 name: design-critic
 description: Checks a Design Brief against the code before anything is built, running what the design relies on, and blocks a design that would ship a defect the team's tech lead blocks merges for. Give it the brief path, the repo path, the base branch, and the `lpk precedent` output. It reads code and runs read-only commands; it never edits.
-model: opus
+model: sonnet
 effort: high
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 background: true
@@ -38,6 +38,9 @@ review:
   file (`brief.json`).
 
 ## Questions to answer
+
+When your task gives you a focus, answer only its questions, as deep as they go: other critics
+answer the rest in the same round. Without a focus, answer all of these.
 
 - Entry points: every route, twin, script, seed, import, restore and resume path that reaches the
   protected state is in the brief, through the guard, or excluded with a reason that holds.

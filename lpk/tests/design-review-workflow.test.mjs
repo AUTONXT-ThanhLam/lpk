@@ -1,5 +1,5 @@
 // The design review workflow as the Workflow tool runs it: its script body with agent(), parallel()
-// and log() standing in for the runtime's, and the three angles answering from a table.
+// and log() standing in for the runtime's, and the angles answering from a table.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -27,13 +27,18 @@ async function run(args, answer) {
 }
 
 const finding = (severity, lines) => ({ severity, lines, claim: `a ${severity} claim`, evidence: '[ran] exit 1', fix: 'say what happens' });
-const answers = (by) => (o) => ({ findings: [], stages: [{ stage: 'build', minutes: 12, basis: '[inferred]' }], totalMinutes: 30, trace: [], ...by[o.agentType] });
+const answers = (by) => (o) => ({ findings: [], stages: [{ stage: 'build', minutes: 12, basis: '[inferred]' }], totalMinutes: 30, trace: [], ...(by[o.label] || by[o.agentType]) });
 
-test('a round starts the critic, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
+test('a round starts four focused critics, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
   const { out, calls } = await run(ARGS, answers({ 'lpk:plan-sim': { findings: [finding('Medium', [4])] } }));
-  assert.deepEqual(calls.map((c) => [c.opts.agentType, c.running]), [['lpk:design-critic', 0], ['lpk:plan-sim', 1], ['lpk:plan-trace', 2]]);
+  assert.deepEqual(calls.map((c) => [c.opts.label, c.opts.agentType, c.running]), [
+    ['design-critic:state', 'lpk:design-critic', 0], ['design-critic:failures', 'lpk:design-critic', 1], ['design-critic:main', 'lpk:design-critic', 2],
+    ['design-critic:proof', 'lpk:design-critic', 3], ['plan-sim', 'lpk:plan-sim', 4], ['plan-trace', 'lpk:plan-trace', 5]]);
+  // Each critic is told its own focus and to leave the rest to the others.
+  assert.ok(calls.slice(0, 4).every((c) => /Your focus: answer only these questions/.test(c.prompt)));
+  assert.equal(new Set(calls.slice(0, 4).map((c) => c.prompt)).size, 4);
   for (const c of calls) assert.doesNotMatch(c.prompt, /round|earlier|previous/i);
-  assert.match(calls[2].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
+  assert.match(calls[5].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
   assert.equal(out.round, 2);
   assert.equal(out.verdict, 'pass');
   assert.deepEqual(out.counts, { High: 0, Medium: 1, Low: 0 });
@@ -42,15 +47,15 @@ test('a round starts the critic, the plan simulator and the plan tracer at once,
 });
 
 test('a High on lines the previous revision changed asks for another approach, and a round missing an angle does not pass', async () => {
-  const highs = answers({ 'lpk:design-critic': { findings: [finding('Low', [1]), finding('High', [9])] }, 'lpk:plan-trace': { findings: [finding('High', [20])] } });
+  const highs = answers({ 'design-critic:state': { findings: [finding('Low', [1]), finding('High', [9])] }, 'lpk:plan-trace': { findings: [finding('High', [20])] } });
   const patched = await run({ ...ARGS, changed: [8, 9] }, highs);
   assert.equal(patched.out.verdict, 'redesign');
-  assert.deepEqual(patched.out.findings.map((f) => [f.angle, f.severity, f.onChanged]), [['design-critic', 'High', true], ['plan-trace', 'High', false], ['design-critic', 'Low', false]]);
+  assert.deepEqual(patched.out.findings.map((f) => [f.angle, f.severity, f.onChanged]), [['design-critic:state', 'High', true], ['plan-trace', 'High', false], ['design-critic:state', 'Low', false]]);
   assert.equal((await run({ ...ARGS, changed: [30] }, highs)).out.verdict, 'revise');
   const silent = await run(ARGS, (o) => (o.agentType === 'lpk:plan-trace' ? null : answers({})(o)));
   assert.equal(silent.out.verdict, 'incomplete');
   assert.deepEqual(silent.out.missing, ['plan-trace']);
-  assert.deepEqual(silent.calls.map((c) => c.opts.label).sort(), ['design-critic', 'plan-sim', 'plan-trace', 'plan-trace#2']);
+  assert.deepEqual(silent.calls.map((c) => c.opts.label).sort(), ['design-critic:failures', 'design-critic:main', 'design-critic:proof', 'design-critic:state', 'plan-sim', 'plan-trace', 'plan-trace#2']);
 });
 
 test('a later round without changed is refused', async () => {

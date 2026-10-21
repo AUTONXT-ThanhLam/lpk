@@ -13,7 +13,7 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 // where another layer checks the output (building, reviewing, verifying), Haiku for the
 // environment. `readOnly` roles never edit.
 const TABLE = {
-  'design-critic': { model: 'opus', effort: 'high', readOnly: true },
+  'design-critic': { model: 'sonnet', effort: 'high', readOnly: true },
   'plan-sim': { model: 'opus', effort: 'high', readOnly: true },
   'plan-trace': { model: 'sonnet', effort: 'high', readOnly: true },
   builder: { model: 'sonnet', effort: 'high', readOnly: false },
