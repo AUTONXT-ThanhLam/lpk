@@ -1,6 +1,7 @@
 # Building several slices at once
 
-Read this when the brief has more than one slice (step 5 of the lpk skill).
+Read this when the brief has more than one slice (step 3). **Goal:** the slices are built at the
+same time without colliding, and each arrives reviewed by its own builder.
 
 Commit the acceptance tests first. When the repo's own pre-commit hook refuses red tests (it
 typechecks or runs them), never skip it: leave them uncommitted, and each builder copies its
@@ -8,11 +9,19 @@ slice's tests into its worktree and commits them with the code that makes them p
 
 For each slice create a worktree from the branch head
 (`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD`) and start one `lpk:builder` per
-slice, each with its worktree, the base, its files, contract and tests, the test command and the
-profile path. A hook refuses a builder's write into the main checkout. Start them all in one
-message and not in the background: they run at the same time and your turn waits for them, since
-the run will not let a turn end on unverified source. Glue that joins the slices is a slice of its
-own, or written after they are in.
+slice in the background, all in one message, each with its worktree, the base, its files, contract
+and tests, the test command, the brief and the profile path. You are notified as each one finishes.
+Glue that joins the slices is a slice of its own, or written after they are in. After go, a builder
+may start early on a slice no open design review High touches; a slice a later High touches is
+rebuilt.
+
+Each builder reports its commit, its self-review (`lpk code-review --slice`) and any `contested:`
+item. Rule on each contested item before you bring the slice in: the test or the task changes, or
+the builder was wrong, with the reason.
+
+A builder whose slice is stuck (no new commit after its second failed attempt, or a report that it
+cannot meet the contract) is handed over with `lpk handoff <slice>`: it prints what the slice has
+done and what is left, for a fresh builder to start from.
 
 A **high-risk** slice gets two builders, each told one of the two approaches the brief weighed;
 keep the one whose tests pass with the cleaner `lpk check` and the smaller diff, and say which and

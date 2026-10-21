@@ -1,89 +1,97 @@
 // The findings ledger as MCP tools, so a reviewer records a finding and a verifier rules on it
 // without passing a multi-line claim and reproduction through a shell command line. Plain stdio
 // JSON-RPC, one message per line: the plugin ships no dependencies and this must start anywhere.
-import { readdirSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { addFinding, findingsText, getFinding, ledgerOf, markFixed, readLedger, ruleOn, unsettled, unfixed } from '../lib/findings.mjs';
-import { git } from '../lib/git.mjs';
+// The PreToolUse hook on these tools stamps repo, run, from, agentId, at and by (lib/stamp.mjs).
+import { addFinding, counts, findingsText, getFinding, KINDS, markFixed, PROTECTED, readLedger, ruleOn, SEVERITIES, STATES, VERDICTS, CLOSED_BY } from '../lib/findings.mjs';
+import { top } from '../lib/git.mjs';
 
 const PROTOCOL = ['2024-11-05', '2025-03-26', '2025-06-18'];
-const ACTIVE = join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'lpk', 'active');
-
-// The repo this ledger belongs to: the session's own directory, else the newest lpk run on this
-// machine (a reviewer works in the frozen worktree while the session sits in the checkout).
-function repo() {
-  const here = git(['rev-parse', '--show-toplevel'], process.cwd()).trim();
-  if (here) return here;
-  let names = [];
-  try { names = readdirSync(ACTIVE); } catch { return ''; }
-  const runs = names.map((n) => {
-    try { return JSON.parse(readFileSync(readFileSync(join(ACTIVE, n), 'utf8').trim(), 'utf8')); } catch { return null; }
-  }).filter(Boolean).sort((a, b) => (b.started || 0) - (a.started || 0));
-  return runs[0]?.repo || '';
-}
 
 const ok = (text) => ({ content: [{ type: 'text', text }] });
 const bad = (text) => ({ content: [{ type: 'text', text }], isError: true });
 const say = (r, f) => (r.error ? bad(`lpk: ${r.error}`) : ok(f(r.finding)));
+const str = (description) => ({ type: 'string', description });
+const STAMP = 'stamped by lpk; leave out';
+const stamped = { repo: str(STAMP), run: str(STAMP) };
 
 const TOOLS = [
   {
     name: 'finding_add',
-    description: 'Record a finding on the committed change under review. Give the claim (what is wrong and who meets it) and the reproduction (the command and its real output, or the input, state and wrong outcome traced through code you read). `verdict: confirmed` with `evidence` only when a command you ran proves it, as `lpk mutate` does for a mutant.',
+    description: 'Record one finding on the change under review: what is wrong and who meets it, and the repro (the command and its real output, or the input, state and wrong outcome traced through code you read).',
     inputSchema: {
       type: 'object',
       properties: {
-        claim: { type: 'string', description: 'what is wrong, for whom' },
-        repro: { type: 'string', description: 'the steps or command that show it' },
-        file: { type: 'string', description: 'path at the reviewed commit' },
-        line: { type: 'integer' },
-        from: { type: 'string', description: 'the role raising it' },
-        verdict: { type: 'string', enum: ['confirmed'] },
-        evidence: { type: 'string', description: 'the command output that proves it, with verdict confirmed' },
+        claim: str('what is wrong, for whom'),
+        repro: str('the steps or command that show it'),
+        kind: { type: 'string', enum: KINDS },
+        severity: { type: 'string', enum: SEVERITIES },
+        file: str('path at the reviewed commit'),
+        line: { type: 'integer', minimum: 1 },
+        ruleId: str('the rule id, for kind rule'),
+        area: { type: 'string', enum: PROTECTED, description: 'set when the finding is in one of these areas' },
+        ...stamped, from: str(STAMP), agentId: str(STAMP), at: str(STAMP),
       },
-      required: ['claim', 'repro'],
+      required: ['claim', 'repro', 'kind', 'severity'],
     },
   },
   {
     name: 'finding_get',
-    description: 'Read one finding: its claim, reproduction, the verdict a verifier gave it and the commit that fixed it.',
-    inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+    description: 'Read one finding: claim, repro, ruling and fix.',
+    inputSchema: { type: 'object', properties: { id: str('F<n>'), ...stamped }, required: ['id'] },
   },
   {
     name: 'finding_verdict',
-    description: 'Rule on the one finding you were given: confirmed (it reproduces), preexisting (it reproduces on the base too, so it is reported and not fixed) or dropped (it does not hold), with the reproduction or the reason as evidence. Only a finding still open can be ruled on.',
+    description: 'Rule on one finding with evidence: confirmed, preexisting (also fails on the base), dropped (with basis), duplicate (with primary) or unsettled.',
     inputSchema: {
       type: 'object',
-      properties: { id: { type: 'string' }, verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped'] }, evidence: { type: 'string' } },
+      properties: {
+        id: str('F<n>'),
+        verdict: { type: 'string', enum: VERDICTS },
+        evidence: str('the repro you ran and its output, or why the claim is false'),
+        basis: { type: 'string', enum: ['not-reproduced', 'disproved'], description: 'for dropped' },
+        primary: str('for duplicate: the finding it repeats'),
+        ...stamped, by: str(STAMP),
+      },
       required: ['id', 'verdict', 'evidence'],
     },
   },
   {
     name: 'finding_fixed',
-    description: 'Close a confirmed finding with the commit that fixed it (a commit after the one it was raised on) and, in one sentence, how.',
-    inputSchema: { type: 'object', properties: { id: { type: 'string' }, commit: { type: 'string' }, fix: { type: 'string' } }, required: ['id', 'commit'] },
+    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: str('F<n>'),
+        commit: str('the fix commit'),
+        closedBy: { type: 'string', enum: CLOSED_BY },
+        evidence: str('the repro or test output, or the ruling'),
+        fix: str('how, in one sentence'),
+        ...stamped, by: str(STAMP),
+      },
+      required: ['id', 'commit', 'closedBy', 'evidence'],
+    },
   },
   {
     name: 'finding_list',
-    description: 'Every finding of this run, in the order they were raised, or only those in one state.',
-    inputSchema: { type: 'object', properties: { state: { type: 'string', enum: ['open', 'confirmed', 'preexisting', 'dropped', 'fixed'] } } },
+    description: 'The findings of this run, or those in one state.',
+    inputSchema: { type: 'object', properties: { state: { type: 'string', enum: STATES }, ...stamped } },
   },
 ];
 
-function call(name, a) {
-  const repoPath = repo();
-  const file = ledgerOf(repoPath);
-  if (!file) return bad('lpk: no git repository here and no lpk run open on this machine, so there is nowhere to keep findings');
-  const head = git(['rev-parse', '--short=12', 'HEAD'], repoPath).trim();
-  if (name === 'finding_add') return say(addFinding(file, { ...a, at: head }), (f) => `${f.id} recorded (${f.from}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}, state ${f.state}).`);
-  if (name === 'finding_get') return getFinding(file, a.id) ? ok(JSON.stringify(getFinding(file, a.id), null, 1)) : bad(`lpk: no finding ${a.id}`);
-  if (name === 'finding_verdict') return say(ruleOn(file, a), (f) => `${f.id} is ${f.state}: ${f.evidence}`);
-  if (name === 'finding_fixed') return say(markFixed(file, a), (f) => `${f.id} fixed in ${f.fixedCommit}.`);
+const where = (f) => (f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : '');
+
+function call(name, input) {
+  const { repo: given, run, ...a } = input;
+  const repo = given || top(process.cwd());
+  if (!repo) return bad('lpk: no repo was stamped and this server does not run in a git repository, so there is no ledger to use');
+  if (name === 'finding_add') return say(addFinding(repo, { ...a, run }), (f) => `${f.id} recorded (${f.from}${where(f)}, open).`);
+  if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
+  if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; a protected area needs the owner)` : ''}: ${f.evidence}`);
+  if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
   if (name === 'finding_list') {
-    const all = readLedger(file).findings;
-    const tail = `\n${unsettled(all).length} open, ${unfixed(all).length} confirmed and unfixed, ${all.length} in all`;
-    return ok(findingsText(all, { state: a.state }) + tail);
+    const all = readLedger(repo).findings;
+    const c = counts(all);
+    return ok(`${findingsText(all, { state: a.state })}\n${c.open} open, ${c.confirmed} confirmed and unfixed, ${c.unsettled} unsettled, ${c.needsOwner} need the owner, ${c.total} in all`);
   }
   return bad(`lpk: no tool ${name}`);
 }
@@ -93,7 +101,7 @@ const send = (msg) => process.stdout.write(`${JSON.stringify(msg)}\n`);
 function handle(m) {
   if (m.method === 'initialize') {
     const want = m.params?.protocolVersion;
-    send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: PROTOCOL.includes(want) ? want : PROTOCOL.at(-1), capabilities: { tools: {} }, serverInfo: { name: 'lpk', version: '1.0.0' } } });
+    send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: PROTOCOL.includes(want) ? want : PROTOCOL.at(-1), capabilities: { tools: {} }, serverInfo: { name: 'lpk', version: '2.0.0' } } });
   } else if (m.method === 'tools/list') {
     send({ jsonrpc: '2.0', id: m.id, result: { tools: TOOLS } });
   } else if (m.method === 'tools/call') {

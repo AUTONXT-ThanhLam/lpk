@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { parseFindings } from '../lib/codereview.mjs';
+import { parseFindings } from '../lib/codereview-parse.mjs';
 import { touched } from '../lib/facts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -165,29 +165,6 @@ test('the push guard runs the gitleaks lpk setup fetched when none is on PATH', 
   assert.match(JSON.parse(out).hookSpecificOutput.permissionDecisionReason, /gitleaks found 1 secret.*\n.*a\.env:1 generic-api-key/);
 });
 
-test('lpk code-review --security runs /security-review on the change against the base and keeps its report', () => {
-  const repo = join(tmp, 'security');
-  mkdirSync(repo);
-  sh(repo, 'init', '-q', '-b', 'main');
-  write(repo, 'app.py', 'def f(): pass\n');
-  sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'init'); sh(repo, 'switch', '-qc', 'feat');
-  write(repo, 'app.py', 'def f(x): return eval(x)\n');
-  sh(repo, 'commit', '-qam', 'eval');
-  // A stand-in claude that answers with the prompt it was given, as `claude -p --output-format json` does.
-  const bin = join(tmp, 'fake-claude');
-  write(bin, 'claude', '#!/bin/sh\nprintf \'{"result":"%s","total_cost_usd":0}\' "$2"\n');
-  execFileSync('chmod', ['+x', join(bin, 'claude')]);
-  const out = join(tmp, 'security-out');
-  const r = JSON.parse(execFileSync('node', [LPK, 'code-review', '--security', '--base', 'main', '--out', out], { cwd: repo, env: { ...ENV, PATH: `${bin}:${ENV.PATH}` }, encoding: 'utf8' }));
-  assert.equal(r.file, join(out, 'security-review.md'));
-  const base = sh(repo, 'rev-parse', 'main').trim();
-  assert.equal(readFileSync(r.file, 'utf8'), `/security-review Review only the change \`git diff ${base}...HEAD\`.`);
-  // Without an origin remote the real command answers with an empty result: that is an error, not a clean report.
-  write(bin, 'claude', '#!/bin/sh\nprintf \'{"result":"","total_cost_usd":0}\'\n');
-  assert.throws(() => execFileSync('node', [LPK, 'code-review', '--security', '--base', 'main', '--out', out], { cwd: repo, env: { ...ENV, PATH: `${bin}:${ENV.PATH}` }, encoding: 'utf8', stdio: 'pipe' }),
-    (e) => e.status === 1 && /no report/.test(e.stdout));
-});
-
 test('the prompts name only commands, agents, workflows, skills and files the plugin ships', () => {
   const skill = ['lpk', 'learn'].map((n) => readFileSync(join(ROOT, 'skills', n, 'SKILL.md'), 'utf8')).join('\n');
   const agents = readdirSync(join(ROOT, 'agents')).map((f) => readFileSync(join(ROOT, 'agents', f), 'utf8')).join('\n');
@@ -203,50 +180,9 @@ test('the prompts name only commands, agents, workflows, skills and files the pl
   }
   const mcp = JSON.parse(readFileSync(join(ROOT, '.mcp.json'), 'utf8'));
   assert.ok(mcp.mcpServers['chrome-devtools'], 'mcp__plugin_lpk_chrome-devtools__* needs the server named chrome-devtools');
-  assert.match(skill, /mcp__plugin_lpk_chrome-devtools__/);
+  assert.match(readdirSync(join(ROOT, 'skills', 'lpk')).map((f) => readFileSync(join(ROOT, 'skills', 'lpk', f), 'utf8')).join('\n'), /mcp__plugin_lpk_chrome-devtools__/);
   const review = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8');
   for (const [, name] of review.matchAll(/'lpk:([a-z-]+)'/g)) assert.ok(existsSync(join(ROOT, 'agents', `${name}.md`)), `the review workflow starts lpk:${name}, which the plugin does not ship`);
-});
-
-test('the review workflow reports each file the OpenCodeReview batches leave unreviewed', async () => {
-  const src = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8').replace('export const meta', 'const meta');
-  const run = new Function('args', 'agent', 'parallel', `return (async () => {\n${src}\n})()`);
-  const paths = Array.from({ length: 23 }, (_, i) => `src/f${String(i).padStart(2, '0')}.ts`);
-  const batches = [];
-  const agent = async (prompt, o) => {
-    if (o.label === 'ocr:preview') return { paths };
-    if (o.agentType !== 'lpk:ocr') return o.agentType === 'lpk:prover' ? null : { findings: [] };
-    const mine = paths.filter((p) => prompt.includes(p));
-    batches.push(mine);
-    if (batches.length === 2) return null;
-    return { findings: [], files: mine.filter((p) => p !== 'src/f00.ts').map((p) => (p === 'src/f01.ts' ? { path: p, status: 'skipped', reason: 'generated' } : { path: p, status: 'reviewed' })) };
-  };
-  const parallel = (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)));
-  const out = await run({ repo: '/r', base: 'b', commit: 'c', bundle: '/b', request: 'q', scenarios: 's', testCmd: 't' }, agent, parallel);
-  assert.deepEqual(batches.map((b) => b.length).sort(), [7, 8, 8]);
-  assert.deepEqual(batches.flat().sort(), paths);
-  const missed = out.noAnswer.filter((m) => m.startsWith('ocr: '));
-  assert.ok(missed.includes('ocr: did not review src/f00.ts'));
-  assert.ok(missed.includes('ocr: did not review src/f01.ts: generated'));
-  assert.equal(missed.length, 2 + batches.find((b, i) => i === 1).length);
-});
-
-test('reviewers see the failure table, and a finding the verifier could not settle comes back unverified', async () => {
-  const src = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8').replace('export const meta', 'const meta');
-  const run = new Function('args', 'agent', 'parallel', `return (async () => {\n${src}\n})()`);
-  const prompts = [];
-  const agent = async (prompt, o) => {
-    if (o.label === 'ocr:preview') return { paths: [] };
-    if (o.agentType === 'lpk:techlead') { prompts.push(prompt); return { findings: [{ path: 'a.ts', line: 1, claim: 'races', repro: 'r' }] }; }
-    if (o.agentType === 'lpk:verifier') return { verdict: 'UNSETTLED', evidence: 'could not start the app' };
-    if (o.agentType === 'lpk:regression') return { findings: [], groups: [] };
-    return o.agentType === 'lpk:prover' ? null : { findings: [] };
-  };
-  const parallel = (thunks) => Promise.all(thunks.map((t) => t().catch(() => null)));
-  const out = await run({ repo: '/r', base: 'b', commit: 'c', bundle: '/b', request: 'q', scenarios: 's', testCmd: 't', failureModes: 'redis down: refuse the lock' }, agent, parallel);
-  assert.match(prompts[0], /redis down: refuse the lock/);
-  assert.deepEqual(out.confirmed, []);
-  assert.deepEqual(out.unverified.map((f) => f.claim), ['races']);
 });
 
 test('lpk compare tables the inputs on which main and the uncommitted change disagree', () => {

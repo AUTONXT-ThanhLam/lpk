@@ -1,113 +1,195 @@
-// The findings ledger of an lpk run: reviewers raise findings, a verifier rules on each, whoever
-// fixes one closes it with the commit that fixed it. It lives beside the run marker in the repo's
-// common git directory, so every worktree of the repo, and every agent working in one, reads the
-// same ledger. What each entry means is the agent's call; this file only keeps the records exact.
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+// The findings ledger of an lpk run: reviewers raise findings, a verifier rules on each, a fix closes
+// one with its evidence. It is an append-only file of events under the repo's common git directory,
+// so every worktree of the repo, and every agent working in one, reads the same ledger, and no write
+// ever rewrites an earlier one. What a finding means is the agent's call; this file keeps the
+// records exact and says which rulings count without the owner.
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { absGitPath, git } from './git.mjs';
+import { locked } from './lock.mjs';
+import { readRun } from './run.mjs';
 
-// `open` until a verifier rules; `confirmed` is a defect to fix, `preexisting` reproduces on the
-// base too (reported, not fixed), `dropped` does not hold. A confirmed one is `fixed` once a
-// commit after it was raised changes it.
-export const STATES = ['open', 'confirmed', 'preexisting', 'dropped', 'fixed'];
+export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed'];
+export const VERDICTS = ['confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate'];
+export const KINDS = ['defect', 'test-gap', 'scenario', 'rule'];
+export const SEVERITIES = ['important', 'nit'];
+export const CLOSED_BY = ['repro', 'test', 'verifier'];
+// Where "could not reproduce" is not enough to drop a finding: the verifier's not-reproduced
+// becomes unsettled, and the owner decides.
+export const PROTECTED = ['security', 'auth', 'data', 'concurrency', 'migration', 'permissions'];
+// The agent type whose rulings count on their own. Anyone else's drop, pre-existing, duplicate or
+// closing ruling is kept with who made it and waits for the owner.
+export const VERIFIER = 'lpk:verifier';
+const ADD_FIELDS = ['run', 'from', 'agentId', 'at', 'file', 'line', 'claim', 'repro', 'kind', 'ruleId', 'severity', 'area'];
 
-export function ledgerOf(repo) {
-  const common = absGitPath(repo, git(['rev-parse', '--git-common-dir'], repo).trim());
-  return common ? join(common, 'lpk', 'findings.json') : '';
+export function ledgerDir(repo) {
+  const common = repo ? git(['rev-parse', '--git-common-dir'], repo).trim() : '';
+  if (!common) throw new Error(`${repo || '(no repo given)'} is not a git repository, so it has no findings ledger`);
+  return join(absGitPath(repo, common), 'lpk');
+}
+export const ledgerFile = (repo) => join(ledgerDir(repo), 'findings.jsonl');
+
+const now = () => new Date().toISOString();
+const text = (v) => (typeof v === 'string' ? v.trim() : '');
+
+function events(file) {
+  if (!existsSync(file)) return [];
+  return readFileSync(file, 'utf8').split('\n').flatMap((line, i) => {
+    if (!line.trim()) return [];
+    try { return [JSON.parse(line)]; } catch { throw new Error(`${file}:${i + 1} is not a JSON line; the ledger is damaged and no gate can read it`); }
+  });
 }
 
-export function readLedger(file) {
-  if (!file || !existsSync(file)) return { findings: [] };
-  try {
-    const v = JSON.parse(readFileSync(file, 'utf8'));
-    return Array.isArray(v.findings) ? v : { findings: [] };
-  } catch { return { findings: [] }; }
+// Every finding of the run, as the events left it. A duplicate keeps its own state and names its
+// primary; `stateOf` gives the state it closes with.
+export function readLedger(repo) {
+  const file = ledgerFile(repo);
+  const byId = new Map();
+  for (const e of events(file)) {
+    if (e.ev === 'add') byId.set(e.finding.id, { ...e.finding, state: 'open' });
+    else if (!byId.has(e.id)) throw new Error(`${file}: an event names ${e.id}, which was never added`);
+    else if (e.ev === 'verdict') {
+      const { ev, time, id, state, ...rest } = e;
+      const f = byId.get(id);
+      for (const k of ['by', 'evidence', 'basis', 'primary', 'asked']) delete f[k];
+      Object.assign(f, rest, { state, ruledAt: time });
+    } else if (e.ev === 'fixed') {
+      Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time });
+    } else throw new Error(`${file}: unknown event ${JSON.stringify(e.ev)}`);
+  }
+  return { findings: [...byId.values()], file };
 }
 
-// Written aside and renamed, so a reader never sees half a file.
-function writeLedger(file, data) {
-  mkdirSync(dirname(file), { recursive: true });
-  const tmp = `${file}.${process.pid}`;
-  writeFileSync(tmp, JSON.stringify(data, null, 1));
-  renameSync(tmp, file);
+export const getFinding = (repo, id) => readLedger(repo).findings.find((f) => f.id === text(id)) || null;
+
+// A primary may later be ruled a duplicate itself, so the chain is followed to its end; a chain
+// that loops never settles, so it counts as open.
+export function stateOf(f, findings) {
+  const seen = new Set();
+  while (f?.state === 'duplicate' && !seen.has(f.id)) { seen.add(f.id); f = findings.find((p) => p.id === f.primary); }
+  return f && f.state !== 'duplicate' ? f.state : 'open';
 }
 
+// True when this finding's state does not count until the owner waives it: an unsettled finding,
+// or a drop, pre-existing, duplicate or closing ruling made by someone other than the verifier.
+export function needsOwner(f) {
+  if (f.state === 'unsettled') return true;
+  if (['dropped', 'preexisting', 'duplicate'].includes(f.state)) return f.by !== VERIFIER;
+  if (f.state === 'fixed' && f.closedBy === 'verifier') return f.fixedBy !== VERIFIER;
+  return false;
+}
+
+function append(repo, event) {
+  const dir = ledgerDir(repo);
+  appendFileSync(join(dir, 'findings.jsonl'), `${JSON.stringify({ ...event, time: now() })}\n`);
+}
+
+// A finding a reviewer raises on the run's reviewed range. Unknown fields are refused, so a field
+// misspelled by an agent never vanishes silently.
+export function addFinding(repo, input) {
+  const unknown = Object.keys(input).filter((k) => !ADD_FIELDS.includes(k));
+  if (unknown.length) return { error: `unknown field ${unknown.join(', ')}; a finding takes ${ADD_FIELDS.join(', ')}` };
+  const run = readRun(repo);
+  if (!run?.id) return { error: `no lpk run in ${repo}; findings belong to a run (lpk run start)` };
+  if (input.run !== undefined && input.run !== run.id) return { error: `this finding was stamped for run ${input.run}, but the run in ${repo} is ${run.id}` };
+  const f = { run: run.id, from: text(input.from), at: text(input.at), claim: text(input.claim), repro: text(input.repro), kind: input.kind, severity: input.severity };
+  if (!f.from) return { error: 'from: the agent type raising it (the finding hook stamps it)' };
+  if (!f.at) return { error: 'at: the reviewed range (lpk review start <range> records it; the finding hook stamps it)' };
+  if (!f.claim) return { error: 'claim: what is wrong and who meets it' };
+  if (!f.repro) return { error: 'repro: the steps or command that show it' };
+  if (!KINDS.includes(f.kind)) return { error: `kind is one of ${KINDS.join(', ')}` };
+  if (!SEVERITIES.includes(f.severity)) return { error: `severity is one of ${SEVERITIES.join(', ')}` };
+  if (f.kind === 'rule') { f.ruleId = text(input.ruleId); if (!f.ruleId) return { error: 'ruleId: the id of the rule a kind rule finding cites' }; }
+  if (text(input.agentId)) f.agentId = text(input.agentId);
+  if (text(input.file)) f.file = text(input.file);
+  if (input.line !== undefined) { if (!Number.isInteger(input.line) || input.line < 1) return { error: 'line is a whole number from 1' }; f.line = input.line; }
+  const area = input.area ?? (f.from === 'lpk:security' ? 'security' : undefined);
+  if (area !== undefined) { if (!PROTECTED.includes(area)) return { error: `area is one of ${PROTECTED.join(', ')}` }; f.area = area; }
+  return locked(ledgerDir(repo), () => {
+    const row = { id: `F${readLedger(repo).findings.length + 1}`, ...f };
+    append(repo, { ev: 'add', finding: row });
+    return { finding: { ...row, state: 'open' } };
+  });
+}
+
+// A ruling on one finding. A ruling the verifier made and settled stands; one anybody else made,
+// or an unsettled one, may be ruled on again. In a protected area a not-reproduced drop is kept
+// as unsettled.
+export function ruleOn(repo, { id, verdict, evidence, by, basis, primary }) {
+  if (!VERDICTS.includes(verdict)) return { error: `verdict is one of ${VERDICTS.join(', ')}` };
+  const why = text(evidence);
+  if (!why) return { error: 'evidence: the reproduction and its output, or why it does not hold' };
+  if (!text(by)) return { error: 'by: who rules (the finding hook stamps it)' };
+  if (verdict === 'dropped' && !['not-reproduced', 'disproved'].includes(basis)) return { error: 'basis: not-reproduced (the repro did not fail) or disproved (evidence shows the claim is false)' };
+  return locked(ledgerDir(repo), () => {
+    const { findings } = readLedger(repo);
+    const f = findings.find((x) => x.id === text(id));
+    if (!f) return { error: `no finding ${text(id)}` };
+    if (f.state === 'fixed') return { error: `${f.id} is fixed in ${f.fixedCommit}` };
+    if (f.state !== 'open' && f.state !== 'unsettled' && f.by === VERIFIER) return { error: `${f.id} is already ${f.state} by the verifier (${f.evidence})` };
+    const e = { ev: 'verdict', id: f.id, state: verdict, by: text(by), evidence: why };
+    if (verdict === 'duplicate') {
+      const p = findings.find((x) => x.id === text(primary));
+      if (!p || p.id === f.id) return { error: 'primary: the id of the other finding this one repeats' };
+      if (p.state === 'duplicate') return { error: `${p.id} is itself a duplicate of ${p.primary}; name ${p.primary}` };
+      e.primary = p.id;
+    }
+    if (verdict === 'dropped') e.basis = basis;
+    if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(f.area)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
+    append(repo, e);
+    return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
+  });
+}
+
+// Closes a confirmed finding with the commit that fixed it and how that is known: a repro now
+// green, a test that fails before the fix, or the verifier's ruling. The commit must exist and must
+// not be the reviewed commit itself.
+export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
+  if (!CLOSED_BY.includes(closedBy)) return { error: `closedBy is one of ${CLOSED_BY.join(', ')}` };
+  const why = text(evidence);
+  if (!why) return { error: 'evidence: the repro or test run that shows it fixed, or the ruling' };
+  if (!text(by)) return { error: 'by: who closes it (the finding hook stamps it)' };
+  const sha = git(['rev-parse', '--verify', '--quiet', `${text(commit)}^{commit}`], repo).trim();
+  if (!text(commit) || !sha) return { error: `commit: ${text(commit) || '(none)'} is not a commit in ${repo}` };
+  return locked(ledgerDir(repo), () => {
+    const f = readLedger(repo).findings.find((x) => x.id === text(id));
+    if (!f) return { error: `no finding ${text(id)}` };
+    if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
+    const reviewed = git(['rev-parse', '--verify', '--quiet', `${f.at.split('..').pop()}^{commit}`], repo).trim();
+    if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
+    append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by) });
+    return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
+  });
+}
+
+// A run that ends keeps its ledger: the file moves under runs/<id>/, and the next run starts empty.
+export function archiveLedger(repo, runId) {
+  if (!/^[\w.-]+$/.test(runId ?? '') || /^\.+$/.test(runId)) return { error: `run id ${JSON.stringify(runId)} cannot name a directory` };
+  const dir = ledgerDir(repo);
+  return locked(dir, () => {
+    const file = join(dir, 'findings.jsonl');
+    if (!existsSync(file)) return { archived: null };
+    const into = join(dir, 'runs', runId);
+    mkdirSync(into, { recursive: true });
+    let n = 0;
+    const name = () => join(into, n ? `findings.${n}.jsonl` : 'findings.jsonl');
+    while (existsSync(name())) n += 1;
+    renameSync(file, name());
+    return { archived: name() };
+  });
+}
+
+// The listing `bin/lpk` and the MCP server print.
+export { counts, findingsText } from './findings-text.mjs';
+
+// The names `bin/lpk` still imports: the ledger's path, and a reset that keeps the old ledger
+// under runs/ instead of deleting it.
+export const ledgerOf = (repo) => { try { return ledgerFile(repo); } catch { return ''; } };
 export function resetLedger(file) {
-  if (file) rmSync(file, { force: true });
-}
-
-const oneLine = (s) => String(s ?? '').trim();
-const nextId = (findings) => `F${Math.max(0, ...findings.map((f) => Number(/^F(\d+)$/.exec(f.id)?.[1]) || 0)) + 1}`;
-
-// A finding a reviewer raises. `at` is the commit it was raised on: a fix must be a later commit.
-export function addFinding(file, { from, file: path, line, claim, repro, verdict, evidence, at }) {
-  const text = oneLine(claim);
-  const steps = oneLine(repro);
-  if (!text) return { error: 'claim: what is wrong and who meets it' };
-  if (!steps) return { error: 'repro: the steps or command that show it' };
-  const state = verdict ? String(verdict).trim() : 'open';
-  if (!STATES.includes(state)) return { error: `verdict is one of ${STATES.filter((s) => s !== 'open' && s !== 'fixed').join(', ')}` };
-  const data = readLedger(file);
-  const f = {
-    id: nextId(data.findings), from: oneLine(from) || 'unknown', file: oneLine(path), line: Number(line) || 0,
-    claim: text, repro: steps, state, evidence: oneLine(evidence), fix: '', fixedCommit: '', at: oneLine(at), raisedAt: new Date().toISOString(),
-  };
-  data.findings.push(f);
-  writeLedger(file, data);
-  return { finding: f };
-}
-
-export function getFinding(file, id) {
-  return readLedger(file).findings.find((f) => f.id === oneLine(id)) || null;
-}
-
-// A verifier's ruling. Only a finding still open is ruled on: a second verdict on the same
-// finding is a second reviewer answering a question already answered.
-export function ruleOn(file, { id, verdict, evidence }) {
-  const v = oneLine(verdict);
-  if (!['confirmed', 'preexisting', 'dropped'].includes(v)) return { error: 'verdict is confirmed, preexisting or dropped' };
-  const why = oneLine(evidence);
-  if (!why) return { error: 'evidence: the reproduction, or why it does not hold' };
-  const data = readLedger(file);
-  const f = data.findings.find((x) => x.id === oneLine(id));
-  if (!f) return { error: `no finding ${oneLine(id)}` };
-  if (f.state !== 'open') return { error: `${f.id} is already ${f.state} (${f.evidence})` };
-  f.state = v;
-  f.evidence = why;
-  f.ruledAt = new Date().toISOString();
-  writeLedger(file, data);
-  return { finding: f };
-}
-
-// The commit that fixed a confirmed finding, and how. `commit` must differ from the one it was
-// raised on, so a fix that was already in the tree when the finding arrived is not counted.
-export function markFixed(file, { id, commit, fix }) {
-  const sha = oneLine(commit);
-  if (!sha) return { error: 'commit: the sha of the commit that fixes it' };
-  const data = readLedger(file);
-  const f = data.findings.find((x) => x.id === oneLine(id));
-  if (!f) return { error: `no finding ${oneLine(id)}` };
-  if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
-  if (f.at && (sha === f.at || sha.startsWith(f.at) || f.at.startsWith(sha))) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
-  f.state = 'fixed';
-  f.fixedCommit = sha;
-  f.fix = oneLine(fix);
-  writeLedger(file, data);
-  return { finding: f };
-}
-
-// What delivery refuses on: a finding no verifier settled, or one confirmed and not yet fixed.
-export const unsettled = (findings) => findings.filter((f) => f.state === 'open');
-export const unfixed = (findings) => findings.filter((f) => f.state === 'confirmed');
-
-// One line per finding, in the order they were raised.
-export function findingsText(findings, { state } = {}) {
-  const list = state ? findings.filter((f) => f.state === state) : findings;
-  if (!list.length) return state ? `no ${state} finding` : 'no finding recorded';
-  return list.map((f) => {
-    const at = f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : '';
-    const verdict = f.state === 'open' ? 'open' : `${f.state}${f.evidence ? `: ${f.evidence}` : ''}`;
-    const fixed = f.fixedCommit ? ` [fixed in ${f.fixedCommit.slice(0, 12)}]` : '';
-    return `${f.id} ${f.from}${at} — ${f.claim} (${verdict})${fixed}`;
-  }).join('\n');
+  if (!file || !existsSync(file)) return;
+  locked(dirname(file), () => {
+    const into = join(dirname(file), 'runs', `before-${Date.now()}`);
+    mkdirSync(into, { recursive: true });
+    renameSync(file, join(into, 'findings.jsonl'));
+  });
 }

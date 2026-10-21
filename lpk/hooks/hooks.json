@@ -6,20 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git *push*)",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" push-check",
-            "timeout": 60
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Bash(gh pr *)",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" push-check",
-            "timeout": 10
+            "command": "i=$(cat); case \"$i\" in *'gh '*|*push*) printf '%s' \"$i\" | node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" push-check ;; esac",
+            "timeout": 120
           }
         ]
       },
@@ -29,17 +17,27 @@
           {
             "type": "command",
             "if": "Bash(git *commit*)",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook commit",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" commit",
             "timeout": 120
           }
         ]
       },
       {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "matcher": "Bash|Read|Grep|Edit|Write|MultiEdit|NotebookEdit|Agent|Task|mcp__plugin_lpk_chrome-devtools__(navigate_page|new_page)|mcp__.+__(createJiraIssue|editJiraIssue|addOrEditJiraIssueComment|addCommentToJiraIssue|transitionJiraIssue|createIssueLink|addWorklogToJiraIssue|createConfluenceContent|updateConfluenceContent|createConfluencePage|updateConfluencePage|createConfluenceFooterComment|createConfluenceInlineComment|executeWrite|executeDestructive|addGraphContext)",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook write",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" pre",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__plugin_lpk_lpk__finding_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" stamp",
             "timeout": 10
           }
         ]
@@ -51,8 +49,28 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook post",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" post",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" trim",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" waive",
+            "timeout": 10
           }
         ]
       }
@@ -62,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook stop",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" stop",
             "timeout": 120
           }
         ]
@@ -84,8 +102,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook start",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" start",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "lpk:.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" card",
+            "timeout": 15
           }
         ]
       }
@@ -95,7 +125,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" hook prompt",
+            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" prompt",
             "timeout": 10
           }
         ]

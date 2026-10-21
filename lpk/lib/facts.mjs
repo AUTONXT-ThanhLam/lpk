@@ -1,8 +1,9 @@
 // The review bundle for one change: per-group diffs, base versions, every place a touched
 // identifier is used outside the diff, the commits and the commands CI runs. Facts only.
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ciCommands, commits, git, VENDORED } from './git.mjs';
+import { ciCommands, commits, defaultBranch, git, VENDORED } from './git.mjs';
 import { envReads } from './rules.mjs';
 
 const SKIP = /package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|Cargo\.lock$|\.min\.(js|css)$|\.snap$/;
@@ -138,9 +139,34 @@ function impact(repo, files, sibs, refs, bodies) {
   return lines.join('\n');
 }
 
+// Whether the work may already be done: open PRs (other than this branch's) and target commits
+// HEAD lacks that touch the named files. A `gh` that fails is named, never read as "no PRs".
+export function alreadyFixed(repo, paths, target = defaultBranch(repo)) {
+  const named = new Set(paths);
+  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'], repo).trim();
+  let prs = [], ghError = '';
+  try {
+    const open = JSON.parse(execFileSync('gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json', 'number,title,url,headRefName,files'], { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000, maxBuffer: 1 << 26 }) || '[]');
+    prs = open.filter((p) => p.headRefName !== branch).map((p) => ({ number: p.number, title: p.title, url: p.url, files: (p.files || []).map((f) => f.path).filter((f) => named.has(f)) })).filter((p) => p.files.length);
+  } catch (e) { ghError = e.code === 'ENOENT' ? 'gh is not installed' : String(e.stderr || e.message).trim().split('\n')[0]; }
+  const log = paths.length && target ? git(['log', '-n', '20', '--format=%h%x00%cs%x00%s', `HEAD..${target}`, '--', ...paths], repo) : '';
+  const landed = log.split('\n').filter(Boolean).map((l) => { const [sha, date, subject] = l.split('\0'); return { sha, date, subject }; });
+  return { target, prs, ghError, landed };
+}
+
+export function alreadyFixedText(a) {
+  return [
+    '# Already fixed elsewhere?', '',
+    `Open PRs touching these files: ${a.ghError ? `unknown (${a.ghError})` : a.prs.length ? '' : 'none'}`,
+    ...a.prs.map((p) => `- #${p.number} ${p.title} (${p.url}): ${p.files.join(', ')}`),
+    `Commits on ${a.target || 'the target'} that HEAD lacks, touching these files: ${a.landed.length ? '' : 'none'}`,
+    ...a.landed.map((c) => `- ${c.sha} ${c.date} ${c.subject}`),
+  ].join('\n');
+}
+
 // Writes the bundle under `out` and returns its summary. `base` is a commit; with `cached`
 // the staged changes are the change, otherwise base..HEAD.
-export function buildBundle({ repo, base, out, cached = false, sibs = [], refs = new Map() }) {
+export function buildBundle({ repo, base, out, cached = false, sibs = [], refs = new Map(), target }) {
   const range = cached ? ['--cached', base] : [base, 'HEAD'];
   const raw = git(['diff', '--find-renames', '-U5', ...range], repo);
   const files = splitDiff(raw);
@@ -160,7 +186,9 @@ export function buildBundle({ repo, base, out, cached = false, sibs = [], refs =
     groups: groups.map(({ id, files: fs, lines }) => ({ id, files: fs, lines, diff: join(out, `${id}.diff`) })),
     commits: cached ? [] : commits(repo, `${base}..HEAD`),
     ci: ciCommands(repo),
+    alreadyFixed: alreadyFixed(repo, files.filter((f) => !f.skipped).map((f) => f.path), target),
   };
+  writeFileSync(join(out, 'already-fixed.md'), `${alreadyFixedText(summary.alreadyFixed)}\n`);
   writeFileSync(join(out, 'bundle.json'), JSON.stringify(summary, null, 1));
   return summary;
 }
