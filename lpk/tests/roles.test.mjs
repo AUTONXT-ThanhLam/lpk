@@ -66,9 +66,10 @@ test('the reviewing roles cannot edit files, and the roles that write code or te
   }
 });
 
-// The roles that drive the lpk Chrome. Every other role carries no browser tool definitions, and
-// no role publishes a page, so none carries the Artifact tools.
-const BROWSER = new Set(['a11y', 'designer', 'prover', 'env', 'perf']);
+// The roles that drive the lpk Chrome, the verifier among them because it reproduces what the
+// browser lenses saw on a page. Every other role carries no browser tool definitions, and no role
+// publishes a page, so none carries the Artifact tools.
+const BROWSER = new Set(['a11y', 'designer', 'prover', 'env', 'perf', 'verifier']);
 test('only the roles that drive a browser carry its tools, and no role carries the Artifact tools', () => {
   for (const [name, { fm }] of Object.entries(agents)) {
     const denied = (fm.disallowedTools || '').split(',').map((t) => t.trim());
