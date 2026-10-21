@@ -13,9 +13,10 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    commit. The commit hook refuses code that no green `lpk verify` ran on.
 3. Run `git fetch`, then `lpk facts --base <target>` (the run's target; without `--base` it diffs
    against the repo's default branch): it prints the bundle directory (`impact.md`,
-   `precedent.md`), the diff groups, the commands CI runs, and whether the branch is behind the
-   target. When it is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers
-   see the code that will merge.
+   `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
+   branch, so check the target yourself with `git rev-list --count HEAD..<target>`. When the branch
+   is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers see the code
+   that will merge.
 4. Freeze the commit in its own tree, so the reviewers and the Prover use exactly it while you keep
    working: `git worktree add --detach ../<repo>-review <commit>`, with its dependencies installed,
    and move the app there (the env agent's report says how to stop and start it).
