@@ -3,13 +3,16 @@
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
 import { parseArgs, repoOf } from '../out.mjs';
-import { currentBranch, runForBranch, runState } from '../run.mjs';
+import { currentBranch, endedRuns, runState } from '../run.mjs';
 
-// The run this checkout delivers: the open one, else the ended run of the current branch.
+// The run this checkout delivers: an ended run that noted the current branch, unless the open run
+// noted it too; else the open run.
 export function runHere(repo) {
   const st = runState(repo);
   if (st.error) throw new Error(st.error);
-  return st.run || runForBranch(repo, currentBranch(repo));
+  const branch = currentBranch(repo);
+  const ended = branch && !st.run?.branches?.includes(branch) && endedRuns(repo).find((r) => r.branches?.includes(branch));
+  return ended || st.run;
 }
 
 export async function main(argv) {

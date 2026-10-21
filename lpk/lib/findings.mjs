@@ -40,10 +40,10 @@ function events(file) {
   });
 }
 
-// Every finding of the run, as the events left it. A duplicate keeps its own state and names its
-// primary; `stateOf` gives the state it closes with.
-export function readLedger(repo) {
-  const file = ledgerFile(repo);
+// Every finding of the live ledger (or of `file`, one a run left under runs/<id>/), as the events
+// left it. A duplicate keeps its own state and names its primary; `stateOf` gives the state it
+// closes with.
+export function readLedger(repo, file = ledgerFile(repo)) {
   const byId = new Map();
   for (const e of events(file)) {
     if (e.ev === 'add') byId.set(e.finding.id, { ...e.finding, state: 'open' });
