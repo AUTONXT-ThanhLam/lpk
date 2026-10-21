@@ -45,7 +45,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
  delivery
   lpk gates  |  lpk report  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
  the machine
-  lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot [--idle <seconds>] -- <command>  |  lpk doctor  |  lpk setup
+  lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
   lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)`;
 
 function resolveBase(repo) {

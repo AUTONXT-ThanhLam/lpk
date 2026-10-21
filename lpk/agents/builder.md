@@ -49,10 +49,7 @@ the finding ids out of the commit message; the report names the ids each commit 
 Never run `lpk verify`: the lead runs it once on the commits brought together, and the commit hook
 does not gate a subagent's commit. Run a long command in the foreground with a Bash timeout (at most
 600000 ms, so run the related tests, not the whole suite), never in the background with a marker
-file you poll. Run a suite that can hang (shared fakes, servers, locks) as
-`lpk slot --idle <seconds> -- <command>`, with seconds above its longest quiet stretch: it stops a
-command silent that long, prints its last line and exits 124. Its output goes through a pipe, so a
-tool that buffers on a pipe (Python: set `PYTHONUNBUFFERED=1`) looks silent until it flushes.
+file you poll.
 
 When a step does not need the session, keep going. If the contract cannot be met as written, stop
 and report what conflicts instead of changing it.
