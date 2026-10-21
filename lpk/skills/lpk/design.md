@@ -78,7 +78,10 @@ branch, named the way the repo names them, then start these in the background at
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
   suite's time, once known) and `round: 1`. It runs the design critic, the plan simulator and the
   plan tracer at once, each fresh, and returns their findings rated High, Medium or Low;
-- `lpk:test-author` with the repo (the branch checked out), the brief and the test command;
+- one `lpk:test-author` per slice of the brief, all in one message, each with the repo (the branch
+  checked out), the brief's path, the test command, and only its slice's scenarios, failure rows and
+  files; slices whose tests share a test file, helper, fixture, database or port share one test
+  author;
 - `lpk:designer` in design mode, when the change touches a screen.
 
 The design is reviewed in rounds until no High remains. After each round:
@@ -101,7 +104,7 @@ The design is reviewed in rounds until no High remains. After each round:
 When the owner says go, run `lpk go`: it records the brief's checks, so `lpk gates` can show what
 changed after go. The build does not wait for the review: start the run (`build.md` in this
 skill's directory) and build the slices no open High touches; a slice a later High touches waits
-for the fix and is rebuilt from it. Read each test the test author writes before you build on it:
+for the fix and is rebuilt from it. Read each test the test authors write before you build on it:
 it must drive the real entry point and fail for the right reason.
 
 **Done when** a design review round returned `pass` or its last High went to the owner, every
