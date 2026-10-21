@@ -80,7 +80,8 @@ branch, named the way the repo names them, then start these in the background at
   plan tracer at once, each fresh, and returns their findings rated High, Medium or Low;
 - one `lpk:test-author` per slice of the brief, all in one message, each with the repo (the branch
   checked out), the brief's path, the test command, and only its slice's scenarios, failure rows and
-  files; slices whose tests share a test file, helper or fixture share one test author;
+  files; slices whose tests share a test file, helper, fixture, database or port share one test
+  author;
 - `lpk:designer` in design mode, when the change touches a screen.
 
 The design is reviewed in rounds until no High remains. After each round:
