@@ -1,8 +1,8 @@
 export const meta = {
   name: 'review',
-  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, /security-review, bug hunter, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
+  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, /security-review, bug hunter, regression, claims, OpenCodeReview, the prover and the rest), one verifier per file of each lens\'s findings as the lens returns',
   whenToUse: 'Step 4 of the lpk skill, on the committed and verified change after `lpk review start`; with args.delta, the one review of a fix round',
-  phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per finding, as each lens returns' }],
+  phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per file of each lens\'s findings, as the lens returns' }],
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
@@ -37,8 +37,9 @@ const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: 
 const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: S, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
 const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
 const RECORD = { type: 'object', properties: { record: S, ids: { type: 'array', items: S }, error: S }, required: ['record', 'ids'] }
-const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
-  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S }, required: ['verdict', 'evidence'] }
+const VERDICT = { type: 'object', properties: { id: S, verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
+  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S }, required: ['id', 'verdict', 'evidence'] }
+const VERDICTS = { type: 'object', properties: { verdicts: { type: 'array', items: VERDICT } }, required: ['verdicts'] }
 
 // What is under review. A delta round reviews the fix delta, and everything is stamped with it.
 const at = a.delta ? a.delta.range : a.range
@@ -155,14 +156,28 @@ async function graded(r) {
   return { ungraded: why }
 }
 
-// Every verifier has the same options and the same prompt up to the finding, so they share one
-// cached prefix; the finding's own text comes last.
+// One verifier per file of a lens's findings, since they share the code a verifier reads and runs; a
+// finding with no file is its own group. Groups keep the order the lens returned its findings in.
+const byFile = (fs) => {
+  const groups = new Map()
+  fs.forEach((f, i) => { const k = f.file ? `file ${f.file}` : `alone ${i}`; groups.set(k, [...(groups.get(k) || []), f]) })
+  return [...groups.values()]
+}
+// Every verifier has the same options and the same prompt up to the findings, so they share one
+// cached prefix; the findings' own text comes last.
 const verifyHead = `Repo ${a.repo}, base ${a.base}, commit under review ${commit}, reviewed range ${at}.
-Rule on the ledger finding below with finding_verdict: confirmed, preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return the same verdict.
-Finding:`
-const verify = (lens) => (f) => call(`${verifyHead} ${f.id} from ${lens}${f.claim ? `\n${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim}\nReviewer's reproduction: ${f.repro}` : ' (read it with finding_get)'}`,
-  { label: `verify:${f.id}`, phase: 'Verify', agentType: 'lpk:verifier', schema: VERDICT, stallMs: stall('verifier') })
-  .then((v) => (v ? { id: f.id, lens, ...v } : { id: f.id, lens, verdict: 'none', evidence: 'the verifier did not answer: start another one on it' }))
+Rule on each ledger finding below on its own, with one finding_verdict per id: confirmed, preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return one verdict per id, the same as you recorded.
+Findings from`
+const told = (f) => `- ${f.id}${f.claim ? `: ${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim}\n  Reviewer's reproduction: ${f.repro}` : ' (read it with finding_get)'}`
+const verify = (lens) => (group) => call(`${verifyHead} ${lens}:\n${group.map(told).join('\n')}`,
+  { label: `verify:${group.map((f) => f.id).join(',')}`, phase: 'Verify', agentType: 'lpk:verifier', schema: VERDICTS, stallMs: stall('verifier') })
+  .catch((e) => ({ failed: String((e && e.message) || e) }))
+  .then((o) => group.map((f) => {
+    const v = o && (o.verdicts || []).find((x) => x.id === f.id)
+    if (!v) return { id: f.id, lens, verdict: 'none', evidence: `the verifier ${!o ? 'did not answer' : o.failed ? `failed: ${o.failed}` : 'returned no verdict on it'}; start another one on it` }
+    const { id, ...ruled } = v
+    return { id: f.id, lens, ...ruled }
+  }))
 
 const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens === 'prover') proved(); return out }), (out, r) => {
   if (out.ungraded) return { lens: r.label, ungraded: out.ungraded }
@@ -171,8 +186,8 @@ const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens
   const unrecorded = fs.filter((f) => !f.id).map((f) => `${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim || ''}`.trim())
   // A surviving mutant's run is its evidence: it is listed, not reproduced again.
   const toVerify = r.lens === 'mutant' ? [] : fs.filter((f) => f.id)
-  return parallel(toVerify.map((f) => () => verify(r.label)(f))).then((verdicts) => ({
-    lens: r.label, ids, verdicts: verdicts.filter(Boolean), unrecorded, missed: out.missed || [],
+  return parallel(byFile(toVerify).map((g) => () => verify(r.label)(g))).then((verdicts) => ({
+    lens: r.label, ids, verdicts: verdicts.filter(Boolean).flat(), unrecorded, missed: out.missed || [],
     ...(out.record ? { record: out.record } : {}), ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: ids } : {}),
   }))
 })
