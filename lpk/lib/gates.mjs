@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { git } from './git.mjs';
-import { needsOwner, stateOf } from './findings.mjs';
+import { needsOwner, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { lastProver, named, proofsOf, trace, verifiedGreen } from './proof.mjs';
@@ -37,8 +37,12 @@ function findingsGate(repo, run) {
   const owner = all.filter(needsOwner);
   const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
   const note = owner.length ? `for the owner to read (not blocking): unsettled, or ruled by someone other than the verifier: ${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}` : '';
+  // The ledger tools read only the live ledger: once a later run has archived this ended run's
+  // findings, no agent can rule on or close them, and only the owner's waiver is left.
+  const archived = why.length && run.ended && !readLedger(repo).findings.some((f) => f.run === run.id);
   return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, note].filter(Boolean).join('; '),
-    wayOut: [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
+    wayOut: archived ? `run ${run.id} has ended and a later run archived its findings, so no agent can rule on or close them any more`
+      : [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
 }
 
 async function reviewsGate(repo, run) {

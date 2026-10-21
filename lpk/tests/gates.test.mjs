@@ -147,6 +147,25 @@ test('after a later run starts, the gates of an ended run read its archived ledg
   assert.deepEqual(readRun(repo).branches, []);
 });
 
+test('a finding an ended run left confirmed holds its branch, and once a later run archives it only the owner can release it', () => {
+  const S = 'stuck-session';
+  const repo = quickRun('stuck', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', evidence: 'repro fails', by: 'lpk:verifier' });
+  ok(lpk(repo, S, 'prove', '--all'));
+  ok(lpk(repo, S, 'run', 'end'));
+  assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: confirmed and not fixed: F1 → [^\n]*finding_fixed/, 'its ledger is still live');
+  sh(repo, 'switch', '-q', 'main');
+  ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
+  sh(repo, 'switch', '-q', 'feat');
+  const why = hookBash(repo, S, 'gh pr ready');
+  assert.match(why, /- findings: confirmed and not fixed: F1 → [^\n]*gate:findings/);
+  assert.doesNotMatch(why, /finding_fixed|have a verifier rule/);
+  assert.match(markFixed(repo, { id: 'F1', commit: head(repo), closedBy: 'repro', evidence: 'x', by: 'main' }).error, /no finding F1/);
+});
+
 test('a branch the run never noted is its branch: work merged in after a start on main meets the gates at handover and push, also after the run ends', () => {
   const S = 'merge-session';
   const repo = repoWith('merged', { 'src/a.mjs': 'export const a = 1;\n' });
