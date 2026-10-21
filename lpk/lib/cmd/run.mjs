@@ -1,7 +1,7 @@
 // `lpk run start|take|end|status|lane|grant`: the run's life. Start records the lane, the
 // scenarios and the checks; a second start in the same session amends the open run and keeps its
 // ledger; `take` takes over a run whose session has exited; `end` never refuses.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ciCommands, defaultBranch, mergeBase } from '../git.mjs';
 import { repoOf } from '../out.mjs';
@@ -10,7 +10,7 @@ import { appendDecision } from '../records.mjs';
 import { cleanRepro } from '../repro.mjs';
 import { recordRun } from '../runs.mjs';
 import { reap } from '../spawn.mjs';
-import { endRun, promptsOf, readRun, runDir, runState, startRun, update } from '../run.mjs';
+import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, startRun, update } from '../run.mjs';
 
 const USAGE = `usage:
   lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
@@ -146,6 +146,15 @@ export async function main(argv) {
   }
   if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {
     if (!o.why) { console.error(`lpk: --why "<why>" is required\n${USAGE}`); return 2; }
+    // The push guard asks the run that delivers the branch, which can be one that already ended.
+    const owner = sub === 'grant' ? runForBranch(repo, currentBranch(repo)) : null;
+    if (owner?.ended) {
+      owner.granted = { ...owner.granted, draftPush: true };
+      writeFileSync(join(runDir(repo), 'runs', owner.id, 'run.json'), JSON.stringify(owner, null, 1));
+      appendDecision(repo, { what: 'draft pushes granted', why: o.why });
+      console.log(`draft pushes granted in run ${owner.id}: ${o.why}`);
+      return 0;
+    }
     const u = update(repo, (run) => { if (sub === 'lane') Object.assign(run, { lane: 'full', laneWhy: o.why }); else run.granted = { ...run.granted, draftPush: true }; });
     if (u.error) { console.error(`lpk: ${u.error}`); return 1; }
     appendDecision(repo, { what: sub === 'lane' ? 'quick lane switched to full' : 'draft pushes granted', why: o.why });

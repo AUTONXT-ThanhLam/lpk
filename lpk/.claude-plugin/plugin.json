@@ -1,6 +1,6 @@
 {
   "name": "lpk",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "One coding request to a delivered change, in a repo of any language: a design checked against the running code, a build that reviews itself slice by slice, a dense review net where every lens runs at once and a verifier rules on each finding, proof on the running surface, and delivery gates that read only what the CLI ran. Ships a rule catalog, a findings ledger, the lpk Chrome DevTools server and a push guard.",
   "author": {
     "name": "lam"

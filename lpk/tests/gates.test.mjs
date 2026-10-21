@@ -226,3 +226,12 @@ test('a new file staged before lpk verify is in the tree it verified, so the com
   sh(repo, 'commit', '-qm', 'Add new');
   assert.match(lpk(repo, S, 'gates').stdout, /^verify\s+holds/m);
 });
+
+test('the owner\'s grant reaches the run that delivers the branch after that run has ended', () => {
+  const S = 'ended-push-session';
+  const repo = quickRun('ended-push', S);
+  ok(lpk(repo, S, 'run', 'end'));
+  assert.match(hookBash(repo, 'another-session', 'git push -u origin feat'), /the owner has not granted draft pushes/);
+  assert.match(ok(lpk(repo, 'another-session', 'run', 'grant', 'draft-push', '--why', 'owner: push it')), /draft pushes granted in run/);
+  assert.equal(hookBash(repo, 'another-session', 'git push -u origin feat'), null);
+});
