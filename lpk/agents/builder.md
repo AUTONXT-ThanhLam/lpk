@@ -44,7 +44,9 @@ In a fix round your slice is a group of confirmed findings instead: their claims
 rulings are your contract, and your base is the reviewed commit. Make one commit per root cause: it
 changes only what that cause needs, and adds a test you ran red before the fix and green after it.
 Never call `finding_fixed`: the lead closes each finding with the SHA its cherry-pick gets. Keep
-the finding ids out of the commit message; the report names the ids each commit closes.
+the finding ids out of the commit message; the report names the ids each commit closes. A finding
+the lead sends you later joins its cause's commit (amend it), unless the lead says the round is
+already verified; then it gets a commit of its own.
 
 Never run `lpk verify`: the lead runs it once on the commits brought together, and the commit hook
 does not gate a subagent's commit. Run a long command in the foreground with a Bash timeout (at most

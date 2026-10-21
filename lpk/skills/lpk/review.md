@@ -77,23 +77,25 @@ other.
    file go to one builder. Each works in its own worktree off the reviewed commit
    (`git worktree add -b <branch>-fix-<n> ../<repo>-fix-<n> <reviewed commit>`), all started in one
    message. Size the groups from the slowest cause, so no builder is the long pole. A finding
-   confirmed later goes to the running builder that owns its files (SendMessage), else to a new
-   builder.
+   confirmed later goes to the builder whose commit fixes its cause (SendMessage), else to the one
+   that owns its files, else to a new builder. Until the green verify of step 6, the builder amends its cause's commit to close it too.
 4. Give each builder its findings (ids, claims, repros, rulings), the related-test command and the
    bar of step 2. Builders run the related tests and `lpk check`, never `lpk verify`. Where their
    tests share a database or a port, give them one lock file (`flock <file> <command>`); elsewhere
    they run in parallel, because builders queued behind one lock each wait for all the others.
-5. Bring each commit in with `git cherry-pick`, and run `lpk fixlines <commit>` for each: it prints
-   the fix's lines that an earlier commit of this run wrote. A confirmed finding on those lines
-   means revert or redesign, never another patch.
-6. When the last commit of the round is in, run `lpk verify` once on the result (a Bash timeout of
-   600000 ms). When it is red, the repair goes into the fix commit that broke it (its builder amends
-   it, you cherry-pick it again), never a commit of its own: a commit that closes no finding owes
-   the whole net.
+5. Note your branch head, then bring each builder's commit in with `git cherry-pick`. Run
+   `lpk fixlines <commit>` for each: it prints the fix's lines that an earlier commit of this run
+   wrote. A confirmed finding on those lines means revert or redesign, never another patch.
+6. When the last commit of the round is in, run `lpk verify` once (a Bash timeout of 600000 ms).
+   When it is red, the builder of the fix that broke it amends that commit, never a commit of its
+   own, because a commit that closes no finding owes the whole net. Whenever a commit you picked
+   is amended, drop your picks with `git reset --keep <the head you noted>` (they are yours and
+   unpushed; an amended commit conflicts with its first version) and run step 5 again. A finding confirmed after the green
+   verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
    with ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`; give its id, `commit` the fix's SHA
-   on your branch, `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
+   now on your branch, `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
