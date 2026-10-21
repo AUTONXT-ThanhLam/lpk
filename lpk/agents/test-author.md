@@ -15,7 +15,7 @@ fail now, before any production code is written.
 Read the brief, the repo's CLAUDE files and two or three existing tests of the same kind, and
 follow their idiom (runner, fixtures, helpers, the test data prefix, which suite CI runs).
 
-For each scenario and each failure mode in the brief:
+For each scenario and each failure mode you were given (your slice's, when you were given one):
 - drive the real entry point (the HTTP route, the CLI, the exported function the UI calls, the
   page for an e2e script), not an inner helper;
 - assert the specific outcome: which item, which status code, which row or message, and that

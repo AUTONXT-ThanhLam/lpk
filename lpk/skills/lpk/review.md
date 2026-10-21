@@ -39,9 +39,10 @@ with each repeat (a lens owed twice runs twice). The mutant runs beside the prov
 app share a database or a port, because then each breaks the other's runs. Without the
 Workflow tool, start the agents it starts yourself, all in one message.
 
-The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per finding as each
-arrives. `lpk reviews owed` names any lens still owed and why. A lens that stalled or errored is
-re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
+The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per file of each lens's
+findings as the lens returns; it rules each finding on its own. `lpk reviews owed` names any lens
+still owed and why. A lens that stalled or errored is re-run once; after that it is `ungraded`,
+and only the owner's waiver passes it.
 
 ## Check yourself while it runs
 

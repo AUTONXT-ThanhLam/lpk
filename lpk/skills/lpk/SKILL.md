@@ -48,12 +48,13 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   before anything destructive or outside this machine.
 - **Probe before you ask.** A question that a command, the code or the ticket answers is answered
   by running it. A requirement with a sensible default is decided and logged, not asked.
-- **Log each decision** you take alone with `lpk decide "<what>" --why "<why>"`. The report lists
-  them, and the owner reviews them there.
+- **Log each decision** you take alone: `lpk decide "<what>" --why "<why>"`. The report lists them.
 - **Evidence, not words.** A gate passes on what the CLI ran or computed: `lpk gates` prints each
   gate and what it read. An agent's "done" is not evidence.
-- **Script output stays in its file.** Give an agent the path of a command's output, never a copy
-  retyped by a model: a retyped list once lost a whole PR's findings.
+- **Keep your own context small**: every later turn pays for it. Read a command's output from its
+  file, and give an agent that path, never a copy retyped by a model (a retyped list once lost a
+  whole PR's findings). Hand a long read to an agent and keep only its conclusion. Start a fresh
+  agent with a short brief rather than re-brief one whose context is mostly spent.
 - **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
   `finding_list`; load them with ToolSearch `select:mcp__plugin_lpk_lpk__finding_list`), and only a
   verifier rules on one. A finding you rule on yourself needs the owner.
@@ -83,8 +84,7 @@ Read each step's file when the step starts; each file states its goal and how it
    `review.md` in this skill's directory.
 5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory. The Prover
    runs inside the review net; this file says what proof the gates read.
-6. **Deliver**: gates, CI, the PR, the report and the lessons: `deliver.md` in this skill's
-   directory.
+6. **Deliver**: gates, CI, the PR, the report, the lessons: `deliver.md` in this skill's directory.
 
 ## The two lanes
 

@@ -78,7 +78,9 @@ branch, named the way the repo names them, then start these in the background at
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
   suite's time, once known) and `round: 1`. It runs the design critic, the plan simulator and the
   plan tracer at once, each fresh, and returns their findings rated High, Medium or Low;
-- `lpk:test-author` with the repo (the branch checked out), the brief and the test command;
+- one `lpk:test-author` per slice of the brief, all in one message, each with the repo (the branch
+  checked out), the brief's path, the test command, and only its slice's scenarios, failure rows and
+  files; slices whose tests share a test file, helper or fixture share one test author;
 - `lpk:designer` in design mode, when the change touches a screen.
 
 The design is reviewed in rounds until no High remains. After each round:
@@ -88,8 +90,8 @@ The design is reviewed in rounds until no High remains. After each round:
 3. `revise`: fix each High in the brief, or answer it with a run, citing the command and its output
    in the brief beside the line it concerns: a disagreement is settled by a run, never by argument.
    Fix a Medium or Low when it is cheap, else list it for the report. Before editing, copy the brief
-   to `brief.r<n>.md` beside it; then run round n+1 with `changed` set to the lines the revision
-   changed, from
+   to `brief.r<n>.md` beside it; then run round n+1 with `previous` set to the `findings` array
+   round n returned, as is, and `changed` set to the lines the revision changed, from
    `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 4. `redesign`: a High sits on lines the previous revision changed, so the design is wrong at its
    root. Choose a different approach, from the alternatives the brief weighed or a new one, never a
@@ -101,7 +103,7 @@ The design is reviewed in rounds until no High remains. After each round:
 When the owner says go, run `lpk go`: it records the brief's checks, so `lpk gates` can show what
 changed after go. The build does not wait for the review: start the run (`build.md` in this
 skill's directory) and build the slices no open High touches; a slice a later High touches waits
-for the fix and is rebuilt from it. Read each test the test author writes before you build on it:
+for the fix and is rebuilt from it. Read each test the test authors write before you build on it:
 it must drive the real entry point and fail for the right reason.
 
 **Done when** a design review round returned `pass` or its last High went to the owner, every
