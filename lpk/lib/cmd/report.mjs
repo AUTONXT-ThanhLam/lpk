@@ -2,6 +2,7 @@
 // verdict line says "deliverable" only when every delivery gate holds on the HEAD it names; the
 // session adds the verdict in words, the decisions it took alone and the weakest point.
 import { counts } from '../findings-text.mjs';
+import { needsOwner } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
@@ -11,6 +12,10 @@ import { readDecisions, readRecords } from '../records.mjs';
 import { runRow } from '../runs.mjs';
 import { runHere } from './gates.mjs';
 
+// A finding the owner reads in the report: its ruling, who made it, the claim and the evidence.
+const ruling = (f) => (f.state === 'fixed'
+  ? `- ${f.id} fixed by ${f.fixedBy}: ${f.claim} — ${f.fixEvidence}`
+  : `- ${f.id} ${f.state === 'duplicate' ? `duplicate of ${f.primary}` : f.state}${f.by ? ` by ${f.by}` : ''}: ${f.claim} — ${f.evidence}`);
 const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
 
 export async function main(argv) {
@@ -33,7 +38,9 @@ export async function main(argv) {
   try {
     const ledger = ledgerFor(repo, run);
     const c = counts(ledger);
-    facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${c.needsOwner} wait for the owner; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
+    facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${c.needsOwner} for the owner to read; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
+    const toRead = ledger.filter(needsOwner);
+    if (toRead.length) facts.push(['For the owner to read, none of them blocking (unsettled, or ruled by someone other than the verifier):', ...toRead.map(ruling)].join('\n'));
     const ran = {};
     for (const i of evidence(repo, run, ledger).items) { const k = i.model ? `${i.key} (${i.model})` : i.key; ran[k] = (ran[k] || 0) + 1; }
     facts.push(`Lenses that ran: ${Object.entries(ran).map(([k, n]) => `${k} ×${n}`).join(', ') || 'none'}`);

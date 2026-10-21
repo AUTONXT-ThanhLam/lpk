@@ -2,7 +2,7 @@
 // one with its evidence. It is an append-only file of events under the repo's common git directory,
 // so every worktree of the repo, and every agent working in one, reads the same ledger, and no write
 // ever rewrites an earlier one. What a finding means is the agent's call; this file keeps the
-// records exact and says which rulings count without the owner.
+// records exact and says which rulings the owner should read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { absGitPath, git } from './git.mjs';
@@ -15,10 +15,10 @@ export const KINDS = ['defect', 'test-gap', 'scenario', 'rule'];
 export const SEVERITIES = ['important', 'nit'];
 export const CLOSED_BY = ['repro', 'test', 'verifier'];
 // Where "could not reproduce" is not enough to drop a finding: the verifier's not-reproduced
-// becomes unsettled, and the owner decides.
+// becomes unsettled, and the report shows it to the owner.
 export const PROTECTED = ['security', 'auth', 'data', 'concurrency', 'migration', 'permissions'];
-// The agent type whose rulings count on their own. Anyone else's drop, pre-existing, duplicate or
-// closing ruling is kept with who made it and waits for the owner.
+// The agent type whose rulings stand on their own. Anyone else's drop, pre-existing, duplicate or
+// closing ruling is kept with who made it, for the owner to read in the report.
 export const VERIFIER = 'lpk:verifier';
 const ADD_FIELDS = ['run', 'from', 'agentId', 'at', 'file', 'line', 'claim', 'repro', 'kind', 'ruleId', 'severity', 'area'];
 
@@ -70,8 +70,8 @@ export function stateOf(f, findings) {
   return f && f.state !== 'duplicate' ? f.state : 'open';
 }
 
-// True when this finding's state does not count until the owner waives it: an unsettled finding,
-// or a drop, pre-existing, duplicate or closing ruling made by someone other than the verifier.
+// True when the owner should read this finding in the report: an unsettled finding, or a drop,
+// pre-existing, duplicate or closing ruling made by someone other than the verifier. None blocks.
 export function needsOwner(f) {
   if (f.state === 'unsettled') return true;
   if (['dropped', 'preexisting', 'duplicate'].includes(f.state)) return f.by !== VERIFIER;

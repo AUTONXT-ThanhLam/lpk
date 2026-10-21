@@ -167,7 +167,10 @@ test('a quick run that needed no fix leaves Design and Fix off its track', () =>
   ok(lpk(repo, S, 'review', 'start', range));
   for (const kind of ['code-review', 'security-review']) appendRecord(repo, { kind, range, model: 'sonnet', exit: 0, findings: 0 });
   lens(S, 'bhq', 'lpk:bug-hunter', range, { findings: [] });
+  addFinding(repo, { from: 'main', at: range, claim: 'a may be odd', repro: 'r', kind: 'defect', severity: 'nit' });
+  ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'disproved', evidence: 'no caller reads a', by: 'main' });
   const s = json(repo, S);
   assert.deepEqual([s.phase, s.track], ['prove', ['understand', 'build', 'review', 'prove', 'deliver']]);
+  assert.deepEqual([s.findings.needsOwner, s.waits.some((w) => w.what === 'F1')], [1, false], 'the lead\'s own ruling is counted, not waited on');
   assert.equal(json(repo, 'another-session').open, false, 'another session sees no band for this run');
 });

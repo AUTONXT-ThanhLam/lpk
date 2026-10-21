@@ -32,11 +32,13 @@ function findingsGate(repo, run) {
   const all = ledgerFor(repo, run);
   const open = all.filter((f) => stateOf(f, all) === 'open' && f.state !== 'duplicate');
   const unfixed = all.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap');
-  const owner = all.filter((f) => needsOwner(f) && !waived(repo, run.id, f.id));
-  const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`,
-    owner.length && `unsettled, or ruled by someone other than the verifier: ${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}`].filter(Boolean);
-  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: why.join('; '),
-    wayOut: [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed', owner.length && `ask the owner to waive ${list(owner.map((f) => f.id))} (the waiver question, one option per id)`].filter(Boolean).join('; ') };
+  // Unsettled findings and rulings made by someone other than the verifier do not block: they are
+  // named here and in `lpk report`, for the owner to read.
+  const owner = all.filter(needsOwner);
+  const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
+  const note = owner.length ? `for the owner to read (not blocking): unsettled, or ruled by someone other than the verifier: ${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}` : '';
+  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, note].filter(Boolean).join('; '),
+    wayOut: [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
 }
 
 async function reviewsGate(repo, run) {

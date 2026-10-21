@@ -6,14 +6,14 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { activeMs, crew, STALL_MS } from './crew.mjs';
-import { counts, needsOwner } from './findings.mjs';
+import { counts } from './findings.mjs';
 import { gates } from './gates.mjs';
 import { git } from './git.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { designRound, phaseDetail, phaseOf } from './phase.mjs';
 import { lastProver, named, proofsOf, trace } from './proof.mjs';
-import { readDecisions, readRecords, waived } from './records.mjs';
+import { readDecisions, readRecords } from './records.mjs';
 import { endedRuns, runDir, runState } from './run.mjs';
 import { readCache, scanSession, tokensOf, writeCache } from './scan.mjs';
 import { headTree } from './tree.mjs';
@@ -102,7 +102,6 @@ export async function status(repo, { session = '', now = Date.now(), withGates =
   const waits = [
     ...(asks ? [{ what: 'question', why: 'the Captain asked you a question' }] : []),
     ...(yourTurn ? [{ what: 'reply', why: 'the Captain ended its turn and no agent runs' }] : []),
-    ...findings.filter((x) => needsOwner(x) && !waived(repo, run.id, x.id)).map((x) => ({ what: x.id, why: `${x.state}${x.by ? ` by ${x.by}` : ''}` })),
     ...(g?.rows || []).filter((r) => !r.holds && String(r.wayOut || '').startsWith('or the owner waives')).map((r) => ({ what: `gate:${r.gate}`, why: String(r.why || '').split('\n')[0] })),
   ];
   const tokens = scan ? tokensOf([main, ...scan.agents.map((a) => a.st)].filter(Boolean), started || now) : { fresh: 0, cacheRead: 0 };

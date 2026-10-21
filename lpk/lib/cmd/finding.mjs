@@ -37,7 +37,7 @@ export async function main(argv) {
     }
     if (sub === 'verdict' && id) {
       const r = ruleOn(repo, { id, verdict: argv[2], evidence: opt('--evidence'), basis: opt('--basis'), primary: opt('--primary'), by: 'cli' });
-      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; a protected area needs the owner)` : ''}: ${f.evidence}`);
+      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
     }
     if (sub === 'fixed' && id) {
       const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), by: 'cli' });

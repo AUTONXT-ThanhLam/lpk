@@ -53,17 +53,18 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
   ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
   ruleOn(repo, { id: 'F2', verdict: 'dropped', basis: 'disproved', evidence: 'not a defect', by: 'main' });
   why = hookBash(repo, S, 'gh pr ready');
-  assert.match(why, /- findings: unsettled, or ruled by someone other than the verifier: F2 \(dropped by main\)/);
+  assert.doesNotMatch(why, /- findings:/, 'a ruling by someone other than the verifier does not block');
   assert.doesNotMatch(why, /- reviews:/);
-  assert.match(ok(lpk(repo, S, 'waive', 'F2', '--why', 'I am sure')), /not an owner waiver/);
-  assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: .*F2/, 'an agent running lpk waive releases nothing');
-  ok(lpk(repo, S, 'waive', 'F2', '--why', 'the owner agreed', '--via', 'ask'));
+  assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds .*\n +.*F2 \(dropped by main\)/m);
+  assert.match(ok(lpk(repo, S, 'waive', 'gate:scenarios', '--why', 'I am sure')), /not an owner waiver/);
 
-  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/);
+  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/, 'an agent running lpk waive releases nothing');
   assert.equal(hookBash(repo, S, 'gh pr create --draft --title "Set a" --body x'), null, 'a draft PR is not a handover');
   ok(lpk(repo, S, 'prove', '--all'));
   assert.equal(hookBash(repo, 'another-session', 'gh pr ready'), null);
-  assert.match(ok(lpk(repo, S, 'report')), /^deliverable at \w{12}: every delivery gate holds/);
+  const report = ok(lpk(repo, S, 'report'));
+  assert.match(report, /^deliverable at \w{12}: every delivery gate holds/);
+  assert.match(report, /^- F2 dropped by main: b — not a defect$/m);
 
   // Handed over: a push of new, unreviewed code to the branch now meets the gates too.
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
