@@ -1,5 +1,5 @@
 // The findings ledger a run keeps: what a reviewer records, what a verifier rules, what a fix
-// closes with its evidence, and which rulings wait for the owner.
+// closes with its evidence, and which rulings the owner reads.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,7 +63,7 @@ test('a finding with an unknown field, a bad kind, no stamp or no run is refused
   assert.deepEqual(readLedger(dir).findings, []);
 });
 
-test('only the verifier drops a finding on its own; anyone else\'s drop waits for the owner', () => {
+test('only the verifier drops a finding on its own; anyone else\'s drop is marked for the owner to read', () => {
   const { dir, head } = repoWithRun('rulings');
   raise(dir, head); raise(dir, head);
   assert.match(ruleOn(dir, { id: 'F1', verdict: 'dropped', evidence: 'the guard returns early', by: 'main' }).error, /basis/);
@@ -147,7 +147,7 @@ for (let i = 0; i < 10; i++) { const r = addFinding(process.argv[1], { from: 'p'
   assert.equal(new Set(ids).size, 60);
 });
 
-test('lpk finding lists, rules, closes and counts from the command line, a ruling there waiting for the owner', () => {
+test('lpk finding lists, rules, closes and counts from the command line, a ruling there marked for the owner', () => {
   const { dir, head } = repoWithRun('cli');
   raise(dir, head, { file: 'a.ts', line: 2 }); raise(dir, head);
   assert.match(lpk(dir, 'finding', 'list'), /F1 defect\/important lpk:bug-hunter a\.ts:2 — the guard fails open \(open\)/);
@@ -155,7 +155,7 @@ test('lpk finding lists, rules, closes and counts from the command line, a rulin
   const fix = commit(dir, 'fix');
   assert.match(lpk(dir, 'finding', 'fixed', 'F1', '--commit', fix, '--closed-by', 'repro', '--evidence', 'lpk repro F1 exit 0'), /F1 fixed in .* \(repro\)/);
   lpk(dir, 'finding', 'verdict', 'F2', 'dropped', '--basis', 'disproved', '--evidence', 'unreachable');
-  assert.match(lpk(dir, 'finding', 'list', '--state', 'dropped'), /F2 .*\(dropped by cli, needs the owner\)/);
+  assert.match(lpk(dir, 'finding', 'list', '--state', 'dropped'), /F2 .*\(dropped by cli, [^)]*owner[^)]*\)/);
   assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'counts')), { open: 0, confirmed: 0, unsettled: 0, dropped: 1, preexisting: 0, fixed: 1, duplicate: 0, needsOwner: 1, total: 2 });
   assert.match(JSON.parse(lpk(dir, 'finding', 'get', 'F1')).fixEvidence, /lpk repro F1 exit 0/);
 });

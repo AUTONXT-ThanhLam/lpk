@@ -1,6 +1,6 @@
 // The owner's waiver: one AskUserQuestion the session asks with `metadata.source: "lpk:waive"`, each
 // option labelled with the id of what it releases (`gate:commit`, `connector:createJiraIssue`,
-// `git:reset --hard`, a finding id). The PostToolUse hook records each option the owner picked as a
+// `git:reset --hard`). The PostToolUse hook records each option the owner picked as a
 // waiver record of the run; what the owner did not pick, and a dialog that closed on its own while
 // the owner was away, records nothing.
 import { records } from './hooks.mjs';

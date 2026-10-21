@@ -1,6 +1,6 @@
 // `lpk finding list|get|verdict|fixed|counts`: the run's findings ledger from a shell. A ruling or a
 // closure made here is recorded as by `cli`: the CLI cannot tell which agent ran it, so a drop,
-// pre-existing, duplicate or verifier closure made here waits for the owner.
+// pre-existing, duplicate or verifier closure made here is listed for the owner to read.
 import { resolve } from 'node:path';
 import { counts, findingsText, getFinding, markFixed, readLedger, ruleOn } from '../findings.mjs';
 import { top } from '../git.mjs';
@@ -37,7 +37,7 @@ export async function main(argv) {
     }
     if (sub === 'verdict' && id) {
       const r = ruleOn(repo, { id, verdict: argv[2], evidence: opt('--evidence'), basis: opt('--basis'), primary: opt('--primary'), by: 'cli' });
-      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; a protected area needs the owner)` : ''}: ${f.evidence}`);
+      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
     }
     if (sub === 'fixed' && id) {
       const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), by: 'cli' });

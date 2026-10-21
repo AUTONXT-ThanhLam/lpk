@@ -4,9 +4,9 @@
 // structured output or end_turn and whose findings all reached the ledger. A fix commit owes only
 // the delta: one Sonnet /code-review (none when it touches no code) and the lenses whose findings
 // it fixed. After a rebase an unchanged patch keeps its reviews; a changed one owes a delta review.
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { readLedger } from './findings.mjs';
+import { ledgerFile, readLedger } from './findings.mjs';
 import { commitsOf, pairs, patchesOf, rangesOf, touches } from './patches.mjs';
 import { readRecords } from './records.mjs';
 import { CODE, TEST } from './rules.mjs';
@@ -22,11 +22,13 @@ export const label = (q) => (q.key === 'code-review' ? `code-review:${q.model}` 
 // An agent type (`lpk:techlead`) or a CLI child's `from` (`code-review:sonnet`) as a lens key.
 const keyOf = (type) => { const t = String(type || ''); return CLI.has(t.split(':')[0]) ? t.split(':')[0] : t.split(':').pop(); };
 
-// The run's findings. A run whose ledger moved under runs/<id>/ when a later run started cannot be
-// read here, and says so rather than reading as "no findings".
+// The run's findings: those its ledger left under runs/<id>/ when a later run started (findings.jsonl,
+// then findings.<n>.jsonl, in the order archiveLedger wrote them), and those in the live ledger.
+const nth = (name) => Number(name.match(/^findings\.(\d+)\.jsonl$/)?.[1] || 0);
 export function ledgerFor(repo, run) {
-  if (readRun(repo)?.id !== run.id && existsSync(join(runDir(repo), 'runs', run.id, 'findings.jsonl'))) throw new Error(`the findings of run ${run.id} were archived when a later run started, and lpk does not read an archived ledger`);
-  return readLedger(repo).findings.filter((f) => f.run === run.id);
+  const dir = join(runDir(repo), 'runs', run.id);
+  const archived = existsSync(dir) ? readdirSync(dir).filter((n) => /^findings(\.\d+)?\.jsonl$/.test(n)).sort((a, b) => nth(a) - nth(b)) : [];
+  return [...archived.map((n) => join(dir, n)), ledgerFile(repo)].flatMap((file) => readLedger(repo, file).findings).filter((f) => f.run === run.id);
 }
 
 // What ran: items that count, and notes on runs that do not (errored, still running, ungraded).

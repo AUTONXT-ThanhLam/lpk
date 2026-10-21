@@ -58,11 +58,11 @@ newest review is on the head and no row is open.
 
 1. Run `lpk report`: it runs `lpk gates` and prints every number from the records. A gate that does
    not hold names what it read and the way out.
-2. Ask the owner one question with `AskUserQuestion`, with `metadata.source: "lpk:waive"`,
-   multi-select: each gate that does not hold and each finding ruled by you rather than a verifier,
-   together with the PR question (draft, ready, merge, as this repo's CLAUDE files authorize). The
-   owner's answer is recorded as the waiver. While the owner is away, the PR stays a draft and the
-   report lists what waits.
+2. Ask the owner one question with `AskUserQuestion`, with `metadata.source: "lpk:waive"`: the PR
+   question (draft, ready, merge, as this repo's CLAUDE files authorize), and, multi-select, only
+   the gates that do not hold for a reason no agent can fix (a service that is down, a lens that
+   stalled twice). Fix every other gate instead. The owner's answer is recorded as the waiver.
+   While the owner is away, the PR stays a draft and the report lists what waits.
 3. Run `lpk run end` (it names the file of the owner's messages), then `lpk reap`, stop what the env
    agent started (its report lists the commands), and remove the frozen tree
    (`git worktree remove ../<repo>-review`).
@@ -77,7 +77,8 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
 1. The verdict: delivered, or what blocks it, and the HEAD it was built on.
 2. Each requirement with its proof (the `lpk report` table), and each acceptance scenario with its
    evidence on that commit, or NOT PROVED and why.
-3. The decisions you took alone (`decisions.jsonl`).
+3. The decisions you took alone (`decisions.jsonl`), and the findings `lpk report` lists for the
+   owner to read (unsettled, or ruled by you rather than a verifier), each with its evidence.
 4. The weakest point.
 5. The wall time against the owner's bound, and per lens the findings raised and confirmed.
 6. The PR link and what the owner does next. On a big PR, suggest ultrareview.

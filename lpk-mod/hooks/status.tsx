@@ -87,7 +87,7 @@ export function registerStatus(on: On): void {
           <Text wrap="truncate-end">{`  ${r.title}  `}<Text dimColor>{[r.what, r.state === 'failed' ? `failed: ${r.reason ?? ''}` : r.stalledMs ? `stalled ${minutes(r.stalledMs)}` : r.state, r.action, minutes(r.elapsedMs)].filter(Boolean).join('  ')}</Text></Text>
         ))}
         <Text bold>Findings</Text>
-        <Text dimColor>{`  ${f.total ?? 0} raised · ${f.open ?? 0} open · ${f.confirmed ?? 0} confirmed · ${f.fixed ?? 0} fixed · ${f.dropped ?? 0} dropped · ${f.unsettled ?? 0} unsettled · ${f.needsOwner ?? 0} need you`}</Text>
+        <Text dimColor>{`  ${f.total ?? 0} raised · ${f.open ?? 0} open · ${f.confirmed ?? 0} confirmed · ${f.fixed ?? 0} fixed · ${f.dropped ?? 0} dropped · ${f.unsettled ?? 0} unsettled · ${f.needsOwner ?? 0} for you to read`}</Text>
       </Box>
     )
   })

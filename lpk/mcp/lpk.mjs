@@ -86,12 +86,12 @@ function call(name, input) {
   if (!repo) return bad('lpk: no repo was stamped and this server does not run in a git repository, so there is no ledger to use');
   if (name === 'finding_add') return say(addFinding(repo, { ...a, run }), (f) => `${f.id} recorded (${f.from}${where(f)}, open).`);
   if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
-  if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; a protected area needs the owner)` : ''}: ${f.evidence}`);
+  if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
   if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
   if (name === 'finding_list') {
     const all = readLedger(repo).findings;
     const c = counts(all);
-    return ok(`${findingsText(all, { state: a.state })}\n${c.open} open, ${c.confirmed} confirmed and unfixed, ${c.unsettled} unsettled, ${c.needsOwner} need the owner, ${c.total} in all`);
+    return ok(`${findingsText(all, { state: a.state })}\n${c.open} open, ${c.confirmed} confirmed and unfixed, ${c.unsettled} unsettled, ${c.needsOwner} for the owner to read, ${c.total} in all`);
   }
   return bad(`lpk: no tool ${name}`);
 }

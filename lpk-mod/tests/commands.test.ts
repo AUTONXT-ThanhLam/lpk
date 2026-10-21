@@ -43,6 +43,13 @@ test('a waiver with no lpk run records nothing', async ($, on) => {
   expect(w.ran.some((a) => a[1] === '--input-type=module')).toBe(false)
 })
 
+test('a finding id is refused, since no finding waits on a waiver', async ($, on) => {
+  const w = world(on, { files: installedLpk({ [`${LPK}/lib/cmd/waive.mjs`]: '' }) })
+  const r = await $.command.run({ command: 'lpk-waive', args: 'ci,F3 --why ok', origin: OWNER, presentation: PRESENT })
+  expect(r.text).toContain('Nothing was recorded')
+  expect(w.ran).toEqual([])
+})
+
 test('a waiver with no reason is refused with the usage', async ($, on) => {
   const w = world(on, { files: installedLpk() })
   const r = await $.command.run({ command: 'lpk-waive', args: 'ci', origin: OWNER, presentation: PRESENT })

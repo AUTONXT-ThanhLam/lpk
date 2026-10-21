@@ -59,8 +59,8 @@ what it sees):
 - the dead-code finders `lpk facts` lists, on the touched packages: remove names the diff added
   that nothing uses.
 Record each defect you find with `finding_add`, written to `writing.md` in this skill's directory,
-and start one `lpk:verifier` on it. Never rule on a finding yourself: a drop by the lead counts
-only with the owner's yes.
+and start one `lpk:verifier` on it. Leave rulings to the verifier: a ruling of yours is listed in
+the report for the owner to read.
 
 ## Fix what is real, in one round
 
@@ -101,8 +101,9 @@ other.
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
-8. `unsettled` findings go to the owner with their reproduction; `preexisting` ones go in the
-   report. Surviving mutants (`test-gap`) are listed in the report.
+8. `unsettled` findings and the ones you ruled on yourself go in the report with their evidence
+   (`lpk report` lists them for the owner to read; they do not block); so do `preexisting` ones.
+   Surviving mutants (`test-gap`) are listed in the report.
 9. A refactor a finding seems to call for is a separate PR, named in the report.
 
 Then one delta review: rerun the self-check on the files the fixes touched,

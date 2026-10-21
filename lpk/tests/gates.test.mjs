@@ -53,17 +53,19 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
   ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
   ruleOn(repo, { id: 'F2', verdict: 'dropped', basis: 'disproved', evidence: 'not a defect', by: 'main' });
   why = hookBash(repo, S, 'gh pr ready');
-  assert.match(why, /- findings: unsettled, or ruled by someone other than the verifier: F2 \(dropped by main\)/);
+  assert.doesNotMatch(why, /- findings:/, 'a ruling by someone other than the verifier does not block');
   assert.doesNotMatch(why, /- reviews:/);
-  assert.match(ok(lpk(repo, S, 'waive', 'F2', '--why', 'I am sure')), /not an owner waiver/);
-  assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: .*F2/, 'an agent running lpk waive releases nothing');
-  ok(lpk(repo, S, 'waive', 'F2', '--why', 'the owner agreed', '--via', 'ask'));
+  assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds .*\n +.*F2 \(dropped by main\)/m);
+  assert.match(ok(lpk(repo, S, 'waive', 'gate:scenarios', '--why', 'I am sure')), /not an owner waiver/);
+  assert.equal(lpk(repo, S, 'waive', 'F2', '--why', 'I read it', '--via', '/lpk-waive').status, 2, 'a finding id is not waived');
 
-  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/);
+  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/, 'an agent running lpk waive releases nothing');
   assert.equal(hookBash(repo, S, 'gh pr create --draft --title "Set a" --body x'), null, 'a draft PR is not a handover');
   ok(lpk(repo, S, 'prove', '--all'));
   assert.equal(hookBash(repo, 'another-session', 'gh pr ready'), null);
-  assert.match(ok(lpk(repo, S, 'report')), /^deliverable at \w{12}: every delivery gate holds/);
+  const report = ok(lpk(repo, S, 'report'));
+  assert.match(report, /^deliverable at \w{12}: every delivery gate holds/);
+  assert.match(report, /^- F2 dropped by main: b — not a defect$/m);
 
   // Handed over: a push of new, unreviewed code to the branch now meets the gates too.
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
@@ -123,6 +125,58 @@ test('a push of the run\'s branch waits for the owner\'s grant, from any session
   assert.match(ok(lpk(repo, S, 'run', 'end', '--abandon', 'owner stopped it')), /ended: owner stopped it/);
   assert.match(hookBash(repo, 'someone-else', 'gh pr ready'), new RegExp(`delivery gates of run ${id} do not hold`), 'the gates key on the branch, not on the open run');
   assert.match(hookBash(repo, 'someone-else', 'gh api -X POST graphql -f query="mutation { markPullRequestReadyForReview(input: {}) { clientMutationId } }"'), /gh pr ready <branch>/);
+});
+
+test('after a later run starts, the gates of an ended run read its archived ledger on its branch', () => {
+  const S = 'archive-session';
+  const repo = quickRun('archived', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a is 2 for every caller', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
+  ok(lpk(repo, S, 'prove', '--all'));
+  ok(lpk(repo, S, 'run', 'end'));
+  sh(repo, 'switch', '-q', 'main');
+  ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
+  sh(repo, 'switch', '-q', 'feat');
+  assert.equal(hookBash(repo, 'next-session', 'gh pr ready'), null);
+  // A query judges the open run, and adopts no branch into it.
+  const next = readRun(repo).id;
+  assert.match(lpk(repo, 'next-session', 'gates').stdout, new RegExp(`^run ${next},`));
+  sh(repo, 'switch', '-qc', 'scratch');
+  for (const verb of [['gates'], ['report'], ['reviews', 'owed']]) lpk(repo, 'next-session', ...verb);
+  assert.deepEqual(readRun(repo).branches, []);
+});
+
+test('a finding an ended run left confirmed holds its branch, and once a later run archives it only the owner can release it', () => {
+  const S = 'stuck-session';
+  const repo = quickRun('stuck', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', evidence: 'repro fails', by: 'lpk:verifier' });
+  ok(lpk(repo, S, 'prove', '--all'));
+  ok(lpk(repo, S, 'run', 'end'));
+  assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: confirmed and not fixed: F1 → [^\n]*finding_fixed/, 'its ledger is still live');
+  sh(repo, 'switch', '-q', 'main');
+  ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
+  sh(repo, 'switch', '-q', 'feat');
+  const why = hookBash(repo, S, 'gh pr ready');
+  assert.match(why, /- findings: confirmed and not fixed: F1 → [^\n]*gate:findings/);
+  assert.doesNotMatch(why, /finding_fixed|have a verifier rule/);
+  assert.match(markFixed(repo, { id: 'F1', commit: head(repo), closedBy: 'repro', evidence: 'x', by: 'main' }).error, /no finding F1/);
+});
+
+test('an unsettled finding shows the owner the ruling asked and the area that kept it open, and the gate row names its id first', () => {
+  const S = 'unsettled-session';
+  const repo = quickRun('unsettled', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'the cookie is readable', repro: 'r', kind: 'defect', severity: 'important', area: 'security' });
+  assert.equal(ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'not-reproduced', evidence: 'the repro passed', by: 'lpk:verifier' }).finding.state, 'unsettled');
+  assert.match(lpk(repo, S, 'report').stdout, /^- F1 unsettled \([^)]*dropped[^)]*not-reproduced[^)]*security\)[^\n]*the cookie is readable/m);
+  const row = JSON.parse(lpk(repo, S, 'gates', '--json').stdout).find((r) => r.gate === 'findings');
+  assert.deepEqual([row.holds, row.why.slice(0, 2)], [true, 'F1']);
 });
 
 test('a branch the run never noted is its branch: work merged in after a start on main meets the gates at handover and push, also after the run ends', () => {
