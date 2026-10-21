@@ -164,3 +164,14 @@ test('the finding hook keeps the run of the repo the call runs in, else takes th
   assert.equal(stamp(plain, 'three').run, undefined, 'an unbound run elsewhere is not taken');
   assert.equal(JSON.parse(readFileSync(join(looseDir, 'run.json'), 'utf8')).session, undefined, 'and is not bound by a finding call');
 });
+
+test('a commit whose subject a push would refuse is named right after the commit, with no run, while it is still unpushed', () => {
+  const repo = repoWith('subject', { 'a.txt': 'a\n' });
+  const after = (command) => hook('PostToolUse', 'subject', { tool_name: 'Bash', cwd: repo, tool_input: { command } });
+  write(repo, 'a.txt', 'b\n'); sh(repo, 'commit', '-qam', 'Short subject');
+  assert.equal(after('git commit -qam "Short subject"'), null);
+  const long = 'Stop the mutant hiding a flaky baseline and running every suite per mutant';
+  write(repo, 'a.txt', 'c\n'); sh(repo, 'commit', '-qam', long);
+  assert.match(context(after('git commit -F msg.txt')), new RegExp(`over 72 characters[\\s\\S]*\\(74\\): "${long}"`));
+  assert.equal(after('git status'), null);
+});

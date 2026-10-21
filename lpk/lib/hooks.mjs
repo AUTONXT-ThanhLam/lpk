@@ -4,7 +4,8 @@
 // a tree that has no green `lpk verify`. Outside a run all are silent.
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { git, mergeBase, runsGit, siblings, top } from './git.mjs';
+import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
+import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
 import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
@@ -129,9 +130,7 @@ export function beforeCommit(input) {
   if (input.agent_id || !runsGit(cmd, 'commit')) return null;
   // Only the run of the repo being committed in (the last `cd <dir>` or `git -C <dir>` before the
   // commit, else the session's directory): a run elsewhere never gates this repo.
-  const before = cmd.slice(0, cmd.search(/\bcommit(?![\w-])/));
-  const dirs = [...before.matchAll(/(?:^|[;&|(\s])(?:cd|-C)\s+("([^"]*)"|'([^']*)'|([^\s;&|)]+))/g)].map((m) => m[2] ?? m[3] ?? m[4]);
-  const repo = top(resolve(input.cwd || '.', dirs.at(-1) ?? '.'));
+  const repo = commitRepo(input);
   const run = repo && runFor(repo, input.session_id);
   // A run file that is there but cannot be read is an error of the gate, not the absence of a run.
   const damaged = !run && repo && runState(repo).error;
@@ -144,4 +143,20 @@ export function beforeCommit(input) {
   const why = unverified(repo, run, 'tree');
   if (!why) return null;
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, the tree is not verified (${why}). Run \`lpk verify\`, fix what it reports, then commit. To commit test files alone (acceptance tests before the code), stage only them, then run exactly \`git commit -m <message>\` with nothing before or after it.` } };
+}
+
+function commitRepo(input) {
+  const cmd = String(input.tool_input?.command || '');
+  const before = cmd.slice(0, cmd.search(/\bcommit(?![\w-])/));
+  const dirs = [...before.matchAll(/(?:^|[;&|(\s])(?:cd|-C)\s+("([^"]*)"|'([^']*)'|([^\s;&|)]+))/g)].map((m) => m[2] ?? m[3] ?? m[4]);
+  return top(resolve(input.cwd || '.', dirs.at(-1) ?? '.'));
+}
+
+export function afterCommit(input) {
+  if (!runsGit(String(input.tool_input?.command || ''), 'commit')) return null;
+  const repo = commitRepo(input);
+  const range = repo && pushRange(repo);
+  const long = range ? commits(repo, range).filter((c) => c.length > MAX_SUBJECT) : [];
+  if (!long.length) return null;
+  return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `lpk: a push refuses a commit subject over ${MAX_SUBJECT} characters. Shorten it now, while it is unpushed (\`git commit --amend\` for HEAD):${long.map((c) => `\n- ${c.sha} (${c.length}): "${c.subject}"`).join('')}` } };
 }

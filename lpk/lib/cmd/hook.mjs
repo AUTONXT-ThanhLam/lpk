@@ -34,6 +34,7 @@ const HOOKS = {
   stamp: { gate: true, run: async (i) => (await lib('stamp')).stampHookOutput(i) },
   post: { run: async (i) => (await lib('hooks')).afterTool(i) },
   trim: { run: async (i) => (await lib('trim')).trimBash(i) },
+  subject: { run: async (i) => (await lib('hooks')).afterCommit(i) },
   stop: { run: async (i) => (await lib('hooks')).beforeStop(i) },
   start: { run: async (i) => (await lib('card')).resumeCard(i) },
   card: { run: async (i) => (await lib('card')).runCard(i) },

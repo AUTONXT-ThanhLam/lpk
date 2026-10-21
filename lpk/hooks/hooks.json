@@ -65,6 +65,17 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git *commit*)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" subject",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "AskUserQuestion",
         "hooks": [
           {
