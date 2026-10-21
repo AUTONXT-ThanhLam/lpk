@@ -128,6 +128,7 @@ test('a fix the rebuilt branch no longer holds is closed again with the new comm
   assert.match(markFixed(dir, { ...fix, commit: first }).error, /F1 is fixed/);
   sh(dir, 'switch', '-qc', 'rebuilt', head);
   const again = commit(dir, 'fix, rebuilt');
+  assert.match(markFixed(dir, { ...fix, commit: first }).error, /F1 is fixed/, 'the new fix is a commit HEAD holds');
   const f = markFixed(dir, { ...fix, commit: again }).finding;
   assert.deepEqual([f?.state, f?.fixedCommit], ['fixed', again]);
   assert.match(markFixed(dir, { ...fix, commit: again }).error, /F1 is fixed/);
