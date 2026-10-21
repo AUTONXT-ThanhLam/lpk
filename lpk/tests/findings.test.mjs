@@ -118,6 +118,21 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   assert.deepEqual([counts(readLedger(dir).findings).fixed, counts(readLedger(dir).findings).duplicate], [5, 3]);
 });
 
+test('a fix the rebuilt branch no longer holds is closed again with the new commit; one still in history is refused', () => {
+  const { dir, head } = repoWithRun('rebuilt');
+  raise(dir, head);
+  ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'exit 1', by: VERIFIER });
+  const fix = { id: 'F1', fix: 'guard closed', closedBy: 'repro', evidence: 'repro green', by: 'main' };
+  const first = commit(dir, 'fix');
+  markFixed(dir, { ...fix, commit: first });
+  assert.match(markFixed(dir, { ...fix, commit: first }).error, /F1 is fixed/);
+  sh(dir, 'switch', '-qc', 'rebuilt', head);
+  const again = commit(dir, 'fix, rebuilt');
+  const f = markFixed(dir, { ...fix, commit: again }).finding;
+  assert.deepEqual([f?.state, f?.fixedCommit], ['fixed', again]);
+  assert.match(markFixed(dir, { ...fix, commit: again }).error, /F1 is fixed/);
+});
+
 test('a new run archives the old ledger under its run id and never deletes one', () => {
   const { dir, head } = repoWithRun('archive');
   raise(dir, head);

@@ -57,7 +57,7 @@ const TOOLS = [
   },
   {
     name: 'finding_fixed',
-    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence.',
+    description: 'Close a confirmed finding (or a fixed one whose fix commit HEAD no longer holds, after the branch was rebuilt): the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence.',
     inputSchema: {
       type: 'object',
       properties: {

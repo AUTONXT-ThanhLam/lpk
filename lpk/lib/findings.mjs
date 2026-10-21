@@ -3,6 +3,7 @@
 // so every worktree of the repo, and every agent working in one, reads the same ledger, and no write
 // ever rewrites an earlier one. What a finding means is the agent's call; this file keeps the
 // records exact and says which rulings the owner should read.
+import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { absGitPath, git } from './git.mjs';
@@ -143,7 +144,8 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary }) {
 
 // Closes a confirmed finding with the commit that fixed it and how that is known: a repro now
 // green, a test that fails before the fix, or the verifier's ruling. The commit must exist and must
-// not be the reviewed commit itself.
+// not be the reviewed commit itself. A fixed finding is closed again only when HEAD's history no
+// longer holds its fix commit (the branch was rebuilt).
 export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
   if (!CLOSED_BY.includes(closedBy)) return { error: `closedBy is one of ${CLOSED_BY.join(', ')}` };
   const why = text(evidence);
@@ -154,7 +156,8 @@ export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
   return locked(ledgerDir(repo), () => {
     const f = readLedger(repo).findings.find((x) => x.id === text(id));
     if (!f) return { error: `no finding ${text(id)}` };
-    if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
+    const lost = f.state === 'fixed' && spawnSync('git', ['merge-base', '--is-ancestor', f.fixedCommit, 'HEAD'], { cwd: repo }).status !== 0;
+    if (f.state !== 'confirmed' && !lost) return { error: `${f.id} is ${f.state}${f.state === 'fixed' ? ` in ${f.fixedCommit}, which HEAD's history holds` : ''}; only a confirmed finding, or one whose fix HEAD lost, is fixed` };
     const reviewed = git(['rev-parse', '--verify', '--quiet', `${f.at.split('..').pop()}^{commit}`], repo).trim();
     if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
     append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by) });
