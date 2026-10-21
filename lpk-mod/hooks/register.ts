@@ -1,16 +1,20 @@
-// lpk-mod: early-access extras for lpk, never required by it. Two owner-only commands
-// (/lpk-switch, /lpk-waive), a hint before a fan-out the machine or the quota cannot carry, and
-// compaction instructions that keep an lpk run's state. Every hook lets the session go on when it
+// lpk-mod: early-access extras for lpk, never required by it. The run's band, status line and pane
+// (status.tsx), two owner-only commands (/lpk-switch, /lpk-waive), a hint before a fan-out the
+// machine or the quota cannot carry, and compaction instructions that keep an lpk run's state. Every hook lets the session go on when it
 // fails: a broken mod costs its own extra, never the owner's turn or an agent's start.
 import type { Register } from 'claude-code'
 
 import { compactInstructions } from './compact'
 import { type HintMemory, spawnHint } from './spawn-hint'
+import { markDue, registerStatus, startStatus } from './status'
 import { lpkSwitch } from './switch'
 import { waive } from './waive'
 
 export const register: Register = (on, options) => {
+  registerStatus(on)
+
   on('session.start', async ($, e, next) => {
+    await startStatus($, options).catch((err: unknown) => $.ui.log(`lpk status band off: ${String(err)}`, { to: 'debug' }))
     await $.command.register({
       name: 'lpk-switch',
       description: "Save the lpk run's state card and move to another account (then /exit and claude -c)",
@@ -34,6 +38,7 @@ export const register: Register = (on, options) => {
 
   const memory: HintMemory = { workflowStarts: [], lastSaid: {} }
   on('agent.spawn', async ($, e, next) => {
+    markDue()
     await spawnHint($, e, options, memory).catch((err: unknown) => $.ui.log(`spawn hint skipped: ${String(err)}`, { to: 'debug' }))
     return next(e)
   }).catch(($, e, next) => next(e))
