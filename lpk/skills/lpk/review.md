@@ -59,8 +59,8 @@ what it sees):
 - the dead-code finders `lpk facts` lists, on the touched packages: remove names the diff added
   that nothing uses.
 Record each defect you find with `finding_add`, written to `writing.md` in this skill's directory,
-and start one `lpk:verifier` on it. Never rule on a finding yourself: a drop by the lead counts
-only with the owner's yes.
+and start one `lpk:verifier` on it. Leave rulings to the verifier: a ruling of yours is listed in
+the report for the owner to read.
 
 ## Fix what is real, in one round
 
