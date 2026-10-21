@@ -7,11 +7,11 @@ import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { compareText } from '../lib/compare.mjs';
 import { alreadyFixed, alreadyFixedText, buildBundle } from '../lib/facts.mjs';
-import { defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
+import { git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
 import { MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
 import { freshCandidates } from '../lib/hooks.mjs';
-import { parseArgs } from '../lib/out.mjs';
+import { parseArgs, targetOf } from '../lib/out.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
 import { changeOf } from '../lib/rules.mjs';
 
@@ -48,9 +48,11 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
   lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)`;
 
+// The commit the change starts from: where HEAD left the branch it merges into (`--base`, else the
+// open run's target, else the default branch); with --cached, that branch's own commit.
 function resolveBase(repo) {
-  const ref = opt('--base') || defaultBranch(repo);
-  if (!ref) { console.error('lpk: no --base given and no default branch found'); process.exit(2); }
+  const ref = targetOf(repo, opt('--base'));
+  if (!ref) { console.error('lpk: no --base given, no run target and no default branch found'); process.exit(2); }
   if (argv.includes('--cached')) return git(['rev-parse', ref], repo).trim();
   const mb = mergeBase(repo, ref);
   if (!mb) { console.error(`lpk: no merge base between ${ref} and HEAD`); process.exit(2); }
@@ -90,10 +92,10 @@ function branchLine(repo, commits) {
   return `branch: ${git(['rev-parse', '--abbrev-ref', 'HEAD'], repo).trim()}; commit subjects: ${subjects.slice(0, 20).join(' | ') || 'none'}${more}`;
 }
 
-// Whether the branch would merge into the latest default branch as it stands.
-function mergeLine(repo) {
-  const m = mergeState(repo);
-  if (!m) return 'merge: no default branch to compare with';
+// Whether the branch would merge into its target as it stands.
+function mergeLine(repo, target) {
+  const m = mergeState(repo, target);
+  if (!m) return 'merge: no target branch to compare with';
   if (m.error) return `merge: could not test against ${m.target} (${m.error.split('\n')[0]})`;
   const state = m.conflicts.length ? `CONFLICTS in ${m.conflicts.join(', ')}` : 'merges cleanly';
   const age = m.fetched ? `last fetched ${Math.round((Date.now() - m.fetched) / 60000)} min ago` : 'never fetched';
@@ -111,7 +113,7 @@ function aboutPaths(repo) {
 if (cmd === 'facts') {
   const repo = top(resolve(opt('--repo') || '.'));
   if (!repo) { console.error('lpk: not inside a git repository'); process.exit(2); }
-  const target = opt('--base') || defaultBranch(repo);
+  const target = targetOf(repo, opt('--base'));
   // A bug checked before any change exists: only whether it is already fixed elsewhere.
   if (argv.includes('--about')) {
     const paths = aboutPaths(repo);
@@ -141,7 +143,7 @@ if (cmd === 'facts') {
     `commits: ${s.commits.length}${flagged.length ? `; push would be refused: ${flagged.map((c) => `${c.sha} ${c.merge ? 'merge commit' : `${c.length}-char subject`}`).join(', ')}` : ''}`,
     'CI runs:',
     ...(s.ci.length ? ciLines(s.ci) : ['  (no GitHub Actions or GitLab CI steps found; read the repo\'s own CI config, Makefile and package scripts)']),
-    mergeLine(repo),
+    mergeLine(repo, target),
     ...alreadyFixedText(s.alreadyFixed).split('\n').slice(2),
     `dead-code finders on this machine: ${scanners(repo).join(', ') || 'none found'}`,
   ].join('\n'));

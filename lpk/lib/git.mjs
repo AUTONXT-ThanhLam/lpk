@@ -39,10 +39,9 @@ export function mergeBase(repo, ref) {
   return git(['merge-base', ref, 'HEAD'], repo).trim();
 }
 
-// How the branch stands against the latest default branch: commits it is behind, and the files
-// a merge would conflict on (empty when it merges cleanly).
-export function mergeState(repo) {
-  const target = defaultBranch(repo);
+// How the branch stands against `target` (the default branch when none is given): commits it is
+// behind, and the files a merge would conflict on (empty when it merges cleanly).
+export function mergeState(repo, target = defaultBranch(repo)) {
   if (!target) return null;
   const behind = Number(git(['rev-list', '--count', `HEAD..${target}`], repo).trim() || 0);
   const r = spawnSync('git', ['merge-tree', '--write-tree', '--name-only', '--no-messages', target, 'HEAD'], { cwd: repo, encoding: 'utf8' });

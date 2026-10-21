@@ -128,3 +128,17 @@ test('lpk facts says how far the branch is behind main and whether it still merg
   const out = lpk(repo, '', 'facts', '--base', 'main', '--out', join(tmp, 'behind-bundle')).stdout;
   assert.match(out, /merge: 1 commit\(s\) behind main \(never fetched\), CONFLICTS in src\/a\.mjs; rebase onto main and rerun `lpk verify`/);
 });
+
+test('inside a run, lpk facts without --base diffs against the run target, not the default branch', () => {
+  const repo = repoWith('to-target', { 'src/a.mjs': 'export const a = 1;\n' });
+  sh(repo, 'switch', '-qc', 'studio', 'main');
+  write(repo, 'src/studio.mjs', 'export const s = 1;\n'); sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'studio work');
+  sh(repo, 'switch', '-q', 'main');
+  write(repo, 'src/main.mjs', 'export const m = 1;\n'); sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'main moved');
+  sh(repo, 'switch', '-qC', 'feat', 'studio');
+  write(repo, 'src/a.mjs', 'export const a = 2;\n'); sh(repo, 'commit', '-qam', 'feat');
+  ok(lpk(repo, 's', 'run', 'start', '--target', 'studio', '--verify', 'true'));
+  const facts = JSON.parse(ok(lpk(repo, 's', 'facts', '--json', '--out', join(tmp, 'to-target-bundle'))));
+  assert.deepEqual(facts.files.map((f) => f.path), ['src/a.mjs']);
+  assert.match(ok(lpk(repo, 's', 'facts', '--out', join(tmp, 'to-target-text'))), /merge: 0 commit\(s\) behind studio /);
+});
