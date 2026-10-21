@@ -39,13 +39,11 @@ async function run(args, answer) {
 
 const found = (...ids) => ({ findings: ids.map((id) => ({ id, file: 'a.js', line: 2, claim: `claim of ${id}`, repro: `repro of ${id}` })) });
 const confirm = { verdict: 'confirmed', evidence: 'exit 1 on the commit, 0 on the base' };
-// A verifier's answer: the same ruling on each finding of its group, which its label names.
-const ruled = (v, o) => ({ verdicts: o.label.slice('verify:'.length).split(',').map((id) => ({ id, ...v })) });
 
-test('every owed lens starts at once, the /code-review children through a clamped relay, and the findings go to the verifiers', async () => {
+test('every owed lens starts at once, the /code-review children through a clamped relay, and each finding gets its own verifier', async () => {
   const lenses = ['techlead', 'code-review:sonnet', 'code-review:sonnet', 'code-review:opus', 'security-review', 'bug-hunter', 'prover', 'mutant'];
   const { out, calls } = await run({ ...ARGS, lenses }, (prompt, o) => {
-    if (o.agentType === 'lpk:verifier') return ruled(confirm, o);
+    if (o.agentType === 'lpk:verifier') return confirm;
     if (o.schema?.required?.includes('record')) return { record: `/out/${o.label}.json`, ids: o.label === 'code-review:opus' ? ['F9'] : [] };
     if (o.agentType === 'lpk:prover') return { findings: [], results: [{ scenario: 'S1', status: 'PASS', evidence: 'saw 3 rows' }] };
     if (o.agentType === 'lpk:mutant') return found('F7');
@@ -62,31 +60,18 @@ test('every owed lens starts at once, the /code-review children through a clampe
   assert.match(review[3].prompt, /\nlpk code-review --repo \/r --model opus --effort high\n/);
   assert.match(review[4].prompt, /\nlpk code-review --repo \/r --security --model sonnet --effort high\n/);
   assert.ok(review.every((c) => c.prompt.startsWith(`Review range ${R}.`)));
-  // Verifiers: one per file of a lens's findings, identical options, the same prompt up to the findings.
+  // Verifiers: one per ledger finding, identical options, the same prompt up to the finding.
   const verifiers = calls.filter((c) => c.opts.agentType === 'lpk:verifier');
-  assert.deepEqual(verifiers.map((c) => c.opts.label).sort(), ['verify:F1,F2', 'verify:F9']);
+  assert.deepEqual(verifiers.map((c) => c.opts.label).sort(), ['verify:F1', 'verify:F2', 'verify:F9']);
   const strip = ({ label, ...rest }) => rest;
   assert.ok(verifiers.every((c) => assert.deepEqual(strip(c.opts), strip(verifiers[0].opts)) ?? true));
-  const head = verifiers[0].prompt.slice(0, verifiers[0].prompt.indexOf('Findings from'));
-  assert.ok(verifiers.every((c) => c.prompt.startsWith(`${head}Findings from `)));
-  assert.match(verifiers.find((c) => c.opts.label === 'verify:F9').prompt, /F9 \(read it with finding_get\)$/);
+  const head = verifiers[0].prompt.slice(0, verifiers[0].prompt.indexOf('Finding:'));
+  assert.ok(verifiers.every((c) => c.prompt.startsWith(`${head}Finding: F`)));
+  assert.match(verifiers.find((c) => c.opts.label === 'verify:F9').prompt, /F9 from code-review:opus \(read it with finding_get\)$/);
   assert.deepEqual(out.confirmed.map((v) => v.id).sort(), ['F1', 'F2', 'F9']);
   assert.deepEqual(out.testGaps, ['F7']);
   assert.deepEqual(out.ungraded, []);
   assert.equal(out.lenses.find((l) => l.lens === 'code-review:opus').record, '/out/code-review:opus.json');
-});
-
-test('a lens\'s findings on one file go to one verifier, which still rules each finding on its own', async () => {
-  const three = { findings: [['F1', 'a.js'], ['F2', 'b.js'], ['F3', 'a.js']].map(([id, file]) => ({ id, file, line: 2, claim: `claim of ${id}`, repro: `repro of ${id}` })) };
-  const lens = (verifier) => run({ ...ARGS, lenses: ['techlead'] }, (prompt, o) => (o.agentType === 'lpk:verifier' ? verifier(prompt) : three));
-  const ids = (prompt) => ['F1', 'F2', 'F3'].filter((id) => prompt.includes(`claim of ${id}`));
-  const { out, calls } = await lens((prompt) => ({ verdicts: ids(prompt).map((id) => ({ id, ...(id === 'F3' ? { verdict: 'dropped', basis: 'disproved', evidence: 'guarded' } : confirm) })) }));
-  assert.deepEqual(calls.filter((c) => c.opts.agentType === 'lpk:verifier').map((c) => ids(c.prompt)), [['F1', 'F3'], ['F2']]);
-  assert.deepEqual(out.confirmed.map((v) => [v.id, v.lens, v.verdict]), [['F1', 'techlead', 'confirmed'], ['F2', 'techlead', 'confirmed']]);
-  assert.deepEqual(out.dropped.map((v) => [v.id, v.basis]), [['F3', 'disproved']]);
-  // A verifier that skips a finding of its group, or fails, leaves each one it did not rule on to the lead.
-  const partial = await lens((prompt) => { if (ids(prompt).includes('F2')) throw new Error('agent stalled'); return { verdicts: [{ id: 'F1', ...confirm }] }; });
-  assert.deepEqual(partial.out.unsettled.map((v) => [v.id, v.verdict]), [['F3', 'none'], ['F2', 'none']]);
 });
 
 test('the mutant runs beside the prover unless told they share a database or port', async () => {
@@ -111,7 +96,7 @@ test('a lens that fails runs once more, then is ungraded with the reason', async
   const { out, calls } = await run({ ...ARGS, lenses: ['techlead', 'bug-hunter', 'code-review:sonnet'] }, (prompt, o) => {
     if (o.agentType === 'lpk:techlead') return null;
     if (o.agentType === 'lpk:bug-hunter') { if (!o.label.endsWith('(retry)')) throw new Error('agent stalled on all 6 attempts'); return found('F1'); }
-    if (o.agentType === 'lpk:verifier') return ruled(confirm, o);
+    if (o.agentType === 'lpk:verifier') return confirm;
     return { record: '/out/r.json', ids: [], error: 'lpk code-review: the review child failed' };
   });
   assert.deepEqual(calls.filter((c) => c.opts.phase === 'Review').map((c) => c.opts.label).sort(),
@@ -122,7 +107,7 @@ test('a lens that fails runs once more, then is ungraded with the reason', async
 
 test('a /code-review child that added some findings before failing is not run again, and its findings are verified', async () => {
   const { out, calls } = await run({ ...ARGS, lenses: ['code-review:sonnet'] }, (p, o) => {
-    if (o.agentType === 'lpk:verifier') return ruled(confirm, o);
+    if (o.agentType === 'lpk:verifier') return confirm;
     return { record: '/out/r.json', ids: ['F1'], error: 'lpk code-review: 1 finding(s) could not be added to the ledger: a.js:x: line is not a whole number' };
   });
   assert.deepEqual(calls.map((c) => c.opts.label), ['code-review:sonnet', 'verify:F1']);
@@ -143,7 +128,7 @@ test('a fix round reviews only the delta: one Sonnet /code-review and the lenses
 
 test('no more agents run at once than args.maxParallel allows', async () => {
   const { peak, out } = await run({ ...ARGS, maxParallel: 2, lenses: ['techlead', 'bug-hunter', 'regression', 'claims', 'security'] }, (p, o) => {
-    if (o.agentType === 'lpk:verifier') return ruled(confirm, o);
+    if (o.agentType === 'lpk:verifier') return confirm;
     return o.agentType === 'lpk:regression' ? { ...found('F3'), groups: [{ id: 'g2', status: 'skipped', changes: 'too large' }] } : found(`F-${o.agentType}`);
   });
   assert.equal(peak, 2);
@@ -190,7 +175,7 @@ test('OpenCodeReview splits the files into batches and reports each file no batc
 
 test('reviewers see the failure table, and a finding the verifier could not settle comes back unsettled', async () => {
   const { out, calls } = await run({ ...ARGS, failureModes: 'redis down: refuse the lock', lenses: ['techlead'] }, (p, o) =>
-    (o.agentType === 'lpk:verifier' ? ruled({ verdict: 'unsettled', evidence: 'could not start the app' }, o) : found('F1')));
+    (o.agentType === 'lpk:verifier' ? { verdict: 'unsettled', evidence: 'could not start the app' } : found('F1')));
   assert.match(calls[0].prompt, /redis down: refuse the lock/);
   assert.deepEqual(out.confirmed, []);
   assert.deepEqual(out.unsettled.map((v) => [v.id, v.lens]), [['F1', 'techlead']]);
