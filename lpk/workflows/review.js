@@ -6,10 +6,13 @@ export const meta = {
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
-//   testCmd, e2e, maxParallel, stallMs, lpk, delta }
+//   testCmd, e2e, mutantAfterProver, maxParallel, stallMs, lpk, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
 //   twice runs twice (two Sonnet /code-review children are 'code-review:sonnet' twice).
+// - mutantAfterProver: true when the env agent's report shows the test command and the prover's app
+//   share a database or a port. The mutant reruns the tests over and over and must never share
+//   either with the prover, so it then starts once the prover has answered; without it, at once.
 // - maxParallel: how many agents run at once (`lpk slot`); stallMs: { <lens>|verifier: ms }.
 // - lpk: how to call the lpk CLI (default 'lpk'); the /code-review relays are clamped to it.
 // - delta: { range, raisedBy, docsOnly } for a fix round: one Sonnet /code-review on the delta
@@ -93,8 +96,8 @@ const ocr = (lens) => async (label) => {
   return { findings: outs.flatMap((o) => (o ? o.findings : [])), missed: paths.filter((x) => !done.has(x)).map((x) => `did not review ${x}${why.get(x) ? `: ${why.get(x)}` : ''}`) }
 }
 
-// The prover's FAIL and NOT PROVED scenarios are ledger findings; it runs before the mutant, which
-// reruns the tests over and over and must never share a database or port with it.
+// The prover's FAIL and NOT PROVED scenarios are ledger findings. With args.mutantAfterProver it
+// runs before the mutant, because they share a database or a port.
 let proved
 const proverDone = new Promise((r) => { proved = r })
 const prover = (lens) => (label) => (a.surface
@@ -102,7 +105,7 @@ const prover = (lens) => (label) => (a.surface
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
   : Promise.resolve({ error: 'no running surface given in args.surface' }))
   .then((o) => o && { findings: o.results.filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: x.evidence })), results: o.results, error: o.error })
-const waitsForProver = (run) => (lens) => async (label) => { if (owed.includes('prover')) await proverDone; return run(lens)(label) }
+const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterProver && owed.includes('prover')) await proverDone; return run(lens)(label) }
 
 const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))
 const LENSES = {

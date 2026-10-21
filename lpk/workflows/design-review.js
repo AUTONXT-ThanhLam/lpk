@@ -15,7 +15,8 @@ export const meta = {
 // - timeBound: the owner's bound on the whole run (default 45 minutes).
 // - round: which round this is (1 for the first, and again after a change of approach).
 // - changed: the brief's line numbers the previous revision changed; a High on one of them means
-//   the design is wrong at its root. Omit it in round 1 and after a change of approach.
+//   the design is wrong at its root. Required from round 2 on (empty when the revision only deleted
+//   lines); omitted in round 1, which is also the round after a change of approach.
 // - stallMs: { <angle>: ms }.
 // Each angle starts fresh and is never told about earlier rounds, so a finding that comes back is
 // raised again on the brief as it stands. Nothing here reads the clock or chance, so
@@ -23,8 +24,9 @@ export const meta = {
 const a = args || {}
 const missing = ['repo', 'base', 'brief', 'skillDir', 'round'].filter((k) => !a[k])
 if (!(a.sources || []).length) missing.push('sources')
-if (missing.length) return { error: `lpk:design-review needs ${missing.join(', ')} in args` }
 const round = Number(a.round)
+if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s lines the previous revision changed)')
+if (missing.length) return { error: `lpk:design-review needs ${missing.join(', ')} in args` }
 const changed = new Set((a.changed || []).map(Number))
 const bound = a.timeBound || '45 minutes'
 const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')

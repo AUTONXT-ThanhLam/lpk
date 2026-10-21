@@ -1,8 +1,10 @@
 // The fact verbs that read git: which lines a fix rewrites, what owes the full net, what changes
 // together, and whether the target already holds a fix.
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { commit, lpk, repoWith, sh, write } from './verbs-env.mjs';
+import { commit, ENV, lpk, repoWith, ROOT, sh, write } from './verbs-env.mjs';
 
 const lines = (n, f = (i) => `line ${i}`) => `${Array.from({ length: n }, (_, i) => f(i + 1)).join('\n')}\n`;
 
@@ -64,4 +66,29 @@ test('lpk facts --about names the commits on the target that HEAD lacks touching
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /Commits on main that HEAD lacks, touching these files: \n- \w+ \S+ Fix the crash in a\n?$/);
   assert.match(r.stdout, /Open PRs touching these files: unknown \(.+\)/, 'a gh that cannot answer is named, not read as no PRs');
+});
+
+test('mutate refuses an unknown argument, a missing patch and a run without --test', () => {
+  const repo = repoWith('mutate-args', { 'a.js': 'export const a = 1;\n' });
+  write(repo, 'a.diff', '');
+  for (const args of [['--patch a.diff --patch b.diff'], ['--patch', 'missing.diff'], ['--patch', 'a.diff', 'b.diff'], ['--patch', '.'], ['--patches', 'a.diff']]) {
+    const r = lpk(repo, 'mutate', '--base', 'main', '--test', 'true', ...args);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stdout}${r.stderr}`);
+    assert.match(r.stderr, /usage: lpk mutate/, args.join(' '));
+  }
+  assert.match(lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'missing.diff').stderr, /missing\.diff/);
+  assert.match(lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'a.diff', 'b.diff').stderr, /b\.diff/);
+  const untested = lpk(repo, 'mutate', '--base', 'main', '--patch', 'a.diff');
+  assert.equal(untested.status, 2, 'a run without --test is refused');
+  assert.match(untested.stderr, /--test[\s\S]*usage: lpk mutate/);
+  // The options the shared setup reads are the mutate run's own too.
+  for (const args of [['--cached'], ['--sibling', 'x']]) {
+    const r = lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'a.diff', ...args);
+    assert.doesNotMatch(r.stderr, /unknown|usage: lpk mutate/, args.join(' '));
+  }
+  // A patch piped through process substitution is a /dev/fd path, not a regular file; it is applied.
+  commit(repo, 'two', { 'a.js': 'export const a = 2;\n' });
+  write(repo, 'm.diff', '--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-export const a = 2;\n+export const a = 3;\n');
+  const piped = spawnSync('bash', ['-c', `node '${join(ROOT, 'bin', 'lpk')}' mutate --base main --test 'grep -q "= 2" a.js' --patch <(cat m.diff)`], { cwd: repo, env: ENV, encoding: 'utf8' });
+  assert.match(piped.stdout, /\(mutant\): tests fail/, piped.stdout + piped.stderr);
 });

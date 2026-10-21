@@ -2,7 +2,7 @@
 // lpk: exact facts and checks for an lpk run. Each command in `lib/cmd/` runs from its own module;
 // the fact commands that predate them (facts, rules, check, map, mutate, compare, precedent,
 // statusline, setup) are handled here.
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { compareText } from '../lib/compare.mjs';
@@ -11,6 +11,7 @@ import { defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, sibli
 import { MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
 import { freshCandidates } from '../lib/hooks.mjs';
+import { parseArgs } from '../lib/out.mjs';
 import { checkText, mapText, mutateText, precedentText, rulesText } from '../lib/report.mjs';
 import { changeOf } from '../lib/rules.mjs';
 
@@ -54,6 +55,21 @@ function resolveBase(repo) {
   const mb = mergeBase(repo, ref);
   if (!mb) { console.error(`lpk: no merge base between ${ref} and HEAD`); process.exit(2); }
   return mb;
+}
+
+// `lpk mutate` takes only the options its code path reads (its own, `--cached` read by resolveBase and
+// `--sibling` read by the shared setup): a stray word or a quoted run of options would otherwise drop a
+// mutant without a word. A patch path must exist and not be a directory; a pipe such as `<(git diff)`
+// is a patch too.
+const MUTATE_USAGE = 'usage: lpk mutate --test "<command>" [--patch <mutant.diff>]... [--file <path>]... [--timeout <s>] [--hunks] [--repo <dir>] [--base <ref>] [--cached]';
+function mutateArgs() {
+  const a = parseArgs(argv, ['--test', '--patch', '--file', '--timeout', '--repo', '--base', '--sibling'], ['--hunks', '--cached']);
+  if (a.error) return { error: a.error };
+  const stray = a.words[0] ?? (argv.includes('--') ? '--' : undefined);
+  if (stray !== undefined) return { error: `unknown argument ${stray}` };
+  if (!a.opt('--test')) return { error: '--test "<command>" is required' };
+  const bad = a.all('--patch').map((p) => { try { return statSync(p).isDirectory() ? `--patch ${p} is a directory` : ''; } catch { return `--patch ${p} does not exist`; } }).find(Boolean);
+  return bad ? { error: bad } : a;
 }
 
 // One line per CI job: its commands, a multi-line script's lines joined in brackets.
@@ -162,9 +178,10 @@ if (cmd === 'facts') {
     if (!names.length && !argv.includes('--routes')) { console.error(USAGE); process.exit(2); }
     console.log(mapText({ roots: [repo, ...sibs], refs: siblingRefs(sibs, all('--sibling')), names, routeMode: argv.includes('--routes'), guards: all('--guard') }));
   } else {
-    if (!opt('--test')) { console.error(USAGE); process.exit(2); }
+    const m = mutateArgs();
+    if (m.error) { console.error(`lpk: ${m.error}\n${MUTATE_USAGE}`); process.exit(2); }
     const sub = relative(repo, realpathSync(process.cwd()));
-    const r = await mutateText({ repo, base: resolveBase(repo), cmd: opt('--test'), sub: sub.startsWith('..') ? '' : sub, only: all('--file'), timeout: Number(opt('--timeout') || 600), hunks: argv.includes('--hunks'), patches: all('--patch').map((p) => resolve(p)) });
+    const r = await mutateText({ repo, base: resolveBase(repo), cmd: m.opt('--test'), sub: sub.startsWith('..') ? '' : sub, only: m.all('--file'), timeout: Number(m.opt('--timeout') || 600), hunks: m.flags.has('--hunks'), patches: m.all('--patch').map((p) => resolve(p)) });
     console.log(r.text);
     process.exit(r.code);
   }

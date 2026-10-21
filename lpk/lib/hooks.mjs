@@ -100,8 +100,10 @@ function unverified(repo, run, key) {
 }
 
 // The end of a turn on source no green verify covers is told, not held: the delivery gates hold at
-// handover, and a turn may end to wait for the owner or a background agent.
+// handover, and a turn may end to wait for the owner or a background agent. It is said once per
+// stop: `stop_hook_active` means this stop already continued on a hook's word.
 export function beforeStop(input) {
+  if (input.stop_hook_active === true) return null;
   const { repo, run } = runOf(input);
   const why = run && unverified(repo, run, 'source');
   if (!why) return null;
