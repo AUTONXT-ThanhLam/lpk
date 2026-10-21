@@ -30,6 +30,8 @@ const LPK = a.lpk || 'lpk'
 const S = { type: 'string' }
 const FINDING = { type: 'object', properties: { id: S, file: S, line: { type: 'integer' }, claim: S, repro: S }, required: ['id', 'claim', 'repro'] }
 const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: FINDING } }, required: ['findings'] }
+// A mutant's survivors are test gaps; the tests failing or flaking on the change itself are a defect.
+const MUTANTS = { type: 'object', properties: { findings: { type: 'array', items: { ...FINDING, properties: { ...FINDING.properties, kind: { type: 'string', enum: ['test-gap', 'defect'] } } } } }, required: ['findings'] }
 const covered = (key, item) => ({ type: 'object', properties: { findings: FINDINGS.properties.findings, [key]: { type: 'array', items: item } }, required: ['findings', key] })
 const BATCH = covered('files', { type: 'object', properties: { path: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, reason: S }, required: ['path', 'status'] })
 const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, changes: S }, required: ['id', 'status'] })
@@ -123,7 +125,7 @@ const LENSES = {
   designer: ui('designer', 'Review mode: what a person meets on each screen this commit changes.'),
   a11y: ui('a11y', 'Check that the screens this commit touches work by keyboard, screen reader, large text, high contrast and reduced motion.'),
   prover,
-  mutant: waitsForProver(typed('mutant', FINDINGS, `Command that runs the tests related to the changed files: ${a.testCmd || '(none given: find it in the repo)'}\nAdd each mutant no test catches to the ledger as kind test-gap.`)),
+  mutant: waitsForProver(typed('mutant', MUTANTS, `Command that runs the tests related to the changed files: ${a.testCmd || '(none given: find it in the repo)'}\nAdd each mutant no test catches to the ledger as kind test-gap. If those tests fail or flake on the change itself, add that to the ledger as one defect and return it with kind defect.`)),
 }
 
 // A fix round owes one Sonnet /code-review on the delta (none for a docs-only delta) and the lenses
@@ -170,10 +172,11 @@ const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens
   const ids = fs.filter((f) => f.id).map((f) => f.id)
   const unrecorded = fs.filter((f) => !f.id).map((f) => `${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim || ''}`.trim())
   // A surviving mutant's run is its evidence: it is listed, not reproduced again.
-  const toVerify = r.lens === 'mutant' ? [] : fs.filter((f) => f.id)
+  const gap = (f) => r.lens === 'mutant' && f.kind !== 'defect'
+  const toVerify = fs.filter((f) => f.id && !gap(f))
   return parallel(toVerify.map((f) => () => verify(r.label)(f))).then((verdicts) => ({
     lens: r.label, ids, verdicts: verdicts.filter(Boolean), unrecorded, missed: out.missed || [],
-    ...(out.record ? { record: out.record } : {}), ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: ids } : {}),
+    ...(out.record ? { record: out.record } : {}), ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: fs.filter((f) => f.id && gap(f)).map((f) => f.id) } : {}),
   }))
 })
 proved()

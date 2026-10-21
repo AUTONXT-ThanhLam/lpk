@@ -180,3 +180,13 @@ test('reviewers see the failure table, and a finding the verifier could not sett
   assert.deepEqual(out.confirmed, []);
   assert.deepEqual(out.unsettled.map((v) => [v.id, v.lens]), [['F1', 'techlead']]);
 });
+
+test('a mutant that finds the tests failing on the change itself sends that defect to a verifier', async () => {
+  const { out, calls } = await run({ ...ARGS, lenses: ['mutant'] }, (prompt, o) => {
+    if (o.agentType === 'lpk:verifier') return confirm;
+    return { findings: [{ id: 'F3', kind: 'defect', file: 'a.test.js', line: 9, claim: 'fails 2 of 3 runs: deadlock detected', repro: 'npm test -- a' }] };
+  });
+  assert.deepEqual(calls.filter((c) => c.opts.agentType === 'lpk:verifier').map((c) => c.opts.label), ['verify:F3']);
+  assert.deepEqual(out.confirmed.map((v) => v.id), ['F3']);
+  assert.deepEqual(out.testGaps, []);
+});
