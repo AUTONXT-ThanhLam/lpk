@@ -33,8 +33,8 @@ const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')
 
 const S = { type: 'string' }
 const RATED = { type: 'string', enum: ['High', 'Medium', 'Low'] }
-const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, claim: S, scenario: S, evidence: S, fix: S },
-  required: ['severity', 'lines', 'claim', 'evidence', 'fix'] }
+const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, cause: S, claim: S, scenario: S, evidence: S, fix: S },
+  required: ['severity', 'lines', 'cause', 'claim', 'evidence', 'fix'] }
 const FINDINGS = { type: 'array', items: FINDING }
 const CRITIC = { type: 'object', properties: { findings: FINDINGS }, required: ['findings'] }
 const STAGE = { type: 'object', properties: { stage: S, minutes: { type: 'number' }, basis: S }, required: ['stage', 'minutes', 'basis'] }
@@ -45,7 +45,8 @@ const TRACE = { type: 'object', properties: { findings: FINDINGS, trace: { type:
 
 const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
-Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.`
+Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.
+Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
 const ANGLES = [
   { name: 'design-critic', schema: CRITIC,

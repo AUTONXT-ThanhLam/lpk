@@ -61,6 +61,7 @@ makes the run itself fail.
 Answer in this shape and nothing else:
 1. `stages`: one line per stage: the stage, the minutes, and the facts the estimate rests on; then
    the total against the owner's time bound.
-2. `findings`, High first: the rating, the brief lines, the stage, the step where it goes wrong
+2. `findings`, High first: the rating, the brief lines, its cause (the property of the plan it
+   breaks), the stage, the step where it goes wrong
    (state, then the wrong outcome), the evidence tagged `[ran]`, `[read]` or `[inferred]`, and the
    smallest change to the brief that removes it.

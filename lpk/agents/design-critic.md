@@ -77,6 +77,7 @@ files, start services, or ask for a rewrite of what is already sound.
 
 Answer in this shape and nothing else:
 1. `VERDICT: PASS` (no High) or `VERDICT: BLOCK`.
-2. Each finding, High first: the rating, the brief lines it sits on, the rule id or team rule, the
+2. Each finding, High first: the rating, the brief lines it sits on, its cause (the property of the
+   design it breaks), the rule id or team rule, the
    concrete scenario (input or state, then the wrong outcome), the evidence tagged `[ran]` or
    `[read]`, and the smallest design change that removes it.

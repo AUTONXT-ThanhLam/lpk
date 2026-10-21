@@ -53,5 +53,6 @@ Answer in this shape and nothing else:
 1. `trace`: one line per source sentence: the file, the sentence, kept, changed or dropped, its R
    id, and the brief lines; then one line per added brief line; then one line per R id with the
    scenarios and failure rows that prove it, or `unproved`.
-2. `findings`, High first: the rating, the source quote and file, the brief lines, what the owner
+2. `findings`, High first: the rating, the source quote and file, the brief lines, its cause (the
+   property of the brief it breaks), what the owner
    would meet, and the smallest change to the brief that restores the source.

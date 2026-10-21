@@ -85,11 +85,19 @@ branch, named the way the repo names them, then start these in the background at
 - `lpk:designer` in design mode, when the change touches a screen.
 
 The design is reviewed in rounds until no High remains. After each round:
-1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<what
-   the Highs were and what changes>"`.
+1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
+   High's cause, and what changes>"`.
 2. `pass`: the review is done. `incomplete`: an angle never answered; run the round again.
-3. `revise`: fix each High in the brief, or answer it with a run, citing the command and its output
-   in the brief beside the line it concerns: a disagreement is settled by a run, never by argument.
+3. `revise`: group the Highs by cause, together with the causes recorded for earlier rounds. Each
+   finding is one place where its cause breaks; a fix closes the cause, not the place. For each
+   cause, find every place in the brief that can break the same property (every writer of the same
+   state, every scenario that proves it the same way, every requirement drawn from the same
+   source) and close them all in this revision, with the one mechanism that holds the property
+   where one exists (a fence or compare-and-set on the state, a single owner of a step, a constraint,
+   a gate that runs the test). A cause that comes back after an earlier round fixed it was patched
+   where it was seen: give it that mechanism now, and name it in the record. A High that is wrong is
+   answered with a run, citing the command and its output in the brief beside the line it concerns:
+   a disagreement is settled by a run, never by argument.
    Fix a Medium or Low when it is cheap, else list it for the report. Before editing, copy the brief
    to `brief.r<n>.md` beside it; then run round n+1 with `changed` set to the lines the revision
    changed, from
