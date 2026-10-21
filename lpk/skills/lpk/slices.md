@@ -11,8 +11,8 @@ For each slice create a worktree from the branch head
 (`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD`) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its files, contract
 and tests, the test command, the brief and the profile path. You are notified as each one finishes.
-A slice waits for another only when the brief names the dependency the contract cannot cover: a
-past run built two slices in turn with none named and lost half an hour. Glue that joins the slices
+A slice waits for another only when the brief names the dependency the contract cannot cover,
+because slices built in turn add their times instead of overlapping them. Glue that joins the slices
 is a slice of its own, or written after they are in. After go, a builder
 may start early on a slice no open design review High touches; a slice a later High touches is
 rebuilt.

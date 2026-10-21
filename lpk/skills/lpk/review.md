@@ -82,8 +82,7 @@ other.
 4. Give each builder its findings (ids, claims, repros, rulings), the related-test command and the
    bar of step 2. Builders run the related tests and `lpk check`, never `lpk verify`. Where their
    tests share a database or a port, give them one lock file (`flock <file> <command>`); elsewhere
-   they run in parallel. A past round lost 60 of its 92 minutes to builders' `lpk verify` runs
-   queued behind one lock.
+   they run in parallel, because builders queued behind one lock each wait for all the others.
 5. Bring each commit in with `git cherry-pick`, and run `lpk fixlines <commit>` for each: it prints
    the fix's lines that an earlier commit of this run wrote. A confirmed finding on those lines
    means revert or redesign, never another patch.
