@@ -11,6 +11,10 @@ For each slice create a worktree from the branch head
 (`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD`) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its files, contract
 and tests, the test command, the brief and the profile path. You are notified as each one finishes.
+When the slice changes a function, field or output shape that other files read, also give it a map:
+`lpk map <each name> > <file outside the repo>`, never read by you, and its path. A builder given
+the map reads the lines it lists instead of searching the repo; on a slice of eight files that cut
+its diff by about 40% and its cost by about 8%.
 A slice waits for another only when the brief names the dependency the contract cannot cover,
 because slices built in turn add their times instead of overlapping them. Glue that joins the slices
 is a slice of its own, with its own builder, started once the slices it joins are in. After go, a
