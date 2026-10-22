@@ -25,7 +25,7 @@ const changed = () => {
 };
 const ours = (out) => out.split('\n').filter((l) => /lpk-test-/.test(l)).map((l) => l.replace(/\s+/g, ' ').trim());
 
-test('lpk check reports each ast match on added lines by rule id, once, beside the regex candidates', { skip: !HAS_SG && NO_SG }, () => {
+test('lpk check reports each ast match on added lines by rule id, once, beside the regex candidates', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
   const r = lpk(changed(), '', 'check', '--base', 'main');
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(ours(r.stdout), [
@@ -44,7 +44,7 @@ test('without ast-grep, lpk check says how to install it and keeps the regex can
   assert.match(r.stdout, /ast-grep: not installed, so only the regex patterns ran; install it with `npm i -g @ast-grep\/cli@0\.51\.0`/);
 });
 
-test('the edit hook hands the builder the ast matches of the file it just edited', { skip: !HAS_SG && NO_SG }, () => {
+test('the edit hook hands the builder the ast matches of the file it just edited', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
   const repo = changed();
   startRun(repo, 'ast');
   const out = context(hook('PostToolUse', 'post', { tool_name: 'Edit', session_id: 'ast', cwd: repo, tool_input: { file_path: join(repo, 'src/b.js') } }));
@@ -52,7 +52,7 @@ test('the edit hook hands the builder the ast matches of the file it just edited
   assert.doesNotMatch(out, /lpk-test-eval {2}src\/a\.js/);
 });
 
-test('lpk rules --test passes the plugin and learned ast rules and fails a rule whose test does not hold', { skip: !HAS_SG && NO_SG }, () => {
+test('lpk rules --test passes the plugin and learned ast rules and fails a rule whose test does not hold', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
   const ok = lpk(ROOT, '', 'rules', '--test');
   assert.equal(ok.status, 0, ok.stdout + ok.stderr);
   assert.match(ok.stdout, /learned ast rules \(.+\): PASS/);
