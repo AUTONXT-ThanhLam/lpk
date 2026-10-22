@@ -6,10 +6,13 @@ export const meta = {
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
-//   testCmd, e2e, mutantAfterProver, maxParallel, stallMs, lpk, delta }
+//   testCmd, e2e, proverGroups, mutantAfterProver, maxParallel, stallMs, lpk, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
 //   twice runs twice (two Sonnet /code-review children are 'code-review:sonnet' twice).
+// - proverGroups: the scenarios and failure rows split into groups that share no page, app state or
+//   data (each a text naming its ids); one Prover per group, all at once. Without it one Prover
+//   proves every scenario.
 // - mutantAfterProver: true when the env agent's report shows the test command and the prover's app
 //   share a database or a port. The mutant reruns the tests over and over and must never share
 //   either with the prover, so it then starts once the prover has answered; without it, at once.
@@ -101,8 +104,11 @@ const ocr = (lens) => async (label) => {
 // runs before the mutant, because they share a database or a port.
 let proved
 const proverDone = new Promise((r) => { proved = r })
+const groups = (a.proverGroups || []).filter(Boolean)
+const groupOf = new Map()
+const groupFor = (label) => groupOf.get(label.replace(/ \(retry\)$/, ''))
 const prover = (lens) => (label) => (a.surface
-  ? call(`${change}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.bundle}/proof\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
+  ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.bundle}/proof\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
   : Promise.resolve({ error: 'no running surface given in args.surface' }))
   .then((o) => o && { findings: o.results.filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: x.evidence })), results: o.results, error: o.error })
@@ -136,7 +142,12 @@ const owed = a.delta
 const unknown = owed.filter((l) => !LENSES[l])
 if (unknown.length) return { error: `unknown lens ${unknown.join(', ')}; lenses are ${Object.keys(LENSES).join(', ')}` }
 if (a.delta && (a.delta.raisedBy || []).includes('main')) log('findings the session raised itself are re-checked by the session, not by a lens')
-const runs = owed.map((lens, i) => ({ lens, label: owed.indexOf(lens) === i ? lens : `${lens}#${owed.slice(0, i + 1).filter((l) => l === lens).length}` }))
+const runs = owed.flatMap((lens, i) => {
+  const label = owed.indexOf(lens) === i ? lens : `${lens}#${owed.slice(0, i + 1).filter((l) => l === lens).length}`
+  if (lens !== 'prover' || groups.length < 2) return [{ lens, label }]
+  return groups.map((g, k) => { groupOf.set(`${label}:${k + 1}`, g); return { lens, label: `${label}:${k + 1}` } })
+})
+let proversLeft = runs.filter((r) => r.lens === 'prover').length
 
 // A lens that stalls, errors or does not answer runs once more; after that it is ungraded, and
 // only the owner's waiver passes it.
@@ -165,7 +176,7 @@ const verify = (lens) => (f) => call(`${verifyHead} ${f.id} from ${lens}${f.clai
   { label: `verify:${f.id}`, phase: 'Verify', agentType: 'lpk:verifier', schema: VERDICT, stallMs: stall('verifier') })
   .then((v) => (v ? { id: f.id, lens, ...v } : { id: f.id, lens, verdict: 'none', evidence: 'the verifier did not answer: start another one on it' }))
 
-const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens === 'prover') proved(); return out }), (out, r) => {
+const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens === 'prover' && --proversLeft === 0) proved(); return out }), (out, r) => {
   if (out.ungraded) return { lens: r.label, ungraded: out.ungraded }
   const fs = out.findings || []
   const ids = fs.filter((f) => f.id).map((f) => f.id)

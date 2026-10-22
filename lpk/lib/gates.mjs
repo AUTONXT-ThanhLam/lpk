@@ -9,7 +9,7 @@ import { git } from './git.mjs';
 import { needsOwner, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
-import { lastProver, named, proofsOf, trace, verifiedGreen } from './proof.mjs';
+import { named, proofsOf, proverResults, trace, verifiedGreen } from './proof.mjs';
 import { ciFacts } from './ci.mjs';
 import { readRecords, waived } from './records.mjs';
 import { readRun, runDir } from './run.mjs';
@@ -61,9 +61,9 @@ function scenariosGate(repo, run, recs) {
   }
   const judged = sc.filter((x) => x.agentJudged);
   if (judged.length) {
-    const p = lastProver(repo, run);
-    if (!p) why.push(`no Prover run on HEAD's code for ${list(judged.map((s) => s.id))}`);
-    else { const miss = judged.filter((s) => !named(p.structured.results || [], s)); if (miss.length) why.push(`Prover ${p.agentId} did not list ${list(miss.map((s) => s.id))}`); }
+    const p = proverResults(repo, run);
+    if (!p.agents.length) why.push(`no Prover run on HEAD's code for ${list(judged.map((s) => s.id))}`);
+    else { const miss = judged.filter((s) => !named(p.results, s)); if (miss.length) why.push(`no Prover on HEAD's code (${list(p.agents)}) listed ${list(miss.map((s) => s.id))}`); }
   }
   return { holds: !why.length, read: `${sc.length} scenarios; \`lpk prove\` records; Prover transcripts`, why: why.join('; '), wayOut: '`lpk prove --all` on the committed tree; the Prover on the reviewed range for the agent-judged ones' };
 }

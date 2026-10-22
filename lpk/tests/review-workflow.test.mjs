@@ -92,6 +92,26 @@ test('the mutant runs beside the prover unless told they share a database or por
   assert.deepEqual(waits.events, ['prover ends', 'mutant answers']);
 });
 
+test('proverGroups starts one Prover per group at once, each told only its group, and a mutant told to wait waits for every one', async () => {
+  const events = [];
+  const groups = ['S1, FM1: the CLI', 'S2, S3, FM2: the contacts page'];
+  const { out, calls } = await run({ ...ARGS, lenses: ['prover', 'mutant'], proverGroups: groups, mutantAfterProver: true }, async (p, o) => {
+    if (o.agentType === 'lpk:prover') {
+      await new Promise((r) => setTimeout(r, o.label === 'prover:1' ? 10 : 40));
+      events.push(`${o.label} ends`);
+      return { results: [{ scenario: o.label === 'prover:1' ? 'S1' : 'S2', status: 'PASS', evidence: 'ran it', proves: [] }] };
+    }
+    events.push('mutant answers');
+    return found();
+  });
+  const provers = calls.filter((c) => c.opts.agentType === 'lpk:prover');
+  assert.deepEqual(provers.map((c) => [c.opts.label, c.running]), [['prover:1', 0], ['prover:2', 1]]);
+  assert.ok(provers[0].prompt.includes(`Prove only this group;`) && provers[0].prompt.includes(groups[0]) && !provers[0].prompt.includes(groups[1]));
+  assert.ok(provers[1].prompt.includes(groups[1]) && !provers[1].prompt.includes(groups[0]));
+  assert.deepEqual(events, ['prover:1 ends', 'prover:2 ends', 'mutant answers']);
+  assert.deepEqual(out.scenarios.map((x) => x.scenario), ['S1', 'S2']);
+});
+
 test('a lens that fails runs once more, then is ungraded with the reason', async () => {
   const { out, calls } = await run({ ...ARGS, lenses: ['techlead', 'bug-hunter', 'code-review:sonnet'] }, (prompt, o) => {
     if (o.agentType === 'lpk:techlead') return null;

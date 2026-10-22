@@ -12,7 +12,7 @@ import { git } from './git.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { designRound, phaseDetail, phaseOf } from './phase.mjs';
-import { lastProver, named, proofsOf, trace } from './proof.mjs';
+import { named, proverResults, proofsOf, trace } from './proof.mjs';
 import { readDecisions, readRecords } from './records.mjs';
 import { endedRuns, runDir, runState } from './run.mjs';
 import { readCache, scanSession, tokensOf, writeCache } from './scan.mjs';
@@ -26,7 +26,7 @@ function proofs(repo, run, recs) {
   const sc = run.scenarios || [];
   const tree = headTree(repo);
   let prover;
-  const results = () => { if (prover === undefined) prover = lastProver(repo, run); return prover?.structured?.results || []; };
+  const results = () => (prover ??= proverResults(repo, run).results);
   const passed = sc.filter((s) => (s.cmd ? proofsOf(recs, s).some((r) => r.pass && r.tree === tree) : named(results(), s)?.status === 'PASS')).length;
   let req = { proved: 0, total: 0 };
   try { const rows = trace(repo, run, recs).rows; req = { proved: rows.filter((r) => r.proofs.length).length, total: rows.length }; } catch { /* a damaged requirement list: the gate names it */ }

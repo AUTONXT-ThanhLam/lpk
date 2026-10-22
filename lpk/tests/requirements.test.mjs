@@ -79,7 +79,9 @@ test('a full run is denied without numbered requirements, reads them from brief.
   assert.match(r.why, /R1 unproved \(S1 has no Prover PASS on HEAD's code\); R2 unproved \(failure row FM1 has no Prover PASS on HEAD's code\)/);
 
   lens(S, 'pv1', 'lpk:prover', range(repo), { findings: [], results: [
-    { scenario: 'S1: the page shows 2', status: 'PASS', evidence: 'shot.png', proves: ['R1'] },
+    { scenario: 'S1: the page shows 2', status: 'PASS', evidence: 'shot.png', proves: ['R1'] }] });
+  assert.match(row(repo, S).why, /^R2 unproved \(failure row FM1 has no Prover PASS on HEAD's code\)$/);
+  lens(S, 'pv2', 'lpk:prover', range(repo), { findings: [], results: [
     { scenario: 'FM1: store unreachable', status: 'PASS', evidence: 'log', proves: ['R2'] }] });
   r = row(repo, S);
   assert.equal(r.holds, true, r.why);

@@ -79,7 +79,7 @@ Read each step's file when the step starts; each file states its goal and how it
 2. **Design**: gather the facts, choose the lane, let rival architects write the brief, and have it
    checked while the tests are written: `design.md` in this skill's directory.
 3. **Build** test-first, with every line checked as it is written: `build.md` in this skill's
-   directory, and `slices.md` in this skill's directory when the brief has more than one slice.
+   directory, and in the Full lane `slices.md` in this skill's directory, because builders build it.
 4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:
    `review.md` in this skill's directory.
 5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory. The Prover
