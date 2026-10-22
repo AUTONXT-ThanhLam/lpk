@@ -48,7 +48,7 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 Each agent's model and effort are set in its file under `agents/`, chosen by measured results:
 Opus where judgement sets the quality (the three architects, the plan simulator, the designer, the
-Prover), Sonnet where another layer checks the output (building, reviewing, verifying, and the four
+Prover), Sonnet where another layer checks the output (building, reviewing, verifying, and the
 design critics, one focus each, that together found more than one Opus critic at less cost), Haiku
 for the environment. The reviewing roles cannot edit files, and the architects write only their
 own briefs.

@@ -55,8 +55,11 @@ answer the rest in the same round. Without a focus, answer all of these.
   drives the entry point its user meets, in a suite CI runs.
 - Sources: each requirement cites an owner quote, a document and section, or `inferred`. An
   unsourced requirement is a note.
-- What already exists: a helper, component, platform feature or installed dependency that already
-  does what the design builds anew is a blocker; name its path.
+- What already exists: for each mechanism the design builds, read the public API of each installed
+  dependency at its installed version (its types or docs under the dependency's directory) and the
+  repo's own helpers, and run the one that would replace it. One that already does what the design
+  builds anew breaks rule `reuse-first`; name its export or path and the run. A mechanism taken
+  from the owner's or the tech lead's design is no exception.
 - Precedent: a design that repeats a blocker in the `lpk precedent` output is a blocker.
 - The approach: does it keep the code clean, scalable and extensible? If a different design is
   clearly more correct or less risky for the users, say which and why, even when it is more work.

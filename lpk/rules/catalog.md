@@ -226,6 +226,12 @@ candidate is a place to look, not a verdict. `check` ends with the reproduction 
 - find: `\b(\d{1,3}\.){3}\d{1,3}\b`
 - find: `\.lan\b`
 
+### reuse-first: nothing is built that the repo or an installed dependency already does
+- blocks: medium
+- when: always
+- rule: A mechanism the change builds (a loop, lock, retry, queue, poller, cache, event stream, table, script, component) is not already done by a helper in the repo, the public API of an installed dependency at its installed version, the standard library or the platform; a design from the owner or the tech lead is no exception. A dependency's internals (its scripts, keys or private fields) are not written to where its public API does the job.
+- check: for each new mechanism, read the public API of each installed dependency that works in the same domain (its types or docs where it is installed) and grep the repo for a helper that does it. Repro: the export or path, and a run where it does what the change builds by hand.
+
 ### ui-states: every async view shows every state
 - blocks: medium
 - when: path `\.(tsx|jsx|vue|svelte|dart)$`

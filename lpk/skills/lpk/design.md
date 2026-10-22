@@ -69,8 +69,12 @@ The brief follows `writing.md` in this skill's directory. It holds:
   requirement ids the row proves. The default is to refuse or report; allowing the action needs the
   request's own words;
 - the behaviour that changes against `main`, and what `main` accepted that will now be refused;
-- what already exists (a helper, component, platform feature or installed dependency), with its
-  path, used the way the surrounding code uses it;
+- each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table,
+  script, component) and the first rung that holds it: not needed; a helper in the repo (its path);
+  the public API of an installed dependency at its installed version (the export, and a run); the
+  standard library or platform; built here, with the run that shows what the rungs above lack. A
+  design from the owner or the tech lead gives requirements; its mechanisms climb the same rungs,
+  and where a lower rung holds one, the brief takes it and says so in the next update to the owner;
 - the approach and at least one alternative you rejected, chosen by correctness and risk for the
   users, never because it is nearer the current code or less work;
 - the slices: each with the files it owns and the contract between them. Mark a slice **high
@@ -95,7 +99,7 @@ Create the branch, named the way the repo names them, then start these in the ba
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
   `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
-  suite's time, once known) and `round: 1`. It runs four design critics (one focus each), the plan
+  suite's time, once known) and `round: 1`. It runs five design critics (one focus each), the plan
   simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
   or Low;
 - one `lpk:test-author` per slice of the brief, all in one message, each with the repo (the branch
@@ -107,8 +111,11 @@ Create the branch, named the way the repo names them, then start these in the ba
 The design is reviewed in rounds until no High remains. After each round:
 1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
    High's cause, and what changes>"`.
-2. `pass`: the review is done. `incomplete`: an angle never answered; run the round again.
-3. `revise`: group the Highs by cause, together with the causes recorded for earlier rounds. Each
+2. At any verdict and rating, close each `reuse-first` finding (the `reuse` critic's, or one naming
+   the rule) in the brief before the build: the helper or the dependency's API takes over the
+   mechanism, or the brief cites the run that shows where it falls short.
+3. `pass`: the review is done. `incomplete`: an angle never answered; run the round again.
+4. `revise`: group the Highs by cause, together with the causes recorded for earlier rounds. Each
    finding is one place where its cause breaks; a fix closes the cause, not the place. For each
    cause, find every place in the brief that can break the same property (every writer of the same
    state, every scenario that proves it the same way, every requirement drawn from the same
@@ -122,18 +129,20 @@ The design is reviewed in rounds until no High remains. After each round:
    to `brief.r<n>.md` beside it; then run round n+1 with `changed` set to the lines the revision
    changed, from
    `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
-4. `redesign`: a High sits on lines the previous revision changed, so the design is wrong at its
-   root. Choose a different approach, from the briefs the duel did not take, the alternatives the
-   brief weighed or a new one, never a third patch, and review it as round 1 again (no `changed`).
+5. `redesign`: a High sits on lines the previous revision changed, so the design is wrong at its
+   root. When it sits in a hand-built mechanism, first ask whether the repo or a dependency does it.
+   Choose a different approach, from the briefs the duel did not take, the alternatives the brief
+   weighed or a new one, never a third patch, and review it as round 1 again (no `changed`).
    A second `redesign` goes to the owner as one question, with the evidence.
-5. A High raised again after the brief answered it with a run is still disputed: ask the owner one
+6. A High raised again after the brief answered it with a run is still disputed: ask the owner one
    plain question, with both sides' evidence, and keep reviewing the rest.
 
 When the owner says go, run `lpk go`: it records the brief's checks, so `lpk gates` can show what
 changed after go. The build does not wait for the review: start the run (`build.md` in this
-skill's directory) and build the slices no open High touches; a slice a later High touches waits
-for the fix and is rebuilt from it. Read each test the test authors write before you build on it:
-it must drive the real entry point, fail for the right reason and name the mistake it catches.
+skill's directory) and build the slices no open High or `reuse-first` finding touches; a slice a
+later High touches waits for the fix and is rebuilt from it. Read each test the test authors write
+before you build on it: it must drive the real entry point, fail for the right reason and name the
+mistake it catches.
 
 **Done when** a design review round returned `pass` or its last High went to the owner, every
 requirement has a scenario or failure row that proves it, every scenario has a test or a command

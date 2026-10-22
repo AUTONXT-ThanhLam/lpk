@@ -34,7 +34,10 @@ slices, so a file outside your slice is a conflict.
    your lines can plausibly go wrong that no test already fails on, and name that way in your
    report. Run only the tests related to your files while you work.
 3. Put each invariant in the lowest function every writer passes through. Reuse what the brief says
-   already exists, the way the surrounding code uses it. No drive-by refactors.
+   already exists, the way the surrounding code uses it. Before you write a mechanism the brief does
+   not list, look for it in the repo and in the installed dependencies' public API; when one does it,
+   use it, and when the brief's own mechanism duplicates one, report it as `contested:`. No drive-by
+   refactors.
 4. After each edit a hook runs `lpk check` on the file against its rules and returns any hit as a
    hint. Fix each hit at once, or know the one line that says why it is right.
 5. Fix at the root, never around it. A test or a task that looks wrong is not edited to pass:

@@ -1,8 +1,8 @@
 export const meta = {
   name: 'design-review',
-  description: 'One round of the Design Brief review: four design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
+  description: 'One round of the Design Brief review: five design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
   whenToUse: 'Step 2 of the lpk skill, once per round, until a round returns no High finding',
-  phases: [{ title: 'Review', detail: 'four design critics, plan simulator and plan tracer at once' }],
+  phases: [{ title: 'Review', detail: 'five design critics, plan simulator and plan tracer at once' }],
 }
 
 // args: { repo, base, brief, briefJson, skillDir, sources, precedent, timeBound, baseSuite, round,
@@ -17,7 +17,7 @@ export const meta = {
 // - changed: the brief's line numbers the previous revision changed; a High on one of them means
 //   the design is wrong at its root. Required from round 2 on (empty when the revision only deleted
 //   lines); omitted in round 1, which is also the round after a change of approach.
-// - stallMs: { <role>: ms }, one per agent role (the four critics share design-critic's).
+// - stallMs: { <role>: ms }, one per agent role (the five critics share design-critic's).
 // Each angle starts fresh and is never told about earlier rounds, so a finding that comes back is
 // raised again on the brief as it stands. Nothing here reads the clock or chance, so
 // resumeFromRunId replays every angle that already answered.
@@ -52,7 +52,8 @@ const FOCUS = {
   state: 'every durable value the design writes (database rows and columns, queue keys and jobs, files on disk): who writes it, is each transition guarded, and what happens when two writers, a retry, a replay, a re-delivered or late job, or a crash between two steps interleave. Separate stores share no transaction: walk each multi-step operation step by step and name the state left behind when it stops after each step.',
   failures: 'for each dependency and each new key, column or state, what happens when it is unreachable, slow, half-open, failing with an unexpected error type, garbled, unset, repeated or growing: what each route, worker and periodic pass does, what the user sees, what an anonymous caller can learn, and what is left behind. Follow every error path to where it is caught.',
   main: 'everything main accepted, served, allowed or did (in the request or in a job after it) that this design refuses, changes, delays or moves elsewhere, including its cost and latency; every entry point that reaches the changed state (routes, tools, boot, scripts, delete, restore, re-run); and every record the design creates: is it removed or resolved on every path that ends its owner?',
-  proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; what already exists in the repo or its dependencies that the design builds anew; and whether a different design is clearly more correct or less risky.',
+  proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; and whether a different design is clearly more correct or less risky.',
+  reuse: 'each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table, script, component), including those taken from the owner\'s or the tech lead\'s design: does the repo, the public API of an installed dependency at its installed version, the standard library or the platform already do it? Read the dependency\'s types or docs where it is installed and run the replacement before you say so. Name rule `reuse-first` on each such finding.',
 }
 const ANGLES = [
   ...Object.entries(FOCUS).map(([focus, questions]) => ({ name: `design-critic:${focus}`, type: 'design-critic', schema: CRITIC,

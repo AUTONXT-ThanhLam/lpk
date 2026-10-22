@@ -29,15 +29,16 @@ async function run(args, answer) {
 const finding = (severity, lines) => ({ severity, lines, claim: `a ${severity} claim`, evidence: '[ran] exit 1', fix: 'say what happens' });
 const answers = (by) => (o) => ({ findings: [], stages: [{ stage: 'build', minutes: 12, basis: '[inferred]' }], totalMinutes: 30, trace: [], ...(by[o.label] || by[o.agentType]) });
 
-test('a round starts four focused critics, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
+test('a round starts five focused critics, the plan simulator and the plan tracer at once, none told about earlier rounds, and passes only with no High', async () => {
   const { out, calls } = await run(ARGS, answers({ 'lpk:plan-sim': { findings: [finding('Medium', [4])] } }));
   assert.deepEqual(calls.map((c) => [c.opts.label, c.opts.agentType, c.running]), [
     ['design-critic:state', 'lpk:design-critic', 0], ['design-critic:failures', 'lpk:design-critic', 1], ['design-critic:main', 'lpk:design-critic', 2],
-    ['design-critic:proof', 'lpk:design-critic', 3], ['plan-sim', 'lpk:plan-sim', 4], ['plan-trace', 'lpk:plan-trace', 5]]);
-  assert.ok(calls.slice(0, 4).every((c) => /Your focus: answer only these questions/.test(c.prompt)));
-  assert.equal(new Set(calls.slice(0, 4).map((c) => c.prompt)).size, 4);
+    ['design-critic:proof', 'lpk:design-critic', 3], ['design-critic:reuse', 'lpk:design-critic', 4], ['plan-sim', 'lpk:plan-sim', 5],
+    ['plan-trace', 'lpk:plan-trace', 6]]);
+  assert.ok(calls.slice(0, 5).every((c) => /Your focus: answer only these questions/.test(c.prompt)));
+  assert.equal(new Set(calls.slice(0, 5).map((c) => c.prompt)).size, 5);
   for (const c of calls) assert.doesNotMatch(c.prompt, /round|earlier|previous/i);
-  assert.match(calls[5].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
+  assert.match(calls[6].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
   assert.equal(out.round, 2);
   assert.equal(out.verdict, 'pass');
   assert.deepEqual(out.counts, { High: 0, Medium: 1, Low: 0 });
@@ -54,7 +55,7 @@ test('a High on lines the previous revision changed asks for another approach, a
   const silent = await run(ARGS, (o) => (o.agentType === 'lpk:plan-trace' ? null : answers({})(o)));
   assert.equal(silent.out.verdict, 'incomplete');
   assert.deepEqual(silent.out.missing, ['plan-trace']);
-  assert.deepEqual(silent.calls.map((c) => c.opts.label).sort(), ['design-critic:failures', 'design-critic:main', 'design-critic:proof', 'design-critic:state', 'plan-sim', 'plan-trace', 'plan-trace#2']);
+  assert.deepEqual(silent.calls.map((c) => c.opts.label).sort(), ['design-critic:failures', 'design-critic:main', 'design-critic:proof', 'design-critic:reuse', 'design-critic:state', 'plan-sim', 'plan-trace', 'plan-trace#2']);
 });
 
 test('a later round without changed is refused', async () => {
