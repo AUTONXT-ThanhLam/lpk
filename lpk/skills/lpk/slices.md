@@ -1,7 +1,7 @@
-# Building several slices at once
+# Building the slices
 
-Read this when the brief has more than one slice (step 3). **Goal:** the slices are built at the
-same time without colliding, and each arrives reviewed by its own builder.
+Read this in the Full lane (step 3), however many slices the brief has. **Goal:** the slices are
+built at the same time without colliding, and each arrives reviewed by its own builder.
 
 Commit the acceptance tests first. When the repo's own pre-commit hook refuses red tests (it
 typechecks or runs them), never skip it: leave them uncommitted, and each builder copies its
@@ -13,9 +13,9 @@ slice in the background, all in one message, each with its worktree, the base, i
 and tests, the test command, the brief and the profile path. You are notified as each one finishes.
 A slice waits for another only when the brief names the dependency the contract cannot cover,
 because slices built in turn add their times instead of overlapping them. Glue that joins the slices
-is a slice of its own, or written after they are in. After go, a builder
-may start early on a slice no open design review High touches; a slice a later High touches is
-rebuilt.
+is a slice of its own, with its own builder, started once the slices it joins are in. After go, a
+builder may start early on a slice no open design review High touches; a slice a later High touches
+is rebuilt.
 
 Each builder reports its commit, its self-review (`lpk code-review --slice`) and any `contested:`
 item. Rule on each contested item before you bring the slice in: the test or the task changes, or
@@ -31,5 +31,6 @@ keep the one whose tests pass with the cleaner `lpk check` and the smaller diff,
 why in the report. Before removing the other, run the unit tests it wrote against the kept code:
 one that fails there is a case the kept code misses; fix it or say why it does not apply.
 
-Bring each slice in with `git cherry-pick` (a conflict means the slice left its files: resolve it
-at the contract), then remove the worktrees and their branches.
+Bring each slice in with `git cherry-pick`. A conflict means the slice left its files: abort the
+pick and send it back to that slice's builder (SendMessage) to fix at the contract. Then remove
+the worktrees and their branches.

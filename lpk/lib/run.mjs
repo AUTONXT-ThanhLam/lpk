@@ -145,7 +145,7 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   const run = open || { v: 2, id: `${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`, repo, started: Date.now(), branches: [], seen: [], reviewRange: '', previous: [], granted: { draftPush: false } };
   Object.assign(run, { marker, target, base, lane, laneWhy, ...(me ? { session: me } : {}) });
   if (scenarios.length || !open) {
-    // A Prover that started before the scenarios changed proved other ones (proof.mjs lastProver).
+    // A Prover that started before the scenarios changed proved other ones (proof.mjs proverResults).
     if (open && JSON.stringify(scenarios) !== JSON.stringify(open.scenarios || [])) run.scenariosAt = Date.now();
     run.scenarios = scenarios;
   }

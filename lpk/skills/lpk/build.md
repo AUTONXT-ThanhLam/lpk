@@ -33,7 +33,11 @@ once, or know the one line that says why it is right.
 7. Fix at the root, never around it. A test or a task that looks wrong is reported as
    `contested: <why>`, never edited to pass.
 
-Several slices: follow `slices.md` in this skill's directory.
+In the Full lane you lead the build and never write it: every slice, a single one included, goes to
+an `lpk:builder` as `slices.md` in this skill's directory says. Every later turn of the run pays
+for your context, and past runs where the lead built the change itself carried over 200k tokens
+of context through hundreds of turns; a builder's context ends with its slice. The Quick lane
+builds here.
 
 ## Review your own slice before you call it done
 

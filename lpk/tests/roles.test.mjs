@@ -30,7 +30,7 @@ const TABLE = {
   perf: { model: 'sonnet', effort: 'medium', readOnly: true },
   mutant: { model: 'sonnet', effort: 'medium', readOnly: true },
   designer: { model: 'opus', effort: 'high', readOnly: true },
-  prover: { model: 'opus', effort: 'medium', readOnly: true },
+  prover: { model: 'sonnet', effort: 'high', readOnly: true },
   env: { model: 'haiku', effort: 'medium', readOnly: false },
 };
 

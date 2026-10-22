@@ -25,13 +25,15 @@ export const verifiedGreen = (run, recs, tree) => recs.some((r) => r.kind === 'v
 // agent-judged text itself.
 export const named = (results, s) => results.find((x) => { const t = String(x?.scenario || '').trim(); return t === s.id || t.startsWith(`${s.id}:`) || t.startsWith(`${s.id} `) || (s.agentJudged && t === s.agentJudged); });
 
-// The newest Prover run whose reviewed commit has HEAD's code, started after the run's scenarios
-// last changed, or null.
-export function lastProver(repo, run) {
+// The result lines of every Prover run whose reviewed commit has HEAD's code, started after the
+// run's scenarios last changed, newest run first, each with its agent id: one Prover per group of
+// scenarios proves the whole set, and a later run's line for a scenario wins over an earlier one's.
+export function proverResults(repo, run) {
   const code = codeOfCommit(repo, 'HEAD').code;
-  return evidence(repo, run, ledgerFor(repo, run)).items
+  const runs = evidence(repo, run, ledgerFor(repo, run)).items
     .filter((i) => i.key === 'prover' && i.structured && !(Date.parse(i.started) < (run.scenariosAt || 0)) && codeOfCommit(repo, i.range.split(/\.\.\.?/).pop()).code === code)
-    .sort((a, b) => String(a.at).localeCompare(String(b.at))).at(-1) || null;
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return { agents: runs.map((i) => i.agentId), results: runs.flatMap((i) => (i.structured.results || []).map((x) => ({ ...x, agentId: i.agentId }))) };
 }
 
 // The run's brief.json: beside run.json while the run is open, under runs/<id>/ once it ended.
@@ -74,9 +76,8 @@ export function trace(repo, run, recs) {
   const tree = headTree(repo);
   const verified = verifiedGreen(run, recs, tree);
   const inRun = new Map((run.scenarios || []).map((s) => [s.id, s]));
-  let prover;
-  const results = () => { if (prover === undefined) prover = lastProver(repo, run); return prover?.structured?.results || []; };
-  const passBy = (s) => { const r = named(results(), s); return r?.status === 'PASS' ? `PASS by Prover ${prover.agentId}` : null; };
+  let results;
+  const passBy = (s) => { results ??= proverResults(repo, run).results; const r = named(results, s); return r?.status === 'PASS' ? `PASS by Prover ${r.agentId}` : null; };
   const scenario = (claimed) => {
     const s = inRun.get(claimed.id);
     if (!s) return { note: `${claimed.id} is not a scenario of the run` };

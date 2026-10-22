@@ -169,7 +169,7 @@ test('the prompts name only commands, agents, workflows, skills and files the pl
   const skill = ['lpk', 'learn'].map((n) => readFileSync(join(ROOT, 'skills', n, 'SKILL.md'), 'utf8')).join('\n');
   const agents = readdirSync(join(ROOT, 'agents')).map((f) => readFileSync(join(ROOT, 'agents', f), 'utf8')).join('\n');
   const usage = spawnSync('node', [LPK], { encoding: 'utf8' }).stderr;
-  for (const sub of new Set([...(skill + agents).matchAll(/`lpk ([a-z-]+)/g)].map((m) => m[1]))) assert.match(usage, new RegExp(`lpk ${sub} `), `a prompt names lpk ${sub}`);
+  for (const sub of new Set([...(skill + agents).matchAll(/`lpk ([a-z-]+)/g)].map((m) => m[1]))) assert.match(usage, new RegExp(`lpk ${sub}(?![\\w-])`), `a prompt names lpk ${sub}`);
   for (const [, f] of skill.matchAll(/`([a-z-]+\.md)` in this skill's directory/g)) assert.ok(existsSync(join(ROOT, 'skills', 'lpk', f)), `the skill points at ${f}`);
   for (const [, f] of skill.matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([\w./-]+)/g)) assert.ok(existsSync(join(ROOT, f)), `the skill points at ${f}`);
   for (const name of [...skill.matchAll(/`lpk:([a-z-]+)`/g)].map((m) => m[1])) {

@@ -38,8 +38,12 @@ the related-test command and the test author's e2e scripts; `range` exactly as `
 printed it, and `lenses` the `lens` of every row `lpk reviews owed --json` lists, in its order and
 with each repeat (a lens owed twice runs twice). The mutant runs beside the prover unless
 `mutantAfterProver` is true: set it when the env agent's `db` line shows the test command and the
-app share a database or a port, because then each breaks the other's runs. Without the
-Workflow tool, start the agents it starts yourself, all in one message.
+app share a database or a port, because then each breaks the other's runs. When the scenarios and
+failure rows run on two or more surfaces or screens, set `proverGroups`, one group per surface or
+screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
+Prover per group finishes sooner and, with a shorter context, reads more carefully than one Prover
+proving them all. Without the Workflow tool, start the agents it starts yourself, all in one
+message.
 
 The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per finding as each
 arrives. `lpk reviews owed` names any lens still owed and why. A lens that stalled or errored is
