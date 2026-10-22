@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { archiveLedger } from './findings.mjs';
 import { git } from './git.mjs';
-import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir } from './where.mjs';
+import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
 
 export { codeOfCommit, treeOf } from './tree.mjs';
 export { verify } from './verify.mjs';
@@ -63,6 +63,8 @@ export function endedRuns(repo) {
 // open run notes such a branch, so the gates still hold on it after `lpk run end`. Gates key on
 // this, so they hold for any session.
 export function runForBranch(repo, branch) {
+  const holder = worktreeOf(repo, branch);
+  if (holder && checkout(holder)?.own !== checkout(repo)?.own) return runForBranch(holder, branch);
   const st = runState(repo);
   if (st.error) throw new Error(st.error);
   const open = st.run;

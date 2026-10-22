@@ -3,7 +3,7 @@
 // hints; the end of a turn on unverified source is told, never held; the main session cannot commit
 // a tree that has no green `lpk verify`. Outside a run all are silent.
 import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
@@ -123,8 +123,8 @@ export function spawnRule(input) {
   const { repo, run } = runOf(input, false);
   if (!run) return null;
   if (GENERAL.has(type)) return refuse('lpk: this session holds an lpk run, and a general agent works without its rules on the lead\'s model; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
-  if (type !== 'lpk:builder' || run.lane !== 'full' || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
-  return refuse('lpk: no builder before go: this Full-lane run has no `lpk go`; review the Design Brief, and run `lpk go` when the owner says go.');
+  if (type !== 'lpk:builder' || run.lane !== 'full' || !existsSync(join(dirname(run.marker), 'brief.json')) || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
+  return refuse('lpk: no builder before go: this run has a Design Brief but no `lpk go`; end its review, and run `lpk go` when the owner says go.');
 }
 
 // Every message the owner sends during the run is kept verbatim for lpk:learn. What the harness

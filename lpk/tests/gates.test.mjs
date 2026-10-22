@@ -269,3 +269,13 @@ test('the owner\'s grant reaches the run that delivers the branch after that run
   assert.match(ok(lpk(repo, 'another-session', 'run', 'grant', 'draft-push', '--why', 'owner: push it')), /draft pushes granted in run/);
   assert.equal(hookBash(repo, 'another-session', 'git push -u origin feat'), null);
 });
+
+test('a branch whose run lives in its own worktree meets the gates when pushed from the main checkout', () => {
+  const repo = repoWith('wt-push', { 'src/a.mjs': 'export const a = 1;\n' });
+  const wt = join(tmp, 'wt-push-w');
+  sh(repo, 'worktree', 'add', '-q', '-b', 'feat-w', wt, 'main');
+  ok(lpk(wt, 'w', 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  write(wt, 'src/a.mjs', 'export const a = 2;\n'); sh(wt, 'commit', '-qam', 'Set a to 2');
+  assert.match(hookBash(repo, 'other', 'git push -u origin feat-w'), /the owner has not granted draft pushes/);
+  assert.match(hookBash(repo, 'other', 'gh pr ready feat-w'), /delivery gates of run/);
+});

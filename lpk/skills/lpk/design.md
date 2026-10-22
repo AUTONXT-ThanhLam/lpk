@@ -128,18 +128,18 @@ lines and what they reach. After each round:
    `changed` set to the lines the revision changed, from
    `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 5. `redesign`: a design critic's High sits on lines the previous revision changed, so the design
-   is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a dependency does it.
-   Choose a different approach, from the briefs the duel did not take, the alternatives the brief
-   weighed or a new one, never a third patch, and review it as round 1 again (no `changed`).
+   is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a
+   dependency does it. Choose a different approach, from the briefs the duel did not take, the
+   alternatives the brief weighed or a new one, never a third patch, and review it as round 1 again
+   (no `changed`). A second `redesign` in one review is answered as `last`.
 6. `last`: round 3 or later still has Highs. Answer each in the brief with a run, or carry it into
-   the build as a named risk with the test or check that targets it, list it for the report, and
-   end the review. More rounds found new Highs each time and passed none in a past run.
+   the build as a named risk with the test that targets it, list it for the report, and end review.
 7. A High raised again after the brief answered it with a run is still disputed: take the side the
    run supports, or the safer one when no run settles it, log it, and keep reviewing the rest.
 
-When the review has ended and the owner says go (or is away), run `lpk go`: it records the brief's
-checks, so `lpk gates` can show what changed after go. Then start the run (`build.md` in this
-skill's directory). A hook refuses an `lpk:builder` before `lpk go`, because code built on a brief
+When the review has ended and the owner says go (or is away), start the run (`build.md` in this
+skill's directory), then run `lpk go`: it records the brief's checks, so `lpk gates` can show what
+changed after go. A hook refuses an `lpk:builder` before `lpk go`, because code built on a brief
 still under review was thrown away three times in a past run. Read each test the test authors write
 before you build on it: it must drive the real entry point, fail for the right reason and name the
 mistake it catches.

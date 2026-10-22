@@ -128,8 +128,10 @@ test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no gen
   const quick = repoWith('go-quick', { 'src/a.mjs': 'export const a = 1;\n' });
   const spawn = (cwd, subagent_type = 'lpk:builder', session_id = 'go') => hook('PreToolUse', 'pre', { tool_name: 'Agent', session_id, cwd, tool_input: { subagent_type, description: 'slice 1', prompt: 'build slice 1' } });
   assert.equal(spawn(full), null, 'no run, no rule');
-  startRun(full, 'go');
+  const dir = startRun(full, 'go');
   startRun(quick, 'go', { lane: 'quick' });
+  assert.equal(spawn(full), null, 'a run with no Design Brief, as a Quick run moved to Full');
+  writeFileSync(join(dir, 'brief.json'), '{}');
   assert.match(reason(spawn(full)), /no `lpk go`/);
   assert.equal(spawn(full, 'lpk:test-author'), null);
   assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');

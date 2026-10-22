@@ -28,6 +28,13 @@ export function registered() {
   });
 }
 
+export function worktreeOf(repo, branch) {
+  if (!repo || !branch) return '';
+  const blocks = git(['worktree', 'list', '--porcelain'], repo).split('\n\n');
+  const hit = blocks.find((b) => b.split('\n').includes(`branch refs/heads/${branch}`));
+  return hit ? hit.split('\n')[0].replace(/^worktree /, '') : '';
+}
+
 export function checkout(repo) {
   const [dir, common] = repo ? git(['rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir'], repo).trim().split('\n') : [];
   return common ? { repo, common, own: join(dir, 'lpk'), linked: dir !== common, link: join(dir, LINK) } : null;
