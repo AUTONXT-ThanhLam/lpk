@@ -110,7 +110,7 @@ test('preflight prints the machine\'s facts within five seconds and refuses only
   assert.equal(r.refuse, '');
   assert.ok(r.ms < 5000, `${r.ms} ms`);
   const text = r.lines.join('\n');
-  for (const re of [/tree clean/, /base: [0-9a-f]{12} \(merge base with main\)/, /checks: `npm test`/, /git author: /, /gh: /, /Chrome on 1: not running/, /free memory: \d/, /code-review token: NONE/, /gitleaks: /, /CLAUDE_CODE_SUBAGENT_MODEL=haiku/]) assert.match(text, re);
+  for (const re of [/tree clean/, /base: [0-9a-f]{12} \(merge base with main\)/, /checks: `npm test`/, /git author: /, /gh: /, /Chrome on 1: not running/, /free memory: \d/, /code-review token: NONE/, /gitleaks: /, /ast-grep: (installed|missing; lpk check runs only the regex patterns)/, /CLAUDE_CODE_SUBAGENT_MODEL=haiku/]) assert.match(text, re);
   assert.match((await preflight(tmp)).refuse, /not inside a git repository/);
   assert.match((await preflight(repo, { target: 'nope' })).refuse, /no merge base between nope and HEAD/);
 });

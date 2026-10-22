@@ -27,6 +27,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk facts [--repo <dir>] [--base <ref>] [--cached] [--sibling <dir>]... [--out <dir>] [--json]
   lpk facts --about <path>... [--base <target>]   (is a bug already fixed, before any change exists)
   lpk rules [--repo <dir>] [--base <ref>] [--all | --list | --id <id>[,<id>]...]
+  lpk rules --test  |  lpk rules --yield [--repo <dir>]  |  lpk rules --prune [--repo <dir>]
   lpk check [--repo <dir>] [--base <ref>] [--sibling <dir>]... [--fresh <state file>]
   lpk map <name>... [--routes] [--guard <name>]... [--repo <dir>] [--sibling <dir>]...
   lpk precedent [<path>...] [--repo <dir>] [--base <ref>]
@@ -145,6 +146,15 @@ if (cmd === 'facts') {
     ...alreadyFixedText(s.alreadyFixed).split('\n').slice(2),
     `dead-code finders on this machine: ${scanners(repo).join(', ') || 'none found'}`,
   ].join('\n'));
+} else if (cmd === 'rules' && argv.includes('--test')) {
+  const r = (await import('../lib/ast.mjs')).astTest();
+  console.log(r.text);
+  process.exit(r.ok ? 0 : 1);
+} else if (cmd === 'rules' && (argv.includes('--yield') || argv.includes('--prune'))) {
+  const repo = top(resolve(opt('--repo') || '.'));
+  if (!repo) { console.error('lpk: not inside a git repository'); process.exit(2); }
+  const y = await import('../lib/yield.mjs');
+  console.log(argv.includes('--prune') ? y.pruneText(repo) : y.yieldText(repo));
 } else if (cmd === 'rules' || cmd === 'check' || cmd === 'map' || cmd === 'mutate') {
   const repo = top(resolve(opt('--repo') || '.'));
   const catalogOnly = cmd === 'rules' && (argv.includes('--all') || argv.includes('--list') || argv.includes('--id'));

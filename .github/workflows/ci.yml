@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: npm i -g @ast-grep/cli@0.51.0
       - run: node --test tests/*.test.mjs
   draw:
     runs-on: ubuntu-latest
