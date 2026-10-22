@@ -6,12 +6,17 @@ valid:
   - "out.push(item)"
   - "const ok = Number.isSafeInteger(n)"
   - "const s = \"Math.max(...a)\""
+  - "setTimeout(stop, 5000)"
+  - "setTimeout(stop, Math.min(ms, 2147483647))"
+  - "setTimeout(stop)"
 invalid:
   - "const m = Math.max(...scores)"
   - "const lo = Math.min(first, ...rest)"
   - "out.push(...chunk)"
   - "const s = String.fromCharCode(...bytes)"
   - "const ok = Number.isInteger(n)"
+  - "const t = setTimeout(stop, seconds * 1000)"
+  - "setInterval(pass, envMs(\"EVERY\", 300000))"
 ---
 id: engine-limits.typescript
 valid:
@@ -21,12 +26,17 @@ valid:
   - "out.push(item)"
   - "const ok = Number.isSafeInteger(n)"
   - "const s = \"Math.max(...a)\""
+  - "setTimeout(stop, 5000)"
+  - "setTimeout(stop, Math.min(ms, 2147483647))"
+  - "setTimeout(stop)"
 invalid:
   - "const m = Math.max(...scores)"
   - "const lo = Math.min(first, ...rest)"
   - "out.push(...chunk)"
   - "const s = String.fromCharCode(...bytes)"
   - "const ok = Number.isInteger(n)"
+  - "const t = setTimeout(stop, seconds * 1000)"
+  - "setInterval(pass, envMs(\"EVERY\", 300000))"
 ---
 id: engine-limits.tsx
 valid:
@@ -36,9 +46,14 @@ valid:
   - "out.push(item)"
   - "const ok = Number.isSafeInteger(n)"
   - "const s = \"Math.max(...a)\""
+  - "setTimeout(stop, 5000)"
+  - "setTimeout(stop, Math.min(ms, 2147483647))"
+  - "setTimeout(stop)"
 invalid:
   - "const m = Math.max(...scores)"
   - "const lo = Math.min(first, ...rest)"
   - "out.push(...chunk)"
   - "const s = String.fromCharCode(...bytes)"
   - "const ok = Number.isInteger(n)"
+  - "const t = setTimeout(stop, seconds * 1000)"
+  - "setInterval(pass, envMs(\"EVERY\", 300000))"
