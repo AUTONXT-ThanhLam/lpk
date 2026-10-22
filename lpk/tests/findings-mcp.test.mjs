@@ -55,7 +55,7 @@ function ask(proc, msg) {
   });
 }
 
-test('the MCP server records a stamped finding, takes the verifier\'s ruling and refuses an unstamped one', async () => {
+test('the MCP server records a stamped finding, takes the verifier\'s ruling only with where the defect began, and refuses an unstamped one', async () => {
   const { dir, range } = repoWithRun('mcp');
   const proc = spawn('node', [MCP], { cwd: tmp, env: ENV, stdio: ['pipe', 'pipe', 'ignore'] });
   try {
@@ -67,16 +67,18 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling and
     const call = (tool, args, who) => ask(proc, { jsonrpc: '2.0', id: ++n, method: 'tools/call', params: { name: `finding_${tool}`, arguments: stampFinding(hook(dir, tool, args, who)) } });
     const raised = await call('add', { claim: 'the retry repeats a side effect', repro: 'ran it twice', kind: 'defect', severity: 'important', file: 'a.ts', line: 9 }, { agent_type: 'lpk:bug-hunter', agent_id: 'a1' });
     assert.match(raised.result.content[0].text, /^F1 recorded \(lpk:bug-hunter a\.ts:9, open\)/);
-    const ruled = await call('verdict', { id: 'F1', verdict: 'dropped', basis: 'disproved', evidence: 'the retry is idempotent' }, { agent_type: VERIFIER, agent_id: 'v1' });
-    assert.match(ruled.result.content[0].text, /F1 is dropped/);
+    const causeless = await call('verdict', { id: 'F1', verdict: 'confirmed', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
+    assert.match(causeless.result.content[0].text, /born: the step the defect began in/);
+    const ruled = await call('verdict', { id: 'F1', verdict: 'confirmed', born: 'design', cause: 'the brief never says a retry must not repeat the charge', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
+    assert.match(ruled.result.content[0].text, /F1 is confirmed/);
     const wrong = await call('add', { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit', verdict: 'confirmed' }, { agent_type: 'lpk:bug-hunter' });
     assert.match(wrong.result.content[0].text, /unknown field verdict/);
     const unstamped = await ask(proc, { jsonrpc: '2.0', id: 50, method: 'tools/call', params: { name: 'finding_add', arguments: { repo: dir, claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } } });
     assert.equal(unstamped.result.isError, true);
     assert.match(unstamped.result.content[0].text, /from: /);
     const listed = await call('list', {});
-    assert.match(listed.result.content[0].text, /1 in all/);
-    assert.deepEqual(readLedger(dir).findings.map((f) => [f.id, f.from, f.agentId, f.at, f.run, f.state, f.by]), [['F1', 'lpk:bug-hunter', 'a1', range, 'run7', 'dropped', VERIFIER]]);
+    assert.match(listed.result.content[0].text, /\(confirmed by lpk:verifier; born in design: the brief never says a retry must not repeat the charge\)/);
+    assert.deepEqual(readLedger(dir).findings.map((f) => [f.id, f.from, f.agentId, f.at, f.run, f.state, f.by]), [['F1', 'lpk:bug-hunter', 'a1', range, 'run7', 'confirmed', VERIFIER]]);
   } finally {
     proc.kill();
   }

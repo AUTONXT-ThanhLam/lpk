@@ -30,8 +30,9 @@ slices, so a file outside your slice is a conflict.
    writer, reader and consumer: the slice is done when each of them still holds. When the lead gave
    you a map file, read the functions at its lines instead of searching, and search only for what it
    does not answer.
-2. The acceptance tests for your slice exist and fail; make them pass, and add the unit tests the
-   slice needs. Run only the tests related to your files while you work.
+2. The acceptance tests for your slice exist and fail; make them pass. Add a test only for a way
+   your lines can plausibly go wrong that no test already fails on, and name that way in your
+   report. Run only the tests related to your files while you work.
 3. Put each invariant in the lowest function every writer passes through. Reuse what the brief says
    already exists, the way the surrounding code uses it. No drive-by refactors.
 4. After each edit a hook runs `lpk check` on the file against its rules and returns any hit as a

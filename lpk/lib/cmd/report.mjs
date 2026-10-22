@@ -2,7 +2,7 @@
 // verdict line says "deliverable" only when every delivery gate holds on the HEAD it names; the
 // session adds the verdict in words, the decisions it took alone and the weakest point.
 import { counts } from '../findings-text.mjs';
-import { needsOwner } from '../findings.mjs';
+import { BORN, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
@@ -41,6 +41,8 @@ export async function main(argv) {
     const ledger = ledgerFor(repo, run);
     const c = counts(ledger);
     facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
+    const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
+    if (born.length) facts.push(`Confirmed defects by the step they began in: ${born.map(([b, n]) => `${b} ${n}`).join(', ')}`);
     const toRead = ledger.filter(needsOwner);
     if (toRead.length) facts.push(['For the owner to read, not blocking:', ...toRead.map(ruling)].join('\n'));
     const ran = {};

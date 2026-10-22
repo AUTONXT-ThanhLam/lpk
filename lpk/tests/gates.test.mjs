@@ -98,7 +98,7 @@ test('a fix commit owes one Sonnet /code-review and the lens whose finding it fi
   const range = `${base(repo)}..${head(repo)}`;
   quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
   sh(repo, 'commit', '-qam', 'Keep a odd');
   const fix = head(repo);
@@ -110,6 +110,7 @@ test('a fix commit owes one Sonnet /code-review and the lens whose finding it fi
   ]);
   quickNet(repo, S, `${range.split('..')[1]}..${fix}`, { findings: [] }, 'bh2');
   assert.match(ok(lpk(repo, S, 'reviews', 'owed')), /nothing owed/);
+  assert.match(lpk(repo, S, 'report').stdout, /^Confirmed defects by the step they began in: build 1$/m);
 });
 
 test('a push of the run\'s branch waits for the owner\'s grant, from any session and after the run ends', () => {
@@ -154,7 +155,7 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   const range = `${base(repo)}..${head(repo)}`;
   quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   ok(lpk(repo, S, 'prove', '--all'));
   ok(lpk(repo, S, 'run', 'end'));
   assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: confirmed and not fixed: F1 → [^\n]*finding_fixed/, 'its ledger is still live');

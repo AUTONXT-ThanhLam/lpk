@@ -73,9 +73,10 @@ as the first verdicts land (`finding_list`): the net reads the frozen tree, so t
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
 also uses (the env agent's `db` line), start when the net returns, because shared runs break each
 other.
-1. Group the confirmed findings by root cause. Start from the `same fix:` ids that end each
-   CONFIRMED ruling's evidence, and read the claims too: a verifier sees only the findings filed
-   before it ruled.
+1. Group the confirmed findings by root cause. Start from the `cause` each CONFIRMED ruling
+   records and the `same fix:` ids that end its evidence, and read the claims too: a verifier sees
+   only the findings filed before it ruled. A cause born in the design or the request is fixed
+   there first (the brief, the requirement, the contract), then in every place that followed it.
 2. One root cause is one commit. It changes only what that cause needs and adds a test that fails
    on `fix^` and passes on `fix`. The builder's report names the finding ids each commit closes;
    the commit message never does, because ledger ids mean nothing in the repo's history.

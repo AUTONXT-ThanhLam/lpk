@@ -138,7 +138,7 @@ test('the step follows the run\'s records from understanding to delivery, and th
   const net = (r, id, findings) => { for (const kind of ['code-review', 'security-review']) appendRecord(repo, { kind, range: r, model: 'sonnet', exit: 0, findings: 0 }); lens(S, id, 'lpk:bug-hunter', r, { findings }); };
   net(range, 'bh1', [{ claim: 'a must stay odd' }]);
   addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' });
-  ruleOn(repo, { id: 'F1', verdict: 'confirmed', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   assert.deepEqual(step(), ['fix', { left: ['F1'], fixed: 0, delta: 'not yet' }]);
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
   sh(repo, 'commit', '-qam', 'Keep a odd');

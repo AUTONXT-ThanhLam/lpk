@@ -12,7 +12,8 @@ export function findingsText(findings, { state } = {}) {
     const by = f.by ? ` by ${f.by}` : '';
     const owner = needsOwner(f) ? ', for the owner to read' : '';
     const fixed = f.fixedCommit ? ` [fixed in ${f.fixedCommit.slice(0, 12)}, ${f.closedBy}]` : '';
-    return `${f.id} ${f.kind}/${f.severity} ${f.from}${where} — ${f.claim} (${ruled}${by}${owner})${fixed}`;
+    const cause = f.cause ? `; born in ${f.born}: ${f.cause}` : '';
+    return `${f.id} ${f.kind}/${f.severity} ${f.from}${where} — ${f.claim} (${ruled}${by}${owner}${cause})${fixed}`;
   }).join('\n');
 }
 

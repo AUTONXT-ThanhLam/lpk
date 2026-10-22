@@ -8,7 +8,7 @@ import { top } from '../git.mjs';
 const USAGE = `usage:
   lpk finding list [--state <state>] [--repo <dir>]
   lpk finding get <id> [--repo <dir>]
-  lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
+  lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>"] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" [--fix "<how>"] [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
 
@@ -36,7 +36,7 @@ export async function main(argv) {
       return 0;
     }
     if (sub === 'verdict' && id) {
-      const r = ruleOn(repo, { id, verdict: argv[2], evidence: opt('--evidence'), basis: opt('--basis'), primary: opt('--primary'), by: 'cli' });
+      const r = ruleOn(repo, { id, verdict: argv[2], evidence: opt('--evidence'), basis: opt('--basis'), primary: opt('--primary'), born: opt('--born'), cause: opt('--cause'), by: 'cli' });
       return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
     }
     if (sub === 'fixed' && id) {
