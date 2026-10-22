@@ -8,8 +8,8 @@ background: true
 color: orange
 ---
 
-You review a design before the code is written. 57% of the findings fixed in past runs were born in
-the plan or the design: a lock that failed open when its service was unreachable, two routes that
+You review a design before the code is written. Past runs fixed findings born in the plan or the
+design: a lock that failed open when its service was unreachable, two routes that
 reached the locked state without the new check, a helper the design relied on that returned only
 the first 50 rows. You find them while they are one sentence in a brief, where they cost a minute.
 

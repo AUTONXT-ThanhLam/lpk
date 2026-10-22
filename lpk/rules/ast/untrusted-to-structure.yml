@@ -63,10 +63,18 @@ rule:
               kind: template_string
               has:
                 kind: template_substitution
+                not:
+                  has:
+                    kind: identifier
+                    regex: '^[A-Z][A-Z0-9_]*$'
     - kind: template_string
       regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
       has:
         kind: template_substitution
+        not:
+          has:
+            kind: identifier
+            regex: '^[A-Z][A-Z0-9_]*$'
       not:
         inside:
           kind: call_expression
@@ -146,10 +154,18 @@ rule:
               kind: template_string
               has:
                 kind: template_substitution
+                not:
+                  has:
+                    kind: identifier
+                    regex: '^[A-Z][A-Z0-9_]*$'
     - kind: template_string
       regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
       has:
         kind: template_substitution
+        not:
+          has:
+            kind: identifier
+            regex: '^[A-Z][A-Z0-9_]*$'
       not:
         inside:
           kind: call_expression
@@ -247,10 +263,18 @@ rule:
               kind: template_string
               has:
                 kind: template_substitution
+                not:
+                  has:
+                    kind: identifier
+                    regex: '^[A-Z][A-Z0-9_]*$'
     - kind: template_string
       regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
       has:
         kind: template_substitution
+        not:
+          has:
+            kind: identifier
+            regex: '^[A-Z][A-Z0-9_]*$'
       not:
         inside:
           kind: call_expression

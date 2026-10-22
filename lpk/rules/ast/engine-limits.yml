@@ -15,6 +15,22 @@ rule:
             has:
               kind: spread_element
     - pattern: Number.isInteger($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: '^((window|globalThis|self)\.)?(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 2
+              not:
+                any:
+                  - kind: number
+                  - kind: binary_expression
+                    regex: '^[0-9_ *+()-]+$'
+                  - kind: call_expression
+                    regex: '^Math\.min\('
 ---
 id: engine-limits.typescript
 language: TypeScript
@@ -33,6 +49,22 @@ rule:
             has:
               kind: spread_element
     - pattern: Number.isInteger($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: '^((window|globalThis|self)\.)?(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 2
+              not:
+                any:
+                  - kind: number
+                  - kind: binary_expression
+                    regex: '^[0-9_ *+()-]+$'
+                  - kind: call_expression
+                    regex: '^Math\.min\('
 ---
 id: engine-limits.tsx
 language: Tsx
@@ -51,3 +83,19 @@ rule:
             has:
               kind: spread_element
     - pattern: Number.isInteger($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: '^((window|globalThis|self)\.)?(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 2
+              not:
+                any:
+                  - kind: number
+                  - kind: binary_expression
+                    regex: '^[0-9_ *+()-]+$'
+                  - kind: call_expression
+                    regex: '^Math\.min\('

@@ -27,11 +27,11 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
    steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
 
 **Why the flow has this shape.** Past runs showed where defects come from and where time goes:
-- 57% of the fixed findings were born in the plan or the design, so before anything is built
+- defects born in the plan or the design are the cheapest to fix, so before anything is built
   three rival designs attack each other with runs, and the one that survives is checked against
   the code, the way the run will go and the owner's words, in at most three rounds;
-- most of the rest were born in the build, so each builder starts with the rules for its files,
-  gets `lpk check` hints after each edit, and reviews its own slice before it reports done;
+- where the origin was recorded, most defects began in the build, so each builder starts with the
+  rules for its files, gets `lpk check` hints after each edit and reviews its own slice;
 - recall grows with reviewer diversity, so a dense review net runs every lens at once, and the net
   costs its slowest lens, not the sum;
 - 65% of late true findings sat on the previous fix's own lines, so there is one batched fix round,
