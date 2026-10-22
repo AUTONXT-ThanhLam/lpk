@@ -124,19 +124,19 @@ are closed and reading the changed lines and what they reach. After each round:
    where it was seen: give it that mechanism now, and name it in the record. A High that is wrong is
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument.
-   Mediums and Lows go to `notes.md` beside the brief for the builders, never into a revision. A
-   revision grows the brief by at most a tenth (`wc -w`): briefs that grew 40% a round drew new Highs.
-   Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); run round n+1 with
-   `changed` set to the lines the revision changed, from
-   `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
-5. `redesign`: a design critic's High sits on lines the previous revision changed, so the design
-   is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a
+   A High only the owner can settle (the time bound, the scope) is one question to them. Mediums and
+   Lows go to `notes.md` beside the brief for the builders, never into a revision. A revision grows
+   the brief by at most a tenth (`wc -w`): briefs that grew 40% a round drew new Highs.
+   Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
+   round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
+5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the
+   design is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a
    dependency does it. Choose a different approach, from the briefs the duel did not take, the
    alternatives the brief weighed or a new one, never a third patch, and review it as round 1 again
    (no `changed`). A second `redesign` in one review is answered as `last`.
 6. `last`: round 3 still has Highs. Answer each with a run, or carry it into the build as a named risk with its test.
-7. A High raised again after the brief answered it with a run is still disputed: take the side the
-   run supports, or the safer one when no run settles it, log it, and keep reviewing the rest.
+7. A High raised again after the brief answered it with a run: take the side the run supports, or
+   the safer one, and log it.
 
 When the review has ended and the owner says go (or is away), start the run (`build.md` in this
 skill's directory), then run `lpk go`: it records the brief's checks, so `lpk gates` can show what

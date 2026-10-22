@@ -62,8 +62,10 @@ test('a later round reruns only the angles whose High is open, tells each its Hi
   assert.deepEqual(out.missing, []);
 });
 
-test('a design High on changed lines asks for another approach, a plan or proof High there asks for a revision, round 3 is the last, and a round missing an angle does not pass', async () => {
-  const highs = answers({ 'design-critic:state': { findings: [finding('Low', [1]), finding('High', [9])] }, 'lpk:plan-trace': { findings: [finding('High', [20])] } });
+test('an open design High still open on changed lines asks for another approach, a new High there or a plan or proof High asks for a revision, round 3 is the last, and a round missing an angle does not pass', async () => {
+  const highs = answers({ 'design-critic:state': { findings: [finding('Low', [1]), { ...finding('High', [9]), stillOpen: true }] }, 'lpk:plan-trace': { findings: [finding('High', [20])] } });
+  const fresh = answers({ 'design-critic:state': { findings: [finding('High', [9])] } });
+  assert.equal((await run({ ...ARGS, round: 2, changed: [8, 9], open: [{ angle: 'design-critic:state' }] }, fresh)).out.verdict, 'revise');
   const patched = await run({ ...ARGS, round: 2, changed: [8, 9], open: [{ angle: 'design-critic:state' }, { angle: 'plan-trace' }] }, highs);
   assert.equal(patched.out.verdict, 'redesign');
   assert.deepEqual(patched.out.findings.map((f) => [f.angle, f.severity, f.onChanged]), [['design-critic:state', 'High', true], ['plan-trace', 'High', false], ['design-critic:state', 'Low', false]]);

@@ -16,8 +16,8 @@ export const meta = {
 // - round: which round this is (1 for the first, and again after a change of approach); from round 3
 //   on, a round that still has a High is the last.
 // - changed: the brief's line numbers the previous revision changed; the round reviews only these and
-//   what they reach, and a High from a design focus on one of them means the design is wrong at its
-//   root. Required from round 2 on (empty when the revision only deleted
+//   what they reach, and an open High from a design focus still open on one of them means the design
+//   is wrong at its root. Required from round 2 on (empty when the revision only deleted
 //   lines); omitted in round 1, which is also the round after a change of approach.
 // - open: the previous round's High findings as it returned them (each with its angle). Required from
 //   round 2 on. Only the angles named in it run again: each checks that its Highs are closed and
@@ -40,7 +40,7 @@ const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')
 const S = { type: 'string' }
 const RATED = { type: 'string', enum: ['High', 'Medium', 'Low'] }
 const BASIS = { type: 'string', enum: ['ran', 'read', 'inferred'] }
-const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, cause: S, claim: S, scenario: S, evidence: S, basis: BASIS, fix: S },
+const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, cause: S, claim: S, scenario: S, evidence: S, basis: BASIS, fix: S, stillOpen: { type: 'boolean' } },
   required: ['severity', 'lines', 'cause', 'claim', 'evidence', 'basis', 'fix'] }
 const FINDINGS = { type: 'array', items: FINDING }
 const CRITIC = { type: 'object', properties: { findings: FINDINGS }, required: ['findings'] }
@@ -88,7 +88,7 @@ const ask = async (angle) => {
 const open = a.open || []
 const closing = (angle) => open.filter((f) => f.angle === angle.name)
 const RUN = round >= 2 ? ANGLES.filter((angle) => closing(angle).length) : ANGLES
-const closeAsk = (angle) => `\nThe previous round raised these High findings from your angle. For each, check on the brief as it stands whether it is closed, and return it again, as High, only when it is not:\n${closing(angle).map((f) => `- lines ${(f.lines || []).join(', ')}: ${f.claim} (cause: ${f.cause || 'unstated'})`).join('\n')}`
+const closeAsk = (angle) => `\nThe previous round raised these High findings from your angle. For each, check on the brief as it stands whether it is closed, and return it again, as High with stillOpen true, only when it is not; a new finding has stillOpen false:\n${closing(angle).map((f) => `- lines ${(f.lines || []).join(', ')}: ${f.claim} (cause: ${f.cause || 'unstated'})`).join('\n')}`
 const ran = await parallel(RUN.map((angle) => () => (round >= 2 ? ask({ ...angle, ask: angle.ask + closeAsk(angle) }) : ask(angle))))
 const answers = ANGLES.map((angle) => (RUN.includes(angle) ? ran[RUN.indexOf(angle)] : { findings: [] }))
 
@@ -105,12 +105,13 @@ const counts = { High: 0, Medium: 0, Low: 0 }
 for (const f of findings) counts[f.severity]++
 const absent = RUN.filter((angle) => !answers[ANGLES.indexOf(angle)]).map((angle) => angle.name)
 
-// last: round 3 or later and a High remains. redesign: a High from a design focus sits on lines the
-// previous revision changed. revise: a High remains. incomplete: no High, but an angle never answered.
+// last: round 3 or later and a High remains. redesign: a design focus's open High is still open on
+// lines the revision changed, so the fix failed where it was made. revise: a High remains, new ones on
+// changed lines included. incomplete: no High, but an angle never answered.
 // pass: every angle answered with no High.
 const DESIGN = new Set(['state', 'failures', 'main', 'reuse'].map((focus) => `design-critic:${focus}`))
 const verdict = counts.High && round >= 3 ? 'last'
-  : findings.some((f) => f.severity === 'High' && f.onChanged && DESIGN.has(f.angle)) ? 'redesign'
+  : findings.some((f) => f.severity === 'High' && f.stillOpen && f.onChanged && DESIGN.has(f.angle)) ? 'redesign'
     : counts.High ? 'revise' : absent.length ? 'incomplete' : 'pass'
 const answerOf = (name) => answers[ANGLES.findIndex((angle) => angle.name === name)] || {}
 const sim = answerOf('plan-sim')
