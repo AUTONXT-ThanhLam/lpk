@@ -5,9 +5,9 @@
 // records exact and says which rulings the owner should read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { absGitPath, git } from './git.mjs';
+import { git } from './git.mjs';
 import { locked } from './lock.mjs';
-import { readRun } from './run.mjs';
+import { readRun, runDir } from './run.mjs';
 
 export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed', 'deferred'];
 export const VERDICTS = ['confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate'];
@@ -23,9 +23,9 @@ export const VERIFIER = 'lpk:verifier';
 const ADD_FIELDS = ['run', 'from', 'agentId', 'at', 'file', 'line', 'claim', 'repro', 'kind', 'ruleId', 'severity', 'area'];
 
 export function ledgerDir(repo) {
-  const common = repo ? git(['rev-parse', '--git-common-dir'], repo).trim() : '';
-  if (!common) throw new Error(`${repo || '(no repo given)'} is not a git repository, so it has no findings ledger`);
-  return join(absGitPath(repo, common), 'lpk');
+  const dir = runDir(repo);
+  if (!dir) throw new Error(`${repo || '(no repo given)'} is not a git repository, so it has no findings ledger`);
+  return dir;
 }
 export const ledgerFile = (repo) => join(ledgerDir(repo), 'findings.jsonl');
 

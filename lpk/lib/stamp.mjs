@@ -3,7 +3,7 @@
 // the agent's id and the range under review. Whatever the agent put in those fields is replaced, so
 // the ledger records who called, not who the caller said it was.
 import { top } from './git.mjs';
-import { activeRun, readRun } from './run.mjs';
+import { activeRun, exitedRuns, readRun } from './run.mjs';
 
 export const FINDING_TOOL = /^mcp__plugin_lpk_lpk__finding_(add|list|get|verdict|fixed)$/;
 const STAMPED = ['repo', 'run', 'from', 'agentId', 'at', 'by'];
@@ -12,7 +12,7 @@ const STAMPED = ['repo', 'run', 'from', 'agentId', 'at', 'by'];
 // is the one of the repo the call runs in when this session may use it, else the run this session
 // holds wherever it is, as the other hooks take it (hooks.mjs runOf): an agent starts in the
 // session's directory, which may hold no run (the superproject of the submodule the run works in)
-// or another session's. Outside an lpk run of this session only the repo is stamped, so the server
+// or another session's. Outside an lpk run of this session only the repo is stamped, and the hook
 // refuses to add or rule and says why.
 export function stampFinding(input) {
   const tool = FINDING_TOOL.exec(input?.tool_name ?? '');
@@ -20,12 +20,10 @@ export function stampFinding(input) {
   const out = { ...(input.tool_input ?? {}) };
   for (const k of STAMPED) delete out[k];
   let repo = input.cwd ? top(input.cwd) : '';
-  let run = repo ? readRun(repo) : null;
+  let run = repo ? readRun(repo, input.session_id) : null;
   const mine = (r) => r?.id && (!r.session || r.session === input.session_id);
-  if (!mine(run)) {
-    const held = activeRun(input.session_id, false);
-    if (held) { repo = held.repo; run = held; }
-  }
+  if (!mine(run)) run = activeRun(input.session_id, false);
+  if (mine(run)) repo = run.repo || repo;
   if (!repo) return out;
   out.repo = repo;
   if (!mine(run)) return out;
@@ -40,8 +38,16 @@ export function stampFinding(input) {
   return out;
 }
 
-// The hook's answer on stdout: the stamped input, or nothing for a tool it does not stamp.
+// The hook's answer on stdout: the stamped input, a refusal to add or rule outside a run of this
+// session, or nothing for a tool it does not stamp.
 export function stampHookOutput(input) {
   const updatedInput = stampFinding(input);
-  return updatedInput ? { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } } : null;
+  if (!updatedInput) return null;
+  const tool = FINDING_TOOL.exec(input.tool_name)[1];
+  if (updatedInput.run || !['add', 'verdict', 'fixed'].includes(tool)) return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
+  const exited = exitedRuns(input.session_id, updatedInput.repo);
+  const why = `lpk: session ${input.session_id || '(none)'} holds no open lpk run in ${updatedInput.repo || input.cwd} or elsewhere, so the ledger cannot record who ${tool === 'add' ? 'raises' : 'rules on'} a finding.${exited.length
+    ? ` Open runs whose session has exited: ${exited.map((r) => `${r.repo} (session ${r.session})`).join(', ')}. The main session continues one with \`lpk run take --repo <dir>\`; then call again.`
+    : ' The main session starts one with `lpk run start`.'}`;
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } };
 }

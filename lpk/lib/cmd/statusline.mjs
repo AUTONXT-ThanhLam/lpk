@@ -44,8 +44,8 @@ export function main() {
   const repo = run?.repo || top(cwd);
   if (!repo) return 0;
   // A run no hook has bound to a session yet belongs to the session working in its repo.
-  if (!run) { const r = readRun(repo); if (r && (!r.session || r.session === session)) run = r; }
-  const design = existsSync(join(runDir(repo), 'brief.md'));
+  if (!run) { const r = readRun(repo, session); if (r && (!r.session || r.session === session)) run = r; }
+  const design = existsSync(join(runDir(repo, session), 'brief.md'));
   const files = Boolean(run) || design;
   const band = readBand(session);
   const age = band ? Date.now() - band.at : Infinity;

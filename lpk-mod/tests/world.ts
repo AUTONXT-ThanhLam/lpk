@@ -69,7 +69,7 @@ export function installedLpk(files: Record<string, string> = {}): Record<string,
 
 export const git = (argv: readonly string[]) =>
   argv[0] === 'git' && argv.includes('--git-common-dir')
-    ? { stdout: `${CWD}/.git\n` }
+    ? { stdout: argv.includes('--git-dir') ? `${CWD}/.git\n${CWD}/.git\n` : `${CWD}/.git\n` }
     : argv[0] === 'git' && argv.includes('--show-toplevel')
       ? { stdout: `${CWD}\n` }
       : undefined

@@ -1,8 +1,9 @@
-// `lpk run start|take|end|status|lane|grant`: the run's life. Start records the lane, the
+// `lpk run start|take|worktree|end|status|lane|grant`: the run's life. Start records the lane, the
 // scenarios and the checks; a second start in the same session amends the open run and keeps its
 // ledger; `take` takes over a run whose session has exited; `end` never refuses.
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { ciCommands, defaultBranch, mergeBase } from '../git.mjs';
 import { repoOf } from '../out.mjs';
 import { owed } from '../owed.mjs';
@@ -10,19 +11,23 @@ import { appendDecision } from '../records.mjs';
 import { cleanRepro } from '../repro.mjs';
 import { recordRun } from '../runs.mjs';
 import { reap } from '../spawn.mjs';
-import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, startRun, update } from '../run.mjs';
+import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
+import { linkWorktree } from '../where.mjs';
 
 const USAGE = `usage:
   lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
                  (--req numbers R1, R2... in order; --proves names the ones the scenario before it proves.
                   With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
   lpk run take [--repo <dir>]             (take over a run whose session has exited)
+  lpk run worktree <path> [<commit>] [--branch <name>] [--repo <dir>]
+                                          (git worktree add, -b <name> or --detach, at <commit> or HEAD;
+                                           lpk calls from the new worktree work in this run)
   lpk run end [--abandon "<why>"] [--repo <dir>]
   lpk run status [--repo <dir>]
   lpk run lane full --why "<why>" [--repo <dir>]
   lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]`;
 
-const VALUED = new Set(['--verify', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason']);
+const VALUED = new Set(['--verify', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch']);
 const BARE = new Set(['--take', '--draft-push']);
 
 // Options in order, so each --expect belongs to the --scenario before it.
@@ -105,6 +110,27 @@ async function start(repo, o) {
   return 0;
 }
 
+function heldBy(r) {
+  const me = process.env.CLAUDE_CODE_SESSION_ID || '';
+  if (!r.session) return 'no session yet: the first hook of a session working here binds it';
+  if (r.session === me) return 'this session';
+  const pid = sessionPid(r.session);
+  return pid ? `session ${r.session}, which still runs (pid ${pid})` : `session ${r.session}, which has exited: \`lpk run take\` continues the run in this session`;
+}
+
+function worktree(repo, o) {
+  const [, path, commit = 'HEAD'] = o.words;
+  if (!path || o.words.length > 3) { console.error(USAGE); return 2; }
+  const run = readRun(repo);
+  if (!run) { console.error(`lpk: no lpk run in ${repo} for the worktree to work in`); return 2; }
+  const at = resolve(path);
+  const r = spawnSync('git', ['worktree', 'add', ...(o.branch ? ['-b', o.branch] : ['--detach']), at, commit], { cwd: repo, encoding: 'utf8' });
+  if (r.status !== 0) { console.error(`lpk: git worktree add failed: ${(r.stderr || '').trim()}`); return 1; }
+  linkWorktree(at, dirname(run.marker));
+  console.log(`worktree ${at} ${o.branch ? `on branch ${o.branch}` : 'detached'} at ${commit}; lpk calls from it work in run ${run.id} (${dirname(run.marker)}).`);
+  return 0;
+}
+
 export async function main(argv) {
   const o = parse(argv);
   if (o.error) { console.error(`lpk: ${o.error}\n${USAGE}`); return 2; }
@@ -113,6 +139,7 @@ export async function main(argv) {
   const [sub, arg] = o.words;
   if (sub === 'start') return start(repo, o);
   if (sub === 'take') return start(repo, { ...o, flags: new Set(['--take']) });
+  if (sub === 'worktree') return worktree(repo, o);
   if (sub === 'end') {
     const why = o.abandon ?? o.reason;
     // The run's row for runs.jsonl, written while run.json still holds it; a failure here never
@@ -141,7 +168,7 @@ export async function main(argv) {
     const st = runState(repo);
     if (st.error) { console.error(`lpk: ${st.error}`); return 1; }
     const r = st.run;
-    console.log(r ? JSON.stringify({ id: r.id, session: r.session || null, target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
+    console.log(r ? JSON.stringify({ id: r.id, session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
     return 0;
   }
   if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {

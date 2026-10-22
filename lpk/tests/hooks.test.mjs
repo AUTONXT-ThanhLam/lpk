@@ -167,8 +167,12 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   const { repo, ...args } = stamped;
   assert.equal(addFinding(repo, args).error, undefined);
   assert.deepEqual(readLedger(inner).findings.map((f) => [f.run, f.from]), [[run.id, 'lpk:bug-hunter']]);
-  // Another session calling from the same place gets no run to write into.
-  assert.equal(hook('PreToolUse', 'stamp', { ...call, session_id: 'other' }).hookSpecificOutput.updatedInput.run, undefined);
+  // A new session continuing the run of one that exited is told to take it, and then records.
+  const verdict = { ...call, tool_name: 'mcp__plugin_lpk_lpk__finding_verdict', session_id: 'other', agent_type: 'lpk:verifier', tool_input: { id: 'F1', verdict: 'dropped' } };
+  assert.match(reason(hook('PreToolUse', 'stamp', verdict)), new RegExp(`session other holds no open lpk run .*Open runs whose session has exited: ${inner} \\(session stamp\\)\\. The main session continues one with \`lpk run take --repo <dir>\``));
+  assert.match(JSON.parse(lpk(inner, 'other', 'run', 'status').stdout).heldBy, /session stamp, which has exited: `lpk run take`/);
+  assert.equal(lpk(inner, 'other', 'run', 'take').status, 0);
+  assert.deepEqual(hook('PreToolUse', 'stamp', verdict).hookSpecificOutput.updatedInput, { id: 'F1', verdict: 'dropped', repo: inner, run: run.id, by: 'lpk:verifier' });
 });
 
 test('the finding hook keeps the run of the repo the call runs in, else takes the one its session holds', () => {
