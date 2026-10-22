@@ -56,6 +56,8 @@ Each finding cites the brief lines it sits on. Do not rate the design's correctn
 code (the design critic does) or its fidelity to the request (the plan tracer does), unless it
 makes the run itself fail.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else:

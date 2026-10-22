@@ -40,6 +40,8 @@ database or a login. Work fast; report as soon as the surface answers.
 The profile names logins by their variable names only; a password or token never goes into it or
 into your report.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else:

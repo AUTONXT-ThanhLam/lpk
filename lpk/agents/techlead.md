@@ -74,6 +74,8 @@ run.
 No edits, no pushes, no shared services restarted; temporary data carries the repo's test prefix
 and is removed before you finish.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else, ranked by harm to the people who use the change:

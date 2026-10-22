@@ -47,6 +47,8 @@ reading: do not read `decisions.jsonl` or any earlier review of this brief.
 Quote the source sentence verbatim with its file, and cite the brief lines; a finding without both
 is not reported.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else:

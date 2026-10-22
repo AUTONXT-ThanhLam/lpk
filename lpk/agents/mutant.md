@@ -54,6 +54,8 @@ Record each mutant the tests still pass on with `finding_add` (load it with Tool
 line of the mutated code, the behaviour it breaks as the claim, and the mutant diff with the missing
 test as the repro. Return the same list: the gate counts it against the rows you added.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else:
