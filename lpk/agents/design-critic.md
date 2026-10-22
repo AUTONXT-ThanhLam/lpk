@@ -71,8 +71,8 @@ it. Where the brief answers a concern with a run it cites, rerun or read that ru
 the concern again; raise it only when the run does not settle it, and say why.
 
 - **High**: the user would meet a wrong behaviour, work would be lost, a rule marked `blocks: high`
-  or a team rule would break, or the tech lead would block the merge for it. An `[inferred]` High
-  needs the step that makes it happen.
+  or a team rule would break, or the tech lead would block the merge for it, shown by a command you
+  ran or a line you read. An `[inferred]` one counts as Medium.
 - **Medium**: a defect the tests or the review net would likely catch later, at a higher cost.
 - **Low**: a note that would change the design or its tests, but no user meets it.
 

@@ -50,9 +50,10 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   "<why>"`, the report lists them) and say it in the next update. Ask only what the owner alone
   knows, or before anything destructive or outside this machine, once all other work is started:
   once, in the user's terms, with your recommendation and no finding or requirement ids.
-- **Keep your own context small**: every later turn pays for it. Give an agent a command's output
-  file, never a retyped copy. Work no lpk role owns goes to `lpk:staff`; a hook refuses a general
-  agent, which once spent 218M tokens on the lead's model without lpk's rules.
+- **Spend few turns on a small context**: each of your tool calls rereads your whole context (a
+  lead averaged 400 calls at 156k tokens). Put independent commands in one call, wait for
+  notifications instead of polling, give an agent a command's output file, and send reading or any
+  work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
 - **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
@@ -82,8 +83,7 @@ Read each step's file when the step starts; each file states its goal and how it
    directory, and in the Full lane `slices.md` in this skill's directory, because builders build it.
 4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:
    `review.md` in this skill's directory.
-5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory. The Prover
-   runs inside the review net; this file says what proof the gates read.
+5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory (the Prover runs inside the review net).
 6. **Deliver**: gates, CI, the PR, the report, the lessons: `deliver.md` in this skill's directory.
 
 ## The two lanes

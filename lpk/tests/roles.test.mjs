@@ -15,7 +15,7 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 const TABLE = {
   architect: { model: 'opus', effort: 'high', readOnly: false },
   'design-critic': { model: 'sonnet', effort: 'high', readOnly: true },
-  'plan-sim': { model: 'opus', effort: 'high', readOnly: true },
+  'plan-sim': { model: 'sonnet', effort: 'high', readOnly: true },
   'plan-trace': { model: 'sonnet', effort: 'high', readOnly: true },
   builder: { model: 'sonnet', effort: 'high', readOnly: false },
   'test-author': { model: 'sonnet', effort: 'high', readOnly: false },
@@ -29,7 +29,7 @@ const TABLE = {
   a11y: { model: 'sonnet', effort: 'medium', readOnly: true },
   perf: { model: 'sonnet', effort: 'medium', readOnly: true },
   mutant: { model: 'sonnet', effort: 'medium', readOnly: true },
-  designer: { model: 'opus', effort: 'high', readOnly: true },
+  designer: { model: 'sonnet', effort: 'high', readOnly: true },
   prover: { model: 'sonnet', effort: 'high', readOnly: true },
   env: { model: 'haiku', effort: 'medium', readOnly: false },
   staff: { model: 'sonnet', effort: 'high', readOnly: false },

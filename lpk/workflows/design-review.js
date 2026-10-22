@@ -1,12 +1,12 @@
 export const meta = {
   name: 'design-review',
-  description: 'One round of the Design Brief review: five design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
+  description: 'One round of the Design Brief review: round 1 runs five design critics (one focus each), the plan simulator and the plan tracer at once; a later round reruns only the angles whose High is still open, on the changed lines',
   whenToUse: 'Step 2 of the lpk skill, once per round, at most three rounds',
-  phases: [{ title: 'Review', detail: 'five design critics, plan simulator and plan tracer at once' }],
+  phases: [{ title: 'Review', detail: 'the angles of this round at once' }],
 }
 
 // args: { repo, base, brief, briefJson, skillDir, sources, precedent, timeBound, baseSuite, round,
-//   changed, stallMs }
+//   changed, open, stallMs }
 // - brief, briefJson: paths of the Design Brief and its brief.json.
 // - skillDir: the lpk skill's directory, whose step files say how the run goes.
 // - sources: paths of the files the brief must trace to: the request, each linked ticket or
@@ -19,15 +19,19 @@ export const meta = {
 //   what they reach, and a High from a design focus on one of them means the design is wrong at its
 //   root. Required from round 2 on (empty when the revision only deleted
 //   lines); omitted in round 1, which is also the round after a change of approach.
+// - open: the previous round's High findings as it returned them (each with its angle). Required from
+//   round 2 on. Only the angles named in it run again: each checks that its Highs are closed and
+//   reviews the changed lines; an angle with no open High keeps its earlier answer.
 // - stallMs: { <role>: ms }, one per agent role (the five critics share design-critic's).
-// Each angle starts fresh and is never told about earlier rounds, so a finding that comes back is
-// raised again on the brief as it stands. Nothing here reads the clock or chance, so
-// resumeFromRunId replays every angle that already answered.
+// Round 1 angles start fresh. A High whose evidence is only [inferred] is rated Medium, and each angle
+// keeps every High and at most three other findings: a revision answers Highs only. Nothing here reads
+// the clock or chance, so resumeFromRunId replays every angle that already answered.
 const a = args || {}
 const missing = ['repo', 'base', 'brief', 'skillDir', 'round'].filter((k) => !a[k])
 if (!(a.sources || []).length) missing.push('sources')
 const round = Number(a.round)
 if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s lines the previous revision changed)')
+if (round >= 2 && !Array.isArray(a.open)) missing.push('open (the previous round\'s High findings)')
 if (missing.length) return { error: `lpk:design-review needs ${missing.join(', ')} in args` }
 const changed = new Set((a.changed || []).map(Number))
 const bound = a.timeBound || '45 minutes'
@@ -35,8 +39,9 @@ const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')
 
 const S = { type: 'string' }
 const RATED = { type: 'string', enum: ['High', 'Medium', 'Low'] }
-const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, cause: S, claim: S, scenario: S, evidence: S, fix: S },
-  required: ['severity', 'lines', 'cause', 'claim', 'evidence', 'fix'] }
+const BASIS = { type: 'string', enum: ['ran', 'read', 'inferred'] }
+const FINDING = { type: 'object', properties: { severity: RATED, lines: { type: 'array', items: { type: 'integer' } }, cause: S, claim: S, scenario: S, evidence: S, basis: BASIS, fix: S },
+  required: ['severity', 'lines', 'cause', 'claim', 'evidence', 'basis', 'fix'] }
 const FINDINGS = { type: 'array', items: FINDING }
 const CRITIC = { type: 'object', properties: { findings: FINDINGS }, required: ['findings'] }
 const STAGE = { type: 'object', properties: { stage: S, minutes: { type: 'number' }, basis: S }, required: ['stage', 'minutes', 'basis'] }
@@ -51,7 +56,7 @@ const scope = changed.size
 const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
 ${scope}
-Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.
+Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence. Set basis to ran (a command you ran shows it), read (a path:line you read shows it) or inferred; an inferred High counts as Medium. Return every High, and at most your three most useful Medium or Low findings: Mediums go to the builders as notes, never into a revision.
 Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
 const FOCUS = {
@@ -80,15 +85,25 @@ const ask = async (angle) => {
   log(`${angle.name} returned no answer; running it once more`)
   return agent(`${head}\n${angle.ask}`, { ...opts, label: `${angle.name}#2` })
 }
-const answers = await parallel(ANGLES.map((angle) => () => ask(angle)))
+const open = a.open || []
+const closing = (angle) => open.filter((f) => f.angle === angle.name)
+const RUN = round >= 2 ? ANGLES.filter((angle) => closing(angle).length) : ANGLES
+const closeAsk = (angle) => `\nThe previous round raised these High findings from your angle. For each, check on the brief as it stands whether it is closed, and return it again, as High, only when it is not:\n${closing(angle).map((f) => `- lines ${(f.lines || []).join(', ')}: ${f.claim} (cause: ${f.cause || 'unstated'})`).join('\n')}`
+const ran = await parallel(RUN.map((angle) => () => (round >= 2 ? ask({ ...angle, ask: angle.ask + closeAsk(angle) }) : ask(angle))))
+const answers = ANGLES.map((angle) => (RUN.includes(angle) ? ran[RUN.indexOf(angle)] : { findings: [] }))
 
 const order = { High: 0, Medium: 1, Low: 2 }
-const findings = ANGLES.flatMap((angle, i) => ((answers[i] || {}).findings || []).map((f) => ({
+const rated = (f) => (f.severity === 'High' && f.basis === 'inferred' ? { ...f, severity: 'Medium', demoted: true } : f)
+const kept = (list) => {
+  const all = list.map(rated).sort((x, y) => order[x.severity] - order[y.severity])
+  return [...all.filter((f) => f.severity === 'High'), ...all.filter((f) => f.severity !== 'High').slice(0, 3)]
+}
+const findings = ANGLES.flatMap((angle, i) => kept((answers[i] || {}).findings || []).map((f) => ({
   angle: angle.name, ...f, onChanged: (f.lines || []).some((n) => changed.has(n)),
 }))).sort((x, y) => order[x.severity] - order[y.severity])
 const counts = { High: 0, Medium: 0, Low: 0 }
 for (const f of findings) counts[f.severity]++
-const absent = ANGLES.filter((_, i) => !answers[i]).map((angle) => angle.name)
+const absent = RUN.filter((angle) => !answers[ANGLES.indexOf(angle)]).map((angle) => angle.name)
 
 // last: round 3 or later and a High remains. redesign: a High from a design focus sits on lines the
 // previous revision changed. revise: a High remains. incomplete: no High, but an angle never answered.
