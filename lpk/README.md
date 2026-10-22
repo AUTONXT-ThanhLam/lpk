@@ -5,8 +5,8 @@ meets it and reaches the tech lead with nothing they would block. Defects are ca
 layers, cheapest first:
 
 - **the design**: three fresh reviewers (a critic running what the design relies on, a simulation of
-  the run, a trace back to the owner's words) check the Design Brief in rounds until no High finding
-  remains, before anything is built;
+  the run, a trace back to the owner's words) check the Design Brief in at most three rounds, before
+  anything is built;
 - **the build**: each builder starts with the rules for its files, gets a hint after each edit, and
   reviews its own slice before it reports done;
 - **the review net**: every lens runs at once on the frozen commit (the tech lead, `/code-review`,
@@ -48,7 +48,7 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 Each agent's model and effort are set in its file under `agents/`, chosen by measured results:
 Opus where judgement sets the quality (the three architects, the plan simulator, the designer, the
-Prover), Sonnet where another layer checks the output (building, reviewing, verifying, and the
+Prover), Sonnet where another layer checks the output (building, reviewing, verifying, the staff agent's side work, and the
 design critics, one focus each, that together found more than one Opus critic at less cost), Haiku
 for the environment. The reviewing roles cannot edit files, and the architects write only their
 own briefs.

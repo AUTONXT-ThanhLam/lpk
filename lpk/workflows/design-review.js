@@ -1,7 +1,7 @@
 export const meta = {
   name: 'design-review',
   description: 'One round of the Design Brief review: five design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
-  whenToUse: 'Step 2 of the lpk skill, once per round, until a round returns no High finding',
+  whenToUse: 'Step 2 of the lpk skill, once per round, at most three rounds',
   phases: [{ title: 'Review', detail: 'five design critics, plan simulator and plan tracer at once' }],
 }
 
