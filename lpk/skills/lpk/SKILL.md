@@ -23,12 +23,13 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
    agent ids and what each owns, so they tell each other directly when their work touches another's
    files, contract or findings, and report what they told whom.
 5. Keep fixed what the owner trusts the result through: the gates and the evidence they read, the
-   verifier's ruling, one fix round and one delta review, and the full review net.
+   verifier's ruling, one fix round and one delta review, the full review net, and the order of the
+   steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
 
 **Why the flow has this shape.** Past runs showed where defects come from and where time goes:
 - 57% of the fixed findings were born in the plan or the design, so before anything is built
   three rival designs attack each other with runs, and the one that survives is checked against
-  the code, the way the run will go and the owner's words, in rounds until no High finding remains;
+  the code, the way the run will go and the owner's words, in at most three rounds;
 - most of the rest were born in the build, so each builder starts with the rules for its files,
   gets `lpk check` hints after each edit, and reviews its own slice before it reports done;
 - recall grows with reviewer diversity, so a dense review net runs every lens at once, and the net
@@ -41,34 +42,33 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
 ## How you work, in every step
 
 - **The clock.** Run `date +%s` first and keep the number. Post one line as each step starts: what,
-  the elapsed minutes from `echo $(( ($(date +%s) - <start>) / 60 ))`, and what comes next. A past
-  run posted "80 minutes" when 18 had passed.
-- **Keep going.** Put status notes in the same message as your next action. Stop and ask only when
-  you cannot continue without the owner, or before anything destructive or outside this machine.
-- **Probe before you ask.** A question that a command, the code or the ticket answers is answered
-  by running it. A requirement with a sensible default is decided and logged, not asked.
-- **Log each decision** you take alone: `lpk decide "<what>" --why "<why>"`. The report lists them.
-- **Evidence, not words.** A gate passes on what the CLI ran or computed: `lpk gates` prints each
-  gate and what it read. An agent's "done" is not evidence.
-- **Keep your own context small**: every later turn pays for it. Read a command's output from its
-  file, and give an agent that path, never a copy retyped by a model (a retyped list once lost a
-  whole PR's findings). Hand a long read to an agent and keep only its conclusion. Start a fresh
-  agent with a short brief rather than re-brief one whose context is mostly spent.
+  the elapsed minutes from `echo $(( ($(date +%s) - <start>) / 60 ))`, and what comes next. An
+  estimate sums what is left, each stage at the minutes it or its like took in this run, as a range;
+  a stage not yet timed is named as unmeasured, never given a clock time.
+- **A question stops the team**: nothing new starts while it is open. A technical choice and what
+  a command, the code or the ticket answers are yours: decide, log it (`lpk decide "<what>" --why
+  "<why>"`, the report lists them) and say it in the next update. Ask only what the owner alone
+  knows, or before anything destructive or outside this machine, once all other work is started:
+  once, in the user's terms, with your recommendation and no finding or requirement ids.
+- **Keep your own context small**: every later turn pays for it. Give an agent a command's output
+  file, never a retyped copy. Work no lpk role owns goes to `lpk:staff`; a hook refuses a general
+  agent, which once spent 218M tokens on the lead's model without lpk's rules.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
 - **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
   `finding_list`; load them with ToolSearch `select:mcp__plugin_lpk_lpk__finding_list`), and only a
   verifier rules on one. A finding you rule on yourself goes in the report with its evidence.
-- **Heavy jobs share the machine.** Start a test suite, a build or an app through
-  `lpk slot -- <command>`: it waits for free memory, because sessions that ran this machine out of
-  memory died with all their work. Never `sleep`: agents and workflows notify you when they finish,
-  and long waits run under the Monitor tool (`lpk watch` names an agent that stopped moving).
-- **Write plainly.** Every text a person reads follows `writing.md` in this skill's directory.
+- **Heavy jobs share the machine.** Start a test suite, a build or an app through `lpk slot --
+  <command>`: it waits for free memory. Never `sleep`: agents notify you when they finish, and long
+  waits run under the Monitor tool (`lpk watch` names an agent that stopped moving).
+- **Evidence, not words.** A gate passes on what the CLI ran (`lpk gates` prints it), not on "done".
+  Every text a person reads follows `writing.md` in this skill's directory.
 
 Arguments: `$ARGUMENTS` (a request, a ticket key or URL, or a PR URL or number). A PR with review
 comments follows `feedback.md` in this skill's directory instead of the steps below. A request that
 produces no code (research, a design, a plan, a document) skips the steps: deliver it in the reply
-or an Artifact, readable in a minute, and ask before turning it into code.
+or an Artifact, readable in a minute, and ask before turning it into code. When it reworks a
+source design, list each part of the source as kept, changed or dropped, with the reason for a drop.
 
 ## The steps
 

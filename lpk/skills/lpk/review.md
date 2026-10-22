@@ -68,7 +68,11 @@ the report for the owner to read.
 
 ## Fix what is real, in one round
 
-Each `confirmed` finding is fixed at its root, whatever its stated severity, all in one round. Start
+Each `confirmed` finding is fixed at its root, whatever its stated severity, all in one round,
+unless the owner said in this run that findings users cannot reach may wait: then a confirmed
+finding no user meets is closed with `finding_fixed` `closedBy: "owner"`, no commit, and the
+owner's words quoted verbatim as `evidence`; the ledger refuses one in a protected area or a failing
+scenario, and the PR body lists it as a known limit. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
 also uses (the env agent's `db` line), start when the net returns, because shared runs break each
@@ -102,7 +106,8 @@ other.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
    with ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`; give its id, `commit` the fix's SHA
-   now on your branch, `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
+   now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
+   `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.

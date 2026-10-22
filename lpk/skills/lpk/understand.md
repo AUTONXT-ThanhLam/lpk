@@ -18,17 +18,19 @@ nothing waits for an install, a database or a login later.
    already there ends the run as "already fixed in `<sha>`", with the evidence.
 4. **A bug follows `diagnose.md` in this skill's directory** before any design: a fix built on a
    guessed cause ships a second bug.
-5. **Ask what changes the plan.** Use rounds of `AskUserQuestion`, your recommended option first,
-   each with a concrete before and after to react to. Each round asks every question whose
-   prerequisites are settled. Never ask what a command, the code, the ticket or a sensible default
-   answers: run the probe, or decide and log the decision.
+5. **Ask what only the owner knows**: what users should get where the sources leave it open, the
+   scope, a cost or time limit. Use rounds of `AskUserQuestion`, your recommended option first, each
+   with a concrete before and after in the user's terms. Each round asks every question whose
+   prerequisites are settled. A technical choice (a library, a mechanism, a default, a label) is
+   yours: decide it from evidence and log it. Never ask what a command, the code, the ticket or a
+   sensible default answers: run the probe, or decide and log the decision.
 6. **Number the requirements** `R1`, `R2`… in one list, each citing its source: a quote from the
    owner's prompt, a document path and section, or `inferred`. An inferred requirement is a
    decision, logged with its reason, because the owner checks those first. The ids stay fixed for
    the run: scenarios, failure rows, tests and the report name them.
 
-Once the owner says go, or is away, decide and log each decision. The build may start early on a
-slice no open design review High touches (`design.md` in this skill's directory says when).
+Once the owner says go, or is away, decide and log each decision. The build starts after the
+design review ends and `lpk go` (`design.md` in this skill's directory says when).
 
 **Done when** you can state, in the user's terms, who uses the change, where they meet it, the
 before and the after, and each numbered requirement with its source.
