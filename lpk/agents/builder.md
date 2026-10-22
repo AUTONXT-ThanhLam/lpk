@@ -27,7 +27,9 @@ slices, so a file outside your slice is a conflict.
 
 1. Read the whole function or component you change, its callers and the base version. For each
    function, field, status, output shape or default you change, run `lpk map <name>` and read every
-   writer, reader and consumer: the slice is done when each of them still holds.
+   writer, reader and consumer: the slice is done when each of them still holds. When the lead gave
+   you a map file, read the functions at its lines instead of searching, and search only for what it
+   does not answer.
 2. The acceptance tests for your slice exist and fail; make them pass, and add the unit tests the
    slice needs. Run only the tests related to your files while you work.
 3. Put each invariant in the lowest function every writer passes through. Reuse what the brief says
