@@ -109,7 +109,7 @@ The design is reviewed in rounds, at most three. From round 2 on, pass `open` (t
 High findings) and `changed`: only the angles with an open High run again, each checking its Highs
 are closed and reading the changed lines and what they reach. After each round:
 1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
-   High's cause, and what changes>"`.
+   High's cause, and what changes>"`, and append its Mediums and Lows to `notes.md` beside the brief.
 2. At any verdict and rating, close each `reuse-first` finding (the `reuse` critic's, or one naming
    the rule) in the brief before the build: the helper or the dependency's API takes over the
    mechanism, or the brief cites the run that shows where it falls short.
@@ -125,8 +125,8 @@ are closed and reading the changed lines and what they reach. After each round:
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument.
    A High only the owner can settle (the time bound, the scope) is one question to them. Mediums and
-   Lows go to `notes.md` beside the brief for the builders, never into a revision. A revision grows
-   the brief by at most a tenth (`wc -w`): briefs that grew 40% a round drew new Highs.
+   Lows stay in `notes.md`, never in a revision. A revision grows the brief by at most a tenth
+   (`wc -w`): briefs that grew 40% a round drew new Highs.
    Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
    round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the

@@ -32,7 +32,7 @@ Follow step 4 of "Check it, then write the tests" in `design.md` in the lpk skil
 - Answer a finding you think is wrong with a run, cited beside the line it concerns.
 - Each mechanism you add climbs the rungs the brief's mechanism list names. Before you build one,
   check the repo and the public API of the installed dependencies at their installed versions.
-- Answer the Highs only; a Medium or Low goes to `notes.md` beside the brief. Grow the brief by at
+- Answer the Highs only; the lead keeps the Mediums and Lows in `notes.md` beside the brief. Grow the brief by at
   most a tenth of its words: replace text, do not append to it.
 - Copy the brief to `brief.r<n>.md` before you edit, and keep `brief.json` in step with `brief.md`.
 

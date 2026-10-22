@@ -23,7 +23,7 @@ export const meta = {
 //   round 2 on. Only the angles named in it run again: each checks that its Highs are closed and
 //   reviews the changed lines; an angle with no open High keeps its earlier answer.
 // - stallMs: { <role>: ms }, one per agent role (the five critics share design-critic's).
-// Round 1 angles start fresh. A High whose evidence is only [inferred] is rated Medium, and each angle
+// Round 1 angles start fresh. A design critic's High whose evidence is only [inferred] is rated Medium, and each angle
 // keeps every High and at most three other findings: a revision answers Highs only. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every angle that already answered.
 const a = args || {}
@@ -56,7 +56,7 @@ const scope = changed.size
 const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
 ${scope}
-Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence. Set basis to ran (a command you ran shows it), read (a path:line you read shows it) or inferred; an inferred High counts as Medium. Return every High, and at most your three most useful Medium or Low findings: Mediums go to the builders as notes, never into a revision.
+Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence. Set basis to ran (a command you ran shows it), read (a path:line you read shows it) or inferred; a design critic's inferred High counts as Medium. Return every High, and at most your three most useful Medium or Low findings: Mediums go to the builders as notes, never into a revision.
 Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
 const FOCUS = {
@@ -88,17 +88,18 @@ const ask = async (angle) => {
 const open = a.open || []
 const closing = (angle) => open.filter((f) => f.angle === angle.name)
 const RUN = round >= 2 ? ANGLES.filter((angle) => closing(angle).length) : ANGLES
+if (!RUN.length) return { error: `lpk:design-review round ${round} has no open High naming an angle (${ANGLES.map((x) => x.name).join(', ')}); pass the previous round's High findings as it returned them` }
 const closeAsk = (angle) => `\nThe previous round raised these High findings from your angle. For each, check on the brief as it stands whether it is closed, and return it again, as High with stillOpen true, only when it is not; a new finding has stillOpen false:\n${closing(angle).map((f) => `- lines ${(f.lines || []).join(', ')}: ${f.claim} (cause: ${f.cause || 'unstated'})`).join('\n')}`
 const ran = await parallel(RUN.map((angle) => () => (round >= 2 ? ask({ ...angle, ask: angle.ask + closeAsk(angle) }) : ask(angle))))
 const answers = ANGLES.map((angle) => (RUN.includes(angle) ? ran[RUN.indexOf(angle)] : { findings: [] }))
 
 const order = { High: 0, Medium: 1, Low: 2 }
 const rated = (f) => (f.severity === 'High' && f.basis === 'inferred' ? { ...f, severity: 'Medium', demoted: true } : f)
-const kept = (list) => {
-  const all = list.map(rated).sort((x, y) => order[x.severity] - order[y.severity])
+const kept = (angle, list) => {
+  const all = (angle.type === 'design-critic' ? list.map(rated) : list).sort((x, y) => order[x.severity] - order[y.severity])
   return [...all.filter((f) => f.severity === 'High'), ...all.filter((f) => f.severity !== 'High').slice(0, 3)]
 }
-const findings = ANGLES.flatMap((angle, i) => kept((answers[i] || {}).findings || []).map((f) => ({
+const findings = ANGLES.flatMap((angle, i) => kept(angle, (answers[i] || {}).findings || []).map((f) => ({
   angle: angle.name, ...f, onChanged: (f.lines || []).some((n) => changed.has(n)),
 }))).sort((x, y) => order[x.severity] - order[y.severity])
 const counts = { High: 0, Medium: 0, Low: 0 }

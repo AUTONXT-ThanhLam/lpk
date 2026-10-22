@@ -49,6 +49,8 @@ test('a High resting only on inference counts as Medium, and each angle keeps it
   const state = out.findings.filter((f) => f.angle === 'design-critic:state');
   assert.deepEqual(state.map((f) => [f.severity, f.lines[0], !!f.demoted]), [['High', 2, false], ['Medium', 1, true], ['Low', 3, false], ['Low', 4, false]]);
   assert.equal(out.verdict, 'revise');
+  const sim = await run(ARGS, answers({ 'lpk:plan-sim': { findings: [finding('High', [3], 'inferred')], totalMinutes: 90 } }));
+  assert.equal(sim.out.verdict, 'revise', 'the plan simulator\'s estimates are inferred by nature and keep their rating');
 });
 
 test('a later round reruns only the angles whose High is open, tells each its Highs to check closed, and keeps to the changed lines', async () => {
@@ -85,5 +87,6 @@ test('a later round without changed or open is refused', async () => {
     assert.match(out.error, new RegExp(`\\b${key}\\b`));
     assert.equal(calls.length, 0);
   }
-  assert.equal((await run({ ...LATER, changed: [], open: [] }, answers({}))).out.verdict, 'pass', 'a revision that only deleted lines, with no High left open');
+  for (const open of [[], [{ claim: 'retyped, with no angle' }]]) assert.match((await run({ ...LATER, open }, answers({}))).out.error, /no open High naming an angle/);
+  assert.equal((await run({ ...LATER, changed: [], open: [{ angle: 'plan-sim' }] }, answers({}))).out.verdict, 'pass', 'a revision that only deleted lines');
 });
