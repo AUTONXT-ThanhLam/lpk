@@ -113,6 +113,39 @@ test('a fix commit owes one Sonnet /code-review and the lens whose finding it fi
   assert.match(lpk(repo, S, 'report').stdout, /^Confirmed defects by the step they began in: build 1$/m);
 });
 
+test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix delta once it is closed on the pick', () => {
+  const S = 'pick-session';
+  const repo = quickRun('pick', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
+  const wt = join(tmp, 'pick-fix-1');
+  sh(repo, 'worktree', 'add', '-q', '-b', 'feat-fix-1', wt, 'HEAD');
+  write(wt, 'src/a.mjs', 'export const a = 3;\n'); sh(wt, 'commit', '-qam', 'Keep a odd');
+  const built = head(wt);
+  assert.ok(markFixed(wt, { id: f.id, commit: built, closedBy: 'repro', evidence: 'repro green', by: 'main' }).finding);
+  sh(repo, 'cherry-pick', '-x', built);
+  const picked = head(repo);
+  const owedOn = () => JSON.parse(lpk(repo, S, 'reviews', 'owed', '--json').stdout).map((r) => r.why);
+  assert.ok(owedOn().every((why) => !/fix delta/.test(why)), 'the pick is unreviewed new work until the fix follows it');
+  assert.equal(markFixed(repo, { id: f.id, commit: picked, closedBy: 'repro', evidence: 'repro green on the pick', by: 'main' }).finding.fixedCommit, picked);
+  assert.deepEqual(owedOn(), ['fix delta; has not run on it', 'fix delta; has not run on it']);
+});
+
+test('a confirmed finding the owner\'s policy defers holds no gate and is listed as a known limit', () => {
+  const S = 'defer-session';
+  const repo = quickRun('defer', S);
+  const range = `${base(repo)}..${head(repo)}`;
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', at: range, claim: 'the tooltip truncates a long name', repro: 'r', kind: 'defect', severity: 'nit' }).finding;
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'a fixed width', evidence: 'seen', by: 'lpk:verifier' });
+  assert.match(lpk(repo, S, 'gates').stdout, /findings[\s\S]*confirmed and not fixed: F1/);
+  ok(lpk(repo, S, 'finding', 'fixed', f.id, '--closed-by', 'owner', '--evidence', 'owner: skip what users cannot reach'));
+  const report = lpk(repo, S, 'report').stdout;
+  assert.match(report, /^findings +holds/m);
+  assert.match(report, /^Known limits, deferred by the owner's policy \(for the PR body\):\n- F1 defect\/nit: the tooltip truncates a long name — owner: skip what users cannot reach$/m);
+});
+
 test('a push of the run\'s branch waits for the owner\'s grant, from any session and after the run ends', () => {
   const S = 'push-session';
   const repo = quickRun('push', S);
@@ -235,4 +268,14 @@ test('the owner\'s grant reaches the run that delivers the branch after that run
   assert.match(hookBash(repo, 'another-session', 'git push -u origin feat'), /the owner has not granted draft pushes/);
   assert.match(ok(lpk(repo, 'another-session', 'run', 'grant', 'draft-push', '--why', 'owner: push it')), /draft pushes granted in run/);
   assert.equal(hookBash(repo, 'another-session', 'git push -u origin feat'), null);
+});
+
+test('a branch whose run lives in its own worktree meets the gates when pushed from the main checkout', () => {
+  const repo = repoWith('wt-push', { 'src/a.mjs': 'export const a = 1;\n' });
+  const wt = join(tmp, 'wt-push-w');
+  sh(repo, 'worktree', 'add', '-q', '-b', 'feat-w', wt, 'main');
+  ok(lpk(wt, 'w', 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  write(wt, 'src/a.mjs', 'export const a = 2;\n'); sh(wt, 'commit', '-qam', 'Set a to 2');
+  assert.match(hookBash(repo, 'other', 'git push -u origin feat-w'), /the owner has not granted draft pushes/);
+  assert.match(hookBash(repo, 'other', 'gh pr ready feat-w'), /delivery gates of run/);
 });

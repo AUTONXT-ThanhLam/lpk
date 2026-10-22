@@ -6,6 +6,10 @@ costs a minute.
 
 ## Start the run before the first production line
 
+Continuing a run from an earlier session: run `lpk run status` first, and when `heldBy` says the
+session has exited, `lpk run take`, or every finding call is refused. Each PR runs in its own
+worktree, with its own `lpk run start` there, so PRs of one repo run side by side.
+
 `lpk run start --base <base> --verify "<command>"`, once for each check CI runs on the touched code
 (typecheck, lint, the test suites; `lpk facts` lists them). In the Full lane it records the
 scenarios of `brief.json`. In the Quick lane add `--lane quick`, one `--req "<text>"` per

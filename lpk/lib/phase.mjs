@@ -78,7 +78,7 @@ export function phaseDetail(phase, f, net) {
   if (phase === 'review') {
     const lenses = net.filter((r) => keyOf(r.type) !== 'verifier');
     return { lensesDone: count(lenses, (r) => r.state !== 'running'), lenses: lenses.length, owed: (f.owed || []).length,
-      raised: f.findings.length, confirmed: count(f.findings, (x) => ['confirmed', 'fixed'].includes(x.state)), dropped: count(f.findings, (x) => x.state === 'dropped'),
+      raised: f.findings.length, confirmed: count(f.findings, (x) => ['confirmed', 'fixed', 'deferred'].includes(x.state)), dropped: count(f.findings, (x) => x.state === 'dropped'),
       verifiersRunning: count(net, (r) => r.state === 'running' && keyOf(r.type) === 'verifier') };
   }
   if (phase === 'fix') {

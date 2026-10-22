@@ -50,11 +50,14 @@ export async function run(
   }
 }
 
-// The run directory every worktree of the repo shares: `<git-common-dir>/lpk`.
+// The run directory of this checkout: its own `<git-dir>/lpk`, a linked run's, else `<git-common-dir>/lpk`.
 export async function runDir($: Host, cwd: string): Promise<string | undefined> {
-  const r = await run($, ['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd })
-  const dir = r.stdout.trim()
-  return r.exitCode === 0 && dir ? `${dir}/lpk` : undefined
+  const r = await run($, ['git', 'rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir'], { cwd })
+  const [dir, common] = r.stdout.trim().split('\n')
+  if (r.exitCode !== 0 || !dir || !common) return undefined
+  if (dir === common || (await $.fs.exists(`${dir}/lpk`))) return `${dir}/lpk`
+  const link = (await $.fs.exists(`${dir}/lpk-run`)) ? String(await $.fs.read(`${dir}/lpk-run`)).trim() : ''
+  return link || `${common}/lpk`
 }
 
 // `lpk run status` as the CLI prints it, and whether it names a run.

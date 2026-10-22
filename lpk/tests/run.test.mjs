@@ -36,6 +36,31 @@ test('a second run start in the same session amends the run and keeps its findin
   assert.ok(!existsSync(ledger));
 });
 
+test('worktrees of one repo hold runs side by side, and a builder\'s worktree works in the run it was made for', () => {
+  const repo = repoWith('side', { 'src/a.mjs': 'export const a = 1;\n' });
+  const [one, two, bare, builder, old] = ['one', 'two', 'bare', 'one-a', 'old'].map((n) => join(tmp, `side-${n}`));
+  for (const [dir, b] of [[one, 'one'], [two, 'two'], [old, 'old']]) sh(repo, 'worktree', 'add', '-q', '-b', b, dir, 'main');
+  const status = (cwd) => JSON.parse(ok(lpk(cwd, 'lead', 'run', 'status')));
+  start(one, 'lead');
+  sh(one, 'worktree', 'add', '-q', '--detach', bare, 'HEAD');
+  assert.equal(status(bare).id, status(one).id, 'a worktree lpk did not make works in the one run its session holds');
+  start(two, 'lead');
+  ok(lpk(one, 'lead', 'run', 'worktree', builder, '--branch', 'one-a'));
+  const [idOne, idTwo] = [status(one).id, status(two).id];
+  assert.notEqual(idOne, idTwo);
+  assert.equal(status(builder).id, idOne, 'the builder works in run one, though run two is newer');
+  assert.equal(lpk(repo, 'lead', 'run', 'status').stdout.trim(), 'no lpk run in this repo', 'the main checkout holds neither');
+  ok(lpk(builder, 'lead', 'verify'));
+  assert.deepEqual([status(one).verified?.green, status(two).verified], [true, null]);
+  const stamped = hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_list', session_id: 'lead', cwd: builder, tool_input: {} }).hookSpecificOutput.updatedInput;
+  assert.deepEqual(stamped, { repo: one, run: idOne });
+  start(repo, 'main');
+  assert.equal(JSON.parse(readFileSync(runFile(repo), 'utf8')).repo, repo, 'the main checkout keeps its run where it always did');
+  ok(lpk(repo, 'main', 'run', 'end'));
+  writeFileSync(runFile(repo), JSON.stringify({ v: 2, id: 'before', repo: old, session: 'old', started: Date.now(), branches: [], scenarios: [], verify: ['true'], granted: {} }));
+  assert.match(start(old, 'old'), /lpk run before amended/, 'a run started from a worktree before runs moved there is still its run');
+});
+
 test('lpk run end never refuses: with no run, and with a damaged run file', () => {
   const repo = repoWith('end', { 'src/a.mjs': 'export const a = 1;\n' });
   assert.match(ok(lpk(repo, 'e', 'run', 'end')), /no lpk run is open/);

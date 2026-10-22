@@ -8,7 +8,7 @@ import { git } from '../git.mjs';
 import { parseArgs, repoOf, targetOf } from '../out.mjs';
 import { appendRecord } from '../records.mjs';
 import { cleanRepro, logPath, reproTree, runIn } from '../repro.mjs';
-import { readRun } from '../run.mjs';
+import { activeRun, readRun } from '../run.mjs';
 
 const USAGE = `usage:
   lpk repro <finding id> [--cmd "<command>"] --at commit|base [--commit <rev>] [--base <ref>] [--timeout <s>] [--repo <dir>]
@@ -40,9 +40,11 @@ function treeLine(side, t) {
 export async function main(argv) {
   const a = parseArgs(argv, ['--cmd', '--at', '--commit', '--base', '--timeout', '--repo']);
   if (a.error) { console.error(`lpk: ${a.error}\n${USAGE}`); return 2; }
-  const repo = repoOf(a.opt('--repo'));
+  let repo = repoOf(a.opt('--repo'));
+  let run = repo ? readRun(repo) : null;
+  const held = !run && !a.opt('--repo') && activeRun(process.env.CLAUDE_CODE_SESSION_ID || '', false);
+  if (held) [repo, run] = [held.repo, held];
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
-  const run = readRun(repo);
   const [word] = a.words;
   if (word === 'clean') {
     const gone = cleanRepro(repo, runId(run));

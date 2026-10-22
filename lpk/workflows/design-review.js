@@ -1,8 +1,8 @@
 export const meta = {
   name: 'design-review',
-  description: 'One round of the Design Brief review: four design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
-  whenToUse: 'Step 2 of the lpk skill, once per round, until a round returns no High finding',
-  phases: [{ title: 'Review', detail: 'four design critics, plan simulator and plan tracer at once' }],
+  description: 'One round of the Design Brief review: five design critics (one focus each), the plan simulator and the plan tracer read the brief at once, each fresh, and their findings come back merged and rated',
+  whenToUse: 'Step 2 of the lpk skill, once per round, at most three rounds',
+  phases: [{ title: 'Review', detail: 'five design critics, plan simulator and plan tracer at once' }],
 }
 
 // args: { repo, base, brief, briefJson, skillDir, sources, precedent, timeBound, baseSuite, round,
@@ -13,11 +13,13 @@ export const meta = {
 //   document, the owner's answers, each saved verbatim.
 // - precedent: path of the `lpk precedent` output; baseSuite: the base test suite's measured time.
 // - timeBound: the owner's bound on the whole run (default 45 minutes).
-// - round: which round this is (1 for the first, and again after a change of approach).
-// - changed: the brief's line numbers the previous revision changed; a High on one of them means
-//   the design is wrong at its root. Required from round 2 on (empty when the revision only deleted
+// - round: which round this is (1 for the first, and again after a change of approach); from round 3
+//   on, a round that still has a High is the last.
+// - changed: the brief's line numbers the previous revision changed; the round reviews only these and
+//   what they reach, and a High from a design focus on one of them means the design is wrong at its
+//   root. Required from round 2 on (empty when the revision only deleted
 //   lines); omitted in round 1, which is also the round after a change of approach.
-// - stallMs: { <role>: ms }, one per agent role (the four critics share design-critic's).
+// - stallMs: { <role>: ms }, one per agent role (the five critics share design-critic's).
 // Each angle starts fresh and is never told about earlier rounds, so a finding that comes back is
 // raised again on the brief as it stands. Nothing here reads the clock or chance, so
 // resumeFromRunId replays every angle that already answered.
@@ -43,8 +45,12 @@ const ROW = { type: 'object', properties: { source: S, sentence: S, status: { ty
   required: ['source', 'sentence', 'status', 'lines'] }
 const TRACE = { type: 'object', properties: { findings: FINDINGS, trace: { type: 'array', items: ROW } }, required: ['findings', 'trace'] }
 
+const scope = changed.size
+  ? `Review only the brief's lines ${[...changed].sort((x, y) => x - y).join(', ')}, which were just rewritten, and what they reach: the callers, rows, states, scenarios, tests, stages and trace rows that depend on them. Leave every other line as it stands, and cite a line outside them only where a finding on them reaches it.`
+  : 'Review the whole brief.'
 const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
+${scope}
 Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence.
 Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
@@ -52,7 +58,8 @@ const FOCUS = {
   state: 'every durable value the design writes (database rows and columns, queue keys and jobs, files on disk): who writes it, is each transition guarded, and what happens when two writers, a retry, a replay, a re-delivered or late job, or a crash between two steps interleave. Separate stores share no transaction: walk each multi-step operation step by step and name the state left behind when it stops after each step.',
   failures: 'for each dependency and each new key, column or state, what happens when it is unreachable, slow, half-open, failing with an unexpected error type, garbled, unset, repeated or growing: what each route, worker and periodic pass does, what the user sees, what an anonymous caller can learn, and what is left behind. Follow every error path to where it is caught.',
   main: 'everything main accepted, served, allowed or did (in the request or in a job after it) that this design refuses, changes, delays or moves elsewhere, including its cost and latency; every entry point that reaches the changed state (routes, tools, boot, scripts, delete, restore, re-run); and every record the design creates: is it removed or resolved on every path that ends its owner?',
-  proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; what already exists in the repo or its dependencies that the design builds anew; and whether a different design is clearly more correct or less risky.',
+  proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; and whether a different design is clearly more correct or less risky.',
+  reuse: 'each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table, script, component), including those taken from the owner\'s or the tech lead\'s design: does the repo, the public API of an installed dependency at its installed version, the standard library or the platform already do it? Read the dependency\'s types or docs where it is installed and run the replacement before you say so. Name rule `reuse-first` on each such finding.',
 }
 const ANGLES = [
   ...Object.entries(FOCUS).map(([focus, questions]) => ({ name: `design-critic:${focus}`, type: 'design-critic', schema: CRITIC,
@@ -83,10 +90,13 @@ const counts = { High: 0, Medium: 0, Low: 0 }
 for (const f of findings) counts[f.severity]++
 const absent = ANGLES.filter((_, i) => !answers[i]).map((angle) => angle.name)
 
-// redesign: a High sits on lines the previous revision changed. revise: a High remains.
-// incomplete: no High, but an angle never answered. pass: all three answered with no High.
-const verdict = findings.some((f) => f.severity === 'High' && f.onChanged) ? 'redesign'
-  : counts.High ? 'revise' : absent.length ? 'incomplete' : 'pass'
+// last: round 3 or later and a High remains. redesign: a High from a design focus sits on lines the
+// previous revision changed. revise: a High remains. incomplete: no High, but an angle never answered.
+// pass: every angle answered with no High.
+const DESIGN = new Set(['state', 'failures', 'main', 'reuse'].map((focus) => `design-critic:${focus}`))
+const verdict = counts.High && round >= 3 ? 'last'
+  : findings.some((f) => f.severity === 'High' && f.onChanged && DESIGN.has(f.angle)) ? 'redesign'
+    : counts.High ? 'revise' : absent.length ? 'incomplete' : 'pass'
 const answerOf = (name) => answers[ANGLES.findIndex((angle) => angle.name === name)] || {}
 const sim = answerOf('plan-sim')
 const trace = answerOf('plan-trace').trace || []

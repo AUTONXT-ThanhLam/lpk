@@ -3,10 +3,11 @@
 // hints; the end of a turn on unverified source is told, never held; the main session cannot commit
 // a tree that has no green `lpk verify`. Outside a run all are silent.
 import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
+import { readRecords } from './records.mjs';
 import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
 export { writeGuard as beforeWrite } from './safety.mjs';
@@ -31,8 +32,6 @@ export function inRun(input) {
   try { return Boolean(activeRun(input.session_id, false, input.cwd)); } catch { return false; }
 }
 
-// The run directory (`<git-common-dir>/lpk/`), shared by every worktree of the repo.
-export { runDir as runDirOf } from './run.mjs';
 
 // Where the run's change starts: the base it recorded, else where HEAD left its target branch.
 export const baseOf = (repo, run) => run.base || (run.target ? mergeBase(repo, run.target) : '');
@@ -102,13 +101,30 @@ function unverified(repo, run, key) {
 
 // The end of a turn on source no green verify covers is told, not held: the delivery gates hold at
 // handover, and a turn may end to wait for the owner or a background agent. It is said once per
-// stop: `stop_hook_active` means this stop already continued on a hook's word.
+// stop (`stop_hook_active` means this stop already continued on a hook's word), and once per tree
+// and reason, so a lead waiting on builders is not woken again until the tree changes.
 export function beforeStop(input) {
   if (input.stop_hook_active === true) return null;
   const { repo, run } = runOf(input);
   const why = run && unverified(repo, run, 'source');
   if (!why) return null;
+  const told = `${treeOf(repo).tree}|${why}`;
+  if (run.stopTold === told) return null;
+  run.stopTold = told;
+  writeRun(run);
   return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: `lpk: this change is not verified on the current tree (${why}). Before it is handed over, run \`lpk verify\` and fix what it reports.` } };
+}
+
+const GENERAL = new Set([undefined, '', 'general-purpose']);
+const refuse = (why) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } });
+export function spawnRule(input) {
+  if (!/^(Agent|Task)$/.test(input.tool_name || '')) return null;
+  const type = input.tool_input?.subagent_type;
+  const { repo, run } = runOf(input, false);
+  if (!run) return null;
+  if (GENERAL.has(type)) return refuse('lpk: this session holds an lpk run, and a general agent works without its rules on the lead\'s model; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
+  if (type !== 'lpk:builder' || run.lane !== 'full' || !existsSync(join(dirname(run.marker), 'brief.json')) || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
+  return refuse('lpk: no builder before go: this run has a Design Brief but no `lpk go`; end its review, and run `lpk go` when the owner says go.');
 }
 
 // Every message the owner sends during the run is kept verbatim for lpk:learn. What the harness

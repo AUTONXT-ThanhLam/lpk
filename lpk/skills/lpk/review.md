@@ -18,7 +18,7 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers see the code
    that will merge.
 4. Freeze the commit in its own tree, so the reviewers and the Prover use exactly it while you keep
-   working: `git worktree add --detach ../<repo>-review <commit>`, with its dependencies installed,
+   working: `lpk run worktree ../<repo>-review <commit>`, with its dependencies installed,
    and move the app there (the env agent's report says how to stop and start it).
 5. Where the owner granted early drafts for this repo (`lpk run status` shows it), push the branch
    and open a draft PR now, so CI and any review bot run while the net runs. Elsewhere ask before
@@ -68,7 +68,11 @@ the report for the owner to read.
 
 ## Fix what is real, in one round
 
-Each `confirmed` finding is fixed at its root, whatever its stated severity, all in one round. Start
+Each `confirmed` finding is fixed at its root, whatever its stated severity, all in one round,
+unless the owner said in this run that findings users cannot reach may wait: then a confirmed
+finding no user meets is closed with `finding_fixed` `closedBy: "owner"`, no commit, and the
+owner's words quoted verbatim as `evidence`; the ledger refuses one in a protected area or a failing
+scenario, and the PR body lists it as a known limit. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
 also uses (the env agent's `db` line), start when the net returns, because shared runs break each
@@ -82,7 +86,7 @@ other.
    the commit message never does, because ledger ids mean nothing in the repo's history.
 3. Start one `lpk:builder` per group of root causes whose files do not overlap; causes that share a
    file go to one builder. Each works in its own worktree off the reviewed commit
-   (`git worktree add -b <branch>-fix-<n> ../<repo>-fix-<n> <reviewed commit>`), all started in one
+   (`lpk run worktree ../<repo>-fix-<n> <reviewed commit> --branch <branch>-fix-<n>`), all started in one
    message. Size the groups from the slowest cause, so no builder is the long pole. A finding
    confirmed later goes to the builder whose commit fixes its cause (SendMessage), else to the one
    that owns its files, else to a new builder. Until the green verify of step 6, the builder amends its cause's commit to close it too.
@@ -102,7 +106,8 @@ other.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
    with ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`; give its id, `commit` the fix's SHA
-   now on your branch, `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
+   now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
+   `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.

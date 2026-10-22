@@ -8,7 +8,7 @@
     {
       "name": "lpk",
       "source": "./lpk",
-      "description": "One coding request to a delivered change: a design reviewed in rounds until no High finding, a test-first build with rules and a self-review per slice, a dense parallel review net with a verifier per finding, and delivery gates that read only evidence. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
+      "description": "One coding request to a delivered change: a design reviewed in at most three rounds, a test-first build with rules and a self-review per slice, a dense parallel review net with a verifier per finding, and delivery gates that read only evidence. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
     },
     {
       "name": "drawio",

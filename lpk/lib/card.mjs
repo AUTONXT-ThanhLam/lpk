@@ -4,7 +4,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { baseOf, runDirOf, runOf } from './hooks.mjs';
+import { baseOf, runOf } from './hooks.mjs';
 import { changeOf, loadRules, triggered } from './rules.mjs';
 import { CREDENTIALS, GIT_TRIPS, READ_ONLY, REPRO } from './safety.mjs';
 import { treeOf } from './run.mjs';
@@ -30,7 +30,7 @@ export function runCard(input) {
   const { repo, run } = runOf(input, false);
   if (!run) return null;
   const base = baseOf(repo, run);
-  const dir = runDirOf(repo);
+  const dir = dirname(run.marker);
   const rules = base ? triggered(loadRules(repo), changeOf(repo, base)).map((t) => t.rule.id) : [];
   const text = [
     `lpk run card for ${type}, from the run in ${repo}:`,
@@ -77,7 +77,7 @@ export async function resumeCard(input) {
   const v = run.verified;
   const now = treeOf(repo).tree;
   const base = baseOf(repo, run);
-  const brief = join(runDirOf(repo), 'brief.md');
+  const brief = join(dirname(run.marker), 'brief.md');
   const last = !v ? 'never ran' : `${v.green ? 'green' : 'RED'} on ${v.tree === now ? 'the current tree' : 'an older tree (files changed since)'}`;
   const wf = await said('the last workflow run', () => lastWorkflow(input.transcript_path));
   const open = await said('the findings ledger', () => openFindings(repo));

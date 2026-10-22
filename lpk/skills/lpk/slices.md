@@ -8,7 +8,7 @@ typechecks or runs them), never skip it: leave them uncommitted, and each builde
 slice's tests into its worktree and commits them with the code that makes them pass.
 
 For each slice create a worktree from the branch head
-(`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD`) and start one `lpk:builder` per
+(`lpk run worktree ../<repo>-<slice> HEAD --branch <branch>-<slice>`, which binds it to your run) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its files, contract
 and tests, the test command, the brief and the profile path. You are notified as each one finishes.
 When the slice changes a function, field or output shape that other files read, also give it a map:
@@ -17,9 +17,8 @@ the map reads the lines it lists instead of searching the repo; on a slice of ei
 its diff by about 40% and its cost by about 8%.
 A slice waits for another only when the brief names the dependency the contract cannot cover,
 because slices built in turn add their times instead of overlapping them. Glue that joins the slices
-is a slice of its own, with its own builder, started once the slices it joins are in. After go, a
-builder may start early on a slice no open design review High touches; a slice a later High touches
-is rebuilt.
+is a slice of its own, with its own builder, started once the slices it joins are in. Builders
+start after `lpk go`, when the design review has ended.
 
 Each builder reports its commit, its self-review (`lpk code-review --slice`) and any `contested:`
 item. Rule on each contested item before you bring the slice in: the test or the task changes, or

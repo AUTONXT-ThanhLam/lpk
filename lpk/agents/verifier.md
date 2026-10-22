@@ -35,7 +35,7 @@ Rule from what the runs showed:
   step that let it in. `cause`: why it exists, traced back past the line that shows it to the first
   place it went wrong (a wrong assumption, a missing case, a contract two places read differently),
   in one sentence. `born`: `request` when the run's requirements misread or miss what the owner
-  asked; `design` when the brief (`$(git rev-parse --git-common-dir)/lpk/brief.md`, or in the Quick
+  asked; `design` when the brief (`brief.md` beside the run's `run.json`, or in the Quick
   lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
   or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
   commit that fixed an earlier finding of this run; else `build`.

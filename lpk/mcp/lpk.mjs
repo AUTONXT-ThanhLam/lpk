@@ -59,18 +59,18 @@ const TOOLS = [
   },
   {
     name: 'finding_fixed',
-    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence.',
+    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence. A fixed finding whose commit left the branch (a cherry-pick, an amend, a rebase) is closed again on the commit now on HEAD. closedBy owner, with no commit, defers a finding outside a protected area and not a failing scenario under a policy the owner stated, quoting the owner\'s words as evidence; the report lists it as a known limit.',
     inputSchema: {
       type: 'object',
       properties: {
         id: str('F<n>'),
-        commit: str('the fix commit'),
+        commit: str('the fix commit; none for closedBy owner'),
         closedBy: { type: 'string', enum: CLOSED_BY },
-        evidence: str('the repro or test output, or the ruling'),
+        evidence: str('the repro or test output, the ruling, or for closedBy owner the owner\'s words'),
         fix: str('how, in one sentence'),
         ...stamped, by: str(STAMP),
       },
-      required: ['id', 'commit', 'closedBy', 'evidence'],
+      required: ['id', 'closedBy', 'evidence'],
     },
   },
   {
@@ -89,7 +89,7 @@ function call(name, input) {
   if (name === 'finding_add') return say(addFinding(repo, { ...a, run }), (f) => `${f.id} recorded (${f.from}${where(f)}, open).`);
   if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
   if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
-  if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
+  if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => (f.state === 'deferred' ? `${f.id} deferred by the owner's policy: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`));
   if (name === 'finding_list') {
     const all = readLedger(repo).findings;
     const c = counts(all);

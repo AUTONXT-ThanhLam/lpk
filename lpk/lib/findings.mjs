@@ -5,15 +5,14 @@
 // records exact and says which rulings the owner should read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { absGitPath, git } from './git.mjs';
+import { git } from './git.mjs';
 import { locked } from './lock.mjs';
-import { readRun } from './run.mjs';
+import { readRun, runDir } from './run.mjs';
 
-export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed'];
+export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed', 'deferred'];
 export const VERDICTS = ['confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate'];
 export const KINDS = ['defect', 'test-gap', 'scenario', 'rule'];
 export const SEVERITIES = ['important', 'nit'];
-export const CLOSED_BY = ['repro', 'test', 'verifier'];
 export const BORN = ['request', 'design', 'build', 'fix'];
 // Where "could not reproduce" is not enough to drop a finding: the verifier's not-reproduced
 // becomes unsettled, and the report shows it to the owner.
@@ -24,9 +23,9 @@ export const VERIFIER = 'lpk:verifier';
 const ADD_FIELDS = ['run', 'from', 'agentId', 'at', 'file', 'line', 'claim', 'repro', 'kind', 'ruleId', 'severity', 'area'];
 
 export function ledgerDir(repo) {
-  const common = repo ? git(['rev-parse', '--git-common-dir'], repo).trim() : '';
-  if (!common) throw new Error(`${repo || '(no repo given)'} is not a git repository, so it has no findings ledger`);
-  return join(absGitPath(repo, common), 'lpk');
+  const dir = runDir(repo);
+  if (!dir) throw new Error(`${repo || '(no repo given)'} is not a git repository, so it has no findings ledger`);
+  return dir;
 }
 export const ledgerFile = (repo) => join(ledgerDir(repo), 'findings.jsonl');
 
@@ -56,6 +55,8 @@ export function readLedger(repo, file = ledgerFile(repo)) {
       Object.assign(f, rest, { state, ruledAt: time });
     } else if (e.ev === 'fixed') {
       Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time });
+    } else if (e.ev === 'deferred') {
+      Object.assign(byId.get(e.id), { state: 'deferred', deferEvidence: e.evidence, deferredBy: e.by, deferredAt: e.time });
     } else throw new Error(`${file}: unknown event ${JSON.stringify(e.ev)}`);
   }
   return { findings: [...byId.values()], file };
@@ -80,7 +81,7 @@ export function needsOwner(f) {
   return false;
 }
 
-function append(repo, event) {
+export function append(repo, event) {
   const dir = ledgerDir(repo);
   appendFileSync(join(dir, 'findings.jsonl'), `${JSON.stringify({ ...event, time: now() })}\n`);
 }
@@ -145,27 +146,6 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
   });
 }
 
-// Closes a confirmed finding with the commit that fixed it and how that is known: a repro now
-// green, a test that fails before the fix, or the verifier's ruling. The commit must exist and must
-// not be the reviewed commit itself.
-export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
-  if (!CLOSED_BY.includes(closedBy)) return { error: `closedBy is one of ${CLOSED_BY.join(', ')}` };
-  const why = text(evidence);
-  if (!why) return { error: 'evidence: the repro or test run that shows it fixed, or the ruling' };
-  if (!text(by)) return { error: 'by: who closes it (the finding hook stamps it)' };
-  const sha = git(['rev-parse', '--verify', '--quiet', `${text(commit)}^{commit}`], repo).trim();
-  if (!text(commit) || !sha) return { error: `commit: ${text(commit) || '(none)'} is not a commit in ${repo}` };
-  return locked(ledgerDir(repo), () => {
-    const f = readLedger(repo).findings.find((x) => x.id === text(id));
-    if (!f) return { error: `no finding ${text(id)}` };
-    if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
-    const reviewed = git(['rev-parse', '--verify', '--quiet', `${f.at.split('..').pop()}^{commit}`], repo).trim();
-    if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
-    append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by) });
-    return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
-  });
-}
-
 // A run that ends keeps its ledger: the file moves under runs/<id>/, and the next run starts empty.
 export function archiveLedger(repo, runId) {
   if (!/^[\w.-]+$/.test(runId ?? '') || /^\.+$/.test(runId)) return { error: `run id ${JSON.stringify(runId)} cannot name a directory` };
@@ -183,6 +163,7 @@ export function archiveLedger(repo, runId) {
   });
 }
 
+export { CLOSED_BY, markFixed } from './fixed.mjs';
 // The listing `bin/lpk` and the MCP server print.
 export { counts, findingsText } from './findings-text.mjs';
 

@@ -1,40 +1,22 @@
-// An lpk run: run.json in the repo's common git directory, shared by the main checkout and every
-// worktree. It names the session that holds it, the branch it delivers, its lane and scenarios, the
+// An lpk run: run.json in the run directory of the checkout that started it (where.mjs), which its
+// builders' worktrees share. It names the session that holds it, the branch it delivers, its lane and scenarios, the
 // checks that define "verified" and the last verify. A run ends only by `lpk run end`; its file
 // moves under runs/<id>/, where the delivery gates still find it by its branch.
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { createHash, randomBytes } from 'node:crypto';
+import { dirname, join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { archiveLedger } from './findings.mjs';
-import { absGitPath, git } from './git.mjs';
+import { git } from './git.mjs';
+import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
 
 export { codeOfCommit, treeOf } from './tree.mjs';
 export { verify } from './verify.mjs';
+export { ACTIVE, markerOf, runDir };
 
 const DAY = 24 * 3600 * 1000;
-// One file per live run, naming its marker: the hooks' only cost outside a run is listing it.
-export const ACTIVE = join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'lpk', 'active');
-const activeFile = (marker) => join(ACTIVE, createHash('sha1').update(marker).digest('hex').slice(0, 16));
-
-export function runDir(repo) {
-  const common = repo ? git(['rev-parse', '--git-common-dir'], repo).trim() : '';
-  return common ? join(absGitPath(repo, common), 'lpk') : '';
-}
-export const markerOf = (repo) => (runDir(repo) ? join(runDir(repo), 'run.json') : '');
-
-// The open run, or why run.json cannot be read: a damaged or 1.x file is an error the delivery
-// gates deny on, never "no run".
-function parse(m) {
-  if (!m || !existsSync(m)) return { run: null };
-  try {
-    const run = JSON.parse(readFileSync(m, 'utf8'));
-    if (run?.v !== 2 || !run.id) return { run: null, error: `${m} is not an lpk 2 run (\`lpk run end\` clears it)` };
-    return { run: { ...run, marker: m } };
-  } catch (e) { return { run: null, error: `${m} cannot be read (${e.message}); \`lpk run end\` clears it` }; }
-}
-export const runState = (repo) => parse(markerOf(repo));
-export const readRun = (repo) => runState(repo).run;
+export const runState = (repo, session) => parse(markerOf(repo, session));
+export const readRun = (repo, session) => runState(repo, session).run;
 
 export function writeRun(run) {
   const { marker, ...data } = run;
@@ -47,7 +29,7 @@ export function writeRun(run) {
 
 // The run this hook call belongs to: unbound (the first hook binds it to its session) or bound to
 // this session. An unbound run older than a day is ignored; `bind` false leaves it alone.
-export const runFor = (repo, session, bind = true) => claim(readRun(repo), session, bind);
+export const runFor = (repo, session, bind = true) => claim(readRun(repo, session), session, bind);
 
 function claim(r, session, bind = true) {
   if (!r || (!r.session && Date.now() - r.started > DAY)) return null;
@@ -59,13 +41,9 @@ function claim(r, session, bind = true) {
 
 // This session's newest run in any repo, for a hook called from a directory outside it.
 export function activeRun(session, bind = true, cwd = '') {
-  let names = [];
-  try { names = readdirSync(ACTIVE); } catch { return null; }
-  const runs = names.map((n) => {
-    let m; try { m = readFileSync(join(ACTIVE, n), 'utf8').trim(); } catch { return null; } // removed meanwhile, or unreadable
-    const r = parse(m).run;
+  const runs = registered().map(({ file, run: r }) => {
     if (r && (r.session || Date.now() - r.started <= DAY)) return r;
-    rmSync(join(ACTIVE, n), { force: true });
+    rmSync(file, { force: true });
     return null;
   }).filter(Boolean);
   const above = (r) => cwd && (r.repo === cwd || r.repo.startsWith(`${cwd.replace(/\/$/, '')}/`));
@@ -85,6 +63,8 @@ export function endedRuns(repo) {
 // open run notes such a branch, so the gates still hold on it after `lpk run end`. Gates key on
 // this, so they hold for any session.
 export function runForBranch(repo, branch) {
+  const holder = worktreeOf(repo, branch);
+  if (holder && checkout(holder)?.own !== checkout(repo)?.own) return runForBranch(holder, branch);
   const st = runState(repo);
   if (st.error) throw new Error(st.error);
   const open = st.run;
@@ -122,13 +102,19 @@ export function sessionPid(session) {
   }
   return 0;
 }
+export function exitedRuns(session, repo) {
+  const at = checkout(repo);
+  if (!at) return [];
+  const near = (r) => r.repo === repo || r.repo?.startsWith(`${repo}/`) || r.marker.startsWith(`${at.common}/`);
+  return registered().map((x) => x.run).filter((r) => r?.session && r.session !== session && near(r) && !sessionPid(r.session));
+}
 
 // Starts a run, or with an open one: amends it when it is this session's (same id, ledger and
 // verify kept), takes it with `take` when its session's process is gone, else refuses.
 export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false }) {
-  const marker = markerOf(repo);
+  const marker = startDir(repo) && join(startDir(repo), 'run.json');
   if (!marker) return { error: 'not inside a git repository' };
-  const st = runState(repo), me = process.env.CLAUDE_CODE_SESSION_ID || '';
+  const st = parse(marker), me = process.env.CLAUDE_CODE_SESSION_ID || '';
   if (st.error) return { error: st.error };
   const open = st.run;
   if (open && open.session && open.session !== me) {
@@ -153,6 +139,7 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   if (verify.length) { if (open && verify.join('\n') !== (open.verify || []).join('\n')) delete run.verified; run.verify = verify; }
   if (draftPush) run.granted = { ...run.granted, draftPush: true };
   noteBranch(repo, run);
+  mkdirSync(dirname(marker), { recursive: true });
   if (!open) leaveLedger(repo);
   writeRun(run);
   if (!open) writeFileSync(promptsOf(marker), '');

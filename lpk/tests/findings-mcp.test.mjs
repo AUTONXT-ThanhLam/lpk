@@ -79,6 +79,9 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     const listed = await call('list', {});
     assert.match(listed.result.content[0].text, /\(confirmed by lpk:verifier; born in design: the brief never says a retry must not repeat the charge\)/);
     assert.deepEqual(readLedger(dir).findings.map((f) => [f.id, f.from, f.agentId, f.at, f.run, f.state, f.by]), [['F1', 'lpk:bug-hunter', 'a1', range, 'run7', 'confirmed', VERIFIER]]);
+    assert.deepEqual(list.result.tools.find((t) => t.name === 'finding_fixed').inputSchema.required, ['id', 'closedBy', 'evidence']);
+    const deferred = await call('fixed', { id: 'F1', closedBy: 'owner', evidence: 'owner: skip what users cannot reach' });
+    assert.match(deferred.result.content[0].text, /^F1 deferred by the owner's policy: owner: skip what users cannot reach$/);
   } finally {
     proc.kill();
   }

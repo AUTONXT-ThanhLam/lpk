@@ -37,9 +37,8 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
    - **reverts and hotfixes on main** (`git log --grep='^Revert\|hotfix\|fix' main`, with the PR
      each one fixes): a defect that reached users weighs most;
    - **the owner's corrections**: what they said was wrong, in their words. During an lpk run every
-     message they sent is kept in `<git common dir>/lpk/prompts.jsonl` (`git rev-parse
-     --git-common-dir`; one JSON object per line with `at` and `prompt`), and `lpk run end` names
-     the file; read it before the run's marker directory is reused by the next run.
+     message they sent is kept in `prompts.jsonl` beside the run's `run.json` (one JSON object per
+     line with `at` and `prompt`), and `lpk run end` names the file; read it before the run's marker directory is reused by the next run.
    For the tech lead's comments: `lpk reviews fetch --reviewer <login> --repo <checkout>` stores every
    comment of theirs, inline and review bodies, in `~/.local/share/lpk/reviews/<owner>__<repo>.jsonl`
    (one JSON object per line with `pr`, `path`, `line`, `hunk`, `body`, `url`). Without a checkout,

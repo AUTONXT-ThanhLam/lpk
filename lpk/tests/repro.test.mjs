@@ -1,12 +1,12 @@
 // A verifier's reproduction runs in the run's shared worktree of the reviewed commit or of its base,
 // installed from that commit's own lockfile, and what it did is recorded for the gates.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { addFinding } from '../lib/findings.mjs';
-import { commit, ENV, lpk, repoWith, sh, write } from './verbs-env.mjs';
+import { commit, ENV, lpk, repoWith, ROOT, sh, write } from './verbs-env.mjs';
 
 const records = (repo) => readFileSync(join(repo, '.git', 'lpk', 'records.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((r) => r.kind === 'repro');
 
@@ -60,4 +60,22 @@ test('a finding\'s own repro runs at the commit it was raised at, and a command 
   const rec = records(repo).at(-1);
   assert.deepEqual([rec.finding, rec.side, rec.crash, rec.signal], [f.finding.id, 'base', true, 'SIGKILL']);
   assert.equal(lpk(repo, 'repro', 'F99', '--at', 'commit').status, 2);
+});
+
+test('a verifier in the superproject reproduces in the submodule its session\'s run works in', () => {
+  const inner = repoWith('repro-inner', { 'a.sh': 'echo one\n' });
+  const outer = repoWith('repro-outer', { 'README.md': 'x\n' });
+  sh(outer, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', inner, 'services/inner');
+  const sub = join(outer, 'services', 'inner');
+  const head = commit(sub, 'Change a', { 'a.sh': 'echo two\n' });
+  const as = (cwd, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), ...args], { cwd, env: { ...ENV, CLAUDE_CODE_SESSION_ID: 'lead' }, encoding: 'utf8' });
+  const started = as(sub, 'run', 'start', '--target', 'origin/main', '--verify', 'true');
+  assert.equal(started.status, 0, started.stderr);
+  const f = addFinding(sub, { from: 'lpk:bug-hunter', at: `origin/main..${head}`, claim: 'prints two', repro: 'bash a.sh', kind: 'defect', severity: 'important' });
+  assert.ok(f.finding, f.error);
+  const r = as(outer, 'repro', f.finding.id, '--at', 'commit');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /`bash a\.sh` at commit [0-9a-f]{12}: exit 0 in \d+s\n {2}\| two/);
+  assert.equal(sh(sub, 'worktree', 'list').trim().split('\n').length, 2, 'the repro tree is the submodule\'s');
+  assert.equal(sh(outer, 'worktree', 'list').trim().split('\n').length, 1);
 });

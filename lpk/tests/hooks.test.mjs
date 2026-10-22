@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { context, ENV, hook, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
+import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
 
 const records = (dir) => (existsSync(join(dir, 'records.jsonl')) ? readFileSync(join(dir, 'records.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
 
@@ -112,6 +112,38 @@ test('the stop note is said once, not again while the stop hook is active', () =
   assert.equal(stop({ stop_hook_active: true }), null);
 });
 
+test('the stop note comes back only when the tree changed since it was last said', () => {
+  const repo = repoWith('stop-tree', { 'src/a.mjs': 'export const a = 1;\n' });
+  startRun(repo, 'stop-tree');
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  const stop = () => hook('Stop', 'stop', { session_id: 'stop-tree', cwd: repo, stop_hook_active: false });
+  assert.match(context(stop()), /not verified on the current tree/);
+  assert.equal(stop(), null, 'builders still working, the tree as it was');
+  write(repo, 'src/a.mjs', 'export const a = 3;\n');
+  assert.match(context(stop()), /not verified on the current tree/);
+});
+
+test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no general agent', () => {
+  const full = repoWith('go-full', { 'src/a.mjs': 'export const a = 1;\n' });
+  const quick = repoWith('go-quick', { 'src/a.mjs': 'export const a = 1;\n' });
+  const spawn = (cwd, subagent_type = 'lpk:builder', session_id = 'go') => hook('PreToolUse', 'pre', { tool_name: 'Agent', session_id, cwd, tool_input: { subagent_type, description: 'slice 1', prompt: 'build slice 1' } });
+  assert.equal(spawn(full), null, 'no run, no rule');
+  const dir = startRun(full, 'go');
+  startRun(quick, 'go', { lane: 'quick' });
+  assert.equal(spawn(full), null, 'a run with no Design Brief, as a Quick run moved to Full');
+  writeFileSync(join(dir, 'brief.json'), '{}');
+  assert.match(reason(spawn(full)), /no `lpk go`/);
+  assert.equal(spawn(full, 'lpk:test-author'), null);
+  assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');
+  assert.equal(spawn(quick), null);
+  assert.equal(lpk(full, 'go', 'go').status, 0);
+  assert.equal(spawn(full), null);
+  assert.match(reason(spawn(full, 'general-purpose')), /lpk:staff/);
+  assert.match(reason(spawn(full, '')), /lpk:staff/);
+  assert.equal(spawn(full, 'lpk:staff'), null);
+  assert.equal(spawn(full, 'general-purpose', 'another-session'), null, 'outside a run, any agent');
+});
+
 test('a deleted test file, removed test lines and an added skip marker come back as hints after the edit', () => {
   const repo = repoWith('tests', { 'src/a.mjs': 'export const a = 1;\n', 'tests/a.test.mjs': 'test(1);\ntest(2);\n', 'tests/b.test.mjs': 'test(3);\n' });
   startRun(repo, 'tests');
@@ -137,8 +169,12 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   const { repo, ...args } = stamped;
   assert.equal(addFinding(repo, args).error, undefined);
   assert.deepEqual(readLedger(inner).findings.map((f) => [f.run, f.from]), [[run.id, 'lpk:bug-hunter']]);
-  // Another session calling from the same place gets no run to write into.
-  assert.equal(hook('PreToolUse', 'stamp', { ...call, session_id: 'other' }).hookSpecificOutput.updatedInput.run, undefined);
+  // A new session continuing the run of one that exited is told to take it, and then records.
+  const verdict = { ...call, tool_name: 'mcp__plugin_lpk_lpk__finding_verdict', session_id: 'other', agent_type: 'lpk:verifier', tool_input: { id: 'F1', verdict: 'dropped' } };
+  assert.match(reason(hook('PreToolUse', 'stamp', verdict)), new RegExp(`session other holds no open lpk run .*Open runs whose session has exited: ${inner} \\(session stamp\\)\\. The main session continues one with \`lpk run take --repo <dir>\``));
+  assert.match(JSON.parse(lpk(inner, 'other', 'run', 'status').stdout).heldBy, /session stamp, which has exited: `lpk run take`/);
+  assert.equal(lpk(inner, 'other', 'run', 'take').status, 0);
+  assert.deepEqual(hook('PreToolUse', 'stamp', verdict).hookSpecificOutput.updatedInput, { id: 'F1', verdict: 'dropped', repo: inner, run: run.id, by: 'lpk:verifier' });
 });
 
 test('the finding hook keeps the run of the repo the call runs in, else takes the one its session holds', () => {
