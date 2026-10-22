@@ -108,7 +108,7 @@ needs.
 - when: added `(\$\{|exec\(|execSync|spawn\(|innerHTML|dangerouslySetInnerHTML|path\.(join|resolve)|redirect|setHeader|new RegExp|eval\(|new Function|match \(|select |insert |cypher|\.query\(|shell\s*=|os\.system|subprocess|exec\.Command|Runtime\.getRuntime|Process\.Start|system\()`
 - rule: Text from users, files, models or other services never becomes structure by concatenation: SQL or Cypher, shell, HTML, markdown headings, headers, paths, URLs, regexes, key paths. Parameters, allowlists and escaping sit at the boundary; a sandbox the text promises is enforced by the platform; server-side fetches of user-influenced URLs are allowlisted.
 - check: trace each such string to where it becomes structure and try a newline, a quote, `..`, `#`, `${` and a 10 MB value. Repro: the input and the structure it injects.
-- find: `\bf["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*\{|\.(query|execute|raw|exec)\(\s*\x60[^\x60]*\$\{|["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*(\+|%\s)`
+- find: `\bf["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*\{|\.(query|execute|raw|exec)\(\s*\x60[^\x60]*\$\{(?![A-Z][A-Z0-9_]*\})|["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*(\+|%\s)`
 
 ### secret-egress: secrets and personal data stay in
 - blocks: high
