@@ -1,0 +1,53 @@
+id: engine-limits.javascript
+language: JavaScript
+severity: warning
+message: "numbers and arrays stay inside the runtime's limits"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            regex: '^(Math\.(max|min)|String\.fromCharCode)$|\.push$'
+        - has:
+            field: arguments
+            has:
+              kind: spread_element
+    - pattern: Number.isInteger($$$A)
+---
+id: engine-limits.typescript
+language: TypeScript
+severity: warning
+message: "numbers and arrays stay inside the runtime's limits"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            regex: '^(Math\.(max|min)|String\.fromCharCode)$|\.push$'
+        - has:
+            field: arguments
+            has:
+              kind: spread_element
+    - pattern: Number.isInteger($$$A)
+---
+id: engine-limits.tsx
+language: Tsx
+severity: warning
+message: "numbers and arrays stay inside the runtime's limits"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            regex: '^(Math\.(max|min)|String\.fromCharCode)$|\.push$'
+        - has:
+            field: arguments
+            has:
+              kind: spread_element
+    - pattern: Number.isInteger($$$A)

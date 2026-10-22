@@ -1,0 +1,58 @@
+id: dependency-pinned.json
+language: Json
+severity: warning
+message: "a dependency names a version that cannot move under the build"
+files:
+  - "**/package.json"
+  - "**/composer.json"
+rule:
+  kind: pair
+  all:
+    - has:
+        field: value
+        kind: string
+        regex: '^"(latest|\*|x)"$'
+    - inside:
+        stopBy: end
+        kind: pair
+        has:
+          field: key
+          regex: '^"(dependencies|devDependencies|peerDependencies|optionalDependencies|overrides|resolutions|require|require-dev)"$'
+---
+id: dependency-pinned.kotlin
+language: Kotlin
+severity: warning
+message: "a dependency names a version that cannot move under the build"
+files:
+  - "**/build.gradle.kts"
+rule:
+  kind: string_literal
+  regex: '-SNAPSHOT\b'
+  inside:
+    stopBy: end
+    kind: call_expression
+---
+id: dependency-pinned.html
+language: Html
+severity: warning
+message: "a dependency names a version that cannot move under the build"
+files:
+  - "**/pom.xml"
+rule:
+  kind: element
+  all:
+    - has:
+        kind: start_tag
+        has:
+          kind: tag_name
+          regex: '^version$'
+    - has:
+        kind: text
+        regex: '-SNAPSHOT\b'
+    - inside:
+        kind: element
+        has:
+          kind: start_tag
+          has:
+            kind: tag_name
+            regex: '^(dependency|plugin|parent|extension)$'

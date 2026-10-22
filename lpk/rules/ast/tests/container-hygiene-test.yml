@@ -1,0 +1,23 @@
+id: container-hygiene.yaml
+valid:
+  - |-
+      services:
+        db:
+          image: postgres:16.3
+  - |-
+      services:
+        db:
+          image: "postgres@sha256:abcdef"
+  - |-
+      services:
+        db:
+          command: echo image:latest
+invalid:
+  - |-
+      services:
+        db:
+          image: postgres:latest
+  - |-
+      services:
+        web:
+          image: "ghcr.io/acme/web:latest"

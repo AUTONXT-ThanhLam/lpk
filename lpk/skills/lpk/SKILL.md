@@ -36,15 +36,13 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   costs its slowest lens, not the sum;
 - 65% of late true findings sat on the previous fix's own lines, so there is one batched fix round,
   and a finding on a fix's own lines means redesign or revert, never a third patch;
-- waiting cost a third of the wall time, so everything that does not depend on the next step runs
-  at the same time.
+- waiting cost a third of the wall time, so all that does not wait on the next step runs at once.
 
 ## How you work, in every step
 
-- **The clock.** Run `date +%s` first and keep the number. Post one line as each step starts: what,
-  the elapsed minutes from `echo $(( ($(date +%s) - <start>) / 60 ))`, and what comes next. An
-  estimate sums what is left, each stage at the minutes it or its like took in this run, as a range;
-  a stage not yet timed is named as unmeasured, never given a clock time.
+- **The clock.** Run `date +%s` first and keep it. As each step starts, post what, the minutes from
+  `echo $(( ($(date +%s) - <start>) / 60 ))` and what is next. An estimate sums what is left, each
+  stage at what it or its like took in this run, as a range; an untimed stage is named unmeasured.
 - **A question stops the team**: nothing new starts while it is open. A technical choice and what
   a command, the code or the ticket answers are yours: decide, log it (`lpk decide "<what>" --why
   "<why>"`, the report lists them) and say it in the next update. Ask only what the owner alone
@@ -56,12 +54,14 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
-- **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
-  `finding_list`; load them with ToolSearch `select:mcp__plugin_lpk_lpk__finding_list`), and only a
-  verifier rules on one. A finding you rule on yourself goes in the report with its evidence.
-- **Heavy jobs share the machine.** Start a test suite, a build or an app through `lpk slot --
-  <command>`: it waits for free memory. Never `sleep`: agents notify you when they finish, and long
-  waits run under the Monitor tool (`lpk watch` names an agent that stopped moving).
+- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; ToolSearch
+  `select:mcp__plugin_lpk_lpk__finding_list`); only a verifier rules. One you rule on goes in the report with its evidence.
+- **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
+  (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
+  `lpk watch` names an agent that stopped moving.
+- **The advisor** (a Sonnet session with an Opus `advisorModel`; subagents inherit it, and each
+  consult rereads the whole transcript at Opus price): consult it before choosing the design
+  approach, before `lpk go`, after a second failed attempt at anything, and before the final report.
 - **Evidence, not words.** A gate passes on what the CLI ran (`lpk gates` prints it), not on "done".
   Every text a person reads follows `writing.md` in this skill's directory.
 

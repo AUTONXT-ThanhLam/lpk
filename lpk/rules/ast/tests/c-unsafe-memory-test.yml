@@ -1,0 +1,15 @@
+id: c-unsafe-memory.c
+valid:
+  - "void f(char *d, const char *s) { strncpy(d, s, 8); snprintf(d, 8, \"%s\", s); fgets(d, 8, stdin); }"
+  - "void f(void) { char *s = \"strcpy(d, s)\"; }"
+invalid:
+  - "void f(char *d, const char *s) { strcpy(d, s); }"
+  - "void f(char *d) { gets(d); }"
+  - "void f(char *d, int n) { sprintf(d, \"%d\", n); }"
+---
+id: c-unsafe-memory.cpp
+valid:
+  - "void f(char *d, const char *s) { std::strncpy(d, s, 8); std::snprintf(d, 8, \"%s\", s); }"
+invalid:
+  - "void f(char *d, const char *s) { strcpy(d, s); }"
+  - "void f(char *d, const char *s) { std::strcat(d, s); }"

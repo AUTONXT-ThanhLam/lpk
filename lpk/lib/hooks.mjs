@@ -3,10 +3,11 @@
 // hints; the end of a turn on unverified source is told, never held; the main session cannot commit
 // a tree that has no green `lpk verify`. Outside a run all are silent.
 import { existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import { allCandidates } from './ast.mjs';
 import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
-import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
+import { changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
 import { readRecords } from './records.mjs';
 import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
@@ -55,10 +56,10 @@ export function testLoss(files) {
 // Returns the text it reads, at most SHOW of them ('' when none is new), and `seen` with the shown
 // ones added, so the rest come back on the next call.
 const SHOW = 15;
-export function freshCandidates(repo, base, seen = [], sibs = siblings(repo)) {
+export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), only) {
   const files = changeOf(repo, base);
   const found = [
-    ...candidates(loadRules(repo), files).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
+    ...allCandidates(repo, loadRules(repo), files, only).cands.map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
     ...envWiring(repo, files, sibs).filter((e) => !e.seen.length)
       .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
     ...testLoss(files),
@@ -80,7 +81,9 @@ export function afterTool(input) {
   if (input.agent_id && !/(^|:)builder$/.test(input.agent_type || '')) return null;
   const { repo, run } = runOf(input);
   if (!run) return null;
-  const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen);
+  const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
+  const edited = file ? [relative(repo, resolve(input.cwd || '.', file))] : undefined;
+  const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen, siblings(repo), edited);
   if (!text) return null;
   run.seen = seen;
   writeRun(run);

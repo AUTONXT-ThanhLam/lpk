@@ -92,6 +92,8 @@ Record each FAIL and each NOT PROVED in the ledger with `finding_add` (load it w
 and what you saw as the claim, and the steps and evidence as the repro. The gate counts the FAIL and
 NOT PROVED lines you return against the rows you added.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in this shape and nothing else. List every scenario you were given, even one you never

@@ -1,0 +1,107 @@
+id: bounded-work.javascript
+language: JavaScript
+severity: warning
+message: "every input, loop, poll and budget has a bound"
+rule:
+  any:
+    - pattern: setInterval($$$A)
+    - pattern: $O.setInterval($$$A)
+    - kind: pair
+      has:
+        field: key
+        regex: '^refetchInterval$'
+      not:
+        has:
+          field: value
+          kind: 'false'
+    - kind: shorthand_property_identifier
+      regex: '^refetchInterval$'
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: '^refetchIntervalInBackground$'
+        - has:
+            field: value
+            kind: 'true'
+    - any:
+        - pattern: $F($P => [...$P, $$$R])
+        - pattern: $F(($P) => [...$P, $$$R])
+      inside:
+        stopBy: neighbor
+        kind: expression_statement
+constraints:
+  F:
+    regex: '^set\w*(Log|Line|Message|Event|Output|Chunk)s?\w*$'
+---
+id: bounded-work.typescript
+language: TypeScript
+severity: warning
+message: "every input, loop, poll and budget has a bound"
+rule:
+  any:
+    - pattern: setInterval($$$A)
+    - pattern: $O.setInterval($$$A)
+    - kind: pair
+      has:
+        field: key
+        regex: '^refetchInterval$'
+      not:
+        has:
+          field: value
+          kind: 'false'
+    - kind: shorthand_property_identifier
+      regex: '^refetchInterval$'
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: '^refetchIntervalInBackground$'
+        - has:
+            field: value
+            kind: 'true'
+    - any:
+        - pattern: $F($P => [...$P, $$$R])
+        - pattern: $F(($P) => [...$P, $$$R])
+      inside:
+        stopBy: neighbor
+        kind: expression_statement
+constraints:
+  F:
+    regex: '^set\w*(Log|Line|Message|Event|Output|Chunk)s?\w*$'
+---
+id: bounded-work.tsx
+language: Tsx
+severity: warning
+message: "every input, loop, poll and budget has a bound"
+rule:
+  any:
+    - pattern: setInterval($$$A)
+    - pattern: $O.setInterval($$$A)
+    - kind: pair
+      has:
+        field: key
+        regex: '^refetchInterval$'
+      not:
+        has:
+          field: value
+          kind: 'false'
+    - kind: shorthand_property_identifier
+      regex: '^refetchInterval$'
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: '^refetchIntervalInBackground$'
+        - has:
+            field: value
+            kind: 'true'
+    - any:
+        - pattern: $F($P => [...$P, $$$R])
+        - pattern: $F(($P) => [...$P, $$$R])
+      inside:
+        stopBy: neighbor
+        kind: expression_statement
+constraints:
+  F:
+    regex: '^set\w*(Log|Line|Message|Event|Output|Chunk)s?\w*$'

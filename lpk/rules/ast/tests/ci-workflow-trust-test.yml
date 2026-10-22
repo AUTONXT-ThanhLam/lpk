@@ -1,0 +1,61 @@
+id: ci-workflow-trust.yaml
+valid:
+  - |-
+      on: pull_request
+      jobs:
+        t:
+          steps:
+            - run: npm test
+  - |-
+      on: push
+      jobs:
+        t:
+          steps:
+            - env:
+                TITLE: ${{ github.event.pull_request.title }}
+              run: echo "$TITLE"
+  - |-
+      on: push
+      jobs:
+        t:
+          steps:
+            - run: echo "${{ github.event.repository.name }}"
+  - |-
+      permissions:
+        contents: read
+  - |-
+      # on: pull_request_target
+      on: push
+      jobs: {}
+invalid:
+  - |-
+      on: pull_request
+      jobs:
+        t:
+          steps:
+            - run: echo "${{ github.event.pull_request.title }}"
+  - |-
+      on: issues
+      jobs:
+        t:
+          steps:
+            - run: |
+                echo "${{ github.event.issue.body }}"
+                ls
+  - |-
+      on: push
+      jobs:
+        t:
+          steps:
+            - run: git checkout ${{ github.head_ref }}
+  - |-
+      on:
+        pull_request_target:
+          types: [opened]
+      jobs: {}
+  - |-
+      on: [push, pull_request_target]
+      jobs: {}
+  - |-
+      permissions: write-all
+      jobs: {}

@@ -1,0 +1,43 @@
+id: ci-runs-it.yaml
+valid:
+  - |-
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          steps:
+            - run: npm test
+  - |-
+      jobs:
+        test:
+          continue-on-error: false
+          steps: []
+  - |-
+      # continue-on-error: true
+      jobs: {}
+invalid:
+  - |-
+      jobs:
+        lint:
+          runs-on: ubuntu-latest
+          continue-on-error: true
+          steps:
+            - run: npm run lint
+  - |-
+      steps:
+        - run: npm test
+          continue-on-error: true
+---
+id: ci-runs-it.bash
+valid:
+  - "npm test"
+  - "npm test || echo \"tests failed\""
+  - "echo \"|| true\""
+  - |-
+      set -e
+      npm run lint
+invalid:
+  - "npm test || true"
+  - |-
+      set -e
+      npm run lint || true
+      npm run build

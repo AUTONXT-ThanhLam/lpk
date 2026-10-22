@@ -1,0 +1,46 @@
+id: exclusive-bind.python
+valid:
+  - "sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)"
+  - "sock.bind((\"0.0.0.0\", port))"
+  - "s = \"SO_REUSEADDR\""
+invalid:
+  - "sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)"
+  - "sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)"
+---
+id: exclusive-bind.c
+valid:
+  - "void f(int s) { int one = 1; setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof one); }"
+invalid:
+  - "void f(int s) { int one = 1; setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one); }"
+---
+id: exclusive-bind.cpp
+valid:
+  - "void f(int s) { int one = 1; setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof one); }"
+invalid:
+  - "void f(int s) { int one = 1; setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one); }"
+---
+id: exclusive-bind.go
+valid:
+  - |-
+      package main
+      func f(fd int) {
+      	syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, 1)
+      }
+invalid:
+  - |-
+      package main
+      func f(fd int) {
+      	syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+      }
+---
+id: exclusive-bind.java
+valid:
+  - "class A { void f(ServerSocketChannel c) throws Exception { c.setOption(StandardSocketOptions.SO_KEEPALIVE, true); } }"
+invalid:
+  - "class A { void f(ServerSocketChannel c) throws Exception { c.setOption(StandardSocketOptions.SO_REUSEADDR, true); } }"
+---
+id: exclusive-bind.rust
+valid:
+  - "fn f(fd: i32) { let k = libc::SO_KEEPALIVE; }"
+invalid:
+  - "fn f(fd: i32) { let k = libc::SO_REUSEADDR; }"

@@ -13,7 +13,7 @@ export const LEARNED = join(process.env.XDG_DATA_HOME || join(homedir(), '.local
 export const TEST = /(^|\/)([Tt]ests?|__tests__|__mocks__|__fixtures__|fixtures|testdata|test-utils|specs?|e2e|cypress|[\w.-]+\.Tests?)\/|\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)(test_[^/]*|conftest)\.py$|_test\.(py|go|exs|dart|c|cc|cpp)$|_spec\.rb$|Tests?\.(java|kt|scala|cs|fs|swift|php)$|(^|\/)[^/]*e2e[^/]*\.(sh|[cm]?[jt]s)$/;
 // Source code in any common language: what the verify gate, the push guard and mutate act on.
 export const CODE = /\.([cm]?[jt]sx?|py|go|rs|java|kt|kts|scala|groovy|rb|php|cs|fs|vue|svelte|swift|m|mm|c|h|cc|cpp|cxx|hpp|ex|exs|erl|dart|lua|clj|hs|ml|jl|r|sh|bash|zsh|ps1|sql)$/i;
-const NOT_CODE = /\.(md|txt|rst|json|lock|snap|svg|png|jpe?g|gif|ico|csv)$/i;
+export const NOT_CODE = /\.(md|txt|rst|json|lock|snap|svg|png|jpe?g|gif|ico|csv)$/i;
 const code = (re) => re.match(/`(.+)`/)?.[1];
 // Patterns that do not compile or are not in the expected form are skipped and listed here, so one bad learned rule
 // cannot stop every command.

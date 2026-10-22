@@ -7,6 +7,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { freemem, homedir } from 'node:os';
 import { join } from 'node:path';
 import { defaultBranch, git, mergeBase, top } from './git.mjs';
+import { INSTALL } from './ast.mjs';
 import { remapWarning } from './safety.mjs';
 import { BIN } from './tools.mjs';
 
@@ -49,10 +50,11 @@ export async function preflight(repo, { target = '', verify = [], env = process.
   const ref = target || defaultBranch(root);
   const base = ref ? mergeBase(root, ref) : '';
   if (!base) return { refuse: ref ? `no merge base between ${ref} and HEAD` : 'no target branch given and none found (origin/HEAD, main, master)', lines: [], ms: Date.now() - t0 };
-  const [gh, leaks, browser] = await Promise.all([
+  const [gh, leaks, browser, sg] = await Promise.all([
     exitOf('gh', ['auth', 'status'], root, 3000),
     exitOf('gitleaks', ['version'], root, 3000),
     chrome(env.LPK_CHROME_PORT || 9333),
+    exitOf('ast-grep', ['--version'], root, 3000),
   ]);
   const dirty = git(['status', '--porcelain'], root).split('\n').filter(Boolean).length;
   const author = ['user.name', 'user.email'].map((k) => git(['config', k], root).trim());
@@ -67,6 +69,7 @@ export async function preflight(repo, { target = '', verify = [], env = process.
     memory(),
     token(env),
     leaks === 0 || existsSync(join(BIN, 'gitleaks')) ? 'gitleaks: installed' : 'gitleaks: missing; the PR body says secrets were not scanned (`lpk setup` fetches it)',
+    sg === 0 ? 'ast-grep: installed' : `ast-grep: missing; lpk check runs only the regex patterns (\`${INSTALL}\`)`,
     ...(remap ? [remap] : []),
   ];
   return { refuse: '', lines, ms: Date.now() - t0 };

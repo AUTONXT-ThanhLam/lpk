@@ -1,0 +1,152 @@
+id: agent-safety.javascript
+language: JavaScript
+severity: warning
+message: "model and tool output is data, loops stop"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: identifier
+            regex: '^(eval|exec|execSync)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              not:
+                any:
+                  - kind: string
+                  - kind: template_string
+                    not:
+                      has:
+                        kind: template_substitution
+    - kind: new_expression
+      has:
+        field: constructor
+        regex: '^Function$'
+---
+id: agent-safety.typescript
+language: TypeScript
+severity: warning
+message: "model and tool output is data, loops stop"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: identifier
+            regex: '^(eval|exec|execSync)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              not:
+                any:
+                  - kind: string
+                  - kind: template_string
+                    not:
+                      has:
+                        kind: template_substitution
+    - kind: new_expression
+      has:
+        field: constructor
+        regex: '^Function$'
+---
+id: agent-safety.tsx
+language: Tsx
+severity: warning
+message: "model and tool output is data, loops stop"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: identifier
+            regex: '^(eval|exec|execSync)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              not:
+                any:
+                  - kind: string
+                  - kind: template_string
+                    not:
+                      has:
+                        kind: template_substitution
+    - kind: new_expression
+      has:
+        field: constructor
+        regex: '^Function$'
+---
+id: agent-safety.python
+language: Python
+severity: warning
+message: "model and tool output is data, loops stop"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: call
+  all:
+    - has:
+        field: function
+        kind: identifier
+        regex: '^(eval|exec)$'
+    - has:
+        field: arguments
+        has:
+          nthChild: 1
+          not:
+            kind: string
+            not:
+              has:
+                kind: interpolation

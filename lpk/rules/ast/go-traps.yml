@@ -1,0 +1,30 @@
+id: go-traps.go
+language: Go
+severity: warning
+message: "Go's lifecycle traps are absent"
+rule:
+  kind: call_expression
+  all:
+    - has:
+        field: function
+        regex: '^fmt\.Errorf$'
+    - has:
+        field: arguments
+        has:
+          nthChild: 1
+          kind: interpreted_string_literal
+          regex: '%v'
+    - not:
+        has:
+          field: arguments
+          has:
+            nthChild: 1
+            regex: '%w'
+    - has:
+        field: arguments
+        has:
+          nthChild:
+            position: 1
+            reverse: true
+          kind: identifier
+          regex: '^(err|\w+Err|\w+_err)$'

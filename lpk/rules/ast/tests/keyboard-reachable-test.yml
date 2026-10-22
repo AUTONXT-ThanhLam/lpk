@@ -1,0 +1,23 @@
+id: keyboard-reachable.javascript
+valid:
+  - "const a = <div role=\"button\" tabIndex={0} onClick={open} onKeyDown={onKey}>Open</div>"
+  - "const a = <button onClick={open}>Open</button>"
+  - "const a = <div onClick={open} {...rest}>Open</div>"
+  - "const a = <div className=\"card\">Open</div>"
+invalid:
+  - "const a = <div onClick={open}>Open</div>"
+  - "const a = <tr onClick={() => select(row)}><td>{row.name}</td></tr>"
+  - "const a = <li tabIndex={0} onClick={open}>Open</li>"
+  - "const a = <span onClick={open} />"
+---
+id: keyboard-reachable.tsx
+valid:
+  - "const a = <div role=\"button\" tabIndex={0} onClick={open} onKeyDown={onKey}>Open</div>"
+  - "const a = <button onClick={open}>Open</button>"
+  - "const a = <div onClick={open} {...rest}>Open</div>"
+  - "const a = <div className=\"card\">Open</div>"
+invalid:
+  - "const a = <div onClick={open}>Open</div>"
+  - "const a = <tr onClick={() => select(row)}><td>{row.name}</td></tr>"
+  - "const a = <li tabIndex={0} onClick={open}>Open</li>"
+  - "const a = <span onClick={open} />"

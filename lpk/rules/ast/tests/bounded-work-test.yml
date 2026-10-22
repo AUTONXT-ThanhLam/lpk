@@ -1,0 +1,50 @@
+id: bounded-work.javascript
+valid:
+  - "const t = setTimeout(tick, 1000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: false })"
+  - "useQuery({ queryKey, queryFn })"
+  - "setLogs((prev) => [...prev, line].slice(-500))"
+  - "setCount((n) => n + 1)"
+  - "const s = \"setInterval(tick, 1000)\""
+invalid:
+  - "const t = setInterval(tick, 1000)"
+  - "window.setInterval(poll, 5000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: 5000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval: (q) => q.state.data ? false : 2000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval, refetchIntervalInBackground: true })"
+  - "setLogs((prev) => [...prev, line])"
+  - "setMessages(prev => [...prev, msg, other])"
+---
+id: bounded-work.typescript
+valid:
+  - "const t = setTimeout(tick, 1000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: false })"
+  - "useQuery({ queryKey, queryFn })"
+  - "setLogs((prev) => [...prev, line].slice(-500))"
+  - "setCount((n) => n + 1)"
+  - "const s = \"setInterval(tick, 1000)\""
+invalid:
+  - "const t = setInterval(tick, 1000)"
+  - "window.setInterval(poll, 5000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: 5000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval: (q) => q.state.data ? false : 2000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval, refetchIntervalInBackground: true })"
+  - "setLogs((prev) => [...prev, line])"
+  - "setMessages(prev => [...prev, msg, other])"
+---
+id: bounded-work.tsx
+valid:
+  - "const t = setTimeout(tick, 1000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: false })"
+  - "useQuery({ queryKey, queryFn })"
+  - "setLogs((prev) => [...prev, line].slice(-500))"
+  - "setCount((n) => n + 1)"
+  - "const s = \"setInterval(tick, 1000)\""
+invalid:
+  - "const t = setInterval(tick, 1000)"
+  - "window.setInterval(poll, 5000)"
+  - "useQuery({ queryKey, queryFn, refetchInterval: 5000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval: (q) => q.state.data ? false : 2000 })"
+  - "useQuery({ queryKey, queryFn, refetchInterval, refetchIntervalInBackground: true })"
+  - "setLogs((prev) => [...prev, line])"
+  - "setMessages(prev => [...prev, msg, other])"

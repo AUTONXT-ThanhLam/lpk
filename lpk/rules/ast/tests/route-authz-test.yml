@@ -1,0 +1,68 @@
+id: route-authz.javascript
+valid:
+  - "app.get('/users', listUsers)"
+  - "app.post('/logout', requireAuth, logout)"
+  - "params.get('delete')"
+  - "app.delete('/sessions/:id', requireAuth, revoke)"
+  - "user.update(pick(req.body, [\"name\"]))"
+  - "Object.assign(target, defaults)"
+  - "const s = \"app.get('/logout')\""
+invalid:
+  - "app.get('/logout', (req, res) => { req.session.destroy(); res.sendStatus(204) })"
+  - "router.get(`/sessions/revoke/${id}`, handler)"
+  - "await user.update(req.body)"
+  - "Object.assign(user, req.body)"
+  - "row.update(payload)"
+---
+id: route-authz.typescript
+valid:
+  - "app.get('/users', listUsers)"
+  - "app.post('/logout', requireAuth, logout)"
+  - "params.get('delete')"
+  - "app.delete('/sessions/:id', requireAuth, revoke)"
+  - "user.update(pick(req.body, [\"name\"]))"
+  - "Object.assign(target, defaults)"
+  - "const s = \"app.get('/logout')\""
+invalid:
+  - "app.get('/logout', (req, res) => { req.session.destroy(); res.sendStatus(204) })"
+  - "router.get(`/sessions/revoke/${id}`, handler)"
+  - "await user.update(req.body)"
+  - "Object.assign(user, req.body)"
+  - "row.update(payload)"
+---
+id: route-authz.tsx
+valid:
+  - "app.get('/users', listUsers)"
+  - "app.post('/logout', requireAuth, logout)"
+  - "params.get('delete')"
+  - "app.delete('/sessions/:id', requireAuth, revoke)"
+  - "user.update(pick(req.body, [\"name\"]))"
+  - "Object.assign(target, defaults)"
+  - "const s = \"app.get('/logout')\""
+invalid:
+  - "app.get('/logout', (req, res) => { req.session.destroy(); res.sendStatus(204) })"
+  - "router.get(`/sessions/revoke/${id}`, handler)"
+  - "await user.update(req.body)"
+  - "Object.assign(user, req.body)"
+  - "row.update(payload)"
+---
+id: route-authz.python
+valid:
+  - |-
+      @app.get("/users")
+      async def users(): ...
+  - |-
+      @app.post("/logout")
+      async def logout(user=Depends(current_user)): ...
+  - "cfg.update(defaults)"
+  - "x = d.get(\"delete\")"
+invalid:
+  - |-
+      @app.websocket("/ws")
+      async def ws(sock): ...
+  - "app.add_websocket_route(\"/ws\", endpoint)"
+  - |-
+      @router.get("/logout")
+      async def logout(): ...
+  - "user.update(updated_data)"
+  - "order.update(request.body)"

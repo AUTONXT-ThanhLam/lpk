@@ -1,0 +1,92 @@
+id: js-traps.javascript
+language: JavaScript
+severity: warning
+message: "JavaScript's global traps are absent"
+rule:
+  any:
+    - pattern: $B.prototype.$M = $V
+    - pattern: document.write($$$A)
+    - pattern: document.writeln($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(setTimeout|setInterval)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+constraints:
+  B:
+    regex: '^(Array|Object|String|Number|Function|Promise)$'
+---
+id: js-traps.typescript
+language: TypeScript
+severity: warning
+message: "JavaScript's global traps are absent"
+rule:
+  any:
+    - pattern: $B.prototype.$M = $V
+    - pattern: document.write($$$A)
+    - pattern: document.writeln($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(setTimeout|setInterval)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+constraints:
+  B:
+    regex: '^(Array|Object|String|Number|Function|Promise)$'
+---
+id: js-traps.tsx
+language: Tsx
+severity: warning
+message: "JavaScript's global traps are absent"
+rule:
+  any:
+    - pattern: $B.prototype.$M = $V
+    - pattern: document.write($$$A)
+    - pattern: document.writeln($$$A)
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(setTimeout|setInterval)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(setTimeout|setInterval)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+constraints:
+  B:
+    regex: '^(Array|Object|String|Number|Function|Promise)$'

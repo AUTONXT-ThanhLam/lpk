@@ -1,0 +1,13 @@
+id: container-hygiene.yaml
+language: Yaml
+severity: warning
+message: "images are pinned, unprivileged and observable"
+rule:
+  kind: block_mapping_pair
+  all:
+    - has:
+        field: key
+        regex: '^image$'
+    - has:
+        field: value
+        regex: '^[\x22\x27]?[\w./-]+:latest[\x22\x27]?$'

@@ -1,0 +1,203 @@
+id: no-silent-failure.javascript
+language: JavaScript
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        field: body
+        matches: empty-block
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^catch$'
+        - has:
+            field: arguments
+            has:
+              kind: arrow_function
+              has:
+                field: body
+                any:
+                  - kind: undefined
+                  - kind: 'null'
+                  - kind: 'false'
+                  - pattern: void 0
+                  - pattern: '[]'
+                  - pattern: '({})'
+                  - matches: empty-block
+    - kind: expression_statement
+      has:
+        kind: unary_expression
+        regex: '^void\s'
+        has:
+          field: argument
+          any:
+            - kind: call_expression
+            - kind: await_expression
+    - pattern: Promise.allSettled($$$A)
+      not:
+        inside:
+          stopBy: end
+          any:
+            - kind: function_declaration
+            - kind: function_expression
+            - kind: arrow_function
+            - kind: method_definition
+            - kind: generator_function_declaration
+          has:
+            stopBy: end
+            any:
+              - kind: string_fragment
+                regex: '^rejected$'
+              - kind: property_identifier
+                regex: '^reason$'
+utils:
+  empty-block:
+    kind: statement_block
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'
+---
+id: no-silent-failure.typescript
+language: TypeScript
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        field: body
+        matches: empty-block
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^catch$'
+        - has:
+            field: arguments
+            has:
+              kind: arrow_function
+              has:
+                field: body
+                any:
+                  - kind: undefined
+                  - kind: 'null'
+                  - kind: 'false'
+                  - pattern: void 0
+                  - pattern: '[]'
+                  - pattern: '({})'
+                  - matches: empty-block
+    - kind: expression_statement
+      has:
+        kind: unary_expression
+        regex: '^void\s'
+        has:
+          field: argument
+          any:
+            - kind: call_expression
+            - kind: await_expression
+    - pattern: Promise.allSettled($$$A)
+      not:
+        inside:
+          stopBy: end
+          any:
+            - kind: function_declaration
+            - kind: function_expression
+            - kind: arrow_function
+            - kind: method_definition
+            - kind: generator_function_declaration
+          has:
+            stopBy: end
+            any:
+              - kind: string_fragment
+                regex: '^rejected$'
+              - kind: property_identifier
+                regex: '^reason$'
+utils:
+  empty-block:
+    kind: statement_block
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'
+---
+id: no-silent-failure.tsx
+language: Tsx
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        field: body
+        matches: empty-block
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^catch$'
+        - has:
+            field: arguments
+            has:
+              kind: arrow_function
+              has:
+                field: body
+                any:
+                  - kind: undefined
+                  - kind: 'null'
+                  - kind: 'false'
+                  - pattern: void 0
+                  - pattern: '[]'
+                  - pattern: '({})'
+                  - matches: empty-block
+    - kind: expression_statement
+      has:
+        kind: unary_expression
+        regex: '^void\s'
+        has:
+          field: argument
+          any:
+            - kind: call_expression
+            - kind: await_expression
+    - pattern: Promise.allSettled($$$A)
+      not:
+        inside:
+          stopBy: end
+          any:
+            - kind: function_declaration
+            - kind: function_expression
+            - kind: arrow_function
+            - kind: method_definition
+            - kind: generator_function_declaration
+          has:
+            stopBy: end
+            any:
+              - kind: string_fragment
+                regex: '^rejected$'
+              - kind: property_identifier
+                regex: '^reason$'
+utils:
+  empty-block:
+    kind: statement_block
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'

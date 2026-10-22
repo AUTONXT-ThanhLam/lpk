@@ -1,0 +1,50 @@
+id: js-traps.javascript
+valid:
+  - |-
+      class Stack extends Array {}
+      Stack.prototype.top = function () { return this[this.length - 1] }
+  - "el.append(node)"
+  - "setTimeout(() => tick(), 100)"
+  - "setTimeout(tick, 100)"
+  - "const s = \"document.write(x)\""
+invalid:
+  - "Array.prototype.last = function () { return this[this.length - 1] }"
+  - "Object.prototype.clone = function () { return { ...this } }"
+  - "document.write(\"<p>\" + msg + \"</p>\")"
+  - "document.writeln(html)"
+  - "setTimeout(\"refresh()\", 100)"
+  - "window.setInterval(`poll(${id})`, 500)"
+---
+id: js-traps.typescript
+valid:
+  - |-
+      class Stack extends Array {}
+      Stack.prototype.top = function () { return this[this.length - 1] }
+  - "el.append(node)"
+  - "setTimeout(() => tick(), 100)"
+  - "setTimeout(tick, 100)"
+  - "const s = \"document.write(x)\""
+invalid:
+  - "Array.prototype.last = function () { return this[this.length - 1] }"
+  - "Object.prototype.clone = function () { return { ...this } }"
+  - "document.write(\"<p>\" + msg + \"</p>\")"
+  - "document.writeln(html)"
+  - "setTimeout(\"refresh()\", 100)"
+  - "window.setInterval(`poll(${id})`, 500)"
+---
+id: js-traps.tsx
+valid:
+  - |-
+      class Stack extends Array {}
+      Stack.prototype.top = function () { return this[this.length - 1] }
+  - "el.append(node)"
+  - "setTimeout(() => tick(), 100)"
+  - "setTimeout(tick, 100)"
+  - "const s = \"document.write(x)\""
+invalid:
+  - "Array.prototype.last = function () { return this[this.length - 1] }"
+  - "Object.prototype.clone = function () { return { ...this } }"
+  - "document.write(\"<p>\" + msg + \"</p>\")"
+  - "document.writeln(html)"
+  - "setTimeout(\"refresh()\", 100)"
+  - "window.setInterval(`poll(${id})`, 500)"

@@ -57,6 +57,8 @@ docs, the PR text) read the fixed text there, and close it with `finding_fixed` 
 ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, and the evidence.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Answer in exactly this shape and nothing else:

@@ -36,6 +36,9 @@ Follow step 4 of "Check it, then write the tests" in `design.md` in the lpk skil
   most a tenth of its words: replace text, do not append to it.
 - Copy the brief to `brief.r<n>.md` before you edit, and keep `brief.json` in step with `brief.md`.
 
+Consult the advisor, when the session has one, after a second failed attempt at anything and
+before you report done; nowhere else, since each consult rereads your whole transcript at Opus price.
+
 ## Report
 
 1. The result in one or two sentences, and the paths you wrote.

@@ -1,0 +1,49 @@
+id: exclusive-bind.python
+language: Python
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  kind: identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'
+---
+id: exclusive-bind.c
+language: C
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  kind: identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'
+---
+id: exclusive-bind.cpp
+language: Cpp
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  kind: identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'
+---
+id: exclusive-bind.go
+language: Go
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  any:
+    - kind: identifier
+    - kind: field_identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'
+---
+id: exclusive-bind.java
+language: Java
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  kind: identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'
+---
+id: exclusive-bind.rust
+language: Rust
+severity: warning
+message: "a port one instance must own is bound exclusively"
+rule:
+  kind: identifier
+  regex: '^SO_REUSE(ADDR|PORT)$'

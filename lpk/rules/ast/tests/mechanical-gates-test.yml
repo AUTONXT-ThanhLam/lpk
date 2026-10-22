@@ -1,0 +1,50 @@
+id: mechanical-gates.javascript
+valid:
+  - |-
+      // @ts-expect-error: legacy typing
+      const a = 1
+  - |-
+      /* eslint-disable no-console */
+      console.log(1)
+  - "const s = \"@ts-nocheck\""
+invalid:
+  - |-
+      // @ts-nocheck
+      const a = 1
+  - |-
+      /* eslint-disable */
+      console.log(1)
+---
+id: mechanical-gates.typescript
+valid:
+  - |-
+      // @ts-expect-error: legacy typing
+      const a = 1
+  - |-
+      /* eslint-disable no-console */
+      console.log(1)
+  - "const s = \"@ts-nocheck\""
+invalid:
+  - |-
+      // @ts-nocheck
+      const a = 1
+  - |-
+      /* eslint-disable */
+      console.log(1)
+---
+id: mechanical-gates.tsx
+valid:
+  - |-
+      // @ts-expect-error: legacy typing
+      const a = 1
+  - |-
+      /* eslint-disable no-console */
+      console.log(1)
+  - "const s = \"@ts-nocheck\""
+invalid:
+  - |-
+      // @ts-nocheck
+      const a = 1
+  - |-
+      /* eslint-disable */
+      console.log(1)

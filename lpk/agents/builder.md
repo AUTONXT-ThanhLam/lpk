@@ -80,6 +80,9 @@ and report what conflicts instead of changing it.
 When the lead gives you your peers' agent ids, and your work touches a file or contract a peer owns,
 or you find something that changes its work, tell that peer directly with SendMessage.
 
+Consult the advisor, when the session has one, after a second failed attempt at anything and
+before you report done; nowhere else, since each consult rereads your whole transcript at Opus price.
+
 ## Report
 
 Answer in this shape and nothing else:

@@ -1,0 +1,23 @@
+id: c-unsafe-memory.c
+language: C
+severity: warning
+message: "C and C++ never write past a buffer"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: identifier
+    regex: '^(strcpy|strcat|sprintf|vsprintf|gets)$'
+---
+id: c-unsafe-memory.cpp
+language: Cpp
+severity: warning
+message: "C and C++ never write past a buffer"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    any:
+      - kind: identifier
+      - kind: qualified_identifier
+    regex: '^(std::)?(strcpy|strcat|sprintf|vsprintf|gets)$'

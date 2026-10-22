@@ -1,0 +1,74 @@
+id: stale-async.javascript
+language: JavaScript
+severity: warning
+message: "late results never overwrite newer state"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: $P.then(($R) => $F($$$A))
+    - pattern: $P.then($R => $F($$$A))
+    - pattern: $P.then(() => $F($$$A))
+constraints:
+  F:
+    regex: '^set[A-Z]\w*$'
+---
+id: stale-async.typescript
+language: TypeScript
+severity: warning
+message: "late results never overwrite newer state"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: $P.then(($R) => $F($$$A))
+    - pattern: $P.then($R => $F($$$A))
+    - pattern: $P.then(() => $F($$$A))
+constraints:
+  F:
+    regex: '^set[A-Z]\w*$'
+---
+id: stale-async.tsx
+language: Tsx
+severity: warning
+message: "late results never overwrite newer state"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: $P.then(($R) => $F($$$A))
+    - pattern: $P.then($R => $F($$$A))
+    - pattern: $P.then(() => $F($$$A))
+constraints:
+  F:
+    regex: '^set[A-Z]\w*$'

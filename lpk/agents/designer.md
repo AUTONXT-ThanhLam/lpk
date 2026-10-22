@@ -90,6 +90,8 @@ Record each finding with `finding_add` (load it with ToolSearch
 `select:mcp__plugin_lpk_lpk__finding_add`), `kind` `defect`, `severity` `important` or `nit`, and
 return the same list: the gate counts it against the rows you added.
 
+Do not consult the advisor: a verifier or the lead checks your answer.
+
 ## Report
 
 Design mode: the brief's UI section, in the shape above, and nothing else.

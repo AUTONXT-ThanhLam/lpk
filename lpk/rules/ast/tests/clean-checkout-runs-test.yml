@@ -1,0 +1,50 @@
+id: clean-checkout-runs.javascript
+valid:
+  - "const dbPath = path.join(__dirname, \"data\", \"app.db\")"
+  - "const dbPath = process.env.DB_PATH"
+  - "const a = \"app.db\""
+  - "const a = \"/var/lib/app/app.db\""
+  - "load(\"data/seed.json\")"
+invalid:
+  - "const dbPath = \"data/app.db\""
+  - "const seed = './fixtures/seed.json'"
+  - "function open(file = \"data/cache.sqlite\") {}"
+  - "config.path = \"data/users.csv\""
+---
+id: clean-checkout-runs.typescript
+valid:
+  - "const dbPath = path.join(__dirname, \"data\", \"app.db\")"
+  - "const dbPath = process.env.DB_PATH"
+  - "const a = \"app.db\""
+  - "const a = \"/var/lib/app/app.db\""
+  - "load(\"data/seed.json\")"
+invalid:
+  - "const dbPath = \"data/app.db\""
+  - "const seed = './fixtures/seed.json'"
+  - "function open(file = \"data/cache.sqlite\") {}"
+  - "config.path = \"data/users.csv\""
+---
+id: clean-checkout-runs.tsx
+valid:
+  - "const dbPath = path.join(__dirname, \"data\", \"app.db\")"
+  - "const dbPath = process.env.DB_PATH"
+  - "const a = \"app.db\""
+  - "const a = \"/var/lib/app/app.db\""
+  - "load(\"data/seed.json\")"
+invalid:
+  - "const dbPath = \"data/app.db\""
+  - "const seed = './fixtures/seed.json'"
+  - "function open(file = \"data/cache.sqlite\") {}"
+  - "config.path = \"data/users.csv\""
+---
+id: clean-checkout-runs.python
+valid:
+  - "DB = os.path.join(os.path.dirname(__file__), \"data\", \"app.db\")"
+  - "DB = \"app.db\""
+  - "data = load(\"data/seed.json\")"
+invalid:
+  - "DB_PATH = \"data/app.db\""
+  - |-
+      def open_db(path="data/cache.sqlite"):
+          pass
+  - "conn = connect(path=\"data/app.db\")"

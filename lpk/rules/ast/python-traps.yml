@@ -1,0 +1,36 @@
+id: python-traps.python
+language: Python
+severity: warning
+message: "Python's silent traps are absent"
+rule:
+  any:
+    - any:
+        - kind: default_parameter
+        - kind: typed_default_parameter
+      has:
+        field: value
+        any:
+          - kind: list
+          - kind: dictionary
+          - kind: set
+          - kind: list_comprehension
+          - kind: dictionary_comprehension
+          - kind: set_comprehension
+          - pattern: set()
+          - pattern: dict()
+          - pattern: list()
+    - kind: except_clause
+      not:
+        has:
+          not:
+            any:
+              - kind: block
+              - kind: comment
+              - regex: '^(except|:)$'
+    - pattern: yaml.load($$$A)
+      not:
+        has:
+          stopBy: end
+          regex: '^(yaml\.)?C?SafeLoader$'
+    - pattern: pickle.load($$$A)
+    - pattern: pickle.loads($$$A)

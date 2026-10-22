@@ -1,0 +1,59 @@
+id: degenerate-input.javascript
+valid:
+  - "const [head] = line.split(\",\")"
+  - "const first = line.split(\",\")[0]"
+  - "const parts = line.split(\",\")"
+invalid:
+  - "const v = line.split(\"=\")[1]"
+  - "const host = url.split(\"/\")[2]"
+---
+id: degenerate-input.typescript
+valid:
+  - "const [head] = line.split(\",\")"
+  - "const first = line.split(\",\")[0]"
+  - "const parts = line.split(\",\")"
+invalid:
+  - "const v = line.split(\"=\")[1]"
+  - "const host = url.split(\"/\")[2]"
+---
+id: degenerate-input.tsx
+valid:
+  - "const [head] = line.split(\",\")"
+  - "const first = line.split(\",\")[0]"
+  - "const parts = line.split(\",\")"
+invalid:
+  - "const v = line.split(\"=\")[1]"
+  - "const host = url.split(\"/\")[2]"
+---
+id: degenerate-input.python
+valid:
+  - "head = line.split(\",\")[0]"
+  - "name, _, value = line.partition(\"=\")"
+  - |-
+      for k, v in (data.get("meta") or {}).items():
+          pass
+  - "items = data.get(\"items\", [])"
+invalid:
+  - "value = line.split(\"=\")[1]"
+  - |-
+      for k, v in data.get("meta", {}).items():
+          pass
+  - "ids = payload.get(\"ids\", []).get(0)"
+---
+id: degenerate-input.java
+valid:
+  - "class A { String f(String s) { return s.split(\",\")[0]; } }"
+invalid:
+  - "class A { String f(String s) { return s.split(\"=\")[1]; } }"
+---
+id: degenerate-input.ruby
+valid:
+  - "v = line.split(\"=\")[0]"
+invalid:
+  - "v = line.split(\"=\")[1]"
+---
+id: degenerate-input.kotlin
+valid:
+  - "v = line.split(\"=\")[0]"
+invalid:
+  - "v = line.split(\"=\")[1]"

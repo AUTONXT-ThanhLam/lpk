@@ -1,0 +1,77 @@
+id: client-session.javascript
+language: JavaScript
+severity: warning
+message: "a browser session is stored safely, expires cleanly and reaches every request"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - any:
+        - pattern: localStorage.setItem($K, $V)
+        - pattern: $W.localStorage.setItem($K, $V)
+    - pattern: new EventSource($$$A)
+constraints:
+  K:
+    regex: '^[\x22\x27\x60][\w.-]*([Tt]oken|[Jj]wt|[Aa]uth)'
+---
+id: client-session.typescript
+language: TypeScript
+severity: warning
+message: "a browser session is stored safely, expires cleanly and reaches every request"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - any:
+        - pattern: localStorage.setItem($K, $V)
+        - pattern: $W.localStorage.setItem($K, $V)
+    - pattern: new EventSource($$$A)
+constraints:
+  K:
+    regex: '^[\x22\x27\x60][\w.-]*([Tt]oken|[Jj]wt|[Aa]uth)'
+---
+id: client-session.tsx
+language: Tsx
+severity: warning
+message: "a browser session is stored safely, expires cleanly and reaches every request"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - any:
+        - pattern: localStorage.setItem($K, $V)
+        - pattern: $W.localStorage.setItem($K, $V)
+    - pattern: new EventSource($$$A)
+constraints:
+  K:
+    regex: '^[\x22\x27\x60][\w.-]*([Tt]oken|[Jj]wt|[Aa]uth)'

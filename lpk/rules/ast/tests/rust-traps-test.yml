@@ -1,0 +1,9 @@
+id: rust-traps.rust
+valid:
+  - "static COUNT: AtomicU32 = AtomicU32::new(0);"
+  - "impl Send for Foo {}"
+  - "unsafe impl Clone for Foo { fn clone(&self) -> Self { todo!() } }"
+invalid:
+  - "static mut COUNT: u32 = 0;"
+  - "unsafe impl Send for Foo {}"
+  - "unsafe impl<T> Sync for Wrapper<T> {}"

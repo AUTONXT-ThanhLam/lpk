@@ -1,0 +1,118 @@
+id: route-authz.javascript
+language: JavaScript
+severity: warning
+message: "every route and tool checks who is calling"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^get$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+              regex: '^[\x60"'']/[^\x60"'']*(logout|signout|sign-out|revoke|delete|remove|disable)'
+    - pattern: $X.update($B)
+    - pattern: Object.assign($T, $C)
+constraints:
+  B:
+    regex: '^((req|request)\.body|updated_data|payload)$'
+  C:
+    regex: '^(req|request)\.body$'
+---
+id: route-authz.typescript
+language: TypeScript
+severity: warning
+message: "every route and tool checks who is calling"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^get$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+              regex: '^[\x60"'']/[^\x60"'']*(logout|signout|sign-out|revoke|delete|remove|disable)'
+    - pattern: $X.update($B)
+    - pattern: Object.assign($T, $C)
+constraints:
+  B:
+    regex: '^((req|request)\.body|updated_data|payload)$'
+  C:
+    regex: '^(req|request)\.body$'
+---
+id: route-authz.tsx
+language: Tsx
+severity: warning
+message: "every route and tool checks who is calling"
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^get$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              any:
+                - kind: string
+                - kind: template_string
+              regex: '^[\x60"'']/[^\x60"'']*(logout|signout|sign-out|revoke|delete|remove|disable)'
+    - pattern: $X.update($B)
+    - pattern: Object.assign($T, $C)
+constraints:
+  B:
+    regex: '^((req|request)\.body|updated_data|payload)$'
+  C:
+    regex: '^(req|request)\.body$'
+---
+id: route-authz.python
+language: Python
+severity: warning
+message: "every route and tool checks who is calling"
+rule:
+  any:
+    - kind: decorator
+      regex: '^@(app|router)\.websocket\('
+    - pattern: add_websocket_route($$$A)
+    - pattern: $O.add_websocket_route($$$A)
+    - kind: call
+      all:
+        - has:
+            field: function
+            kind: attribute
+            has:
+              field: attribute
+              regex: '^get$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              kind: string
+              regex: '^[rRbBuU]?[`"'']/[^`"'']*(logout|signout|sign-out|revoke|delete|remove|disable)'
+    - pattern: $X.update($B)
+constraints:
+  B:
+    regex: '^((req|request)\.body|updated_data|payload)$'

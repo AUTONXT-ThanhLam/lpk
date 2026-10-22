@@ -1,0 +1,31 @@
+id: no-dead-code.javascript
+language: JavaScript
+severity: warning
+message: "nothing ships that does nothing"
+rule:
+  kind: comment
+  regex: '^//\s*((const|let|var)\s+\w+\s*=|(await|return)\s+[\w.]+\(.*\)\s*;?\s*$|import\s.+\bfrom\s+[\x22\x27])'
+---
+id: no-dead-code.typescript
+language: TypeScript
+severity: warning
+message: "nothing ships that does nothing"
+rule:
+  kind: comment
+  regex: '^//\s*((const|let|var)\s+\w+\s*=|(await|return)\s+[\w.]+\(.*\)\s*;?\s*$|import\s.+\bfrom\s+[\x22\x27])'
+---
+id: no-dead-code.tsx
+language: Tsx
+severity: warning
+message: "nothing ships that does nothing"
+rule:
+  kind: comment
+  regex: '^//\s*((const|let|var)\s+\w+\s*=|(await|return)\s+[\w.]+\(.*\)\s*;?\s*$|import\s.+\bfrom\s+[\x22\x27])'
+---
+id: no-dead-code.python
+language: Python
+severity: warning
+message: "nothing ships that does nothing"
+rule:
+  kind: comment
+  regex: '^#\s*(from\s+[\w.]+\s+import\s+\w|import\s+[\w.]+\s*$)'

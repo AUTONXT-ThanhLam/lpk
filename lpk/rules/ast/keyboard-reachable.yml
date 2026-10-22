@@ -1,0 +1,67 @@
+id: keyboard-reachable.javascript
+language: JavaScript
+severity: warning
+message: "every pointer action has a keyboard path"
+rule:
+  any:
+    - kind: jsx_opening_element
+    - kind: jsx_self_closing_element
+  all:
+    - has:
+        field: name
+        regex: '^(td|tr|div|span|li)$'
+    - has:
+        kind: jsx_attribute
+        has:
+          kind: property_identifier
+          regex: '^onClick$'
+    - not:
+        has:
+          kind: jsx_expression
+    - any:
+        - not:
+            has:
+              kind: jsx_attribute
+              has:
+                kind: property_identifier
+                regex: '^tabIndex$'
+        - not:
+            has:
+              kind: jsx_attribute
+              has:
+                kind: property_identifier
+                regex: '^onKey(Down|Up|Press)$'
+---
+id: keyboard-reachable.tsx
+language: Tsx
+severity: warning
+message: "every pointer action has a keyboard path"
+rule:
+  any:
+    - kind: jsx_opening_element
+    - kind: jsx_self_closing_element
+  all:
+    - has:
+        field: name
+        regex: '^(td|tr|div|span|li)$'
+    - has:
+        kind: jsx_attribute
+        has:
+          kind: property_identifier
+          regex: '^onClick$'
+    - not:
+        has:
+          kind: jsx_expression
+    - any:
+        - not:
+            has:
+              kind: jsx_attribute
+              has:
+                kind: property_identifier
+                regex: '^tabIndex$'
+        - not:
+            has:
+              kind: jsx_attribute
+              has:
+                kind: property_identifier
+                regex: '^onKey(Down|Up|Press)$'

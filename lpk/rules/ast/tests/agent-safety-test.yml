@@ -1,0 +1,43 @@
+id: agent-safety.javascript
+valid:
+  - "eval(\"1 + 1\")"
+  - "child.exec(cmd)"
+  - "const v = JSON.parse(text)"
+  - "const f = Function.prototype.bind"
+invalid:
+  - "const out = eval(code)"
+  - "execSync(cmd, { stdio: \"inherit\" })"
+  - "exec(`ls ${dir}`)"
+  - "const f = new Function(\"a\", \"b\", body)"
+---
+id: agent-safety.typescript
+valid:
+  - "eval(\"1 + 1\")"
+  - "child.exec(cmd)"
+  - "const v = JSON.parse(text)"
+  - "const f = Function.prototype.bind"
+invalid:
+  - "const out = eval(code)"
+  - "execSync(cmd, { stdio: \"inherit\" })"
+  - "exec(`ls ${dir}`)"
+  - "const f = new Function(\"a\", \"b\", body)"
+---
+id: agent-safety.tsx
+valid:
+  - "eval(\"1 + 1\")"
+  - "child.exec(cmd)"
+  - "const v = JSON.parse(text)"
+  - "const f = Function.prototype.bind"
+invalid:
+  - "const out = eval(code)"
+  - "execSync(cmd, { stdio: \"inherit\" })"
+  - "exec(`ls ${dir}`)"
+  - "const f = new Function(\"a\", \"b\", body)"
+---
+id: agent-safety.python
+valid:
+  - "x = eval(\"1 + 1\")"
+  - "x = ast.literal_eval(text)"
+invalid:
+  - "result = eval(expr)"
+  - "exec(model_output)"

@@ -1,0 +1,95 @@
+id: partial-write.javascript
+language: JavaScript
+severity: warning
+message: "a write that stops halfway or runs twice stays valid"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: member_expression
+    has:
+      field: property
+      regex: '^\$transaction$'
+---
+id: partial-write.typescript
+language: TypeScript
+severity: warning
+message: "a write that stops halfway or runs twice stays valid"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: member_expression
+    has:
+      field: property
+      regex: '^\$transaction$'
+---
+id: partial-write.tsx
+language: Tsx
+severity: warning
+message: "a write that stops halfway or runs twice stays valid"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: member_expression
+    has:
+      field: property
+      regex: '^\$transaction$'
+---
+id: partial-write.python
+language: Python
+severity: warning
+message: "a write that stops halfway or runs twice stays valid"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: $S.begin_nested($$$A)
+    - pattern: begin_nested($$$A)

@@ -1,0 +1,27 @@
+id: ci-workflow-trust.yaml
+language: Yaml
+severity: warning
+message: "a workflow never runs untrusted text or code with write access"
+files:
+  - "**/.github/workflows/*.yml"
+  - "**/.github/workflows/*.yaml"
+rule:
+  any:
+    - kind: block_mapping_pair
+      all:
+        - has:
+            field: key
+            regex: '^(run|script)$'
+        - has:
+            field: value
+            regex: '\$\{\{\s*github\.(event\.(pull_request|issue|comment|review|review_comment|head_commit|commits|discussion|workflow_run|release|pages|label|changes)[\w.\[\]*]*(title|body|message|name|label|ref)|head_ref)\b'
+    - kind: string_scalar
+      regex: '^pull_request_target$'
+    - kind: block_mapping_pair
+      all:
+        - has:
+            field: key
+            regex: '^permissions$'
+        - has:
+            field: value
+            regex: '^write-all$'

@@ -1,0 +1,161 @@
+id: degenerate-input.javascript
+language: JavaScript
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'
+---
+id: degenerate-input.typescript
+language: TypeScript
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'
+---
+id: degenerate-input.tsx
+language: Tsx
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'
+---
+id: degenerate-input.python
+language: Python
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: $S.split($$$A)[$I]
+    - pattern: $D.get($K, $E).$M($$$B)
+constraints:
+  I:
+    regex: '^[1-9]'
+  E:
+    regex: '^(\{\}|\[\])$'
+  K:
+    kind: string
+  M:
+    regex: '^(items|keys|values|get)$'
+---
+id: degenerate-input.java
+language: Java
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'
+---
+id: degenerate-input.ruby
+language: Ruby
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'
+---
+id: degenerate-input.kotlin
+language: Kotlin
+severity: warning
+message: "edge-shaped input has defined behaviour"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $S.split($$$A)[$I]
+constraints:
+  I:
+    regex: '^[1-9]'

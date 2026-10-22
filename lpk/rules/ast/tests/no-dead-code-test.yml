@@ -1,0 +1,84 @@
+id: no-dead-code.javascript
+valid:
+  - |-
+      // Return the cached value when it is fresh
+      const a = 1
+  - |-
+      // const is a keyword
+      const a = 1
+  - "const s = \"// const a = 1\""
+invalid:
+  - |-
+      // const legacy = loadLegacy()
+      const a = 1
+  - |-
+      // await refresh(token)
+      const a = 1
+  - |-
+      // return compute(x)
+      const a = 1
+  - |-
+      // import { x } from './x'
+      const a = 1
+---
+id: no-dead-code.typescript
+valid:
+  - |-
+      // Return the cached value when it is fresh
+      const a = 1
+  - |-
+      // const is a keyword
+      const a = 1
+  - "const s = \"// const a = 1\""
+invalid:
+  - |-
+      // const legacy = loadLegacy()
+      const a = 1
+  - |-
+      // await refresh(token)
+      const a = 1
+  - |-
+      // return compute(x)
+      const a = 1
+  - |-
+      // import { x } from './x'
+      const a = 1
+---
+id: no-dead-code.tsx
+valid:
+  - |-
+      // Return the cached value when it is fresh
+      const a = 1
+  - |-
+      // const is a keyword
+      const a = 1
+  - "const s = \"// const a = 1\""
+invalid:
+  - |-
+      // const legacy = loadLegacy()
+      const a = 1
+  - |-
+      // await refresh(token)
+      const a = 1
+  - |-
+      // return compute(x)
+      const a = 1
+  - |-
+      // import { x } from './x'
+      const a = 1
+---
+id: no-dead-code.python
+valid:
+  - |-
+      # Import the helpers lazily
+      x = 1
+  - |-
+      import os
+      x = 1
+invalid:
+  - |-
+      # import legacy
+      x = 1
+  - |-
+      # from legacy import load
+      x = 1

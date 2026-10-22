@@ -1,0 +1,20 @@
+id: ci-runs-it.yaml
+language: Yaml
+severity: warning
+message: "CI runs the new checks and still starts"
+rule:
+  kind: block_mapping_pair
+  all:
+    - has:
+        field: key
+        regex: '^continue-on-error$'
+    - has:
+        field: value
+        regex: '^true$'
+---
+id: ci-runs-it.bash
+language: Bash
+severity: warning
+message: "CI runs the new checks and still starts"
+rule:
+  pattern: $A || true

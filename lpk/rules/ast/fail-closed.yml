@@ -1,0 +1,232 @@
+id: fail-closed.javascript
+language: JavaScript
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        stopBy: end
+        any:
+          - kind: return_statement
+            has:
+              kind: 'true'
+          - pattern: next()
+    - pattern: process.env.$N || $D
+    - pattern: process.env.$N ?? $D
+    - pattern: process.env[$N] || $D
+    - pattern: process.env[$N] ?? $D
+constraints:
+  N:
+    regex: 'SECRET|TOKEN|KEY|PASSWORD|AUTH'
+---
+id: fail-closed.typescript
+language: TypeScript
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        stopBy: end
+        any:
+          - kind: return_statement
+            has:
+              kind: 'true'
+          - pattern: next()
+    - pattern: process.env.$N || $D
+    - pattern: process.env.$N ?? $D
+    - pattern: process.env[$N] || $D
+    - pattern: process.env[$N] ?? $D
+constraints:
+  N:
+    regex: 'SECRET|TOKEN|KEY|PASSWORD|AUTH'
+---
+id: fail-closed.tsx
+language: Tsx
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        stopBy: end
+        any:
+          - kind: return_statement
+            has:
+              kind: 'true'
+          - pattern: next()
+    - pattern: process.env.$N || $D
+    - pattern: process.env.$N ?? $D
+    - pattern: process.env[$N] || $D
+    - pattern: process.env[$N] ?? $D
+constraints:
+  N:
+    regex: 'SECRET|TOKEN|KEY|PASSWORD|AUTH'
+---
+id: fail-closed.python
+language: Python
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: except_clause
+      has:
+        stopBy: end
+        kind: return_statement
+        regex: '^return\s+True$'
+    - pattern: os.environ.get($N, $D)
+    - pattern: os.getenv($N, $D)
+    - pattern: os.environ.get($N) or $D
+    - pattern: os.getenv($N) or $D
+    - pattern: os.environ[$N] or $D
+constraints:
+  N:
+    regex: 'SECRET|TOKEN|KEY|PASSWORD|AUTH'
+---
+id: fail-closed.java
+language: Java
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    stopBy: end
+    kind: return_statement
+    regex: '^return\s+true\s*;$'
+---
+id: fail-closed.csharp
+language: CSharp
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    stopBy: end
+    kind: return_statement
+    regex: '^return\s+true\s*;$'
+---
+id: fail-closed.php
+language: Php
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - kind: catch_clause
+      has:
+        stopBy: end
+        kind: return_statement
+        regex: '^return\s+true\s*;$'
+    - pattern: getenv($N) ?? $D
+    - pattern: 'getenv($N) ?: $D'
+    - pattern: getenv($N) || $D
+constraints:
+  N:
+    regex: 'SECRET|TOKEN|KEY|PASSWORD|AUTH'
+---
+id: fail-closed.kotlin
+language: Kotlin
+severity: warning
+message: "a missing or failing check refuses"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_block
+  has:
+    stopBy: end
+    kind: jump_expression
+    regex: '^return\s+true$'

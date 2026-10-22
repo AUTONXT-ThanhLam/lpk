@@ -1,0 +1,28 @@
+id: go-traps.go
+valid:
+  - |-
+      package main
+      func f() error {
+      	return fmt.Errorf("load %s: %w", name, err)
+      }
+  - |-
+      package main
+      func f() error {
+      	return fmt.Errorf("bad input %v", input)
+      }
+  - |-
+      package main
+      func f() error {
+      	return errors.New("boom")
+      }
+invalid:
+  - |-
+      package main
+      func f() error {
+      	return fmt.Errorf("load %s: %v", name, err)
+      }
+  - |-
+      package main
+      func f() error {
+      	return fmt.Errorf("failed: %v", dbErr)
+      }

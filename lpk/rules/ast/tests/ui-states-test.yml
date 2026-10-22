@@ -1,0 +1,19 @@
+id: ui-states.javascript
+valid:
+  - "const a = <button onClick={() => save()}>Save</button>"
+  - "const a = <button onClick={handleSave}>Save</button>"
+  - "const a = <button onClick={() => { void save() }}>Save</button>"
+  - "const a = <button onSubmit={async () => {}}>Save</button>"
+invalid:
+  - "const a = <button onClick={async () => { await save() }}>Save</button>"
+  - "const a = <button onClick={async function () { await save() }}>Save</button>"
+---
+id: ui-states.tsx
+valid:
+  - "const a = <button onClick={() => save()}>Save</button>"
+  - "const a = <button onClick={handleSave}>Save</button>"
+  - "const a = <button onClick={() => { void save() }}>Save</button>"
+  - "const a = <button onSubmit={async () => {}}>Save</button>"
+invalid:
+  - "const a = <button onClick={async () => { await save() }}>Save</button>"
+  - "const a = <button onClick={async function () { await save() }}>Save</button>"
