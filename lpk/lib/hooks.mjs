@@ -117,11 +117,16 @@ export function beforeStop(input) {
   return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: `lpk: this change is not verified on the current tree (${why}). Before it is handed over, run \`lpk verify\` and fix what it reports.` } };
 }
 
-export function builderBeforeGo(input) {
-  if (!/^(Agent|Task)$/.test(input.tool_name || '') || input.tool_input?.subagent_type !== 'lpk:builder') return null;
+const GENERAL = new Set([undefined, '', 'general-purpose']);
+const refuse = (why) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } });
+export function spawnRule(input) {
+  if (!/^(Agent|Task)$/.test(input.tool_name || '')) return null;
+  const type = input.tool_input?.subagent_type;
   const { repo, run } = runOf(input, false);
-  if (!run || run.lane !== 'full' || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'lpk: no builder before go: this Full-lane run has no `lpk go`; review the Design Brief, and run `lpk go` when the owner says go.' } };
+  if (!run) return null;
+  if (GENERAL.has(type)) return refuse('lpk: this session holds an lpk run, and a general agent works without its rules on the lead\'s model; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
+  if (type !== 'lpk:builder' || run.lane !== 'full' || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
+  return refuse('lpk: no builder before go: this Full-lane run has no `lpk go`; review the Design Brief, and run `lpk go` when the owner says go.');
 }
 
 // Every message the owner sends during the run is kept verbatim for lpk:learn. What the harness
