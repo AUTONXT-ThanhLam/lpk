@@ -1,7 +1,7 @@
 ---
 name: plan-sim
 description: Walks a Design Brief step by step as lpk would run it (each slice, each gate, the rebase, the review net, the fix round, the proof, the handover and a resume) and names where the run would deadlock, pass a gate wrongly, lose work or blow the owner's time bound, with a wall-time estimate per stage. Give it the brief path, brief.json, the repo, the base branch, the lpk skill directory and the owner's time bound. It reads and runs read-only commands; it never edits.
-model: opus
+model: sonnet
 effort: high
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 background: true

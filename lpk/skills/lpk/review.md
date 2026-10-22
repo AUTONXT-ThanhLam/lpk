@@ -84,8 +84,9 @@ other.
 2. One root cause is one commit. It changes only what that cause needs and adds a test that fails
    on `fix^` and passes on `fix`. The builder's report names the finding ids each commit closes;
    the commit message never does, because ledger ids mean nothing in the repo's history.
-3. Start one `lpk:builder` per group of root causes whose files do not overlap; causes that share a
-   file go to one builder. Each works in its own worktree off the reviewed commit
+3. Give each group of root causes whose files do not overlap to one `lpk:builder`; causes that share a
+   file go to one builder. A group inside one slice's files goes to that slice's builder (SendMessage):
+   it already holds the code, where a new builder spends about 55 turns finding it. Each works in its own worktree off the reviewed commit
    (`lpk run worktree ../<repo>-fix-<n> <reviewed commit> --branch <branch>-fix-<n>`), all started in one
    message. Size the groups from the slowest cause, so no builder is the long pole. A finding
    confirmed later goes to the builder whose commit fixes its cause (SendMessage), else to the one

@@ -3,6 +3,7 @@ name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, reviews its own slice, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
 model: sonnet
 effort: high
+maxTurns: 200
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: blue
 ---
@@ -16,7 +17,8 @@ slices, so a file outside your slice is a conflict.
 
 ## Start with what will judge the slice
 
-- the brief, the contract for your slice (types, routes, signatures, events) and its tests;
+- the brief, the contract for your slice (types, routes, signatures, events) and its tests, and the
+  design review's notes on your files in `notes.md` beside the brief;
 - the repo profile's conventions (how this repo handles errors, logs, calls other services, names
   things and writes tests, each with a file to copy from);
 - `lpk rules --repo <worktree> --base <base>`: the rules whose globs match your files, and the

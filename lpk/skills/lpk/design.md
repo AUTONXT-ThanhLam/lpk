@@ -97,7 +97,7 @@ Create the branch, named the way the repo names them, then start these in the ba
   `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
   suite's time, once known) and `round: 1`. It runs five design critics (one focus each), the plan
   simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
-  or Low;
+  or Low; a High that rests only on inference counts as Medium;
 - `lpk:designer` in design mode, when the change touches a screen.
 
 When the review ends, start one `lpk:test-author` per slice, all in one message, each with the repo
@@ -105,10 +105,11 @@ When the review ends, start one `lpk:test-author` per slice, all in one message,
 failure rows and files; slices whose tests share a test file, helper, fixture, database or port
 share one test author. Tests written during the review were rewritten three times in a past run.
 
-The design is reviewed in rounds, at most three: from round 2 on, the critics read only the changed
-lines and what they reach. After each round:
+The design is reviewed in rounds, at most three. From round 2 on, pass `open` (the previous round's
+High findings) and `changed`: only the angles with an open High run again, each checking its Highs
+are closed and reading the changed lines and what they reach. After each round:
 1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
-   High's cause, and what changes>"`.
+   High's cause, and what changes>"`, and append its Mediums and Lows to `notes.md` beside the brief.
 2. At any verdict and rating, close each `reuse-first` finding (the `reuse` critic's, or one naming
    the rule) in the brief before the build: the helper or the dependency's API takes over the
    mechanism, or the brief cites the run that shows where it falls short.
@@ -123,19 +124,19 @@ lines and what they reach. After each round:
    where it was seen: give it that mechanism now, and name it in the record. A High that is wrong is
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument.
-   Fix a Medium or Low when it is cheap, else list it for the report. Before editing, copy the brief
-   to `brief.r<n>.md` beside it (or hand the revision to `lpk:staff`); then run round n+1 with
-   `changed` set to the lines the revision changed, from
-   `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
-5. `redesign`: a design critic's High sits on lines the previous revision changed, so the design
-   is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a
+   A High only the owner can settle (the time bound, the scope) is one question to them. Mediums and
+   Lows stay in `notes.md`, never in a revision. A revision grows the brief by at most a tenth
+   (`wc -w`): briefs that grew 40% a round drew new Highs.
+   Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
+   round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
+5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the
+   design is wrong at its root. When it sits in a hand-built mechanism, first ask whether the repo or a
    dependency does it. Choose a different approach, from the briefs the duel did not take, the
    alternatives the brief weighed or a new one, never a third patch, and review it as round 1 again
    (no `changed`). A second `redesign` in one review is answered as `last`.
-6. `last`: round 3 or later still has Highs. Answer each in the brief with a run, or carry it into
-   the build as a named risk with the test that targets it, list it for the report, and end review.
-7. A High raised again after the brief answered it with a run is still disputed: take the side the
-   run supports, or the safer one when no run settles it, log it, and keep reviewing the rest.
+6. `last`: round 3 still has Highs. Answer each with a run, or carry it into the build as a named risk with its test.
+7. A High raised again after the brief answered it with a run: take the side the run supports, or
+   the safer one, and log it.
 
 When the review has ended and the owner says go (or is away), start the run (`build.md` in this
 skill's directory), then run `lpk go`: it records the brief's checks, so `lpk gates` can show what
@@ -144,6 +145,5 @@ still under review was thrown away three times in a past run. Read each test the
 before you build on it: it must drive the real entry point, fail for the right reason and name the
 mistake it catches.
 
-**Done when** a design review round returned `pass` or `last`, every
-requirement has a scenario or failure row that proves it, every scenario has a test or a command
-shown red on the base, and `lpk go` recorded the checks.
+**Done when** a design review round returned `pass` or `last`, every requirement has a scenario or
+failure row that proves it, every scenario has a test or a command red on the base, and `lpk go` ran.

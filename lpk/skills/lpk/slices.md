@@ -10,7 +10,7 @@ slice's tests into its worktree and commits them with the code that makes them p
 For each slice create a worktree from the branch head
 (`lpk run worktree ../<repo>-<slice> HEAD --branch <branch>-<slice>`, which binds it to your run) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its files, contract
-and tests, the test command, the brief and the profile path. You are notified as each one finishes.
+and tests, the test command, the brief, `notes.md` beside it and the profile path. You are notified as each one finishes.
 When the slice changes a function, field or output shape that other files read, also give it a map:
 `lpk map <each name> > <file outside the repo>`, never read by you, and its path. A builder given
 the map reads the lines it lists instead of searching the repo; on a slice of eight files that cut
