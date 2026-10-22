@@ -13,6 +13,7 @@ one `catalog.md` describes.
 
 ### atomic-transition
 - when: added `(\battempts?\b|retr(y|ies)_?count|json\.dump\(|writeFile(Sync)?\()`
+- find: `\battempts\s*\+\s*1\b`
 
 ### client-session: a browser session is stored safely, expires cleanly and reaches every request
 - blocks: medium
@@ -31,6 +32,7 @@ one `catalog.md` describes.
 
 ### no-silent-failure
 - find: `\]\s*&&\s*[^|&\n]+\|\|\s*\S` in path `^(?!.*\.github/workflows/).*(Makefile|\.mk|Dockerfile[^/]*|package\.json|\.ya?ml)$`
+- find: `\]\s*&&\s*[^|&\n]+\|\|\s*\S`
 
 ### timeouts-retries
 - when: added `(readTx|writeTx|executeRead|executeWrite|session\.run\(|createTransport\(|sendMail\(|httpx\.(Async)?Client\(|requests\.(get|post|put|patch|delete)\(|urlopen\(|WAIT_FOREVER)`
@@ -65,6 +67,7 @@ one `catalog.md` describes.
 ### secret-egress
 - when: path `(^|/)Dockerfile[^/]*$`
 - find: `^\s*COPY\s+(--\S+\s+)*\S*\.env(\.\w+)?\s`
+- find: `\.json\(\s*\{\s*error:\s*\w+\.message|detail\s*=\s*str\(\s*e\w*\s*\)`
 
 ### agent-safety
 - find: `type:\s*['"]\w+,\s`
@@ -76,6 +79,7 @@ one `catalog.md` describes.
 - find: `\b[a-z][a-z0-9+]*://[^\s:/@'"$]+:[^\s@/'"$]+@[\w.-]+`
 - find: `\bcp\s+\S*\.env\.example\s+\S*\.env\b`
 - find: `(PASSWORD|_AUTH)\w*['"]?\s*[:=]\s*['"]?(\w+/)?(password|admin|changeme|change-me|secret)\w*`
+- find: `(process\.env\.\w*(PASSWORD|_PW|SECRET|TOKEN|API_?KEY)\w*|os\.(environ\.get|getenv)\(\s*['"]\w*(PASSWORD|SECRET|TOKEN|API_?KEY)\w*['"]\)?)\s*(\?\?|\|\||,|\bor\b)\s*['"][^'"]+['"]`
 - rule: No credential literal, and no non-empty fallback for one, appears in source, config templates, compose files, ini files, seeds, migrations, tests or images. A missing credential stops startup with a message naming the variable and is never replaced by a dummy value; a placeholder from an example file never reaches a deployed environment; when a default credential is retired, hosts that still hold it are warned until it changes; a value that was ever committed is rotated.
 - check: grep the diff for credential names followed by `||`, `??`, `or` or a second `getenv` argument, and for `user:pass@` URLs; start the service with each credential unset and with the example env copied as-is. Repro: the line with the literal or fallback, and the service that starts or authenticates with it.
 

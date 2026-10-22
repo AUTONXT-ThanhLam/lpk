@@ -16,6 +16,8 @@ changes.
 ### dependency-pinned: a dependency names a version that cannot move under the build
 - blocks: medium
 - when: path `(^|/)(package\.json|Cargo\.toml|composer\.json|pom\.xml|build\.gradle(\.kts)?|requirements[^/]*\.txt|pyproject\.toml|go\.mod)$`
+- find: `"[\w@/.-]+"\s*:\s*"(latest|\*|x)"` in path `(^|/)(package|composer)\.json$`
+- find: `-SNAPSHOT\b` in path `(^|/)(pom\.xml|build\.gradle(\.kts)?)$`
 - rule: A new or changed dependency names a version or bounded range, never `latest`, `*`, a moving branch or a `-SNAPSHOT`, and the lockfile changes with it.
 - check: for each dependency line added, the version it resolves to and the lockfile hunk that records it. Repro: the line and the lockfile with no matching entry.
 - find: `-SNAPSHOT\b` in path `(^|/)build\.gradle$`

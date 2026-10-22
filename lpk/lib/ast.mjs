@@ -57,8 +57,10 @@ export function astScan(repo, paths) {
   return res;
 }
 
+const TEST_RULES = new Set(['tests-prove']);
+
 export function astCandidates(repo, files, only) {
-  const live = files.filter((f) => f.status !== 'deleted' && f.added.length && !TEST.test(f.path)
+  const live = files.filter((f) => f.status !== 'deleted' && f.added.length
     && (!NOT_CODE.test(f.path) || /\.ya?ml$/.test(f.path)) && (!only || only.includes(f.path)) && existsSync(join(repo, f.path)));
   const s = astScan(repo, live.map((f) => f.path));
   const byPath = new Map(live.map((f) => [f.path, f]));
@@ -68,7 +70,8 @@ export function astCandidates(repo, files, only) {
     const f = byPath.get(h.file) || byPath.get(relative(repo, resolve(repo, h.file)));
     const a = f?.added.find((x) => x.n >= h.range.start.line + 1 && x.n <= h.range.end.line + 1);
     const id = baseId(h.ruleId);
-    const key = a && `${id}|${f.path}|${a.n}`;
+    if (f && TEST.test(f.path) && !TEST_RULES.has(id)) continue;
+    const key = a &&`${id}|${f.path}|${a.n}`;
     if (!a || seen.has(key)) continue;
     seen.add(key);
     cands.push({ id, path: f.path, n: a.n, text: a.text.trim().slice(0, 160) });

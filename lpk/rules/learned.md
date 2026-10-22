@@ -44,6 +44,7 @@ Seen: tech lead review
 ### exclusive-bind: a port one instance must own is bound exclusively
 - blocks: medium
 - when: added `(SO_REUSE(ADDR|PORT)|\.bind\(\(|createSocket\(|\.listen\(\s*\d)`
+- find: `SO_REUSE(ADDR|PORT)`
 - rule: A socket that one instance must own is bound without `SO_REUSEADDR` or `SO_REUSEPORT` on UDP (with them a second binder succeeds and the kernel delivers every datagram to the last one), so a collision raises and is reported, never shared silently.
 - check: bind the port from two instances and send to it. Repro: both binds succeed and the first instance receives nothing with no log line.
 Seen: tech lead review

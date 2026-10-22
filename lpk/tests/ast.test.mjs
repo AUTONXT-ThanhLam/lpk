@@ -77,6 +77,14 @@ test('a changed file whose name starts with a dash does not hide the matches of 
   assert.match(out, /lpk-test-eval\s+src\/b\.js:1/);
 });
 
+test('a focused test added under a test path is reported while other rules stay quiet there', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
+  const repo = changed();
+  write(repo, 'tests/a.test.js', "it.only('a', () => {});\neval(q);\n");
+  const out = lpk(repo, '', 'check', '--base', 'HEAD').stdout;
+  assert.match(out, /tests-prove\s+tests\/a\.test\.js:1/);
+  assert.doesNotMatch(out, /lpk-test-eval\s+tests\/a\.test\.js/);
+});
+
 test('lpk rules --yield counts findings per rule by state, and --prune disables a learned rule that only drew drops', () => {
   const repo = repoWith('yield', { 'a.js': 'x\n' });
   const add = (id, ruleId) => JSON.stringify({ ev: 'add', finding: { id, run: 'r1', from: 'lpk:techlead', at: 'a..b', claim: 'c', repro: 'r', kind: 'rule', ruleId, severity: 'important' } });

@@ -37,6 +37,8 @@ needs.
 ### fail-closed: a missing or failing check refuses
 - blocks: high
 - when: added `(auth|token|permission|role|admin|lock|guard|allow|deny|policy|verify|quota|process\.env|os\.environ|getenv)`
+- find: `catch\s*(\([^)]*\))?\s*\{\s*return\s+(true|next\(\))|except\b[^:\n]*:\s*return\s+True\b` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
+- find: `(process\.env\.|getenv\(\s*['\"]|environ(\.get\(\s*|\[)['\"])\w*(SECRET|TOKEN|KEY|PASSWORD|AUTH)\w*['\"]?\]?\)?\s*(\|\||\?\?|,\s*['\"]|or\s)` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: When a check, its key or config, or the service it asks is missing, slow, failing or answers garbage, the protected action is refused with a clear error. It never proceeds as if allowed, and an auth check that becomes a no-op when its env var is unset is a defect even where older routes behave that way.
 - check: for each guard, state what happens when the dependency is unreachable, times out, answers 5xx, or the env var is unset. Repro: point the dependency at a closed port or unset the variable, and show the action still goes through.
 
@@ -51,6 +53,13 @@ needs.
 ### no-silent-failure: a failure never reads as success
 - blocks: high
 - when: always
+- find: `\.catch\(\s*(\(\s*\w*\s*\)|\w+)\s*=>\s*(undefined|null|void 0|false|\[\]|\{\s*\})\s*\)`
+- find: `catch\s*(\([^)]*\))?\s*\{\s*\}`
+- find: `^\s*(_\s*,\s*)*_\s*=\s*[\w.]+\(|^\s*let\s+_\s*=|\.ok\(\)\s*;|\brescue\s+nil\b|\btry\?\s`
+- find: `^\s*void\s+[\w.]+\(`
+- find: `except[^:\n]*:\s*(pass|\.\.\.)\s*$`
+- find: `\bcreate_task\(`
+- find: `Promise\.allSettled\(`
 - rule: An error reaches a caller, the user or a log with context; a failure never comes back as success, empty, default or "not found". Detached work is held and observed, and cleanup sits in `finally`.
 - check: for every new `catch`, `.catch`, `.then` without a rejection path, fire-and-forget promise, `create_task`, `allSettled`, fallback branch and error response, say what the caller sees on failure. Repro: make the call fail and show the success-looking result.
 
@@ -104,6 +113,7 @@ needs.
 ### secret-egress: secrets and personal data stay in
 - blocks: high
 - when: added `(token|secret|password|passwd|api_?key|credential|private|hash|console\.|logger\.|log\.(info|debug|warn|error)|export|backup|audit)`
+- find: `\b(console\.\w+|logger?\.\w+|log\.\w+|print)\(.*\b([Pp]assw(or)?d|[Ss]ecret|[Tt]oken(?!s\b)|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Cc]redential)s?\b(?!\s*(count|length|of|in a row))` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Credentials, hashes and personal data never leave through responses, exports, backups, audit records, logs, error text, client bundles, URLs or model prompts. Production refuses to store a secret in plaintext when its encryption key is missing.
 - check: trace each secret field to every serializer, log line and export. Repro: the response, export or log line that contains it.
 
@@ -143,6 +153,7 @@ needs.
 ### partial-results: a dropped part is reported
 - blocks: medium
 - when: added `(limit|slice\(|take|truncat|skip|ignor|\.filter\()`
+- find: `catch\s*(\([^)]*\))?\s*\{\s*continue\s*;?\s*\}|except\b[^:\n]*:\s*continue\b` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: When an operation drops, skips, truncates or ignores part of its input, the result says so, and what is kept is deterministic (sorted before the limit).
 - check: an input larger than the limit or with an ignored field. Repro: the call that returns success while part of it was lost.
 
@@ -157,6 +168,7 @@ needs.
 ### ci-runs-it: CI runs the new checks and still starts
 - blocks: high
 - when: path `(test|spec|__tests__|\.github/workflows|package\.json|pyproject|Makefile|tox\.ini|vitest|jest|playwright|tsconfig)`
+- find: `continue-on-error:\s*true|\|\|\s*true\b`
 - rule: New tests and scripts run in a CI job that starts, on the runtime version the dependencies need, also when the PR's base is not the default branch (a stacked PR whose base the gate skips). No gate is skipped, loosened or made non-blocking to pass, and tests avoid sleeps, wall-clock time, shared rows and fixed ports.
 - check: find each new test file or script in a CI command (`lpk facts` lists them) and read workflow contexts at the level they are used. Repro: the CI command list that never reaches the file.
 - find: `\|\|\s*true\b` in path `^(?!.*\.github/workflows/).*(Makefile|\.mk|Dockerfile[^/]*|package\.json|\.ya?ml)$`
