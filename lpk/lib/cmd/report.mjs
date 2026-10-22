@@ -40,9 +40,11 @@ export async function main(argv) {
   try {
     const ledger = ledgerFor(repo, run);
     const c = counts(ledger);
-    facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
-    const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
+    facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'deferred', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
+    const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
     if (born.length) facts.push(`Confirmed defects by the step they began in: ${born.map(([b, n]) => `${b} ${n}`).join(', ')}`);
+    const deferred = ledger.filter((f) => f.state === 'deferred');
+    if (deferred.length) facts.push(['Known limits, deferred by the owner\'s policy (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence}`)].join('\n'));
     const toRead = ledger.filter(needsOwner);
     if (toRead.length) facts.push(['For the owner to read, not blocking:', ...toRead.map(ruling)].join('\n'));
     const ran = {};

@@ -18,7 +18,7 @@ export function readRuns() {
   return readFileSync(runsFile(), 'utf8').split('\n').flatMap((l) => { try { return l.trim() ? [JSON.parse(l)] : []; } catch { return []; } });
 }
 
-const CONFIRMED = new Set(['confirmed', 'fixed']);
+const CONFIRMED = new Set(['confirmed', 'fixed', 'deferred']);
 
 // Per lens (`from`): findings raised, confirmed (fixed ones included), dropped, pre-existing,
 // duplicates, still open or unsettled, and confirmed-unique: confirmed with no duplicate of it

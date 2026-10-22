@@ -16,12 +16,12 @@ import { gitleaks } from './tools.mjs';
 
 export const MAX_SUBJECT = 72;
 
-// The commits a push would publish: what the upstream lacks, else what the default branch lacks.
-export function pushRange(repo) {
+// The commits a push would publish that the branch adds: what neither the upstream nor the default
+// branch nor a run's target holds, so commits a rebase brought in from the target are not the push's.
+export function pushRange(repo, targets = []) {
   const up = git(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], repo).trim();
-  if (up) return `${up}..HEAD`;
-  const def = defaultBranch(repo);
-  return def ? `${def}..HEAD` : '';
+  const known = [...new Set([up, defaultBranch(repo), ...targets].filter(Boolean))];
+  return known.length ? ['HEAD', ...known.map((r) => `^${r}`)] : '';
 }
 
 export function problems(repo, range) {
@@ -31,13 +31,12 @@ export function problems(repo, range) {
     if (/\\n/.test(c.subject)) out.push(`${c.sha} subject holds a literal \\n: "${c.subject}"`);
     if (c.merge) out.push(`${c.sha} is a merge commit; rebase onto the target branch instead (linear history)`);
   }
-  const [from] = range.split('..');
   const bin = gitleaks();
-  const gl = bin ? spawnSync(bin, ['git', '--no-banner', '--log-opts', `${from}..HEAD`, '--exit-code', '3', '--redact', '--report-format', 'json', '--report-path', '-'], { cwd: repo, encoding: 'utf8', maxBuffer: 1 << 26 }) : {};
+  const gl = bin ? spawnSync(bin, ['git', '--no-banner', '--log-opts', [range].flat().join(' '), '--exit-code', '3', '--redact', '--report-format', 'json', '--report-path', '-'], { cwd: repo, encoding: 'utf8', maxBuffer: 1 << 26 }) : {};
   if (gl.status === 3) {
     let found = [];
     try { found = JSON.parse(gl.stdout); } catch { /* the count below still says a secret was found */ }
-    out.push(`gitleaks found ${found.length || 'a'} secret(s) in ${range}:${found.slice(0, 12).map((f) => `\n  ${String(f.Commit).slice(0, 12)} ${f.File}:${f.StartLine} ${f.RuleID}`).join('')}`);
+    out.push(`gitleaks found ${found.length || 'a'} secret(s) in ${[range].flat().join(' ')}:${found.slice(0, 12).map((f) => `\n  ${String(f.Commit).slice(0, 12)} ${f.File}:${f.StartLine} ${f.RuleID}`).join('')}`);
   }
   return out;
 }
@@ -96,9 +95,11 @@ async function onPush(input, cmd) {
   if (!repo) return null;
   // Deleting a remote branch publishes no commit.
   if (/\s(--delete|-d)(\s|$)/.test(cmd)) return null;
+  const targets = [];
   for (const branch of pushedBranches(repo, cmd)) {
     const run = runForBranch(repo, branch);
     if (!run) continue;
+    targets.push(run.target);
     if (handedOver(repo, run, branch)) { const d = await gated(repo, { ...run, branch }, 'a push to a branch handed over for review', { ci: false }); if (d) return d; continue; }
     const code = (ref) => codeOfCommit(repo, ref).code;
     const base = git(['merge-base', run.target, 'HEAD'], repo).trim();
@@ -109,7 +110,7 @@ async function onPush(input, cmd) {
       return deny(`lpk: the owner has not granted draft pushes in this repo, and the delivery gates of run ${run.id} do not hold yet. Ask the owner before the first push; on their yes, \`lpk run grant draft-push --why "<their words>"\`, then push.`);
     }
   }
-  const range = pushRange(repo);
+  const range = pushRange(repo, targets);
   const found = range ? problems(repo, range) : [];
   return found.length ? deny(`lpk: this push would publish commits CI or the reviewer rejects. Fix them (reword or squash with an interactive-free rebase), then push again.\n- ${found.join('\n- ')}`) : null;
 }

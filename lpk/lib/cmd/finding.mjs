@@ -10,7 +10,10 @@ const USAGE = `usage:
   lpk finding get <id> [--repo <dir>]
   lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>"] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" [--fix "<how>"] [--repo <dir>]
+  lpk finding fixed <id> --closed-by owner --evidence "<the owner's words>" [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
+
+const closed = (f) => (f.state === 'deferred' ? `${f.id} deferred by the owner's policy: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
 
 export async function main(argv) {
   const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? undefined : argv[i + 1]; };
@@ -41,7 +44,7 @@ export async function main(argv) {
     }
     if (sub === 'fixed' && id) {
       const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), by: 'cli' });
-      return done(r, (f) => `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
+      return done(r, closed);
     }
   } catch (e) {
     console.error(`lpk: ${e.message}`);

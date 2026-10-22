@@ -116,7 +116,7 @@ export function siblings(repo, extra = []) {
 
 // Commits that would be pushed, with the facts a reviewer or CI checks on them.
 export function commits(repo, range) {
-  const out = git(['log', '--format=%H%x00%P%x00%s', range], repo);
+  const out = git(['log', '--format=%H%x00%P%x00%s', ...[range].flat()], repo);
   return out.split('\n').filter(Boolean).map((l) => {
     const [sha, parents, subject] = l.split('\0');
     return { sha: sha.slice(0, 12), subject, length: [...subject].length, merge: parents.split(' ').length > 1 };

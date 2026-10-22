@@ -98,14 +98,14 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   const fix = { id: 'F1', fix: 'guard closed', closedBy: 'test', evidence: 'guard.test fails on fix^, passes on fix', by: 'lpk:builder' };
   assert.match(markFixed(dir, { ...fix, commit: head }).error, /raised on/);
   assert.match(markFixed(dir, { ...fix, commit: 'deadbeef' }).error, /not a commit/);
-  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, verifier/);
+  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, verifier, owner/);
   assert.match(markFixed(dir, { ...fix, commit: head, evidence: '' }).error, /evidence/);
   const sha = commit(dir, 'fix');
   const fixed = markFixed(dir, { ...fix, commit: sha.slice(0, 10) }).finding;
   assert.deepEqual([fixed.state, fixed.fixedCommit, fixed.closedBy, needsOwner(fixed)], ['fixed', sha, 'test', false]);
   const c = counts(readLedger(dir).findings);
   assert.deepEqual([c.fixed, c.confirmed, c.duplicate], [2, 0, 1]);
-  assert.match(markFixed(dir, { ...fix, commit: sha }).error, /only a confirmed/);
+  assert.match(markFixed(dir, { ...fix, commit: sha }).error, /which is on HEAD/);
 
   raise(dir, head);
   ruleOn(dir, { id: 'F3', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'the PR body says 3 retries, code does 2', by: VERIFIER });
@@ -116,6 +116,35 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   ruleOn(dir, { id: 'F5', verdict: 'duplicate', evidence: 'same claim', by: VERIFIER, primary: 'F4' });
   ruleOn(dir, { id: 'F4', verdict: 'duplicate', evidence: 'same claim', by: VERIFIER, primary: 'F3' });
   assert.deepEqual([counts(readLedger(dir).findings).fixed, counts(readLedger(dir).findings).duplicate], [5, 3]);
+});
+
+test('a fix closed on a builder\'s commit moves to its cherry-pick on the branch, and nowhere else', () => {
+  const { dir, head } = repoWithRun('repoint');
+  raise(dir, head);
+  ruleOn(dir, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'exit 1', by: VERIFIER });
+  const fix = { id: 'F1', closedBy: 'test', evidence: 'guard.test fails on fix^, passes on fix', by: 'main' };
+  sh(dir, 'switch', '-qc', 'builder');
+  const built = commit(dir, 'fix');
+  assert.equal(markFixed(dir, { ...fix, commit: built }).finding.fixedCommit, built);
+  sh(dir, 'switch', '-q', 'main');
+  assert.match(markFixed(dir, { ...fix, commit: built }).error, /is not on HEAD/);
+  sh(dir, 'cherry-pick', '-x', built);
+  const picked = sh(dir, 'rev-parse', 'HEAD').trim();
+  assert.equal(markFixed(dir, { ...fix, commit: picked }).finding.fixedCommit, picked);
+  assert.match(markFixed(dir, { ...fix, commit: picked }).error, /which is on HEAD/);
+});
+
+test('the owner\'s stated policy defers a confirmed finding with their words, never one in a protected area or a failing scenario', () => {
+  const { dir, head } = repoWithRun('defer');
+  raise(dir, head, { severity: 'nit' }); raise(dir, head, { area: 'data' }); raise(dir, head, { kind: 'scenario' }); raise(dir, head);
+  for (const id of ['F1', 'F2', 'F3']) ruleOn(dir, { id, verdict: 'confirmed', born: 'build', cause: 'c', evidence: 'exit 1', by: VERIFIER });
+  const owner = { closedBy: 'owner', evidence: 'owner: "non-critical errors users cannot reach may be skipped"', by: 'main' };
+  const f = markFixed(dir, { id: 'F1', ...owner }).finding;
+  assert.deepEqual([f.state, f.deferEvidence, f.fixedCommit], ['deferred', owner.evidence, undefined]);
+  assert.match(markFixed(dir, { id: 'F2', ...owner }).error, /data area/);
+  assert.match(markFixed(dir, { id: 'F3', ...owner }).error, /acceptance scenario/);
+  assert.match(markFixed(dir, { id: 'F4', ...owner }).error, /F4 is open; only a confirmed finding is deferred/);
+  assert.match(markFixed(dir, { id: 'F2', ...owner, evidence: '' }).error, /the owner's words/);
 });
 
 test('a new run archives the old ledger under its run id and never deletes one', () => {
@@ -156,6 +185,6 @@ test('lpk finding lists, rules, closes and counts from the command line, a rulin
   assert.match(lpk(dir, 'finding', 'fixed', 'F1', '--commit', fix, '--closed-by', 'repro', '--evidence', 'lpk repro F1 exit 0'), /F1 fixed in .* \(repro\)/);
   lpk(dir, 'finding', 'verdict', 'F2', 'dropped', '--basis', 'disproved', '--evidence', 'unreachable');
   assert.match(lpk(dir, 'finding', 'list', '--state', 'dropped'), /F2 .*\(dropped by cli, [^)]*owner[^)]*\)/);
-  assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'counts')), { open: 0, confirmed: 0, unsettled: 0, dropped: 1, preexisting: 0, fixed: 1, duplicate: 0, needsOwner: 1, total: 2 });
+  assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'counts')), { open: 0, confirmed: 0, unsettled: 0, dropped: 1, preexisting: 0, fixed: 1, deferred: 0, duplicate: 0, needsOwner: 1, total: 2 });
   assert.match(JSON.parse(lpk(dir, 'finding', 'get', 'F1')).fixEvidence, /lpk repro F1 exit 0/);
 });

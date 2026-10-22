@@ -146,6 +146,21 @@ test('the push guard refuses long subjects and merge commits, and lets a clean p
   assert.match(JSON.parse(hook('git push')).hookSpecificOutput.permissionDecisionReason, /is a merge commit/);
 });
 
+test('after a rebase onto main the push guard checks only the commits the branch adds, not main\'s own', () => {
+  const repo = fixture('rebased');
+  const hook = (command) => lpk(repo, ['push-check'], JSON.stringify({ tool_input: { command }, cwd: repo }));
+  sh(repo, 'push', '-q', '-u', 'origin', 'feat');
+  sh(repo, 'switch', '-q', 'main');
+  sh(repo, 'commit', '-q', '--allow-empty', '-m', 'chore: a subject merged on main that keeps going well past the seventy-two characters');
+  sh(repo, 'push', '-q', 'origin', 'HEAD:main');
+  sh(repo, 'switch', '-q', 'feat'); sh(repo, 'rebase', '-q', 'origin/main');
+  assert.equal(hook('git push --force-with-lease'), '');
+  sh(repo, 'commit', '-q', '--allow-empty', '-m', 'fix: a subject on the branch that keeps going well past the seventy-two characters');
+  const reason = JSON.parse(hook('git push --force-with-lease')).hookSpecificOutput.permissionDecisionReason;
+  assert.match(reason, /"fix: a subject on the branch/);
+  assert.doesNotMatch(reason, /chore: a subject merged on main/);
+});
+
 test('/code-review findings are read out of the prose around them', () => {
   const text = 'Review done.\n```json\n[{"file":"a.ts","line":3,"summary":"x","failure_scenario":"path C:\\tmp breaks"}]\n```\nThat is all [1].';
   assert.deepEqual(parseFindings(text).map((f) => f.file), ['a.ts']);
