@@ -41,7 +41,7 @@ test('the ledger is one append-only file in the repo common dir, shared by every
   assert.equal(ledgerFile(join(tmp, 'shared-review')), join(dir, '.git', 'lpk', 'findings.jsonl'));
   const f = raise(join(tmp, 'shared-review'), head, { file: 'a.ts', line: 4 }).finding;
   assert.deepEqual([f.id, f.run, f.state], ['F1', 'run1', 'open']);
-  ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'exit 1 on the commit', by: VERIFIER });
+  ruleOn(dir, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'exit 1 on the commit', by: VERIFIER });
   const lines = readFileSync(ledgerFile(dir), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   assert.deepEqual(lines.map((e) => e.ev), ['add', 'verdict']);
   assert.equal(lines[0].finding.claim, 'the guard fails open');
@@ -72,7 +72,7 @@ test('only the verifier drops a finding on its own; anyone else\'s drop is marke
   assert.equal(needsOwner(lead), true);
   const verifier = ruleOn(dir, { id: 'F1', verdict: 'dropped', basis: 'disproved', evidence: 'repro exits 0 on commit', by: VERIFIER }).finding;
   assert.equal(needsOwner(verifier), false);
-  assert.match(ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'on second look', by: 'main' }).error, /already dropped by the verifier/);
+  assert.match(ruleOn(dir, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'on second look', by: 'main' }).error, /already dropped by the verifier/);
   assert.equal(needsOwner(ruleOn(dir, { id: 'F2', verdict: 'preexisting', evidence: 'fails on base too', by: 'main' }).finding), true);
 });
 
@@ -92,7 +92,7 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   raise(dir, head); raise(dir, head);
   assert.match(ruleOn(dir, { id: 'F2', verdict: 'duplicate', evidence: 'same line', by: VERIFIER, primary: 'F2' }).error, /primary/);
   ruleOn(dir, { id: 'F2', verdict: 'duplicate', evidence: 'same line', by: VERIFIER, primary: 'F1' });
-  ruleOn(dir, { id: 'F1', verdict: 'confirmed', evidence: 'exit 1', by: VERIFIER });
+  ruleOn(dir, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'exit 1', by: VERIFIER });
   assert.deepEqual([counts(readLedger(dir).findings).confirmed, counts(readLedger(dir).findings).fixed], [2, 0]);
 
   const fix = { id: 'F1', fix: 'guard closed', closedBy: 'test', evidence: 'guard.test fails on fix^, passes on fix', by: 'lpk:builder' };
@@ -108,7 +108,7 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   assert.match(markFixed(dir, { ...fix, commit: sha }).error, /only a confirmed/);
 
   raise(dir, head);
-  ruleOn(dir, { id: 'F3', verdict: 'confirmed', evidence: 'the PR body says 3 retries, code does 2', by: VERIFIER });
+  ruleOn(dir, { id: 'F3', verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'the PR body says 3 retries, code does 2', by: VERIFIER });
   const docs = markFixed(dir, { id: 'F3', commit: sha, closedBy: 'verifier', evidence: 'body now says 2', by: 'main' }).finding;
   assert.equal(needsOwner(docs), true);
 
@@ -151,7 +151,7 @@ test('lpk finding lists, rules, closes and counts from the command line, a rulin
   const { dir, head } = repoWithRun('cli');
   raise(dir, head, { file: 'a.ts', line: 2 }); raise(dir, head);
   assert.match(lpk(dir, 'finding', 'list'), /F1 defect\/important lpk:bug-hunter a\.ts:2 — the guard fails open \(open\)/);
-  assert.match(lpk(dir, 'finding', 'verdict', 'F1', 'confirmed', '--evidence', 'it prints 0 for n=1'), /F1 is confirmed/);
+  assert.match(lpk(dir, 'finding', 'verdict', 'F1', 'confirmed', '--born', 'design', '--cause', 'the brief never says n starts at 1', '--evidence', 'it prints 0 for n=1'), /F1 is confirmed/);
   const fix = commit(dir, 'fix');
   assert.match(lpk(dir, 'finding', 'fixed', 'F1', '--commit', fix, '--closed-by', 'repro', '--evidence', 'lpk repro F1 exit 0'), /F1 fixed in .* \(repro\)/);
   lpk(dir, 'finding', 'verdict', 'F2', 'dropped', '--basis', 'disproved', '--evidence', 'unreachable');

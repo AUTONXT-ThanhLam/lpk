@@ -75,8 +75,10 @@ The brief follows `writing.md` in this skill's directory. It holds:
   users, never because it is nearer the current code or less work;
 - the slices: each with the files it owns and the contract between them. Mark a slice **high
   risk** when it decides who may do what or moves state that cannot be undone;
-- the test plan: which test drives which entry point and fails without the change, in a suite CI
-  runs, and the requirement id it proves (in the test's name).
+- the test plan: which test drives which entry point, the plausible mistake it fails on, in a suite
+  CI runs, and the requirement id it proves (in the test's name). One test may cover several
+  scenarios or rows. A failure row no reasonable implementation gets wrong needs no test; every
+  scenario still has a test or a command that fails on the base.
 
 Write the same in `brief.json`, beside it, with only what code reads: `requirements` (each
 `{ id: "R1", text, source }`), `scenarios` (each with its `id`, its `text`, a `cmd` (and `expect`)
@@ -131,7 +133,7 @@ When the owner says go, run `lpk go`: it records the brief's checks, so `lpk gat
 changed after go. The build does not wait for the review: start the run (`build.md` in this
 skill's directory) and build the slices no open High touches; a slice a later High touches waits
 for the fix and is rebuilt from it. Read each test the test authors write before you build on it:
-it must drive the real entry point and fail for the right reason.
+it must drive the real entry point, fail for the right reason and name the mistake it catches.
 
 **Done when** a design review round returned `pass` or its last High went to the owner, every
 requirement has a scenario or failure row that proves it, every scenario has a test or a command

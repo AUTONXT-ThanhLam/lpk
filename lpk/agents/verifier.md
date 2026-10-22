@@ -31,7 +31,14 @@ Rule from what the runs showed:
   reproduces the finding. Never drop a finding whose repro still fails. Read the ledger
   (`finding_list`, loaded the same way as `finding_verdict`) and end the evidence with
   `same fix: <ids>`, the other findings this fix removes, because the lead staffs the fix round by
-  root cause.
+  root cause. Record where the defect began, because the fix goes there and `lpk:learn` changes the
+  step that let it in. `cause`: why it exists, traced back past the line that shows it to the first
+  place it went wrong (a wrong assumption, a missing case, a contract two places read differently),
+  in one sentence. `born`: `request` when the run's requirements misread or miss what the owner
+  asked; `design` when the brief (`$(git rev-parse --git-common-dir)/lpk/brief.md`, or in the Quick
+  lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
+  or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
+  commit that fixed an earlier finding of this run; else `build`.
 - **PRE-EXISTING**: the same failure on the base.
 - **DROPPED**, with its basis: `disproved` (the guard at `file:line`, the test that covers it, the
   input that cannot reach it) or `not-reproduced` (what you ran and what it showed). A finding in
@@ -42,11 +49,11 @@ Rule from what the runs showed:
 - **UNSETTLED**: you could not settle it either way. Say what you saw and what remains unproved.
 
 Record the verdict with `finding_verdict` (load it with ToolSearch
-`select:mcp__plugin_lpk_lpk__finding_verdict`): the id, the verdict, the evidence, `basis` for
-DROPPED and `primary` for DUPLICATE. When you are asked to rule on a fix instead, rerun the repro on
-the fix commit, or for a finding with no repro (a comment, the docs, the PR text) read the fixed
-text there, and close it with `finding_fixed` (load it with ToolSearch
-`select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fix commit you ruled on,
+`select:mcp__plugin_lpk_lpk__finding_verdict`): the id, the verdict, the evidence, `born` and
+`cause` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
+on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
+docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with
+ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, and the evidence.
 
 ## Report
@@ -55,4 +62,5 @@ Answer in exactly this shape and nothing else:
 - `verdict`: CONFIRMED, PRE-EXISTING, DROPPED, DUPLICATE or UNSETTLED;
 - `evidence`: the `lpk repro` or `lpk repeat` command and its real output on the commit and on the
   base `[ran]`, or the exact input, state and outcome traced with `file:line` `[read]`;
-- `fix`: for CONFIRMED, the root-cause fix in one sentence.
+- `born` and `cause`: for CONFIRMED, as recorded;
+- `fix`: for CONFIRMED, the fix at that cause in one sentence.

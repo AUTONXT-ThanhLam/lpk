@@ -14,6 +14,7 @@ export const VERDICTS = ['confirmed', 'unsettled', 'dropped', 'preexisting', 'du
 export const KINDS = ['defect', 'test-gap', 'scenario', 'rule'];
 export const SEVERITIES = ['important', 'nit'];
 export const CLOSED_BY = ['repro', 'test', 'verifier'];
+export const BORN = ['request', 'design', 'build', 'fix'];
 // Where "could not reproduce" is not enough to drop a finding: the verifier's not-reproduced
 // becomes unsettled, and the report shows it to the owner.
 export const PROTECTED = ['security', 'auth', 'data', 'concurrency', 'migration', 'permissions'];
@@ -51,7 +52,7 @@ export function readLedger(repo, file = ledgerFile(repo)) {
     else if (e.ev === 'verdict') {
       const { ev, time, id, state, ...rest } = e;
       const f = byId.get(id);
-      for (const k of ['by', 'evidence', 'basis', 'primary', 'asked']) delete f[k];
+      for (const k of ['by', 'evidence', 'basis', 'primary', 'asked', 'born', 'cause']) delete f[k];
       Object.assign(f, rest, { state, ruledAt: time });
     } else if (e.ev === 'fixed') {
       Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time });
@@ -115,12 +116,14 @@ export function addFinding(repo, input) {
 // A ruling on one finding. A ruling the verifier made and settled stands; one anybody else made,
 // or an unsettled one, may be ruled on again. In a protected area a not-reproduced drop is kept
 // as unsettled.
-export function ruleOn(repo, { id, verdict, evidence, by, basis, primary }) {
+export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, cause }) {
   if (!VERDICTS.includes(verdict)) return { error: `verdict is one of ${VERDICTS.join(', ')}` };
   const why = text(evidence);
   if (!why) return { error: 'evidence: the reproduction and its output, or why it does not hold' };
   if (!text(by)) return { error: 'by: who rules (the finding hook stamps it)' };
   if (verdict === 'dropped' && !['not-reproduced', 'disproved'].includes(basis)) return { error: 'basis: not-reproduced (the repro did not fail) or disproved (evidence shows the claim is false)' };
+  if (verdict === 'confirmed' && !BORN.includes(born)) return { error: `born: the step the defect began in, one of ${BORN.join(', ')}` };
+  if (verdict === 'confirmed' && !text(cause)) return { error: 'cause: why the defect exists, at the place it starts, in one sentence' };
   return locked(ledgerDir(repo), () => {
     const { findings } = readLedger(repo);
     const f = findings.find((x) => x.id === text(id));
@@ -135,6 +138,7 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary }) {
       e.primary = p.id;
     }
     if (verdict === 'dropped') e.basis = basis;
+    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause) });
     if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(f.area)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
     append(repo, e);
     return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };

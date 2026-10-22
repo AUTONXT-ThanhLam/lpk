@@ -22,8 +22,10 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
      (Copilot, CodeRabbit) whose comment a human agreed with or a commit fixed;
    - **an lpk run's findings**: the run's ledger (`lpk finding list`, or the `finding_list` tool),
      with each verifier's ruling: what the reviewers, the Prover and the self-checks raised, what
-     was confirmed and what was dropped. Each confirmed one was born in the build and caught late;
-     the rule should have caught it as the line was written;
+     was confirmed and what was dropped. Each confirmed one names its `cause` and the step it was
+     born in (`born`: request, design, build or fix). One born in the build should have been
+     caught by a rule as the line was written. One born in the request, the design or a fix is
+     first a lesson about that step (below): name the check there that should have caught it;
    - **escapes**: `lpk escapes` joins the PRs lpk delivered to the tech lead's comments after the
      run, by file and finding class. An escape is a defect every layer missed: it weighs most after
      a revert;

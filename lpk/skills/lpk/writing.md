@@ -13,7 +13,8 @@ handles the case the rule did not name.
 4. Use the active voice and name the actor: "the verifier dropped it", not "it was dropped". The
    reader needs to know who did it, and who will do it next.
 5. Use one word for one thing, and use its real name: the symbol, the file, the command. Two names
-   make a reader look for two things.
+   make a reader look for two things. Name agents by job title: the Tech lead, the Verifier, the
+   Prover.
 6. Keep the articles, the subjects and the verbs. Fragments and arrows save words and cost the
    reader a guess.
 7. Give the reason with each rule, choice and decision, in one clause.

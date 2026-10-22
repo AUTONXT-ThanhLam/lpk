@@ -42,7 +42,7 @@ const PROVED = { type: 'object', properties: { results: { type: 'array', items: 
 const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
 const RECORD = { type: 'object', properties: { record: S, ids: { type: 'array', items: S }, error: S }, required: ['record', 'ids'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
-  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S }, required: ['verdict', 'evidence'] }
+  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S }, required: ['verdict', 'evidence'] }
 
 // What is under review. A delta round reviews the fix delta, and everything is stamped with it.
 const at = a.delta ? a.delta.range : a.range
@@ -170,7 +170,7 @@ async function graded(r) {
 // Every verifier has the same options and the same prompt up to the finding, so they share one
 // cached prefix; the finding's own text comes last.
 const verifyHead = `Repo ${a.repo}, base ${a.base}, commit under review ${commit}, reviewed range ${at}.
-Rule on the ledger finding below with finding_verdict: confirmed, preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return the same verdict.
+Rule on the ledger finding below with finding_verdict: confirmed with born and cause, preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return the same verdict.
 Finding:`
 const verify = (lens) => (f) => call(`${verifyHead} ${f.id} from ${lens}${f.claim ? `\n${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim}\nReviewer's reproduction: ${f.repro}` : ' (read it with finding_get)'}`,
   { label: `verify:${f.id}`, phase: 'Verify', agentType: 'lpk:verifier', schema: VERDICT, stallMs: stall('verifier') })

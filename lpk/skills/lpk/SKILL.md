@@ -43,9 +43,8 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
 - **The clock.** Run `date +%s` first and keep the number. Post one line as each step starts: what,
   the elapsed minutes from `echo $(( ($(date +%s) - <start>) / 60 ))`, and what comes next. A past
   run posted "80 minutes" when 18 had passed.
-- **Keep going.** When a step does not need the owner, keep going. Put status notes in the same
-  message as your next action. Stop and ask only when you cannot continue without the owner, or
-  before anything destructive or outside this machine.
+- **Keep going.** Put status notes in the same message as your next action. Stop and ask only when
+  you cannot continue without the owner, or before anything destructive or outside this machine.
 - **Probe before you ask.** A question that a command, the code or the ticket answers is answered
   by running it. A requirement with a sensible default is decided and logged, not asked.
 - **Log each decision** you take alone: `lpk decide "<what>" --why "<why>"`. The report lists them.
@@ -55,6 +54,8 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   file, and give an agent that path, never a copy retyped by a model (a retyped list once lost a
   whole PR's findings). Hand a long read to an agent and keep only its conclusion. Start a fresh
   agent with a short brief rather than re-brief one whose context is mostly spent.
+- **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
+  it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
 - **Findings live in the ledger.** Every finding is recorded with the lpk MCP tools (`finding_add`,
   `finding_list`; load them with ToolSearch `select:mcp__plugin_lpk_lpk__finding_list`), and only a
   verifier rules on one. A finding you rule on yourself goes in the report with its evidence.
@@ -63,7 +64,6 @@ hours is not. Speed comes from less rework and less waiting, never from a thinne
   memory died with all their work. Never `sleep`: agents and workflows notify you when they finish,
   and long waits run under the Monitor tool (`lpk watch` names an agent that stopped moving).
 - **Write plainly.** Every text a person reads follows `writing.md` in this skill's directory.
-- **Name agents by job title** in what the owner reads: the Tech lead, the Verifier, the Prover.
 
 Arguments: `$ARGUMENTS` (a request, a ticket key or URL, or a PR URL or number). A PR with review
 comments follows `feedback.md` in this skill's directory instead of the steps below. A request that
