@@ -1,0 +1,32 @@
+id: stale-async.javascript
+valid:
+  - "api.load(id).then((d) => render(d))"
+  - "api.load(id).then((d) => { if (!cancelled) setData(d) })"
+  - "const d = await api.load(id)"
+  - "api.load(id).then((d) => settings.apply(d))"
+invalid:
+  - "api.load(id).then((d) => setData(d))"
+  - "api.load(id).then(res => setRows(res.rows))"
+  - "fetchUser().then(() => setLoaded(true))"
+---
+id: stale-async.typescript
+valid:
+  - "api.load(id).then((d) => render(d))"
+  - "api.load(id).then((d) => { if (!cancelled) setData(d) })"
+  - "const d = await api.load(id)"
+  - "api.load(id).then((d) => settings.apply(d))"
+invalid:
+  - "api.load(id).then((d) => setData(d))"
+  - "api.load(id).then(res => setRows(res.rows))"
+  - "fetchUser().then(() => setLoaded(true))"
+---
+id: stale-async.tsx
+valid:
+  - "api.load(id).then((d) => render(d))"
+  - "api.load(id).then((d) => { if (!cancelled) setData(d) })"
+  - "const d = await api.load(id)"
+  - "api.load(id).then((d) => settings.apply(d))"
+invalid:
+  - "api.load(id).then((d) => setData(d))"
+  - "api.load(id).then(res => setRows(res.rows))"
+  - "fetchUser().then(() => setLoaded(true))"

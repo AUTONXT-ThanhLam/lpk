@@ -1,0 +1,196 @@
+id: no-silent-failure.python
+language: Python
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: except_clause
+      has:
+        kind: block
+        all:
+          - has:
+              any:
+                - kind: pass_statement
+                - kind: expression_statement
+                  regex: '^\.\.\.$'
+          - not:
+              has:
+                not:
+                  any:
+                    - kind: pass_statement
+                    - kind: comment
+                    - kind: expression_statement
+                      regex: '^\.\.\.$'
+    - kind: assignment
+      all:
+        - has:
+            field: left
+            regex: '^_$'
+        - has:
+            field: right
+            kind: call
+    - pattern: $F($$$A)
+      inside:
+        kind: expression_statement
+        stopBy: neighbor
+      has:
+        field: function
+        regex: '(^|\.)(create_task|ensure_future)$'
+---
+id: no-silent-failure.java
+language: Java
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    matches: empty-block
+utils:
+  empty-block:
+    kind: block
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'
+---
+id: no-silent-failure.csharp
+language: CSharp
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    matches: empty-block
+utils:
+  empty-block:
+    kind: block
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'
+---
+id: no-silent-failure.php
+language: Php
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    matches: empty-block
+utils:
+  empty-block:
+    kind: compound_statement
+    not:
+      has:
+        not:
+          any:
+            - regex: '^[{}]$'
+            - regex: '^(//|/\*|#)'
+---
+id: no-silent-failure.kotlin
+language: Kotlin
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: catch_block
+  not:
+    has:
+      kind: statements
+---
+id: no-silent-failure.swift
+language: Swift
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: catch_block
+      not:
+        has:
+          kind: statements
+    - kind: property_declaration
+      all:
+        - has:
+            field: name
+            regex: '^_$'
+        - has:
+            field: value
+            kind: call_expression
+    - kind: try_expression
+      has:
+        kind: try_operator
+        regex: '^try\?'
+      any:
+        - inside:
+            kind: statements
+        - inside:
+            kind: assignment
+            has:
+              field: target
+              regex: '^_$'
+---
+id: no-silent-failure.go
+language: Go
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: assignment_statement
+  all:
+    - has:
+        field: left
+        regex: '^_(\s*,\s*_)*$'
+    - has:
+        field: right
+        has:
+          kind: call_expression
+---
+id: no-silent-failure.rust
+language: Rust
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - kind: let_declaration
+      all:
+        - has:
+            field: pattern
+            regex: '^_$'
+        - has:
+            field: value
+            any:
+              - kind: call_expression
+              - kind: await_expression
+    - kind: expression_statement
+      has:
+        kind: call_expression
+        has:
+          field: function
+          kind: field_expression
+          has:
+            field: field
+            regex: '^ok$'
+---
+id: no-silent-failure.bash
+language: Bash
+severity: warning
+message: "a failure never reads as success"
+rule:
+  any:
+    - pattern: '[ $$$T ] && $A || $B'
+    - pattern: '[[ $$$T ]] && $A || $B'
+---
+id: no-silent-failure.ruby
+language: Ruby
+severity: warning
+message: "a failure never reads as success"
+rule:
+  kind: rescue_modifier
+  has:
+    field: handler
+    kind: nil

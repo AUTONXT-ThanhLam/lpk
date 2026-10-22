@@ -1,0 +1,88 @@
+id: timeouts-retries.javascript
+valid:
+  - "const r = await fetch(url, { signal: AbortSignal.timeout(5000) })"
+  - "const r = await fetch(url, { method: \"POST\", body, signal: ctrl.signal })"
+  - "const r = await fetch(url, { signal })"
+  - "const r = await axios.get(url, { timeout: 5000 })"
+  - "const r = await got(url, { timeout: { request: 5000 } })"
+  - "const r = await fetch(url, { ...defaults })"
+  - "const r = await client.get(url)"
+  - "const s = \"fetch(url)\""
+invalid:
+  - "const r = await fetch(url)"
+  - "const r = await fetch(url, { method: \"POST\", body: JSON.stringify(b) })"
+  - "const r = await axios.post(url, data)"
+  - "const r = await axios({ url, method: \"get\" })"
+  - "const r = await got(url)"
+---
+id: timeouts-retries.typescript
+valid:
+  - "const r = await fetch(url, { signal: AbortSignal.timeout(5000) })"
+  - "const r = await fetch(url, { method: \"POST\", body, signal: ctrl.signal })"
+  - "const r = await fetch(url, { signal })"
+  - "const r = await axios.get(url, { timeout: 5000 })"
+  - "const r = await got(url, { timeout: { request: 5000 } })"
+  - "const r = await fetch(url, { ...defaults })"
+  - "const r = await client.get(url)"
+  - "const s = \"fetch(url)\""
+invalid:
+  - "const r = await fetch(url)"
+  - "const r = await fetch(url, { method: \"POST\", body: JSON.stringify(b) })"
+  - "const r = await axios.post(url, data)"
+  - "const r = await axios({ url, method: \"get\" })"
+  - "const r = await got(url)"
+---
+id: timeouts-retries.tsx
+valid:
+  - "const r = await fetch(url, { signal: AbortSignal.timeout(5000) })"
+  - "const r = await fetch(url, { method: \"POST\", body, signal: ctrl.signal })"
+  - "const r = await fetch(url, { signal })"
+  - "const r = await axios.get(url, { timeout: 5000 })"
+  - "const r = await got(url, { timeout: { request: 5000 } })"
+  - "const r = await fetch(url, { ...defaults })"
+  - "const r = await client.get(url)"
+  - "const s = \"fetch(url)\""
+invalid:
+  - "const r = await fetch(url)"
+  - "const r = await fetch(url, { method: \"POST\", body: JSON.stringify(b) })"
+  - "const r = await axios.post(url, data)"
+  - "const r = await axios({ url, method: \"get\" })"
+  - "const r = await got(url)"
+---
+id: timeouts-retries.python
+valid:
+  - "r = requests.get(url, timeout=5)"
+  - "r = httpx.post(url, json=body, timeout=httpx.Timeout(5.0))"
+  - "r = requests.get(url, **kwargs)"
+  - "r = session.get(url)"
+  - "s = \"requests.get(url)\""
+invalid:
+  - "r = requests.get(url)"
+  - "r = httpx.post(url, json=body)"
+  - "r = requests.request(\"GET\", url, headers=h)"
+  - "r = requests.get(url, timeout=None)"
+  - "timeout = None"
+---
+id: timeouts-retries.c
+valid:
+  - "int r = wait(sem, 5000);"
+invalid:
+  - "int r = wait(sem, TIMEOUT_WAIT_FOREVER);"
+---
+id: timeouts-retries.cpp
+valid:
+  - "int r = wait(sem, 5000);"
+invalid:
+  - "int r = wait(sem, TIMEOUT_WAIT_FOREVER);"
+---
+id: timeouts-retries.java
+valid:
+  - "int r = wait(sem, 5000);"
+invalid:
+  - "int r = wait(sem, TIMEOUT_WAIT_FOREVER);"
+---
+id: timeouts-retries.rust
+valid:
+  - "int r = wait(sem, 5000);"
+invalid:
+  - "int r = wait(sem, TIMEOUT_WAIT_FOREVER);"

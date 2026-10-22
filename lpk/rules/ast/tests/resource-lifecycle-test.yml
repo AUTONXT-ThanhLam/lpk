@@ -1,0 +1,56 @@
+id: resource-lifecycle.javascript
+valid:
+  - "target.addEventListener(\"click\", onClick, { once: true })"
+  - "const data = await readFile(path)"
+  - "const s = \"new WebSocket(url)\""
+  - "const w = new Map()"
+invalid:
+  - "window.addEventListener(\"resize\", onResize)"
+  - "const s = fs.createReadStream(path)"
+  - "const out = createWriteStream(dest)"
+  - "const conn = await pool.acquire()"
+  - "const ws = new WebSocket(url)"
+  - "const es = new EventSource(\"/events\")"
+  - "const w = new Worker(\"./job.js\")"
+---
+id: resource-lifecycle.typescript
+valid:
+  - "target.addEventListener(\"click\", onClick, { once: true })"
+  - "const data = await readFile(path)"
+  - "const s = \"new WebSocket(url)\""
+  - "const w = new Map()"
+invalid:
+  - "window.addEventListener(\"resize\", onResize)"
+  - "const s = fs.createReadStream(path)"
+  - "const out = createWriteStream(dest)"
+  - "const conn = await pool.acquire()"
+  - "const ws = new WebSocket(url)"
+  - "const es = new EventSource(\"/events\")"
+  - "const w = new Worker(\"./job.js\")"
+---
+id: resource-lifecycle.tsx
+valid:
+  - "target.addEventListener(\"click\", onClick, { once: true })"
+  - "const data = await readFile(path)"
+  - "const s = \"new WebSocket(url)\""
+  - "const w = new Map()"
+invalid:
+  - "window.addEventListener(\"resize\", onResize)"
+  - "const s = fs.createReadStream(path)"
+  - "const out = createWriteStream(dest)"
+  - "const conn = await pool.acquire()"
+  - "const ws = new WebSocket(url)"
+  - "const es = new EventSource(\"/events\")"
+  - "const w = new Worker(\"./job.js\")"
+---
+id: resource-lifecycle.python
+valid:
+  - |-
+      with lock:
+          work()
+  - "lock.release()"
+invalid:
+  - |-
+      lock.acquire()
+      work()
+  - "conn = await pool.acquire()"

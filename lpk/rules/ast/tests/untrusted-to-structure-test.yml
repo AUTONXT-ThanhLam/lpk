@@ -1,0 +1,136 @@
+id: untrusted-to-structure.typescript
+valid:
+  - "el.innerHTML = \"\""
+  - "el.innerHTML = DOMPurify.sanitize(html)"
+  - "el.textContent = userText"
+  - "await execFile(\"git\", [\"log\", ref])"
+  - "exec(`git status`)"
+  - "await db.query(\"SELECT * FROM users WHERE id = $1\", [id])"
+  - "const q = sql`SELECT * FROM users WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users\" + \" ORDER BY id\""
+  - "const s = \"el.innerHTML = x\""
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(html) } })"
+invalid:
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: html } })"
+  - "el.innerHTML = `<li>${name}</li>`"
+  - "el.innerHTML += item.title"
+  - "execSync(`git log ${ref}`)"
+  - "exec(`convert ${file} out.png`, cb)"
+  - "cp.exec(`rm -rf ${dir}`)"
+  - "await db.query(`SELECT * FROM users WHERE name = '${name}'`)"
+  - "await pool.execute(`DELETE FROM t WHERE id = ${id}`)"
+  - "const q = `UPDATE users SET name = '${name}' WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users WHERE id = \" + req.params.id"
+---
+id: untrusted-to-structure.javascript
+valid:
+  - "el.innerHTML = \"\""
+  - "el.innerHTML = DOMPurify.sanitize(html)"
+  - "el.textContent = userText"
+  - "await execFile(\"git\", [\"log\", ref])"
+  - "exec(`git status`)"
+  - "await db.query(\"SELECT * FROM users WHERE id = $1\", [id])"
+  - "const q = sql`SELECT * FROM users WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users\" + \" ORDER BY id\""
+  - "const s = \"el.innerHTML = x\""
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(html) } })"
+  - "<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />"
+  - "<div dangerouslySetInnerHTML={{ __html: \"<b>static</b>\" }} />"
+invalid:
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: html } })"
+  - "el.innerHTML = `<li>${name}</li>`"
+  - "el.innerHTML += item.title"
+  - "execSync(`git log ${ref}`)"
+  - "exec(`convert ${file} out.png`, cb)"
+  - "cp.exec(`rm -rf ${dir}`)"
+  - "await db.query(`SELECT * FROM users WHERE name = '${name}'`)"
+  - "await pool.execute(`DELETE FROM t WHERE id = ${id}`)"
+  - "const q = `UPDATE users SET name = '${name}' WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users WHERE id = \" + req.params.id"
+  - "<div dangerouslySetInnerHTML={{ __html: post.body }} />"
+---
+id: untrusted-to-structure.tsx
+valid:
+  - "el.innerHTML = \"\""
+  - "el.innerHTML = DOMPurify.sanitize(html)"
+  - "el.textContent = userText"
+  - "await execFile(\"git\", [\"log\", ref])"
+  - "exec(`git status`)"
+  - "await db.query(\"SELECT * FROM users WHERE id = $1\", [id])"
+  - "const q = sql`SELECT * FROM users WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users\" + \" ORDER BY id\""
+  - "const s = \"el.innerHTML = x\""
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(html) } })"
+  - "<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />"
+  - "<div dangerouslySetInnerHTML={{ __html: \"<b>static</b>\" }} />"
+invalid:
+  - "React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: html } })"
+  - "el.innerHTML = `<li>${name}</li>`"
+  - "el.innerHTML += item.title"
+  - "execSync(`git log ${ref}`)"
+  - "exec(`convert ${file} out.png`, cb)"
+  - "cp.exec(`rm -rf ${dir}`)"
+  - "await db.query(`SELECT * FROM users WHERE name = '${name}'`)"
+  - "await pool.execute(`DELETE FROM t WHERE id = ${id}`)"
+  - "const q = `UPDATE users SET name = '${name}' WHERE id = ${id}`"
+  - "const q = \"SELECT * FROM users WHERE id = \" + req.params.id"
+  - "<div dangerouslySetInnerHTML={{ __html: post.body }} />"
+---
+id: untrusted-to-structure.python
+valid:
+  - "cur.execute(\"SELECT * FROM users WHERE id = %s\", (uid,))"
+  - "subprocess.run([\"git\", \"log\", ref], check=True)"
+  - "subprocess.run(\"ls -l\", shell=True)"
+  - "os.system(\"clear\")"
+  - "q = \"SELECT * FROM users\" + \" ORDER BY id\""
+  - "tar.extractall(dest, filter=\"data\")"
+  - "msg = f\"Selected {n} rows\""
+invalid:
+  - "cur.execute(f\"SELECT * FROM users WHERE id = {uid}\")"
+  - "cur.execute(\"SELECT * FROM users WHERE name = '\" + name + \"'\")"
+  - "cur.execute(\"DELETE FROM t WHERE id = %s\" % uid)"
+  - "subprocess.run(cmd, shell=True)"
+  - "subprocess.check_output(f\"ls {path}\", shell=True)"
+  - "os.system(f\"rm -rf {path}\")"
+  - "os.system(cmd)"
+  - "tar.extractall(dest)"
+  - "zf.extractall(dest)"
+---
+id: untrusted-to-structure.go
+valid:
+  - |-
+      package main
+      func f() {
+      	cmd := exec.Command("git", "log", ref)
+      }
+  - |-
+      package main
+      func f() {
+      	rows, _ := db.Query("SELECT * FROM users WHERE id = $1", id)
+      }
+invalid:
+  - |-
+      package main
+      func f() {
+      	cmd := exec.Command("sh", "-c", "ls "+dir)
+      }
+  - |-
+      package main
+      func f() {
+      	q := "SELECT * FROM users WHERE id = " + id
+      }
+---
+id: untrusted-to-structure.java
+valid:
+  - "class A { void f() { stmt = conn.prepareStatement(\"SELECT * FROM users WHERE id = ?\"); } }"
+  - "class A { void f() { new ProcessBuilder(\"git\", \"log\").start(); } }"
+invalid:
+  - "class A { void f() { Runtime.getRuntime().exec(\"ls \" + dir); } }"
+  - "class A { void f() { String q = \"SELECT * FROM users WHERE id = \" + id; } }"
+---
+id: untrusted-to-structure.csharp
+valid:
+  - "class A { void f() { var q = \"SELECT * FROM users\" + \" ORDER BY id\"; } }"
+  - "class A { void f() { var cmd = new SqlCommand(\"SELECT * FROM users WHERE id = @id\", conn); } }"
+invalid:
+  - "class A { void f() { var q = \"SELECT * FROM users WHERE id = \" + id; } }"

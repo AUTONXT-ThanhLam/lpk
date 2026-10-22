@@ -1,0 +1,34 @@
+id: partial-write.javascript
+valid:
+  - "await prisma.user.create({ data })"
+  - "const s = \"prisma.$transaction([a, b])\""
+invalid:
+  - "await prisma.$transaction([prisma.user.create({ data }), prisma.audit.create({ data: a })])"
+  - "await this.db.$transaction(async (tx) => { await tx.user.update(u) })"
+---
+id: partial-write.typescript
+valid:
+  - "await prisma.user.create({ data })"
+  - "const s = \"prisma.$transaction([a, b])\""
+invalid:
+  - "await prisma.$transaction([prisma.user.create({ data }), prisma.audit.create({ data: a })])"
+  - "await this.db.$transaction(async (tx) => { await tx.user.update(u) })"
+---
+id: partial-write.tsx
+valid:
+  - "await prisma.user.create({ data })"
+  - "const s = \"prisma.$transaction([a, b])\""
+invalid:
+  - "await prisma.$transaction([prisma.user.create({ data }), prisma.audit.create({ data: a })])"
+  - "await this.db.$transaction(async (tx) => { await tx.user.update(u) })"
+---
+id: partial-write.python
+valid:
+  - |-
+      with session.begin():
+          session.add(user)
+invalid:
+  - |-
+      with session.begin_nested():
+          session.add(user)
+  - "sp = db.session.begin_nested()"

@@ -37,8 +37,6 @@ needs.
 ### fail-closed: a missing or failing check refuses
 - blocks: high
 - when: added `(auth|token|permission|role|admin|lock|guard|allow|deny|policy|verify|quota|process\.env|os\.environ|getenv)`
-- find: `catch\s*(\([^)]*\))?\s*\{\s*return\s+(true|next\(\))|except\b[^:\n]*:\s*return\s+True\b` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
-- find: `(process\.env\.|getenv\(\s*['\"]|environ(\.get\(\s*|\[)['\"])\w*(SECRET|TOKEN|KEY|PASSWORD|AUTH)\w*['\"]?\]?\)?\s*(\|\||\?\?|,\s*['\"]|or\s)` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: When a check, its key or config, or the service it asks is missing, slow, failing or answers garbage, the protected action is refused with a clear error. It never proceeds as if allowed, and an auth check that becomes a no-op when its env var is unset is a defect even where older routes behave that way.
 - check: for each guard, state what happens when the dependency is unreachable, times out, answers 5xx, or the env var is unset. Repro: point the dependency at a closed port or unset the variable, and show the action still goes through.
 
@@ -55,25 +53,16 @@ needs.
 - when: always
 - rule: An error reaches a caller, the user or a log with context; a failure never comes back as success, empty, default or "not found". Detached work is held and observed, and cleanup sits in `finally`.
 - check: for every new `catch`, `.catch`, `.then` without a rejection path, fire-and-forget promise, `create_task`, `allSettled`, fallback branch and error response, say what the caller sees on failure. Repro: make the call fail and show the success-looking result.
-- find: `\.catch\(\s*(\(\s*\w*\s*\)|\w+)\s*=>\s*(undefined|null|void 0|false|\[\]|\{\s*\})\s*\)`
-- find: `catch\s*(\([^)]*\))?\s*\{\s*\}`
-- find: `^\s*(_\s*,\s*)*_\s*=\s*[\w.]+\(|^\s*let\s+_\s*=|\.ok\(\)\s*;|\brescue\s+nil\b|\btry\?\s`
-- find: `^\s*void\s+[\w.]+\(`
-- find: `except[^:\n]*:\s*(pass|\.\.\.)\s*$`
-- find: `\bcreate_task\(`
-- find: `Promise\.allSettled\(`
 
 ### partial-write: a write that stops halfway or runs twice stays valid
 - blocks: medium
 - when: added `\b(insert|update|delete|upsert|save|create|merge|set|write|transaction|begin|commit|publish|send|enqueue)\b`
-- find: `\b(\$transaction|begin_nested)\(` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: A change that writes more than once (two tables, two databases, a store and a queue or external API, a file and a row) is atomic or leaves every intermediate state valid and recoverable. No external call runs while a transaction or lock is held. A step that can run twice (retry, redelivery, double click, restart) is idempotent.
 - check: mark each `await` between two writes and ask what happens if it throws there or the whole step runs twice. Repro: inject a failure after the first write, or submit twice, and show the broken state.
 
 ### timeouts-retries: outbound calls end, and retries are capped
 - blocks: medium
 - when: added `(fetch\(|axios|got\(|request\(|https?\.|new \w*Client\(|driver\(|Pool\(|retry|backoff|anthropic|openai|messages\.create|callTool)`
-- find: `\b(fetch|axios(\.(get|post|put|patch|delete|request))?|got|requests\.(get|post|put|patch|delete|request)|httpx\.(get|post|put|patch|delete|request))\((?!.*\b(timeout|signal)\b)` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Every outbound call has a timeout shorter than its caller's deadline. Retries are capped, back off, retry only transient causes, keep one meaning per status code, and are not stacked across layers.
 - check: count the worst-case requests and seconds when every call fails the same way. Repro: a dependency that never answers, or always answers 429 or 500, and the request count or hang it causes.
 
@@ -84,20 +73,16 @@ needs.
 - when: added `(while\s*\(|for\s*\(|setInterval|setTimeout|refetchInterval|poll|Promise\.all\(|\.map\(async|budget|max_?tokens|limit|findMany|match\s*\(|select\s|z\.array|z\.string|readFile|\.json\(\))`
 - rule: Every input, result set, loop, poll, fan-out, queue, retained log and per-turn budget has an explicit bound, checked before the expensive work and sized to the measured working point; a bound set too low (restart policy, watchdog, timeout, context window) is a defect too. Budgets do not multiply per member or per retry. Polling pauses in hidden tabs, never overlaps itself, and hits an index.
 - check: list each new collection, loop and timer with its bound and who chooses its size. Repro: the huge input, or the timer with no line that pauses it when `document.hidden` is true.
-- find: `setInterval\(`
-- find: `refetchInterval`
 
 ### stale-async: late results never overwrite newer state
 - blocks: high
 - when: added `(await |useEffect|\.then\(|setState|EventSource|WebSocket|subscribe|onmessage)`
-- find: `\.then\(\s*\(?\s*\w*\s*\)?\s*=>\s*set[A-Z]\w*\(` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Late, out-of-order or duplicated async results never overwrite newer state or land in another context (another thread, a closed modal, another user). State read before an `await` is re-checked after it, and one event has one emitter.
 - check: for each async effect or handler, ask what happens if it resolves after the user moved on, or two run at once. Repro: delay the response, switch context, and show the wrong screen or row.
 
 ### resource-lifecycle: what is acquired is released on every path
 - blocks: medium
 - when: added `(connect\(|\.session\(|addEventListener|setInterval|subscribe\(|spawn\(|createReadStream|acquire|begin|new Worker)`
-- find: `\b(createReadStream|createWriteStream|\.acquire)\(|\bnew\s+(WebSocket|EventSource|Worker)\(|addEventListener\((?!.*\bonce\s*:\s*true)` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Every connection, session, transaction, listener, interval, subscription, child process, lock and temp file is released on every path, including errors, cancellation, unmount and shutdown.
 - check: pair each acquire with its release and find the error path that skips it. Repro: throw midway and show the handle still open.
 
@@ -106,7 +91,6 @@ needs.
 ### degenerate-input: edge-shaped input has defined behaviour
 - blocks: medium
 - when: added `(JSON\.parse|\.split\(|req\.(body|query|params)|parse|\[0\]|\.length|args\.|input\.)`
-- find: `\.split\([^)]*\)\s*\[\s*[1-9]` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Each new parse, map or format step has defined and tested behaviour for empty, null, missing, one element, zero, negative, duplicate, mixed type, no separator and huge input. External input is schema-validated at the boundary and only the validated value is used.
 - check: run the step on each of those shapes. Repro: the input and the crash or wrong output.
 
@@ -115,22 +99,17 @@ needs.
 - when: added `(\$\{|exec\(|execSync|spawn\(|innerHTML|dangerouslySetInnerHTML|path\.(join|resolve)|redirect|setHeader|new RegExp|eval\(|new Function|match \(|select |insert |cypher|\.query\(|shell\s*=|os\.system|subprocess|exec\.Command|Runtime\.getRuntime|Process\.Start|system\()`
 - rule: Text from users, files, models or other services never becomes structure by concatenation: SQL or Cypher, shell, HTML, markdown headings, headers, paths, URLs, regexes, key paths. Parameters, allowlists and escaping sit at the boundary; a sandbox the text promises is enforced by the platform; server-side fetches of user-influenced URLs are allowlisted.
 - check: trace each such string to where it becomes structure and try a newline, a quote, `..`, `#`, `${` and a 10 MB value. Repro: the input and the structure it injects.
-- find: `dangerouslySetInnerHTML|\.innerHTML\s*=`
-- find: `\bexec(Sync)?\(\s*\x60`
-- find: `shell\s*=\s*True|\bos\.system\(|exec\.Command\(\s*"(ba|z)?sh"\s*,\s*"-c"|Runtime\.getRuntime\(\)\.exec\(`
 - find: `\bf["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*\{|\.(query|execute|raw|exec)\(\s*\x60[^\x60]*\$\{|["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*(\+|%\s)`
 
 ### secret-egress: secrets and personal data stay in
 - blocks: high
 - when: added `(token|secret|password|passwd|api_?key|credential|private|hash|console\.|logger\.|log\.(info|debug|warn|error)|export|backup|audit)`
-- find: `\b(console\.\w+|logger?\.\w+|log\.\w+|print)\(.*\b([Pp]assw(or)?d|[Ss]ecret|[Tt]oken(?!s\b)|[Aa]pi_?[Kk]ey|[Aa]uthorization|[Cc]redential)s?\b(?!\s*(count|length|of|in a row))` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Credentials, hashes and personal data never leave through responses, exports, backups, audit records, logs, error text, client bundles, URLs or model prompts. Production refuses to store a secret in plaintext when its encryption key is missing.
 - check: trace each secret field to every serializer, log line and export. Repro: the response, export or log line that contains it.
 
 ### agent-safety: model and tool output is data, loops stop
 - blocks: medium
 - when: added `(tool|prompt|agent|llm|model|mcp|messages\.create)`
-- find: `(?<![.\w])(eval|exec|execSync)\(\s*[a-z_]\w*\s*[,)]|\bnew\s+Function\(` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Model and tool output is parsed with a schema and authorized like user input before it drives a query, path, command or id. Agent loops cap turns, tokens and repeated calls and stop with a report at the cap. "Done" comes from observed state, not from the model's claim. MCP tools validate input, bound output and return errors as errors.
 - check: feed malformed output, a tool error and a run that hits the cap. Repro: the output and the wrong action or silent stop.
 
@@ -158,14 +137,12 @@ needs.
 ### per-user-scope: per-user data is keyed per user
 - blocks: medium
 - when: added `(owner|tenant|user_?id|session|cache|new Map\(|global|singleton)`
-- find: `^(export\s+)?(const|let|var)\s+[a-z]\w*\s*=\s*new\s+Map\(\s*\)|^[a-z_]\w*\s*(:\s*[\w\[\], ]+)?\s*=\s*(\{\}|dict\(\))\s*$` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: Ids, caches, stores and defaults that hold per-user data are keyed per user, and every sibling query applies the same scope.
 - check: two users with the same name or id. Repro: the two calls and what one sees or overwrites of the other.
 
 ### partial-results: a dropped part is reported
 - blocks: medium
 - when: added `(limit|slice\(|take|truncat|skip|ignor|\.filter\()`
-- find: `catch\s*(\([^)]*\))?\s*\{\s*continue\s*;?\s*\}|except\b[^:\n]*:\s*continue\b` in path `^(?!.*(^|/)(tests?|spec|__tests__)/)(?!.*[._-](test|spec)\.)`
 - rule: When an operation drops, skips, truncates or ignores part of its input, the result says so, and what is kept is deterministic (sorted before the limit).
 - check: an input larger than the limit or with an ignored field. Repro: the call that returns success while part of it was lost.
 
@@ -176,14 +153,13 @@ needs.
 - when: always
 - rule: Each acceptance scenario and each new error branch has a test that drives the entry point the user or caller uses, asserts the specific outcome (which item, which status, which row), uses the data shape the bug needs, and runs real SQL or IO where the bug lives. Asserting a count, truthiness or a mock the test itself set up does not count.
 - check: `lpk mutate --test "<command>"` reverts each changed source file in a scratch copy and runs the tests; a file whose revert leaves them green is not proved by any test.
-- find: `\b(it|test|describe)\.(only|skip)\(|\b[xf](it|describe)\(|\bt\.Skip(Now|f)?\(|@pytest\.mark\.skip|@unittest\.skip|#\[ignore\]|@(Disabled|Ignore)\b`
 
 ### ci-runs-it: CI runs the new checks and still starts
 - blocks: high
 - when: path `(test|spec|__tests__|\.github/workflows|package\.json|pyproject|Makefile|tox\.ini|vitest|jest|playwright|tsconfig)`
 - rule: New tests and scripts run in a CI job that starts, on the runtime version the dependencies need, also when the PR's base is not the default branch (a stacked PR whose base the gate skips). No gate is skipped, loosened or made non-blocking to pass, and tests avoid sleeps, wall-clock time, shared rows and fixed ports.
 - check: find each new test file or script in a CI command (`lpk facts` lists them) and read workflow contexts at the level they are used. Repro: the CI command list that never reaches the file.
-- find: `continue-on-error:\s*true|\|\|\s*true\b`
+- find: `\|\|\s*true\b` in path `^(?!.*\.github/workflows/).*(Makefile|\.mk|Dockerfile[^/]*|package\.json|\.ya?ml)$`
 
 ### deploy-wiring: new config reaches the running container
 - blocks: high
@@ -242,6 +218,5 @@ needs.
 ### ui-states: every async view shows every state
 - blocks: medium
 - when: path `\.(tsx|jsx|vue|svelte|dart)$`
-- find: `\bonClick=\{\s*async\b` in path `\.(tsx|jsx)$`
 - rule: Each async view shows loading, error, empty and success distinctly; errors are visible and say what to do; a submit cannot fire twice; after an action fails or is cancelled, its busy state clears and the controls work again; destructive actions confirm; the layout main had (scroll, spacing, focus) still works.
 - check: on the page, try a slow network, a failing API, empty data and a double click; make an action fail once, then retry it without reloading. Repro: the screenshot.

@@ -1,0 +1,33 @@
+id: config-validated.javascript
+valid:
+  - "const port = parsePort(process.env.PORT)"
+  - "const port = Number(config.port)"
+  - "const n = parseInt(input, 10)"
+invalid:
+  - "const port = parseInt(process.env.PORT, 10)"
+  - "const ttl = Number(process.env.TTL ?? 60)"
+  - "const r = parseFloat(process.env.RATE)"
+---
+id: config-validated.typescript
+valid:
+  - "const port = parsePort(process.env.PORT)"
+  - "const url = parseUrl(import.meta.env.VITE_API_URL)"
+invalid:
+  - "const port = parseInt(process.env.PORT, 10)"
+  - "const url = import.meta.env.VITE_API_URL as string"
+---
+id: config-validated.tsx
+valid:
+  - "const port = parsePort(process.env.PORT)"
+  - "const url = parseUrl(import.meta.env.VITE_API_URL)"
+invalid:
+  - "const port = parseInt(process.env.PORT, 10)"
+  - "const url = import.meta.env.VITE_API_URL as string"
+---
+id: config-validated.python
+valid:
+  - "port = parse_port(os.environ.get(\"PORT\"))"
+  - "n = int(value)"
+invalid:
+  - "port = int(os.environ[\"PORT\"])"
+  - "ttl = float(os.getenv(\"TTL\", \"60\"))"

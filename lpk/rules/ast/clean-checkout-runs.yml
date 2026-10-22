@@ -1,0 +1,53 @@
+id: clean-checkout-runs.javascript
+language: JavaScript
+severity: warning
+message: "a fresh clone runs with only the documented steps"
+rule:
+  kind: string
+  regex: '^[\x22\x27](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)[\x22\x27]$'
+  inside:
+    any:
+      - kind: variable_declarator
+      - kind: assignment_expression
+      - kind: assignment_pattern
+---
+id: clean-checkout-runs.typescript
+language: TypeScript
+severity: warning
+message: "a fresh clone runs with only the documented steps"
+rule:
+  kind: string
+  regex: '^[\x22\x27](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)[\x22\x27]$'
+  inside:
+    any:
+      - kind: variable_declarator
+      - kind: assignment_expression
+      - kind: required_parameter
+      - kind: optional_parameter
+---
+id: clean-checkout-runs.tsx
+language: Tsx
+severity: warning
+message: "a fresh clone runs with only the documented steps"
+rule:
+  kind: string
+  regex: '^[\x22\x27](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)[\x22\x27]$'
+  inside:
+    any:
+      - kind: variable_declarator
+      - kind: assignment_expression
+      - kind: required_parameter
+      - kind: optional_parameter
+---
+id: clean-checkout-runs.python
+language: Python
+severity: warning
+message: "a fresh clone runs with only the documented steps"
+rule:
+  kind: string
+  regex: '^[rRbBuU]?[\x22\x27](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)[\x22\x27]$'
+  inside:
+    any:
+      - kind: assignment
+      - kind: default_parameter
+      - kind: keyword_argument

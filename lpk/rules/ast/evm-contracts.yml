@@ -1,0 +1,13 @@
+id: evm-contracts.solidity
+language: Solidity
+severity: warning
+message: "a contract keeps funds safe from callers and callees"
+rule:
+  any:
+    - kind: member_expression
+      regex: '^tx\.origin$'
+    - kind: call_expression
+      has:
+        field: function
+        kind: expression
+        regex: '(^|\.)(delegatecall|ecrecover)$'

@@ -1,0 +1,14 @@
+id: rust-traps.rust
+language: Rust
+severity: warning
+message: "Rust code does not panic or race where it can recover"
+rule:
+  any:
+    - kind: static_item
+      has:
+        kind: mutable_specifier
+    - kind: impl_item
+      regex: '^unsafe\s'
+      has:
+        field: trait
+        regex: '(^|::)(Send|Sync)$'

@@ -1,0 +1,101 @@
+id: tests-prove.javascript
+valid:
+  - "it(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe(\"math\", () => { test(\"adds\", () => {}) })"
+  - "const s = \"it.only(x)\""
+  - "queue.skip(job)"
+invalid:
+  - "it.only(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe.skip(\"math\", () => {})"
+  - "test.skip(\"adds\", () => {})"
+  - "xit(\"adds\", () => {})"
+  - "fdescribe(\"math\", () => {})"
+---
+id: tests-prove.typescript
+valid:
+  - "it(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe(\"math\", () => { test(\"adds\", () => {}) })"
+  - "const s = \"it.only(x)\""
+  - "queue.skip(job)"
+invalid:
+  - "it.only(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe.skip(\"math\", () => {})"
+  - "test.skip(\"adds\", () => {})"
+  - "xit(\"adds\", () => {})"
+  - "fdescribe(\"math\", () => {})"
+---
+id: tests-prove.tsx
+valid:
+  - "it(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe(\"math\", () => { test(\"adds\", () => {}) })"
+  - "const s = \"it.only(x)\""
+  - "queue.skip(job)"
+invalid:
+  - "it.only(\"adds\", () => { expect(add(1, 2)).toBe(3) })"
+  - "describe.skip(\"math\", () => {})"
+  - "test.skip(\"adds\", () => {})"
+  - "xit(\"adds\", () => {})"
+  - "fdescribe(\"math\", () => {})"
+---
+id: tests-prove.go
+valid:
+  - |-
+      package main
+      func TestX(t *testing.T) {
+      	t.Fatal("no")
+      }
+invalid:
+  - |-
+      package main
+      func TestX(t *testing.T) {
+      	t.Skip("flaky")
+      }
+  - |-
+      package main
+      func TestX(t *testing.T) {
+      	t.Skipf("needs %s", dep)
+      }
+---
+id: tests-prove.python
+valid:
+  - |-
+      @pytest.mark.parametrize("x", [1, 2])
+      def test_x(x):
+          assert x
+invalid:
+  - |-
+      @pytest.mark.skip(reason="flaky")
+      def test_x():
+          assert True
+  - |-
+      @unittest.skip("later")
+      def test_y(self):
+          pass
+---
+id: tests-prove.rust
+valid:
+  - |-
+      #[test]
+      fn adds() { assert_eq!(1 + 1, 2); }
+invalid:
+  - |-
+      #[test]
+      #[ignore]
+      fn adds() { assert_eq!(1 + 1, 2); }
+  - |-
+      #[test]
+      #[ignore = "slow"]
+      fn adds() {}
+---
+id: tests-prove.java
+valid:
+  - "class A { @Test void adds() { assertEquals(2, 1 + 1); } }"
+invalid:
+  - "class A { @Test @Disabled void adds() { assertEquals(2, 1 + 1); } }"
+  - "class A { @Ignore(\"slow\") @Test void adds() {} }"
+---
+id: tests-prove.kotlin
+valid:
+  - "class A { @Test fun adds() { assertEquals(2, 1 + 1) } }"
+invalid:
+  - "class A { @Test @Disabled fun adds() { assertEquals(2, 1 + 1) } }"

@@ -23,10 +23,6 @@ Seen: lpk audit 2026-10-13 (`reviews fetch` wrote nothing until every page was r
 ### engine-limits: numbers and arrays stay inside the runtime's limits
 - blocks: medium
 - when: added `(set(Timeout|Interval)\(|Math\.(max|min)\(|Number\.isInteger|\.\.\.[\w.]+\)|recurs|function\s+visit\b|def\s+visit\b)`
-- find: `Math\.(max|min)\(\s*([\w.]+\s*,\s*)*\.\.\.`
-- find: `\.push\(\s*\.\.\.`
-- find: `String\.fromCharCode\(\s*\.\.\.`
-- find: `\bNumber\.isInteger\(`
 - rule: A value that reaches a runtime limit is kept inside it: a timer delay taken from input or props is clamped below 2^31-1 ms (above it `setTimeout` fires at once), an integer check uses `Number.isSafeInteger`, an array of unbounded length is never spread into a call's arguments (`Math.max(...a)`, `push(...a)`), and recursion whose depth follows the data is iterative or capped.
 - check: feed each new timer a delay of 3e9 ms, each integer check 2^53+2, each spread a 200000-element array and each recursive walk a 10000-deep chain. Repro: the timer that fires at once, the value stored as the wrong type, or the `RangeError: Maximum call stack size exceeded`.
 Seen: tech lead review
@@ -34,7 +30,6 @@ Seen: tech lead review
 ### keyboard-reachable: every pointer action has a keyboard path
 - blocks: medium
 - when: added `(\bon(Click|MouseDown|DoubleClick)=|onKeyDown=|tabIndex=|scrollIntoView|aria-activedescendant)`
-- find: `<(td|tr|div|span|li)\b[^>]*\bonClick=`
 - rule: Whatever a mouse can act on (a row, a cell, a card, a tab) is focusable and fires on Enter or Space; the element that takes focus by default is never a disabled control; and a highlight moved by the arrow keys is scrolled into view.
 - check: on the page, reach and operate each new action with Tab, the arrow keys, Enter and Space only, with the selected item disabled and with more results than fit. Repro: the action no key fires, the strip the keyboard cannot enter, or the highlight out of sight.
 Seen: tech lead review
@@ -49,7 +44,6 @@ Seen: tech lead review
 ### exclusive-bind: a port one instance must own is bound exclusively
 - blocks: medium
 - when: added `(SO_REUSE(ADDR|PORT)|\.bind\(\(|createSocket\(|\.listen\(\s*\d)`
-- find: `SO_REUSE(ADDR|PORT)`
 - rule: A socket that one instance must own is bound without `SO_REUSEADDR` or `SO_REUSEPORT` on UDP (with them a second binder succeeds and the kernel delivers every datagram to the last one), so a collision raises and is reported, never shared silently.
 - check: bind the port from two instances and send to it. Repro: both binds succeed and the first instance receives nothing with no log line.
 Seen: tech lead review

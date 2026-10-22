@@ -1,0 +1,284 @@
+id: untrusted-to-structure.typescript
+language: TypeScript
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - kind: pair
+      regex: '^dangerouslySetInnerHTML\s*:'
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          all:
+            - has:
+                field: key
+                regex: '^__html$'
+            - has:
+                field: value
+                any:
+                  - kind: string
+                  - kind: call_expression
+                    has:
+                      field: function
+                      regex: 'sanitize'
+    - any:
+        - kind: assignment_expression
+        - kind: augmented_assignment_expression
+      all:
+        - has:
+            field: left
+            kind: member_expression
+            has:
+              field: property
+              regex: '^innerHTML$'
+        - not:
+            has:
+              field: right
+              any:
+                - kind: string
+                - kind: template_string
+                  not:
+                    has:
+                      kind: template_substitution
+                - kind: call_expression
+                  has:
+                    field: function
+                    regex: 'sanitize'
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(exec|execSync|query|execute|raw)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(exec|execSync|query|execute|raw)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              kind: template_string
+              has:
+                kind: template_substitution
+    - kind: template_string
+      regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      has:
+        kind: template_substitution
+      not:
+        inside:
+          kind: call_expression
+    - pattern: $L + $R
+      all:
+        - has:
+            field: left
+            kind: string
+            regex: '^[\x22\x27]\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+        - not:
+            has:
+              field: right
+              kind: string
+---
+id: untrusted-to-structure.javascript
+language: JavaScript
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - kind: pair
+      regex: '^dangerouslySetInnerHTML\s*:'
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          all:
+            - has:
+                field: key
+                regex: '^__html$'
+            - has:
+                field: value
+                any:
+                  - kind: string
+                  - kind: call_expression
+                    has:
+                      field: function
+                      regex: 'sanitize'
+    - any:
+        - kind: assignment_expression
+        - kind: augmented_assignment_expression
+      all:
+        - has:
+            field: left
+            kind: member_expression
+            has:
+              field: property
+              regex: '^innerHTML$'
+        - not:
+            has:
+              field: right
+              any:
+                - kind: string
+                - kind: template_string
+                  not:
+                    has:
+                      kind: template_substitution
+                - kind: call_expression
+                  has:
+                    field: function
+                    regex: 'sanitize'
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(exec|execSync|query|execute|raw)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(exec|execSync|query|execute|raw)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              kind: template_string
+              has:
+                kind: template_substitution
+    - kind: template_string
+      regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      has:
+        kind: template_substitution
+      not:
+        inside:
+          kind: call_expression
+    - pattern: $L + $R
+      all:
+        - has:
+            field: left
+            kind: string
+            regex: '^[\x22\x27]\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+        - not:
+            has:
+              field: right
+              kind: string
+    - kind: jsx_attribute
+      regex: '^dangerouslySetInnerHTML\s*='
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          all:
+            - has:
+                field: key
+                regex: '^__html$'
+            - has:
+                field: value
+                any:
+                  - kind: string
+                  - kind: call_expression
+                    has:
+                      field: function
+                      regex: 'sanitize'
+---
+id: untrusted-to-structure.tsx
+language: Tsx
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - kind: pair
+      regex: '^dangerouslySetInnerHTML\s*:'
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          all:
+            - has:
+                field: key
+                regex: '^__html$'
+            - has:
+                field: value
+                any:
+                  - kind: string
+                  - kind: call_expression
+                    has:
+                      field: function
+                      regex: 'sanitize'
+    - any:
+        - kind: assignment_expression
+        - kind: augmented_assignment_expression
+      all:
+        - has:
+            field: left
+            kind: member_expression
+            has:
+              field: property
+              regex: '^innerHTML$'
+        - not:
+            has:
+              field: right
+              any:
+                - kind: string
+                - kind: template_string
+                  not:
+                    has:
+                      kind: template_substitution
+                - kind: call_expression
+                  has:
+                    field: function
+                    regex: 'sanitize'
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            any:
+              - kind: identifier
+                regex: '^(exec|execSync|query|execute|raw)$'
+              - kind: member_expression
+                has:
+                  field: property
+                  regex: '^(exec|execSync|query|execute|raw)$'
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              kind: template_string
+              has:
+                kind: template_substitution
+    - kind: template_string
+      regex: '^\x60\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      has:
+        kind: template_substitution
+      not:
+        inside:
+          kind: call_expression
+    - pattern: $L + $R
+      all:
+        - has:
+            field: left
+            kind: string
+            regex: '^[\x22\x27]\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+        - not:
+            has:
+              field: right
+              kind: string
+    - kind: jsx_attribute
+      regex: '^dangerouslySetInnerHTML\s*='
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          all:
+            - has:
+                field: key
+                regex: '^__html$'
+            - has:
+                field: value
+                any:
+                  - kind: string
+                  - kind: call_expression
+                    has:
+                      field: function
+                      regex: 'sanitize'

@@ -9,19 +9,14 @@ one `catalog.md` describes.
 
 ### route-authz
 - when: added `(@(app|router)\.websocket\(|add_websocket_route\(|new WebSocketServer\(|\.ws\()`
-- find: `@(app|router)\.websocket\(|add_websocket_route\(`
 - find: `\.get\(\s*['"\x60][^'"\x60]*(logout|signout|sign-out|revoke|delete|remove|disable)`
-- find: `(\.update\(\s*(req\.body|request\.body|updated_data|payload)\s*\)|Object\.assign\(\s*\w+\s*,\s*(req|request)\.body\s*\))`
 
 ### atomic-transition
 - when: added `(\battempts?\b|retr(y|ies)_?count|json\.dump\(|writeFile(Sync)?\()`
-- find: `\battempts\s*\+\s*1\b`
 
 ### client-session: a browser session is stored safely, expires cleanly and reaches every request
 - blocks: medium
 - when: added `(localStorage|sessionStorage|new (WebSocket|EventSource)\(|axios\.create\(|interceptors\.|Authorization)`
-- find: `localStorage\.setItem\(\s*['"\x60][\w.-]*([Tt]oken|[Jj]wt|[Aa]uth)`
-- find: `new EventSource\(`
 - rule: A browser client keeps session tokens out of script-readable storage or states the threat model it accepts; it checks expiry and answers a 401 by clearing the session and sending the user to sign in and back to where they were; every HTTP client instance and every stream (WebSocket, SSE) carries the credential by a mechanism that API supports, created from one shared factory, and the refresh and profile flows it builds are wired into that path.
 - check: sign in, expire or delete the token, reload each page and open each stream with the network panel open; list every `axios.create`, `fetch` wrapper, `WebSocket` and `EventSource` and the header or cookie each sends. Repro: the request that goes out without the credential, or the page left broken after expiry.
 
@@ -35,18 +30,16 @@ one `catalog.md` describes.
 ## Failure handling
 
 ### no-silent-failure
-- find: `\]\s*&&\s*[^|&\n]+\|\|\s*\S`
+- find: `\]\s*&&\s*[^|&\n]+\|\|\s*\S` in path `^(?!.*\.github/workflows/).*(Makefile|\.mk|Dockerfile[^/]*|package\.json|\.ya?ml)$`
 
 ### timeouts-retries
 - when: added `(readTx|writeTx|executeRead|executeWrite|session\.run\(|createTransport\(|sendMail\(|httpx\.(Async)?Client\(|requests\.(get|post|put|patch|delete)\(|urlopen\(|WAIT_FOREVER)`
-- find: `TIMEOUT_WAIT_FOREVER|\btimeout\s*=\s*None\b`
 
 ## Bounds and time
 
 ### bounded-work
 - when: added `(on-failure|restart_?policy|MaximumRetryCount|max_?retries|allowList|\bMATCH\s*\(|new Map\(|\bcache\b)`
 - find: `on-failure:\d\b|MaximumRetryCount['"]?\s*[:=]\s*\d\b`
-- find: `set\w*(Log|Line|Message|Event|Output|Chunk)s?\w*\(\s*\(?\s*\w+\s*\)?\s*=>\s*\[\s*\.\.\.\w+\s*,`
 
 ### resource-lifecycle
 - when: added `(\b[A-Z]\w*Client\(|createWriteStream\(|asynccontextmanager|lifespan|__aexit__|\.cancel\(\))`
@@ -65,16 +58,13 @@ one `catalog.md` describes.
 
 ### degenerate-input
 - when: added `(\.r?partition\(|json\.loads?\(|yaml\.(safe_)?load\(|Array\.isArray\(|\.get\(\s*['"][^'"]+['"]\s*,\s*(\{\}|\[\])\s*\))`
-- find: `\.get\(\s*['"][^'"]+['"]\s*,\s*(\{\}|\[\])\s*\)\s*\.\s*(items|keys|values|get)\(`
 
 ### untrusted-to-structure
 - when: added `\b(base_?url|baseURL)\b`
-- find: `\.extractall\(`
 
 ### secret-egress
 - when: path `(^|/)Dockerfile[^/]*$`
 - find: `^\s*COPY\s+(--\S+\s+)*\S*\.env(\.\w+)?\s`
-- find: `\.json\(\s*\{\s*error:\s*\w+\.message|detail\s*=\s*str\(\s*e\w*\s*\)`
 
 ### agent-safety
 - find: `type:\s*['"]\w+,\s`
@@ -83,7 +73,6 @@ one `catalog.md` describes.
 - blocks: high
 - when: added `(password|passwd|secret|api_?key|credential|_PW\b|://[^\s/:@]+:[^\s/@]+@)`
 - when: path `(^|/)(\.env[^/]*|[^/]*compose[^/]*\.ya?ml|alembic\.ini|settings\.py|[^/]*seed[^/]*|migrations?/[^/]+\.sql)$`
-- find: `(process\.env\.\w*(PASSWORD|_PW|SECRET|TOKEN|API_?KEY)\w*|os\.(environ\.get|getenv)\(\s*['"]\w*(PASSWORD|SECRET|TOKEN|API_?KEY)\w*['"]\)?)\s*(\?\?|\|\||,|\bor\b)\s*['"][^'"]+['"]`
 - find: `\b[a-z][a-z0-9+]*://[^\s:/@'"$]+:[^\s@/'"$]+@[\w.-]+`
 - find: `\bcp\s+\S*\.env\.example\s+\S*\.env\b`
 - find: `(PASSWORD|_AUTH)\w*['"]?\s*[:=]\s*['"]?(\w+/)?(password|admin|changeme|change-me|secret)\w*`
@@ -94,8 +83,6 @@ one `catalog.md` describes.
 - blocks: medium
 - when: added `(process\.env|os\.environ|getenv|import\.meta\.env|\bPORT\b)`
 - when: path `(^|/)(\.env[^/]*|[^/]*config[^/]*\.(ya?ml|json|toml)|settings\.py)$`
-- find: `\b(int|float|Number|parseInt|parseFloat)\(\s*(os\.(environ|getenv)|process\.env)`
-- find: `import\.meta\.env\.\w+\s+as\s+string`
 - find: `^[A-Z][A-Z0-9_]*=[^\s#'"]+#`
 - rule: Each setting is parsed and checked when it loads (type, range, allowed values, settings that must come together) and a bad value fails with a message naming the setting. A default belongs to the option that uses it and is valid for the client that consumes it; a specific setting overrides the generic one it falls back to; an optional dependency or config key that can be unset or null gets a defined default or is required at construction, never stored as undefined. Config templates list each key once with values the loader reads exactly as written, and services deployed together have distinct default ports that every reference agrees on.
 - check: start the service with each new setting unset, empty, null in YAML, zero, negative, a misspelt enum value, and with the template copied unchanged; diff the ports in Dockerfile, compose, health checks and code defaults. Repro: the value and the crash, wrong routing or silent misconfiguration it causes.
@@ -124,13 +111,12 @@ one `catalog.md` describes.
 - find: `['"]\d{4}_\w+\.sql['"]`
 
 ### mechanical-gates
-- find: `@ts-nocheck\b|/\*\s*eslint-disable\s*\*/`
 
 ### clean-checkout-runs: a fresh clone runs with only the documented steps
 - blocks: medium
 - when: path `(^|/)(README[^/]*|[^/]+\.sh|Makefile|Dockerfile[^/]*|[^/]*compose[^/]*\.ya?ml|\.env\.example)$`
 - when: added `(__file__|process\.cwd\(\)|os\.getcwd\(\)|\$\(dirname|\bopen\(\s*['"]\.?/?[\w-]+/)`
-- find: `=\s*['"](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)['"]`
+- find: `=\s*['"](\./)?[\w-]+/[\w./-]+\.(json|db|sqlite|csv)['"]` in path `^(?!.*\.(m?[jt]sx?|cjs|py)$)`
 - rule: A fresh clone works by following only the documented steps, from any working directory. Default paths resolve from the module or from config, never from the current directory; parent directories are created before a write; every config fragment, build output and file a script or service needs exists in the repo or image when it starts; defaults in code and templates work against the real client; and a module the tests import does not hard-import a dependency CI does not install.
 - check: clone into an empty directory, follow the README or run the script exactly as written, once from another working directory, then run the test command. Repro: the command and its first error.
 
@@ -165,7 +151,5 @@ one `catalog.md` describes.
 - blocks: low
 - when: added `^\s*(//|#)\s*(const|let|var|import|from|await|return)\b`
 - when: path `(^|/)(package\.json|requirements[^/]*\.txt|pyproject\.toml)$`
-- find: `^\s*//\s*(const|let|var)\s+\w+\s*=|^\s*//\s*(await|return)\s+[\w.]+\(.*\)\s*;?\s*$|^\s*//\s*import\s.+\bfrom\s+['"]`
-- find: `^\s*#\s*(from\s+[\w.]+\s+import\s+\w|import\s+[\w.]+\s*$)`
 - rule: The change leaves no commented-out code, unreachable statements, uncalled functions or exports, unused parameters or dependencies, settings that have no effect on the configured platform, or two libraries for one purpose. A flow the change builds is wired into the path users take, and a library, file or setting it replaces is removed in the same change.
 - check: for each new export, file, dependency and setting, grep for its references; read the lines after each `return`. Repro: the definition and the empty reference list, or the commented-out block.

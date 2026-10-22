@@ -1,0 +1,39 @@
+id: atomic-transition.javascript
+language: JavaScript
+severity: warning
+message: "the expected prior state is checked inside the write"
+rule:
+  pattern: $A + 1
+constraints:
+  A:
+    regex: '(^|\.)attempts$'
+---
+id: atomic-transition.typescript
+language: TypeScript
+severity: warning
+message: "the expected prior state is checked inside the write"
+rule:
+  pattern: $A + 1
+constraints:
+  A:
+    regex: '(^|\.)attempts$'
+---
+id: atomic-transition.tsx
+language: Tsx
+severity: warning
+message: "the expected prior state is checked inside the write"
+rule:
+  pattern: $A + 1
+constraints:
+  A:
+    regex: '(^|\.)attempts$'
+---
+id: atomic-transition.python
+language: Python
+severity: warning
+message: "the expected prior state is checked inside the write"
+rule:
+  pattern: $A + 1
+constraints:
+  A:
+    regex: '(^|\.)attempts$'

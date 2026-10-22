@@ -1,0 +1,39 @@
+id: ui-states.javascript
+language: JavaScript
+severity: warning
+message: "every async view shows every state"
+files:
+  - "**/*.jsx"
+rule:
+  kind: jsx_attribute
+  all:
+    - has:
+        kind: property_identifier
+        regex: '^onClick$'
+    - has:
+        kind: jsx_expression
+        has:
+          any:
+            - kind: arrow_function
+            - kind: function_expression
+          regex: '^async\b'
+---
+id: ui-states.tsx
+language: Tsx
+severity: warning
+message: "every async view shows every state"
+files:
+  - "**/*.tsx"
+rule:
+  kind: jsx_attribute
+  all:
+    - has:
+        kind: property_identifier
+        regex: '^onClick$'
+    - has:
+        kind: jsx_expression
+        has:
+          any:
+            - kind: arrow_function
+            - kind: function_expression
+          regex: '^async\b'

@@ -1,0 +1,29 @@
+id: client-session.javascript
+valid:
+  - "localStorage.setItem(\"theme\", \"dark\")"
+  - "sessionStorage.setItem(\"token\", t)"
+  - "const w = new WebSocket(url)"
+invalid:
+  - "localStorage.setItem(\"authToken\", token)"
+  - "window.localStorage.setItem(\"jwt\", res.data.jwt)"
+  - "const es = new EventSource(\"/events\")"
+---
+id: client-session.typescript
+valid:
+  - "localStorage.setItem(\"theme\", \"dark\")"
+  - "sessionStorage.setItem(\"token\", t)"
+  - "const w = new WebSocket(url)"
+invalid:
+  - "localStorage.setItem(\"authToken\", token)"
+  - "window.localStorage.setItem(\"jwt\", res.data.jwt)"
+  - "const es = new EventSource(\"/events\")"
+---
+id: client-session.tsx
+valid:
+  - "localStorage.setItem(\"theme\", \"dark\")"
+  - "sessionStorage.setItem(\"token\", t)"
+  - "const w = new WebSocket(url)"
+invalid:
+  - "localStorage.setItem(\"authToken\", token)"
+  - "window.localStorage.setItem(\"jwt\", res.data.jwt)"
+  - "const es = new EventSource(\"/events\")"

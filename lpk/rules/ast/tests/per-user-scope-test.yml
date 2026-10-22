@@ -1,0 +1,47 @@
+id: per-user-scope.javascript
+valid:
+  - |-
+      function make() {
+        const cache = new Map()
+        return cache
+      }
+  - "const REGISTRY = new Map()"
+  - "const byUser = new Map([[1, 2]])"
+  - "const s = \"const cache = new Map()\""
+invalid:
+  - "const sessions = new Map()"
+  - "export const lastSeen = new Map()"
+  - "let cache = new Map()"
+---
+id: per-user-scope.typescript
+valid:
+  - |-
+      function make() {
+        const cache = new Map<string, number>()
+        return cache
+      }
+invalid:
+  - "export const sessions = new Map<string, Session>()"
+---
+id: per-user-scope.tsx
+valid:
+  - |-
+      function make() {
+        const cache = new Map<string, number>()
+        return cache
+      }
+invalid:
+  - "export const sessions = new Map<string, Session>()"
+---
+id: per-user-scope.python
+valid:
+  - |-
+      def make():
+          cache = {}
+          return cache
+  - "CACHE = {}"
+  - "defaults = {\"a\": 1}"
+invalid:
+  - "_cache = {}"
+  - "sessions: dict = {}"
+  - "by_user = dict()"

@@ -1,0 +1,52 @@
+id: python-traps.python
+valid:
+  - |-
+      def f(items=None):
+          items = items or []
+  - |-
+      def f(items=()):
+          pass
+  - |-
+      def f(n: int = 3):
+          pass
+  - |-
+      try:
+          run()
+      except Exception:
+          raise
+  - |-
+      try:
+          run()
+      except (OSError, ValueError) as e:
+          raise
+  - "cfg = yaml.safe_load(text)"
+  - "cfg = yaml.load(text, Loader=yaml.SafeLoader)"
+  - "cfg = yaml.load(text, yaml.CSafeLoader)"
+  - "data = json.loads(text)"
+invalid:
+  - |-
+      def f(items=[]):
+          items.append(1)
+  - |-
+      def f(seen={}):
+          pass
+  - |-
+      def f(tags: list = list()):
+          pass
+  - |-
+      def f(seen=set()):
+          pass
+  - |-
+      try:
+          run()
+      except:
+          pass
+  - |-
+      try:
+          run()
+      except:  # anything
+          log.error("failed")
+  - "cfg = yaml.load(text)"
+  - "cfg = yaml.load(text, Loader=yaml.FullLoader)"
+  - "obj = pickle.loads(blob)"
+  - "obj = pickle.load(fh)"

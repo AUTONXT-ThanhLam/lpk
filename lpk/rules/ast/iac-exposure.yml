@@ -1,0 +1,33 @@
+id: iac-exposure.json
+language: Json
+severity: warning
+message: "infrastructure is not opened to the world by default"
+rule:
+  kind: pair
+  all:
+    - has:
+        field: key
+        regex: '^"(Action|Resource)"$'
+    - has:
+        field: value
+        any:
+          - kind: string
+            regex: '^"\*"$'
+          - kind: array
+            has:
+              kind: string
+              regex: '^"\*"$'
+---
+id: iac-exposure.hcl
+language: Hcl
+severity: warning
+message: "infrastructure is not opened to the world by default"
+rule:
+  kind: attribute
+  all:
+    - has:
+        kind: identifier
+        regex: '^prevent_destroy$'
+    - has:
+        kind: expression
+        regex: '^false$'

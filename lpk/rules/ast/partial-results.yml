@@ -1,0 +1,221 @@
+id: partial-results.javascript
+language: JavaScript
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: statement_block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'
+---
+id: partial-results.typescript
+language: TypeScript
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: statement_block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'
+---
+id: partial-results.tsx
+language: Tsx
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: statement_block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'
+---
+id: partial-results.python
+language: Python
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: except_clause
+  has:
+    kind: block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - kind: comment
+---
+id: partial-results.java
+language: Java
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'
+---
+id: partial-results.csharp
+language: CSharp
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: block
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'
+---
+id: partial-results.php
+language: Php
+severity: warning
+message: "a dropped part is reported"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  kind: catch_clause
+  has:
+    field: body
+    kind: compound_statement
+    all:
+      - has:
+          kind: continue_statement
+      - not:
+          has:
+            not:
+              any:
+                - kind: continue_statement
+                - regex: '^[{}]$'
+                - regex: '^(//|/\*|#)'

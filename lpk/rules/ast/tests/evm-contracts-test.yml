@@ -1,0 +1,8 @@
+id: evm-contracts.solidity
+valid:
+  - "contract A { function f() public { require(msg.sender == owner); } }"
+  - "contract A { function f() public { (bool ok,) = a.call(d); } }"
+invalid:
+  - "contract A { function f() public { require(tx.origin == owner); } }"
+  - "contract A { function f() public { (bool ok,) = a.delegatecall(d); } }"
+  - "contract A { function f() public { address s = ecrecover(h, v, r, s); } }"

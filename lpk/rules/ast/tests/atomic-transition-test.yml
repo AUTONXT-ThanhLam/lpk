@@ -1,0 +1,35 @@
+id: atomic-transition.javascript
+valid:
+  - "const next = row.retries + 1"
+  - "const n = attempts + 2"
+  - "const n = maxAttempts + 1"
+invalid:
+  - "await db.update(job.id, { attempts: job.attempts + 1 })"
+  - "const next = attempts + 1"
+---
+id: atomic-transition.typescript
+valid:
+  - "const next = row.retries + 1"
+  - "const n = attempts + 2"
+  - "const n = maxAttempts + 1"
+invalid:
+  - "await db.update(job.id, { attempts: job.attempts + 1 })"
+  - "const next = attempts + 1"
+---
+id: atomic-transition.tsx
+valid:
+  - "const next = row.retries + 1"
+  - "const n = attempts + 2"
+  - "const n = maxAttempts + 1"
+invalid:
+  - "await db.update(job.id, { attempts: job.attempts + 1 })"
+  - "const next = attempts + 1"
+---
+id: atomic-transition.python
+valid:
+  - "const next = row.retries + 1"
+  - "const n = attempts + 2"
+  - "const n = maxAttempts + 1"
+invalid:
+  - "await db.update(job.id, { attempts: job.attempts + 1 })"
+  - "const next = attempts + 1"

@@ -1,0 +1,117 @@
+id: resource-lifecycle.javascript
+language: JavaScript
+severity: warning
+message: "what is acquired is released on every path"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: createReadStream($$$A)
+    - pattern: createWriteStream($$$A)
+    - pattern: $O.createReadStream($$$A)
+    - pattern: $O.createWriteStream($$$A)
+    - pattern: $O.acquire($$$A)
+    - pattern: new WebSocket($$$A)
+    - pattern: new EventSource($$$A)
+    - pattern: new Worker($$$A)
+    - pattern: $O.addEventListener($$$A)
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          regex: '^once\s*:\s*true$'
+---
+id: resource-lifecycle.typescript
+language: TypeScript
+severity: warning
+message: "what is acquired is released on every path"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: createReadStream($$$A)
+    - pattern: createWriteStream($$$A)
+    - pattern: $O.createReadStream($$$A)
+    - pattern: $O.createWriteStream($$$A)
+    - pattern: $O.acquire($$$A)
+    - pattern: new WebSocket($$$A)
+    - pattern: new EventSource($$$A)
+    - pattern: new Worker($$$A)
+    - pattern: $O.addEventListener($$$A)
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          regex: '^once\s*:\s*true$'
+---
+id: resource-lifecycle.tsx
+language: Tsx
+severity: warning
+message: "what is acquired is released on every path"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - pattern: createReadStream($$$A)
+    - pattern: createWriteStream($$$A)
+    - pattern: $O.createReadStream($$$A)
+    - pattern: $O.createWriteStream($$$A)
+    - pattern: $O.acquire($$$A)
+    - pattern: new WebSocket($$$A)
+    - pattern: new EventSource($$$A)
+    - pattern: new Worker($$$A)
+    - pattern: $O.addEventListener($$$A)
+      not:
+        has:
+          stopBy: end
+          kind: pair
+          regex: '^once\s*:\s*true$'
+---
+id: resource-lifecycle.python
+language: Python
+severity: warning
+message: "what is acquired is released on every path"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  pattern: $O.acquire($$$A)

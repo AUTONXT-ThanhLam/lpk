@@ -1,0 +1,14 @@
+id: mobile-lifecycle.swift
+valid:
+  - "func f() { g { [weak self] in self?.x() } }"
+  - "func f() { g { [unowned other] in other.x() } }"
+invalid:
+  - "func f() { g { [unowned self] in self.x() } }"
+---
+id: mobile-lifecycle.kotlin
+valid:
+  - "class A { fun f() { lifecycleScope.launch { work() } } }"
+  - "class A { fun f() { val s = \"GlobalScope.launch\" } }"
+invalid:
+  - "class A { fun f() { GlobalScope.launch { work() } } }"
+  - "class A { fun f() { val d = GlobalScope.async { load() } } }"

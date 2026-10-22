@@ -1,0 +1,170 @@
+id: fail-closed.javascript
+valid:
+  - "try { await verify(token) } catch (e) { return false }"
+  - "try { await verify(token) } catch (e) { next(e) }"
+  - "try { await verify(token) } catch (e) { throw new Error(\"denied\") }"
+  - "function isAdmin(u) { return true }"
+  - "const msg = \"catch { return true }\""
+  - "const env = process.env.NODE_ENV || \"development\""
+  - |-
+      const key = process.env.API_KEY
+      if (!key) throw new Error("API_KEY is not set")
+  - "const key = process.env[\"SESSION_SECRET\"]"
+invalid:
+  - "try { await verify(token) } catch (e) { return true }"
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch {
+          return next()
+        }
+      }
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch (err) {
+          console.error(err)
+          next()
+        }
+      }
+  - "const secret = process.env.JWT_SECRET || \"dev-secret\""
+  - "const token = process.env.API_TOKEN ?? \"\""
+  - "const pw = process.env[\"DB_PASSWORD\"] || \"postgres\""
+---
+id: fail-closed.typescript
+valid:
+  - "try { await verify(token) } catch (e) { return false }"
+  - "try { await verify(token) } catch (e) { next(e) }"
+  - "try { await verify(token) } catch (e) { throw new Error(\"denied\") }"
+  - "function isAdmin(u) { return true }"
+  - "const msg = \"catch { return true }\""
+  - "const env = process.env.NODE_ENV || \"development\""
+  - |-
+      const key = process.env.API_KEY
+      if (!key) throw new Error("API_KEY is not set")
+  - "const key = process.env[\"SESSION_SECRET\"]"
+invalid:
+  - "try { await verify(token) } catch (e) { return true }"
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch {
+          return next()
+        }
+      }
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch (err) {
+          console.error(err)
+          next()
+        }
+      }
+  - "const secret = process.env.JWT_SECRET || \"dev-secret\""
+  - "const token = process.env.API_TOKEN ?? \"\""
+  - "const pw = process.env[\"DB_PASSWORD\"] || \"postgres\""
+---
+id: fail-closed.tsx
+valid:
+  - "try { await verify(token) } catch (e) { return false }"
+  - "try { await verify(token) } catch (e) { next(e) }"
+  - "try { await verify(token) } catch (e) { throw new Error(\"denied\") }"
+  - "function isAdmin(u) { return true }"
+  - "const msg = \"catch { return true }\""
+  - "const env = process.env.NODE_ENV || \"development\""
+  - |-
+      const key = process.env.API_KEY
+      if (!key) throw new Error("API_KEY is not set")
+  - "const key = process.env[\"SESSION_SECRET\"]"
+invalid:
+  - "try { await verify(token) } catch (e) { return true }"
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch {
+          return next()
+        }
+      }
+  - |-
+      function guard(req, res, next) {
+        try {
+          check(req)
+        } catch (err) {
+          console.error(err)
+          next()
+        }
+      }
+  - "const secret = process.env.JWT_SECRET || \"dev-secret\""
+  - "const token = process.env.API_TOKEN ?? \"\""
+  - "const pw = process.env[\"DB_PASSWORD\"] || \"postgres\""
+---
+id: fail-closed.python
+valid:
+  - |-
+      try:
+          verify(token)
+      except InvalidToken:
+          return False
+  - |-
+      try:
+          verify(token)
+      except InvalidToken:
+          raise PermissionError("denied")
+  - "debug = os.environ.get(\"DEBUG\", \"0\")"
+  - "key = os.environ[\"SECRET_KEY\"]"
+  - |-
+      key = os.environ.get("SECRET_KEY")
+      if key is None:
+          raise RuntimeError("SECRET_KEY is not set")
+  - "x = \"except: return True\""
+invalid:
+  - |-
+      try:
+          verify(token)
+      except Exception:
+          return True
+  - |-
+      try:
+          verify(token)
+      except:
+          log.warning("verify failed")
+          return True
+  - "secret = os.environ.get(\"JWT_SECRET\", \"dev-secret\")"
+  - "token = os.getenv(\"API_TOKEN\", \"\")"
+  - "password = os.getenv(\"DB_PASSWORD\") or \"postgres\""
+  - "key = os.environ[\"SECRET_KEY\"] or \"x\""
+---
+id: fail-closed.java
+valid:
+  - "class A { Object f() { try { verify(); } catch (Exception e) { return false; } return true; } }"
+  - "class A { Object f() { try { verify(); } catch (Exception e) { throw new SecurityException(); } return true; } }"
+invalid:
+  - "class A { Object f() { try { verify(); } catch (Exception e) { return true; } return false; } }"
+---
+id: fail-closed.csharp
+valid:
+  - "class A { Object f() { try { verify(); } catch (Exception e) { return false; } return true; } }"
+  - "class A { Object f() { try { verify(); } catch (Exception e) { throw new SecurityException(); } return true; } }"
+invalid:
+  - "class A { Object f() { try { verify(); } catch (Exception e) { return true; } return false; } }"
+---
+id: fail-closed.php
+valid:
+  - "<?php try { verify($t); } catch (Exception $e) { return false; }"
+  - "<?php $key = getenv(\"APP_KEY\");"
+  - "<?php $env = getenv(\"APP_ENV\") ?: \"dev\";"
+invalid:
+  - "<?php try { verify($t); } catch (Exception $e) { return true; }"
+  - "<?php $key = getenv(\"APP_KEY\") ?: \"base64:dev\";"
+  - "<?php $pw = getenv(\"DB_PASSWORD\") ?? \"root\";"
+---
+id: fail-closed.kotlin
+valid:
+  - "fun f(): Boolean { try { verify() } catch (e: Exception) { return false }; return true }"
+invalid:
+  - "fun f(): Boolean { try { verify() } catch (e: Exception) { return true }; return false }"

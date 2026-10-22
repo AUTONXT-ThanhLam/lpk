@@ -1,0 +1,23 @@
+id: iac-exposure.json
+valid:
+  - "{\"Statement\": [{\"Effect\": \"Allow\", \"Action\": \"s3:GetObject\", \"Resource\": \"arn:aws:s3:::b/*\"}]}"
+  - "{\"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\"], \"Resource\": [\"arn:aws:s3:::b/*\"]}]}"
+invalid:
+  - "{\"Statement\": [{\"Effect\": \"Allow\", \"Action\": \"*\", \"Resource\": \"*\"}]}"
+  - "{\"Statement\": [{\"Effect\": \"Allow\", \"Action\": [\"s3:*\", \"*\"], \"Resource\": \"arn:aws:s3:::b\"}]}"
+---
+id: iac-exposure.hcl
+valid:
+  - |-
+      resource "aws_db_instance" "main" {
+        lifecycle {
+          prevent_destroy = true
+        }
+      }
+invalid:
+  - |-
+      resource "aws_db_instance" "main" {
+        lifecycle {
+          prevent_destroy = false
+        }
+      }

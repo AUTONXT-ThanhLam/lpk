@@ -1,0 +1,287 @@
+id: no-silent-failure.javascript
+valid:
+  - "try { await save(x) } catch (e) { log.error(e); throw e }"
+  - "try { await save(x) } catch (e) { return fallback(e) }"
+  - "save(x).catch((e) => { log.error(\"save failed\", e) })"
+  - "save(x).catch(handle)"
+  - |-
+      const rows = []
+      const o = {}
+  - "const f = () => {}"
+  - "const msg = \"catch (e) { }\""
+  - |-
+      // try { a() } catch (e) {}
+      run()
+  - "const [a, b] = await Promise.all([x(), y()])"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        for (const r of results) if (r.status === "rejected") log.error(r.reason)
+      }
+invalid:
+  - "try { await save(x) } catch (e) { }"
+  - "try { await save(x) } catch { /* ignore */ }"
+  - |-
+      try {
+        await save(x)
+      } catch (e) {
+        // best effort
+      }
+  - "save(x).catch(() => {})"
+  - "save(x).catch((e) => undefined)"
+  - "const v = await load(x).catch(() => null)"
+  - "const v = await load(x).catch(e => false)"
+  - "const v = await load(x).catch(() => [])"
+  - "const v = await load(x).catch(() => ({}))"
+  - "const v = await load(x).catch(() => void 0)"
+  - "void sendEmail(user)"
+  - "void db.audit.insert(row)"
+  - "const results = await Promise.allSettled(jobs)"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        return results.filter((r) => r.status === "fulfilled").map((r) => r.value)
+      }
+---
+id: no-silent-failure.typescript
+valid:
+  - "try { await save(x) } catch (e) { log.error(e); throw e }"
+  - "try { await save(x) } catch (e) { return fallback(e) }"
+  - "save(x).catch((e) => { log.error(\"save failed\", e) })"
+  - "save(x).catch(handle)"
+  - |-
+      const rows = []
+      const o = {}
+  - "const f = () => {}"
+  - "const msg = \"catch (e) { }\""
+  - |-
+      // try { a() } catch (e) {}
+      run()
+  - "const [a, b] = await Promise.all([x(), y()])"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        for (const r of results) if (r.status === "rejected") log.error(r.reason)
+      }
+invalid:
+  - "try { await save(x) } catch (e) { }"
+  - "try { await save(x) } catch { /* ignore */ }"
+  - |-
+      try {
+        await save(x)
+      } catch (e) {
+        // best effort
+      }
+  - "save(x).catch(() => {})"
+  - "save(x).catch((e) => undefined)"
+  - "const v = await load(x).catch(() => null)"
+  - "const v = await load(x).catch(e => false)"
+  - "const v = await load(x).catch(() => [])"
+  - "const v = await load(x).catch(() => ({}))"
+  - "const v = await load(x).catch(() => void 0)"
+  - "void sendEmail(user)"
+  - "void db.audit.insert(row)"
+  - "const results = await Promise.allSettled(jobs)"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        return results.filter((r) => r.status === "fulfilled").map((r) => r.value)
+      }
+---
+id: no-silent-failure.tsx
+valid:
+  - "try { await save(x) } catch (e) { log.error(e); throw e }"
+  - "try { await save(x) } catch (e) { return fallback(e) }"
+  - "save(x).catch((e) => { log.error(\"save failed\", e) })"
+  - "save(x).catch(handle)"
+  - |-
+      const rows = []
+      const o = {}
+  - "const f = () => {}"
+  - "const msg = \"catch (e) { }\""
+  - |-
+      // try { a() } catch (e) {}
+      run()
+  - "const [a, b] = await Promise.all([x(), y()])"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        for (const r of results) if (r.status === "rejected") log.error(r.reason)
+      }
+invalid:
+  - "try { await save(x) } catch (e) { }"
+  - "try { await save(x) } catch { /* ignore */ }"
+  - |-
+      try {
+        await save(x)
+      } catch (e) {
+        // best effort
+      }
+  - "save(x).catch(() => {})"
+  - "save(x).catch((e) => undefined)"
+  - "const v = await load(x).catch(() => null)"
+  - "const v = await load(x).catch(e => false)"
+  - "const v = await load(x).catch(() => [])"
+  - "const v = await load(x).catch(() => ({}))"
+  - "const v = await load(x).catch(() => void 0)"
+  - "void sendEmail(user)"
+  - "void db.audit.insert(row)"
+  - "const results = await Promise.allSettled(jobs)"
+  - |-
+      async function run(jobs) {
+        const results = await Promise.allSettled(jobs)
+        return results.filter((r) => r.status === "fulfilled").map((r) => r.value)
+      }
+---
+id: no-silent-failure.python
+valid:
+  - |-
+      try:
+          risky()
+      except ValueError as e:
+          log.error("risky failed: %s", e)
+          raise
+  - |-
+      try:
+          risky()
+      except ValueError:
+          return default
+  - |-
+      try:
+          risky()
+      except ValueError:
+          pass
+          log.warning("ignored")
+  - "result = compute()"
+  - |-
+      for _ in range(3):
+          attempt()
+  - |-
+      task = asyncio.create_task(job())
+      await task
+  - "s = \"except Exception: pass\""
+invalid:
+  - |-
+      try:
+          risky()
+      except Exception:
+          pass
+  - |-
+      try:
+          risky()
+      except (OSError, ValueError):
+          ...
+  - |-
+      try:
+          risky()
+      except:
+          # nothing to do
+          pass
+  - "_ = send_email(user)"
+  - "asyncio.create_task(refresh_cache())"
+  - "loop.create_task(refresh_cache())"
+---
+id: no-silent-failure.java
+valid:
+  - "class A { void f() { try { save(); } catch (Exception e) { log.error(\"save failed\", e); throw e; } } }"
+  - "class A { void f() { String s = \"catch (Exception e) { }\"; } }"
+invalid:
+  - "class A { void f() { try { save(); } catch (Exception e) { } } }"
+  - |-
+      class A { void f() { try { save(); } catch (Exception e) {
+       // ignored
+       } } }
+---
+id: no-silent-failure.csharp
+valid:
+  - "class A { void f() { try { save(); } catch (Exception e) { log.error(\"save failed\", e); throw e; } } }"
+  - "class A { void f() { String s = \"catch (Exception e) { }\"; } }"
+invalid:
+  - "class A { void f() { try { save(); } catch (Exception e) { } } }"
+  - |-
+      class A { void f() { try { save(); } catch (Exception e) {
+       // ignored
+       } } }
+---
+id: no-silent-failure.php
+valid:
+  - "<?php try { save(); } catch (Exception $e) { error_log($e->getMessage()); throw $e; }"
+invalid:
+  - "<?php try { save(); } catch (Exception $e) { }"
+  - "<?php try { save(); } catch (Exception $e) { /* ignored */ }"
+---
+id: no-silent-failure.kotlin
+valid:
+  - "fun f() { try { save() } catch (e: Exception) { log.error(\"save failed\", e); throw e } }"
+invalid:
+  - "fun f() { try { save() } catch (e: Exception) { } }"
+  - "fun f() { try { save() } catch (e: Exception) { /* ignored */ } }"
+---
+id: no-silent-failure.swift
+valid:
+  - "func f() { do { try save(x) } catch { log(error); throw error } }"
+  - "func f() { let v = try? parse(s) ?? 0 }"
+  - "func f() { try save(x) }"
+invalid:
+  - "func f() { let _ = save(x) }"
+  - "func f() { do { try save(x) } catch { } }"
+  - "func f() { try? save(x) }"
+  - "func f() { _ = try? save(x) }"
+---
+id: no-silent-failure.go
+valid:
+  - |-
+      package main
+      func f() {
+      	if err := save(x); err != nil {
+      		return err
+      	}
+      }
+  - |-
+      package main
+      func f() {
+      	n, _ := strconv.Atoi(s)
+      }
+  - |-
+      package main
+      func f() {
+      	_ = x
+      }
+invalid:
+  - |-
+      package main
+      func f() {
+      	_ = save(x)
+      }
+  - |-
+      package main
+      func f() {
+      	_, _ = fmt.Fprintf(w, "ok")
+      }
+---
+id: no-silent-failure.rust
+valid:
+  - "fn f() { let _guard = lock(); let v = save(x)?; }"
+  - "fn f() { let r = tx.send(1).ok(); }"
+  - "fn f() { if let Err(e) = save(x) { log::error!(\"{e}\"); } }"
+invalid:
+  - "fn f() { let _ = tx.send(1); }"
+  - "fn f() { let _ = save(x).await; }"
+  - "fn f() { save(x).ok(); }"
+---
+id: no-silent-failure.bash
+valid:
+  - "if [ -f \"$f\" ]; then rm \"$f\"; else echo missing; fi"
+  - "[ -f \"$f\" ] && rm \"$f\""
+  - "cmd1 && cmd2 || cmd3"
+invalid:
+  - "[ -f \"$f\" ] && echo found || echo missing"
+  - "[[ -n \"$TOKEN\" ]] && deploy || exit 1"
+---
+id: no-silent-failure.ruby
+valid:
+  - "value = Integer(s) rescue 0"
+  - "value = Integer(s)"
+invalid:
+  - "value = Integer(s) rescue nil"
+  - "cleanup rescue nil"

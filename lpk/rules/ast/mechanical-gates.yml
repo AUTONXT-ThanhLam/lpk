@@ -1,0 +1,23 @@
+id: mechanical-gates.javascript
+language: JavaScript
+severity: warning
+message: "the deterministic gates pass on the final tip"
+rule:
+  kind: comment
+  regex: '@ts-nocheck\b|^/\*\s*eslint-disable\s*\*/$'
+---
+id: mechanical-gates.typescript
+language: TypeScript
+severity: warning
+message: "the deterministic gates pass on the final tip"
+rule:
+  kind: comment
+  regex: '@ts-nocheck\b|^/\*\s*eslint-disable\s*\*/$'
+---
+id: mechanical-gates.tsx
+language: Tsx
+severity: warning
+message: "the deterministic gates pass on the final tip"
+rule:
+  kind: comment
+  regex: '@ts-nocheck\b|^/\*\s*eslint-disable\s*\*/$'

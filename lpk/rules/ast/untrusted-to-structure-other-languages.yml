@@ -1,0 +1,116 @@
+id: untrusted-to-structure.python
+language: Python
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - kind: string
+      has:
+        kind: interpolation
+      regex: '^[fFrR]{1,2}(\x22\x22\x22|\x27\x27\x27|\x22|\x27)\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+    - any:
+        - pattern: $L + $R
+        - pattern: $L % $R
+      has:
+        field: left
+        kind: string
+        regex: '^[rRbBuU]?[\x22\x27]+\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      not:
+        has:
+          field: right
+          kind: string
+    - kind: call
+      all:
+        - has:
+            field: arguments
+            has:
+              kind: keyword_argument
+              has:
+                field: name
+                regex: '^shell$'
+              all:
+                - has:
+                    field: value
+                    kind: 'true'
+        - not:
+            has:
+              field: arguments
+              has:
+                nthChild: 1
+                kind: string
+                not:
+                  has:
+                    kind: interpolation
+    - pattern: os.system($C)
+      not:
+        has:
+          field: arguments
+          has:
+            nthChild: 1
+            kind: string
+            not:
+              has:
+                kind: interpolation
+    - pattern: $T.extractall($$$A)
+      not:
+        has:
+          stopBy: end
+          kind: keyword_argument
+          has:
+            field: name
+            regex: '^filter$'
+---
+id: untrusted-to-structure.go
+language: Go
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - pattern: exec.Command("sh", "-c", $$$A)
+    - pattern: exec.Command("bash", "-c", $$$A)
+    - pattern: exec.Command("zsh", "-c", $$$A)
+    - pattern: $L + $R
+      has:
+        field: left
+        kind: interpreted_string_literal
+        regex: '^"\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      not:
+        has:
+          field: right
+          kind: interpreted_string_literal
+---
+id: untrusted-to-structure.java
+language: Java
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  any:
+    - pattern: Runtime.getRuntime().exec($$$A)
+    - pattern: $L + $R
+      has:
+        field: left
+        kind: string_literal
+        regex: '^"\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+      not:
+        has:
+          field: right
+          kind: string_literal
+---
+id: untrusted-to-structure.csharp
+language: CSharp
+severity: warning
+message: "outside text never becomes structure"
+rule:
+  kind: binary_expression
+  all:
+    - has:
+        field: operator
+        regex: '^\+$'
+    - has:
+        field: left
+        kind: string_literal
+        regex: '^"\s*(SELECT|INSERT|UPDATE|DELETE)\b'
+    - not:
+        has:
+          field: right
+          kind: string_literal

@@ -1,0 +1,92 @@
+id: tests-prove.javascript
+language: JavaScript
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  any:
+    - pattern: $T.only($$$A)
+    - pattern: $T.skip($$$A)
+    - pattern: xit($$$A)
+    - pattern: fit($$$A)
+    - pattern: xdescribe($$$A)
+    - pattern: fdescribe($$$A)
+constraints:
+  T:
+    regex: '^(it|test|describe)$'
+---
+id: tests-prove.typescript
+language: TypeScript
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  any:
+    - pattern: $T.only($$$A)
+    - pattern: $T.skip($$$A)
+    - pattern: xit($$$A)
+    - pattern: fit($$$A)
+    - pattern: xdescribe($$$A)
+    - pattern: fdescribe($$$A)
+constraints:
+  T:
+    regex: '^(it|test|describe)$'
+---
+id: tests-prove.tsx
+language: Tsx
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  any:
+    - pattern: $T.only($$$A)
+    - pattern: $T.skip($$$A)
+    - pattern: xit($$$A)
+    - pattern: fit($$$A)
+    - pattern: xdescribe($$$A)
+    - pattern: fdescribe($$$A)
+constraints:
+  T:
+    regex: '^(it|test|describe)$'
+---
+id: tests-prove.go
+language: Go
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: selector_expression
+    regex: '^t\.(Skip|SkipNow|Skipf)$'
+---
+id: tests-prove.python
+language: Python
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  kind: decorator
+  regex: '^@(pytest\.mark\.skip|unittest\.skip)'
+---
+id: tests-prove.rust
+language: Rust
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  kind: attribute_item
+  regex: '^#\[ignore\b'
+---
+id: tests-prove.java
+language: Java
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  any:
+    - kind: marker_annotation
+    - kind: annotation
+  regex: '^@(Disabled|Ignore)\b'
+---
+id: tests-prove.kotlin
+language: Kotlin
+severity: warning
+message: "tests fail when the change is undone"
+rule:
+  kind: annotation
+  regex: '^@(Disabled|Ignore)\b'

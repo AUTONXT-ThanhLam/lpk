@@ -1,0 +1,12 @@
+ruleDirs:
+  - .
+testConfigs:
+  - testDir: tests
+languageGlobs:
+  html:
+    - "**/pom.xml"
+languageInjections:
+  - hostLanguage: yaml
+    rule:
+      pattern: "run: $CONTENT"
+    injected: bash

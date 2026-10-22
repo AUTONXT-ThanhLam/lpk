@@ -1,0 +1,181 @@
+id: timeouts-retries.javascript
+language: JavaScript
+severity: warning
+message: "outbound calls end, and retries are capped"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  all:
+    - any:
+        - pattern: fetch($$$A)
+        - pattern: axios($$$A)
+        - pattern: got($$$A)
+        - pattern: axios.$M($$$A)
+    - not:
+        has:
+          stopBy: end
+          any:
+            - regex: '^(timeout|signal)$'
+            - kind: spread_element
+constraints:
+  M:
+    regex: '^(get|post|put|patch|delete|request)$'
+---
+id: timeouts-retries.typescript
+language: TypeScript
+severity: warning
+message: "outbound calls end, and retries are capped"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  all:
+    - any:
+        - pattern: fetch($$$A)
+        - pattern: axios($$$A)
+        - pattern: got($$$A)
+        - pattern: axios.$M($$$A)
+    - not:
+        has:
+          stopBy: end
+          any:
+            - regex: '^(timeout|signal)$'
+            - kind: spread_element
+constraints:
+  M:
+    regex: '^(get|post|put|patch|delete|request)$'
+---
+id: timeouts-retries.tsx
+language: Tsx
+severity: warning
+message: "outbound calls end, and retries are capped"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  all:
+    - any:
+        - pattern: fetch($$$A)
+        - pattern: axios($$$A)
+        - pattern: got($$$A)
+        - pattern: axios.$M($$$A)
+    - not:
+        has:
+          stopBy: end
+          any:
+            - regex: '^(timeout|signal)$'
+            - kind: spread_element
+constraints:
+  M:
+    regex: '^(get|post|put|patch|delete|request)$'
+---
+id: timeouts-retries.python
+language: Python
+severity: warning
+message: "outbound calls end, and retries are capped"
+ignores:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/spec/**"
+  - "**/specs/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*_test.*"
+  - "**/*-test.*"
+  - "**/*_spec.*"
+  - "**/*-spec.*"
+rule:
+  any:
+    - all:
+        - any:
+            - pattern: requests.$F($$$A)
+            - pattern: httpx.$F($$$A)
+        - not:
+            has:
+              stopBy: end
+              any:
+                - kind: keyword_argument
+                  has:
+                    field: name
+                    regex: '^timeout$'
+                - kind: dictionary_splat
+    - kind: keyword_argument
+      all:
+        - has:
+            field: name
+            regex: '^timeout$'
+        - has:
+            field: value
+            kind: none
+    - kind: assignment
+      all:
+        - has:
+            field: left
+            regex: '^timeout$'
+        - has:
+            field: right
+            kind: none
+constraints:
+  F:
+    regex: '^(get|post|put|patch|delete|request)$'
+---
+id: timeouts-retries.c
+language: C
+severity: warning
+message: "outbound calls end, and retries are capped"
+rule:
+  kind: identifier
+  regex: '^TIMEOUT_WAIT_FOREVER$'
+---
+id: timeouts-retries.cpp
+language: Cpp
+severity: warning
+message: "outbound calls end, and retries are capped"
+rule:
+  kind: identifier
+  regex: '^TIMEOUT_WAIT_FOREVER$'
+---
+id: timeouts-retries.java
+language: Java
+severity: warning
+message: "outbound calls end, and retries are capped"
+rule:
+  kind: identifier
+  regex: '^TIMEOUT_WAIT_FOREVER$'
+---
+id: timeouts-retries.rust
+language: Rust
+severity: warning
+message: "outbound calls end, and retries are capped"
+rule:
+  kind: identifier
+  regex: '^TIMEOUT_WAIT_FOREVER$'

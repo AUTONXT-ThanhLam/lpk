@@ -1,0 +1,122 @@
+id: partial-results.javascript
+valid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { skipped.push(f); continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { log.warn(e) }
+      }
+invalid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch { continue; }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) {
+          // unreadable
+          continue
+        }
+      }
+---
+id: partial-results.typescript
+valid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { skipped.push(f); continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { log.warn(e) }
+      }
+invalid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch { continue; }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) {
+          // unreadable
+          continue
+        }
+      }
+---
+id: partial-results.tsx
+valid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { skipped.push(f); continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { log.warn(e) }
+      }
+invalid:
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) { continue }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch { continue; }
+      }
+  - |-
+      for (const f of files) {
+        try { read(f) } catch (e) {
+          // unreadable
+          continue
+        }
+      }
+---
+id: partial-results.python
+valid:
+  - |-
+      for f in files:
+          try:
+              read(f)
+          except OSError as e:
+              skipped.append(f)
+              continue
+invalid:
+  - |-
+      for f in files:
+          try:
+              read(f)
+          except OSError:
+              continue
+  - |-
+      for f in files:
+          try:
+              read(f)
+          except:
+              # unreadable
+              continue
+---
+id: partial-results.java
+valid:
+  - "class A { void f() { for (String s : l) { try { read(s); } catch (Exception e) { skipped.add(s); continue; } } } }"
+invalid:
+  - "class A { void f() { for (String s : l) { try { read(s); } catch (Exception e) { continue; } } } }"
+---
+id: partial-results.csharp
+valid:
+  - "class A { void f() { foreach (var s in l) { try { Read(s); } catch (Exception e) { skipped.Add(s); continue; } } } }"
+invalid:
+  - "class A { void f() { foreach (var s in l) { try { Read(s); } catch (Exception e) { continue; } } } }"
+---
+id: partial-results.php
+valid:
+  - "<?php foreach ($l as $s) { try { read($s); } catch (Exception $e) { $skipped[] = $s; continue; } }"
+invalid:
+  - "<?php foreach ($l as $s) { try { read($s); } catch (Exception $e) { continue; } }"

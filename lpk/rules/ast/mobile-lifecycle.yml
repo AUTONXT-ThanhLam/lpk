@@ -1,0 +1,21 @@
+id: mobile-lifecycle.swift
+language: Swift
+severity: warning
+message: "Swift and Kotlin work ends with its owner"
+rule:
+  kind: capture_list_item
+  all:
+    - has:
+        kind: ownership_modifier
+        regex: '^unowned'
+    - has:
+        field: name
+        regex: '^self$'
+---
+id: mobile-lifecycle.kotlin
+language: Kotlin
+severity: warning
+message: "Swift and Kotlin work ends with its owner"
+rule:
+  kind: call_expression
+  regex: '^GlobalScope\.(launch|async)\b'
