@@ -82,7 +82,7 @@ export function afterTool(input) {
   const { repo, run } = runOf(input);
   if (!run) return null;
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
-  const edited = file ? [relative(repo, resolve(input.cwd || '.', file))] : [];
+  const edited = file ? [relative(repo, resolve(input.cwd || '.', file))] : undefined;
   const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen, siblings(repo), edited);
   if (!text) return null;
   run.seen = seen;

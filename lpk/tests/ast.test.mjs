@@ -62,6 +62,19 @@ test('lpk rules --test passes the plugin and learned ast rules and fails a rule 
   rmSync(join(AST, 'lpk-test-bad.yml')); rmSync(join(AST, 'tests', 'lpk-test-bad-test.yml'));
   assert.equal(bad.status, 1, bad.stdout);
   assert.match(bad.stdout, /learned ast rules \(.+\): FAIL/);
+  write(AST, 'lpk-test-bare.yml', 'id: lpk-test-bare.javascript\nlanguage: JavaScript\nseverity: warning\nmessage: bare\nrule:\n  pattern: eval($X)\n');
+  const bare = lpk(ROOT, '', 'rules', '--test');
+  rmSync(join(AST, 'lpk-test-bare.yml'));
+  assert.equal(bare.status, 1, bare.stdout);
+  assert.match(bare.stdout, /no tests\/<id>-test\.yml for: lpk-test-bare/);
+});
+
+test('a changed file whose name starts with a dash does not hide the matches of the other files', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
+  const repo = changed();
+  write(repo, '-dash.js', 'eval(q);\n');
+  const out = lpk(repo, '', 'check', '--base', 'HEAD').stdout;
+  assert.doesNotMatch(out, /could not load/);
+  assert.match(out, /lpk-test-eval\s+src\/b\.js:1/);
 });
 
 test('lpk rules --yield counts findings per rule by state, and --prune disables a learned rule that only drew drops', () => {

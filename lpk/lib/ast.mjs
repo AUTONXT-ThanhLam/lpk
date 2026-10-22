@@ -13,12 +13,15 @@ export function ruleFiles(dir) {
   try { return readdirSync(dir).filter((n) => /\.ya?ml$/.test(n) && !/^sgconfig\.ya?ml$/.test(n)).sort().map((n) => join(dir, n)); } catch { return []; }
 }
 
+export const baseId = (id) => id.replace(/\.[a-z]+$/i, '');
+export const idsOf = (file) => [...new Set([...readFileSync(file, 'utf8').matchAll(/^id:\s*(\S+)/gm)].map((m) => baseId(m[1])))];
+
 const sg = (args, cwd) => spawnSync('ast-grep', args, { cwd, encoding: 'utf8', maxBuffer: 256 * 2 ** 20, env: { ...process.env, NO_COLOR: '1' } });
 const reason = (stderr) => (stderr.split('\n').filter((l) => l.startsWith('╰▻')).at(-1) || stderr.trim().split('\n')[0] || 'failed').replace(/^╰▻\s*/, '');
 
 function scanWith(repo, files, paths) {
   const text = files.map((f) => readFileSync(f, 'utf8').replace(/^---[ \t]*\r?\n/, '')).join('\n---\n');
-  const r = sg(['scan', '--inline-rules', text, '--json=stream', ...paths], repo);
+  const r = sg(['scan', '--inline-rules', text, '--json=stream', '--', ...paths], repo);
   if (r.error?.code === 'ENOENT') return { missing: true };
   if (r.error) return { error: r.error.message };
   if (r.status !== 0 && !(r.status === 1 && r.stdout.trim())) return { error: reason(r.stderr) };
@@ -64,10 +67,11 @@ export function astCandidates(repo, files, only) {
   for (const h of s.hits) {
     const f = byPath.get(h.file) || byPath.get(relative(repo, resolve(repo, h.file)));
     const a = f?.added.find((x) => x.n >= h.range.start.line + 1 && x.n <= h.range.end.line + 1);
-    const key = a && `${h.ruleId}|${f.path}|${a.n}`;
+    const id = baseId(h.ruleId);
+    const key = a && `${id}|${f.path}|${a.n}`;
     if (!a || seen.has(key)) continue;
     seen.add(key);
-    cands.push({ id: h.ruleId, path: f.path, n: a.n, text: a.text.trim().slice(0, 160) });
+    cands.push({ id, path: f.path, n: a.n, text: a.text.trim().slice(0, 160) });
   }
   return { cands, missing: s.missing, broken: s.broken };
 }
@@ -99,6 +103,8 @@ export function astTest() {
       if (!existsSync(join(dir, '.ignore'))) writeFileSync(join(dir, '.ignore'), LEARNED_IGNORE);
       lines.push(`${name} ast rules: wrote ${join(dir, 'sgconfig.yml')}`);
     }
+    const untested = ruleFiles(dir).flatMap((f) => idsOf(f).filter((id) => !['yml', 'yaml'].some((e) => existsSync(join(dir, 'tests', `${id}-test.${e}`)))).map((id) => `${id} (in ${f})`));
+    if (untested.length) { ok = false; lines.push(`${name} ast rules (${dir}): FAIL, no tests/<id>-test.yml for: ${untested.join(', ')}`); continue; }
     const r = sg(['test', '--skip-snapshot-tests'], dir);
     if (r.error?.code === 'ENOENT') return { ok: false, text: [...lines, MISSING.replace('so only the regex patterns ran', 'so no ast rule can be tested')].join('\n') };
     if (r.status !== 0) ok = false;

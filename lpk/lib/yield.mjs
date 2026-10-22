@@ -1,12 +1,11 @@
 import { existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { LEARNED_AST, ruleFiles } from './ast.mjs';
+import { idsOf, LEARNED_AST, ruleFiles } from './ast.mjs';
 import { readLedger } from './findings.mjs';
 import { checkout, runDir } from './where.mjs';
 
 const COLS = ['confirmed', 'fixed', 'deferred', 'dropped', 'duplicate', 'preexisting', 'open'];
 const ls = (dir) => { try { return readdirSync(dir); } catch { return []; } };
-const idOf = (file) => basename(file).replace(/\.ya?ml$/, '');
 
 function ledgers(repo) {
   const at = checkout(repo);
@@ -19,7 +18,7 @@ function ledgers(repo) {
 }
 
 export function ruleYield(repo) {
-  const learned = new Set(ruleFiles(LEARNED_AST).map(idOf));
+  const learned = new Set(ruleFiles(LEARNED_AST).flatMap(idsOf));
   const rows = new Map([...learned].map((id) => [id, Object.fromEntries(COLS.map((c) => [c, 0]))]));
   const unreadable = [];
   const files = ledgers(repo);
@@ -63,7 +62,7 @@ export function pruneText(repo) {
   if (!y.prune.length) return 'lpk rules --prune: no learned ast rule has 3 or more dropped findings and none confirmed, fixed or deferred.';
   const moved = [];
   for (const id of y.prune) {
-    for (const f of ruleFiles(LEARNED_AST).filter((x) => idOf(x) === id)) moved.push(`${f} -> ${moveInto(f, join(LEARNED_AST, 'disabled'))}`);
+    for (const f of ruleFiles(LEARNED_AST).filter((x) => idsOf(x).includes(id))) moved.push(`${f} -> ${moveInto(f, join(LEARNED_AST, 'disabled'))}`);
     for (const ext of ['yml', 'yaml']) {
       const t = join(LEARNED_AST, 'tests', `${id}-test.${ext}`);
       if (existsSync(t)) moved.push(`${t} -> ${moveInto(t, join(LEARNED_AST, 'disabled', 'tests'))}`);

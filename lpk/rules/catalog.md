@@ -11,7 +11,7 @@ exact facts about the diff that load the rule (`always`, `added <regex>` on an a
 non-test file, `path <regex>` on a changed path, `removed` when non-test code lost or changed
 lines); `find` lines are literal patterns `lpk check` reports as candidates on added lines. A
 rule's code shape lives in `ast/<id>.yml`, an ast-grep rule (one YAML document per language, each
-with the rule's `id`) whose test `ast/tests/<id>-test.yml` lists the defective code as `invalid`
+with `id: <rule id>.<language>`) whose test `ast/tests/<id>-test.yml` lists the defective code as `invalid`
 and the fixed code as `valid`; `lpk check` reports each match that touches an added line of a
 non-test file under the rule's id, and drops a `find` candidate on the same line.
 `~/.local/share/lpk/rules/ast/` holds the learned ones in the same layout, `disabled/` there the

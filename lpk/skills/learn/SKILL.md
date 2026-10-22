@@ -67,7 +67,7 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
    `node -e 'console.log(/<regex>/i.test(process.argv[1]))' '<the line>'` prints true.
 6. When the defect has a code shape (a call, a construct, a guard missing around a call), also
    write the pattern ast-grep runs on every change: `~/.local/share/lpk/rules/ast/<id>.yml` (one
-   YAML document per language, each with `id: <id>`, `message:` the title, `severity: warning`, a
+   YAML document per language, each with `id: <id>.<language>` (ast-grep refuses a repeated id), `message:` the title, `severity: warning`, a
    `rule:` of `pattern`, `kind`, `has`, `inside`, `not`, `all` or `any`, and `ignores` for test
    paths) and `~/.local/share/lpk/rules/ast/tests/<id>-test.yml` with the real defective line(s)
    under `invalid` and the fixed code under `valid`. Run `lpk rules --test`: the rule is saved only
