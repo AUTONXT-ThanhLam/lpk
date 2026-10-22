@@ -1,7 +1,7 @@
 # Step 2: Design
 
-**Goal.** A design that is checked against the real code before it is built, because 57% of the
-fixed findings were born in the plan or the design. The brief is short, every claim in it comes
+**Goal.** A design that is checked against the real code before it is built, because a defect
+born in the plan or the design costs a minute to fix there and a build round after it. The brief is short, every claim in it comes
 from a fact you ran or read, and the tests that decide "done" are written from it at once.
 
 ## Gather the facts
