@@ -7,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { candidates, changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
+import { readRecords } from './records.mjs';
 import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
 export { writeGuard as beforeWrite } from './safety.mjs';
@@ -102,13 +103,25 @@ function unverified(repo, run, key) {
 
 // The end of a turn on source no green verify covers is told, not held: the delivery gates hold at
 // handover, and a turn may end to wait for the owner or a background agent. It is said once per
-// stop: `stop_hook_active` means this stop already continued on a hook's word.
+// stop (`stop_hook_active` means this stop already continued on a hook's word), and once per tree
+// and reason, so a lead waiting on builders is not woken again until the tree changes.
 export function beforeStop(input) {
   if (input.stop_hook_active === true) return null;
   const { repo, run } = runOf(input);
   const why = run && unverified(repo, run, 'source');
   if (!why) return null;
+  const told = `${treeOf(repo).tree}|${why}`;
+  if (run.stopTold === told) return null;
+  run.stopTold = told;
+  writeRun(run);
   return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: `lpk: this change is not verified on the current tree (${why}). Before it is handed over, run \`lpk verify\` and fix what it reports.` } };
+}
+
+export function builderBeforeGo(input) {
+  if (!/^(Agent|Task)$/.test(input.tool_name || '') || input.tool_input?.subagent_type !== 'lpk:builder') return null;
+  const { repo, run } = runOf(input, false);
+  if (!run || run.lane !== 'full' || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'lpk: no builder before go: this Full-lane run has no `lpk go`; review the Design Brief, and run `lpk go` when the owner says go.' } };
 }
 
 // Every message the owner sends during the run is kept verbatim for lpk:learn. What the harness

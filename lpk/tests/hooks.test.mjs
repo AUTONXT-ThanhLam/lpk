@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { context, ENV, hook, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
+import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
 
 const records = (dir) => (existsSync(join(dir, 'records.jsonl')) ? readFileSync(join(dir, 'records.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
 
@@ -110,6 +110,32 @@ test('the stop note is said once, not again while the stop hook is active', () =
   const stop = (extra) => hook('Stop', 'stop', { session_id: 'stop-once', cwd: repo, ...extra });
   assert.match(context(stop({})), /not verified on the current tree/, 'an older Claude Code sends no stop_hook_active');
   assert.equal(stop({ stop_hook_active: true }), null);
+});
+
+test('the stop note comes back only when the tree changed since it was last said', () => {
+  const repo = repoWith('stop-tree', { 'src/a.mjs': 'export const a = 1;\n' });
+  startRun(repo, 'stop-tree');
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  const stop = () => hook('Stop', 'stop', { session_id: 'stop-tree', cwd: repo, stop_hook_active: false });
+  assert.match(context(stop()), /not verified on the current tree/);
+  assert.equal(stop(), null, 'builders still working, the tree as it was');
+  write(repo, 'src/a.mjs', 'export const a = 3;\n');
+  assert.match(context(stop()), /not verified on the current tree/);
+});
+
+test('a Full-lane run spawns no builder before `lpk go`; after go, and in the Quick lane, it does', () => {
+  const full = repoWith('go-full', { 'src/a.mjs': 'export const a = 1;\n' });
+  const quick = repoWith('go-quick', { 'src/a.mjs': 'export const a = 1;\n' });
+  const spawn = (cwd, subagent_type = 'lpk:builder', session_id = 'go') => hook('PreToolUse', 'pre', { tool_name: 'Agent', session_id, cwd, tool_input: { subagent_type, description: 'slice 1', prompt: 'build slice 1' } });
+  assert.equal(spawn(full), null, 'no run, no rule');
+  startRun(full, 'go');
+  startRun(quick, 'go', { lane: 'quick' });
+  assert.match(reason(spawn(full)), /no `lpk go`/);
+  assert.equal(spawn(full, 'lpk:test-author'), null);
+  assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');
+  assert.equal(spawn(quick), null);
+  assert.equal(lpk(full, 'go', 'go').status, 0);
+  assert.equal(spawn(full), null);
 });
 
 test('a deleted test file, removed test lines and an added skip marker come back as hints after the edit', () => {

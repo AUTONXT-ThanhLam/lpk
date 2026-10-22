@@ -25,6 +25,10 @@ async function pre(input) {
         : `\`git ${trip}\` throws work away or skips the repo's checks, and this session holds an lpk run. This is a tripwire on that literal command, not a lock. ${waiverHow(id)}`);
     }
   }
+  if (input.tool_input?.subagent_type === 'lpk:builder') {
+    const early = (await lib('hooks')).builderBeforeGo(input);
+    if (early) return early;
+  }
   return now || s.stripModel(input);
 }
 
