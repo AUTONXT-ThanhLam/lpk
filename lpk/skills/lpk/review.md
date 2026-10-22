@@ -18,7 +18,7 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers see the code
    that will merge.
 4. Freeze the commit in its own tree, so the reviewers and the Prover use exactly it while you keep
-   working: `git worktree add --detach ../<repo>-review <commit>`, with its dependencies installed,
+   working: `lpk run worktree ../<repo>-review <commit>`, with its dependencies installed,
    and move the app there (the env agent's report says how to stop and start it).
 5. Where the owner granted early drafts for this repo (`lpk run status` shows it), push the branch
    and open a draft PR now, so CI and any review bot run while the net runs. Elsewhere ask before
@@ -86,7 +86,7 @@ other.
    the commit message never does, because ledger ids mean nothing in the repo's history.
 3. Start one `lpk:builder` per group of root causes whose files do not overlap; causes that share a
    file go to one builder. Each works in its own worktree off the reviewed commit
-   (`git worktree add -b <branch>-fix-<n> ../<repo>-fix-<n> <reviewed commit>`), all started in one
+   (`lpk run worktree ../<repo>-fix-<n> <reviewed commit> --branch <branch>-fix-<n>`), all started in one
    message. Size the groups from the slowest cause, so no builder is the long pole. A finding
    confirmed later goes to the builder whose commit fixes its cause (SendMessage), else to the one
    that owns its files, else to a new builder. Until the green verify of step 6, the builder amends its cause's commit to close it too.

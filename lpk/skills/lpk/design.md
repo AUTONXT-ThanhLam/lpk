@@ -32,13 +32,13 @@ sources, write the failure table for what the change calls or stores (a few rows
 
 ## Write the Design Brief (Full lane)
 
-Save what the brief must trace to, verbatim, under `$(git rev-parse --git-common-dir)/lpk/sources/`:
+Save what the brief must trace to, verbatim, under `$(git rev-parse --path-format=absolute --git-dir)/lpk/sources/`:
 the owner's request, each ticket or document it links, and the owner's answers so far.
 
 Three architects write it, not you alone: three briefs from different approach cards, attacking
 each other with runs, meet most defects before the first round. Run the `lpk:design-duel` workflow with `repo`, `base`,
 `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
-`lpk precedent` output, when there is one) and `dir` (`$(git rev-parse --git-common-dir)/lpk/duel`).
+`lpk precedent` output, when there is one) and `dir` (`$(git rev-parse --path-format=absolute --git-dir)/lpk/duel`).
 Without the Workflow tool, start the `lpk:architect` agents yourself, one per card (`small`,
 `failure`, `pattern`), in its three steps (write, attack, revise), each step's three in one message.
 It returns the briefs, the judge's `pick` and the attacks each brief still lets happen.
@@ -46,7 +46,7 @@ It returns the briefs, the judge's `pick` and the attacks each brief still lets 
 Take the judge's pick, unless a High it left open is one another brief closes: then take that
 brief, or carry its mechanism over and cite it. With no pick, choose by the same rule; with an
 `error` (fewer than two briefs), take the one written, or write it yourself. Copy the
-chosen `brief.md` and `brief.json` to `$(git rev-parse --git-common-dir)/lpk/`, where they outlive a
+chosen `brief.md` and `brief.json` to `$(git rev-parse --path-format=absolute --git-dir)/lpk/`, where they outlive a
 compaction and every agent reads the same text, record the choice with `lpk decide`, and post the
 brief in chat on one screen. The briefs you did not take are the alternatives a `redesign` starts
 from.

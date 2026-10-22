@@ -32,8 +32,6 @@ export function inRun(input) {
   try { return Boolean(activeRun(input.session_id, false, input.cwd)); } catch { return false; }
 }
 
-// The run directory (`<git-common-dir>/lpk/`), shared by every worktree of the repo.
-export { runDir as runDirOf } from './run.mjs';
 
 // Where the run's change starts: the base it recorded, else where HEAD left its target branch.
 export const baseOf = (repo, run) => run.base || (run.target ? mergeBase(repo, run.target) : '');
