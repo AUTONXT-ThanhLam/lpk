@@ -53,9 +53,10 @@ const TRACE = { type: 'object', properties: { findings: FINDINGS, trace: { type:
 const scope = changed.size
   ? `Review only the brief's lines ${[...changed].sort((x, y) => x - y).join(', ')}, which were just rewritten, and what they reach: the callers, rows, states, scenarios, tests, stages and trace rows that depend on them. Leave every other line as it stands, and cite a line outside them only where a finding on them reaches it.`
   : 'Review the whole brief.'
-const head = `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
+const WHOLE = new Set(['plan-sim', 'plan-trace'])
+const head = (angle) => `Review the Design Brief ${a.brief} (read it with \`cat -n\`; cite its line numbers in each finding's lines) and its ${briefJson}.
 Repo ${a.repo}, base branch ${a.base}. Nothing has been built yet.
-${scope}
+${WHOLE.has(angle.name) ? 'Review the whole brief.' : scope}
 Rate each finding High, Medium or Low as your instructions define them, with its evidence and the smallest change to the brief that removes it. Return no finding you could not support with evidence. Set basis to ran (a command you ran shows it), read (a path:line you read shows it) or inferred; a design critic's inferred High counts as Medium. Return every High, and at most your three most useful Medium or Low findings: Mediums go to the builders as notes, never into a revision.
 Give each finding its cause: the property of the design it breaks, worded so that every other place that could break the same property can be found from it (for example "only a document's current run may change its row", not "the reindex route raises the attempt twice").`
 
@@ -80,10 +81,10 @@ const ANGLES = [
 const ask = async (angle) => {
   const type = angle.type || angle.name
   const opts = { phase: 'Review', agentType: `lpk:${type}`, schema: angle.schema, stallMs: (a.stallMs || {})[type] }
-  const first = await agent(`${head}\n${angle.ask}`, { ...opts, label: angle.name }).catch(() => null)
+  const first = await agent(`${head(angle)}\n${angle.ask}`, { ...opts, label: angle.name }).catch(() => null)
   if (first) return first
   log(`${angle.name} returned no answer; running it once more`)
-  return agent(`${head}\n${angle.ask}`, { ...opts, label: `${angle.name}#2` })
+  return agent(`${head(angle)}\n${angle.ask}`, { ...opts, label: `${angle.name}#2` })
 }
 const open = a.open || []
 const closing = (angle) => open.filter((f) => f.angle === angle.name)

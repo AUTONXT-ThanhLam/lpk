@@ -118,7 +118,7 @@ export function beforeStop(input) {
   return { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: `lpk: this change is not verified on the current tree (${why}). Before it is handed over, run \`lpk verify\` and fix what it reports.` } };
 }
 
-const GENERAL = new Set([undefined, '', 'general-purpose']);
+const GENERAL = new Set([undefined, '', 'general-purpose', 'claude']);
 const refuse = (why) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } });
 export function spawnRule(input) {
   if (!/^(Agent|Task)$/.test(input.tool_name || '')) return null;

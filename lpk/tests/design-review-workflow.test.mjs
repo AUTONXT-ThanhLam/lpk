@@ -53,13 +53,15 @@ test('a High resting only on inference counts as Medium, and each angle keeps it
   assert.equal(sim.out.verdict, 'revise', 'the plan simulator\'s estimates are inferred by nature and keep their rating');
 });
 
-test('a later round reruns only the angles whose High is open, tells each its Highs to check closed, and keeps to the changed lines', async () => {
+test('a later round reruns only the angles whose High is open, tells each its Highs to check closed, and keeps the critics to the changed lines and the plan walkers on the whole brief', async () => {
   const open = [{ angle: 'design-critic:state', severity: 'High', lines: [9], claim: 'two writers race on the row', cause: 'one writer per row' }, { angle: 'plan-sim', severity: 'High', lines: [40], claim: 'the build waits on itself' }];
   const { out, calls } = await run({ ...LATER, open }, answers({}));
   assert.deepEqual(calls.map((c) => c.opts.label), ['design-critic:state', 'plan-sim']);
   assert.match(calls[0].prompt, /check on the brief as it stands whether it is closed[\s\S]*lines 9: two writers race on the row \(cause: one writer per row\)/);
   assert.doesNotMatch(calls[0].prompt, /the build waits on itself/);
-  for (const c of calls) assert.match(c.prompt, /Review only the brief's lines 30, which were just rewritten, and what they reach/);
+  assert.match(calls[0].prompt, /Review only the brief's lines 30, which were just rewritten, and what they reach/);
+  assert.match(calls[1].prompt, /Review the whole brief\./);
+  assert.doesNotMatch(calls[1].prompt, /Review only the brief's lines/);
   assert.equal(out.verdict, 'pass');
   assert.deepEqual(out.missing, []);
 });
