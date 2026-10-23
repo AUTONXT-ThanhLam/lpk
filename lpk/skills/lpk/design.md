@@ -94,7 +94,7 @@ Prover PASS or a new test naming it with `lpk verify` green proves each requirem
 Create the branch, named the way the repo names them, then start these in the background at once:
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
   `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
-  `lpk precedent` output), `timeBound` (the owner's, else 45 minutes), `baseSuite` (the base test
+  `lpk precedent` output), `timeBound` (only when the owner gave one), `baseSuite` (the base test
   suite's time, once known) and `round: 1`. It runs five design critics (one focus each), the plan
   simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
   or Low; a High that rests only on inference counts as Medium;
@@ -124,7 +124,7 @@ are closed and reading the changed lines and what they reach. After each round:
    where it was seen: give it that mechanism now, and name it in the record. A High that is wrong is
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument.
-   A High only the owner can settle (the time bound, the scope) is one question to them. Mediums and
+   A High only the owner can settle (a time bound they gave, the scope) is one question to them. Mediums and
    Lows stay in `notes.md`, never in a revision. A revision grows the brief by at most a tenth
    (`wc -w`): briefs that grew 40% a round drew new Highs.
    Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run

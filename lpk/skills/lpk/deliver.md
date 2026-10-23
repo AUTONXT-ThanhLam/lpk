@@ -84,7 +84,7 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
 3. The decisions you took alone (`decisions.jsonl`), and the findings `lpk report` lists for the
    owner to read (unsettled, or ruled by you rather than a verifier), each with its evidence.
 4. The weakest point.
-5. The wall time against the owner's bound, and per lens the findings raised and confirmed.
+5. The wall time (against the owner's bound, when they gave one), and per lens the findings raised and confirmed.
 6. The PR link and what the owner does next. On a big PR, suggest ultrareview.
 
 Then run the `lpk:learn` skill on this run's evidence: the ledger's confirmed findings, each CI

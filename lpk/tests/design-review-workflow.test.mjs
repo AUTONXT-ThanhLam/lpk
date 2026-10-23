@@ -82,6 +82,17 @@ test('an open design High still open on changed lines asks for another approach,
   assert.deepEqual(silent.out.missing, ['plan-trace']);
 });
 
+test('the plan simulator is given no time bound unless the owner gave one', async () => {
+  const none = await run(ARGS, answers({}));
+  const sim = none.calls.find((c) => c.opts.label === 'plan-sim');
+  assert.match(sim.prompt, /no time bound/);
+  assert.doesNotMatch(sim.prompt, /45/);
+  assert.equal(none.out.timeBound, null);
+  const given = await run({ ...ARGS, timeBound: '90 minutes' }, answers({}));
+  assert.match(given.calls.find((c) => c.opts.label === 'plan-sim').prompt, /time bound for the whole run is 90 minutes/);
+  assert.equal(given.out.timeBound, '90 minutes');
+});
+
 test('a later round without changed or open is refused', async () => {
   const { changed, ...noChanged } = LATER;
   for (const [args, key] of [[LATER, 'open'], [{ ...noChanged, open: [] }, 'changed']]) {
