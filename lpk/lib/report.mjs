@@ -4,6 +4,7 @@ import { allCandidates, astNotes } from './ast.mjs';
 import { mutate } from './mutate.mjs';
 import { precedent } from './reviews.mjs';
 import { broken, changeOf, envWiring, loadRules, triggered } from './rules.mjs';
+import { proseBeside } from './prose.mjs';
 import { teamFiles } from './team.mjs';
 
 const ORDER = { high: 0, medium: 1, low: 2 };
@@ -64,7 +65,7 @@ export function checkText({ repo, base, sibs }) {
   lines.push('', 'env names read by added code, and the deploy files that mention them:');
   if (!env.length) lines.push('  (no env read in a form lpk recognizes: process.env, import.meta.env, os.environ, getenv/Getenv/LookupEnv, Deno.env.get, env::var, ENV[...] / ENV.fetch, GetEnvironmentVariable)');
   for (const e of env) lines.push(`  ${e.name}  read at ${e.at}  ${e.seen.length ? `mentioned in ${e.seen.join(', ')}` : 'MENTIONED IN NO DEPLOY FILE'}`);
-  return [...lines, ...skippedPatterns(), ...astNotes(ast)].join('\n');
+  return [...lines, ...skippedPatterns(), ...astNotes(ast), ...proseBeside(repo, base)].join('\n');
 }
 
 export function mapText({ roots, refs = new Map(), names, routeMode, guards }) {

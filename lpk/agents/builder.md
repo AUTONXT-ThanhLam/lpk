@@ -72,7 +72,9 @@ and report what conflicts instead of changing it.
 ## Before you report
 
 1. Run the slice's tests and the repo's typecheck and lint on the files you touched.
-2. Run `lpk check --base <base>` in the worktree: fix each candidate, or know why it is right.
+2. Run `lpk check --base <base>` in the worktree: fix each candidate, or know why it is right. Its
+   last list is the comments your change left unedited beside the lines it edited: read each, and
+   edit the ones your change made untrue.
 3. Before you commit, run `lpk code-review --slice --base <base>` once: one `/code-review` on your
    working tree (uncommitted and untracked code files included) against the base you were given.
    Reproduce each finding it raises, fix the ones that hold at their root, and keep the reason for
