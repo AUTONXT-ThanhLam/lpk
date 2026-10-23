@@ -4,6 +4,7 @@ import type { AgentInfo, On, ProcessRunResult, SessionRateLimit } from 'claude-c
 
 export type World = {
   files: Record<string, string>
+  env: Record<string, string>
   written: Record<string, string>
   ran: string[][]
   toasts: string[]
@@ -19,6 +20,7 @@ export const LPK = '/opt/lpk'
 export function world(on: On, w: Partial<World> = {}): World {
   const state: World = {
     files: {},
+    env: {},
     written: {},
     ran: [],
     toasts: [],
@@ -31,7 +33,7 @@ export function world(on: On, w: Partial<World> = {}): World {
   on('session.cwd', () => ({ value: CWD }))
   on('session.id', () => ({ value: 'session-1' }))
   on('clock.now', () => ({ value: Date.UTC(2026, 9, 21, 12) }))
-  on('env.get', (_, e) => ({ value: e.name === 'HOME' ? '/home/owner' : undefined }))
+  on('env.get', (_, e) => ({ value: state.env[e.name] ?? (e.name === 'HOME' ? '/home/owner' : undefined) }))
   on('fs.exists', (_, e) => ({ value: e.path in state.files }))
   on('fs.read', (_, e) => {
     const text = state.files[e.path]
@@ -40,6 +42,7 @@ export function world(on: On, w: Partial<World> = {}): World {
   })
   on('fs.write', (_, e) => {
     state.written[e.path] = e.text
+    state.files[e.path] = e.text
     return { value: undefined }
   })
   on('agent.list', () => ({ value: state.agents }))

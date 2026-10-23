@@ -6,6 +6,7 @@
 import type { Register } from 'claude-code'
 
 import { compactInstructions } from './compact'
+import { roleModel } from './mode'
 import { type HintMemory, spawnHint } from './spawn-hint'
 import { markDue, registerStatus, startStatus } from './status'
 import { lpkSwitch } from './switch'
@@ -18,8 +19,8 @@ export const register: Register = (on, options) => {
     await startStatus($, options).catch((err: unknown) => $.ui.log(`lpk status band off: ${String(err)}`, { to: 'debug' }))
     await $.command.register({
       name: 'lpk-switch',
-      description: "Save the lpk run's state card and move to another account (then /exit and claude -c)",
-      argumentHint: '[account]',
+      description: "Move to another account at once when the session is routed, else save the lpk run's state card (then /exit and claude -c); ccd and cc put the DeepSeek roles on and off",
+      argumentHint: '[account|ccd|cc]',
     })
     await $.command.register({
       name: 'lpk-waive',
@@ -41,7 +42,8 @@ export const register: Register = (on, options) => {
   on('agent.spawn', async ($, e, next) => {
     markDue()
     await spawnHint($, e, options, memory).catch((err: unknown) => $.ui.log(`spawn hint skipped: ${String(err)}`, { to: 'debug' }))
-    return next(e)
+    const model = await roleModel($, e, options).catch(() => undefined)
+    return next(model ? { ...e, model } : e)
   }).catch(($, e, next) => next(e))
 
   on('session.compact', async ($, e, next) => {
