@@ -5,6 +5,7 @@ import type { AgentInfo, On, ProcessRunResult, SessionRateLimit } from 'claude-c
 export type World = {
   files: Record<string, string>
   env: Record<string, string>
+  statuses: (string | undefined)[]
   written: Record<string, string>
   ran: string[][]
   toasts: string[]
@@ -21,6 +22,7 @@ export function world(on: On, w: Partial<World> = {}): World {
   const state: World = {
     files: {},
     env: {},
+    statuses: [],
     written: {},
     ran: [],
     toasts: [],
@@ -53,6 +55,10 @@ export function world(on: On, w: Partial<World> = {}): World {
     return { value: undefined }
   })
   on('ui.log', () => ({ value: undefined }))
+  on('ui.status', (_, e) => {
+    state.statuses.push(e.text)
+    return { value: undefined }
+  })
   on('process.run', (_, e) => {
     state.ran.push([...e.argv])
     const r = state.reply(e.argv) ?? {}

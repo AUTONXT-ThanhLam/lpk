@@ -5,7 +5,7 @@
 import type { CommandRunInput, CommandRunResult, PluginOptions } from 'claude-code'
 
 import { type Host, lpkRoot, run, runDir, runLpk, runStatus, words } from './lpk'
-import { deepseekOn, modeLine, routed, setDeepseek } from './mode'
+import { deepseekOn, modeLine, pinMode, routed, setDeepseek } from './mode'
 
 const ACTIVE = new Set(['pending', 'running', 'waiting'])
 
@@ -70,10 +70,14 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     const wasOnDeepseek = await deepseekOn($)
     if (wasOnDeepseek) await setDeepseek($, false, options)
     const roles = wasOnDeepseek ? ' DeepSeek roles are off: new agents run on Claude.' : ''
-    if (to.isActive) return { text: `The router already sends this session's requests as ${to.id} (${to.name}); nothing was switched.${roles}` }
+    if (to.isActive) {
+      await pinMode($, to.id)
+      return { text: `The router already sends this session's requests as ${to.id} (${to.name}); nothing was switched.${roles}` }
+    }
     const flip = await run($, ['cc-switch'], { timeoutMs: 90_000 })
     if (flip.exitCode !== 0 || !flip.stdout.includes(`Now on ${to.id}`))
       return { text: `cc-switch did not move to ${to.id} (exit ${flip.exitCode}):\n${(flip.stdout + flip.stderr).trim()}` }
+    await pinMode($, to.id)
     return { text: `Now on ${to.id} (${to.name}). The router sends this session's next request as ${to.id}: no restart. The first request there reads its prompt cache cold.${roles}` }
   }
 

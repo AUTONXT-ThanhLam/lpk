@@ -41,10 +41,20 @@ export async function modeLine($: Host, options: PluginOptions): Promise<string>
   return on ? `DeepSeek roles: on (${rolesOf(options).join(', ')}) on ${DEEPSEEK_MODEL}; ${via}.` : `DeepSeek roles: off; ${via}.`
 }
 
+let pinnedAccount: string | undefined
+
+export async function pinMode($: Host, account?: string): Promise<void> {
+  pinnedAccount = account ?? pinnedAccount
+  if (!(await routed($))) return $.ui.status(undefined)
+  const mode = (await deepseekOn($)) ? 'ccd: builder and reviewers on DeepSeek' : 'cc: all on Claude'
+  $.ui.status(`lpk ${mode}${pinnedAccount ? ` · ${pinnedAccount}` : ''}`)
+}
+
 export async function setDeepseek($: Host, on: boolean, options: PluginOptions): Promise<CommandRunResult> {
   if (on && !(await routed($)))
     return { text: 'This session does not go through lpk-router, so DeepSeek roles would change nothing. Restart it with `lpk-mod/bin/claude-routed -c`; nothing was changed.' }
   await $.fs.write(await modeFile($), on ? 'on\n' : 'off\n')
+  await pinMode($)
   const text = on
     ? `DeepSeek roles are on: new ${rolesOf(options).join(', ')} agents run on ${DEEPSEEK_MODEL}; the others and the lead stay on Claude. Agents already running keep their model.`
     : 'DeepSeek roles are off: new agents run on Claude again. Agents already running keep their model.'

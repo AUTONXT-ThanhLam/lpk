@@ -6,7 +6,7 @@
 import type { Register } from 'claude-code'
 
 import { compactInstructions } from './compact'
-import { roleModel } from './mode'
+import { pinMode, roleModel } from './mode'
 import { type HintMemory, spawnHint } from './spawn-hint'
 import { markDue, registerStatus, startStatus } from './status'
 import { lpkSwitch } from './switch'
@@ -17,6 +17,7 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     await startStatus($, options).catch((err: unknown) => $.ui.log(`lpk status band off: ${String(err)}`, { to: 'debug' }))
+    await pinMode($).catch(() => undefined)
     await $.command.register({
       name: 'lpk-switch',
       description: "Move to another account at once when the session is routed, else save the lpk run's state card (then /exit and claude -c); ccd puts the builder and reviewers on DeepSeek, an account puts them back on Claude",
