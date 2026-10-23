@@ -54,6 +54,8 @@ slices, so a file outside your slice is a conflict.
 In a fix round your slice is a group of confirmed findings instead: their claims, repros and
 rulings are your contract, and your base is the reviewed commit. Make one commit per root cause: it
 changes only what that cause needs, and adds a test you ran red before the fix and green after it.
+Before you edit, run `lpk map <name>` for each name the fix changes (add `--sibling <dir>` for each
+sibling repo the brief lists) and read every consumer: a fix that leaves one behind is the next finding.
 Never call `finding_fixed`: the lead closes each finding with the SHA its cherry-pick gets. Keep
 the finding ids out of the commit message; the report names the ids each commit closes. A finding
 the lead sends you later joins its cause's commit (amend it), unless the lead says the round is

@@ -103,6 +103,19 @@ test('a /code-review child signs in on a descriptor, and its typed findings land
   assert.equal(sh(dir, 'worktree', 'list').split('\n').length, 1, 'the scratch worktree is removed');
 });
 
+test('the child is told the run\'s requirements and decisions, so intended behaviour is not reported as a defect', () => {
+  const { dir } = repo('intent');
+  const runFile = join(dir, '.git', 'lpk', 'run.json');
+  writeFileSync(runFile, JSON.stringify({ ...JSON.parse(readFileSync(runFile, 'utf8')), requirements: [{ id: 'R1', text: 'page(xs, n) returns n + 1 rows so the caller can tell there is a next page', source: 'request' }, { id: 'R2', source: 'request' }] }));
+  writeFileSync(join(dir, '.git', 'lpk', 'decisions.jsonl'), `${JSON.stringify({ run: 'run1', what: 'keep take() unbounded', why: 'callers slice it themselves' })}\n${JSON.stringify({ run: 'other', what: 'not this run', why: 'x' })}\n`);
+  assert.equal(lpk(dir, 'report', 'code-review').status, 0);
+  const text = stubCalls(dir)[0].args[stubCalls(dir)[0].args.indexOf('--append-system-prompt') + 1];
+  assert.match(text, /R1: page\(xs, n\) returns n \+ 1 rows/);
+  assert.match(text, /decided: keep take\(\) unbounded \(callers slice it themselves\)/);
+  assert.doesNotMatch(text, /not this run|R2|undefined/);
+  assert.match(text, /Every query names its limit/);
+});
+
 test('a child that prints its findings instead of reporting them is still read', () => {
   const { dir } = repo('prose');
   const p = lpk(dir, 'prose', 'code-review', '--model', 'opus');

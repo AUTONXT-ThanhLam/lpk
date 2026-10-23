@@ -6,7 +6,7 @@ export const meta = {
 }
 
 // args: { repo, base, brief, briefJson, skillDir, sources, precedent, timeBound, baseSuite, round,
-//   changed, open, stallMs }
+//   changed, open, coverage, stallMs }
 // - brief, briefJson: paths of the Design Brief and its brief.json.
 // - skillDir: the lpk skill's directory, whose step files say how the run goes.
 // - sources: paths of the files the brief must trace to: the request, each linked ticket or
@@ -73,7 +73,7 @@ const ANGLES = [
   { name: 'plan-sim', schema: SIM,
     ask: `Walk the brief as lpk would run it. The lpk step files are in ${a.skillDir}. ${bound ? `The owner's time bound for the whole run is ${bound}.` : 'The owner set no time bound: fastest delivery that keeps quality, so name the long pole of each stage.'}${a.baseSuite ? ` The base test suite took ${a.baseSuite}.` : ''}` },
   { name: 'plan-trace', schema: TRACE,
-    ask: `Trace the brief to its sources, each read whole:\n${a.sources.map((p) => `- ${p}`).join('\n')}` },
+    ask: `Trace the brief to its sources, each read whole:\n${a.sources.map((p) => `- ${p}`).join('\n')}${a.coverage ? `\nThe brief's scenario and failure rows prove none of these requirement ids (a fact, not a finding: do not spend a finding on it; check that the brief's other rows are right):\n${a.coverage}` : ''}` },
 ]
 
 // Each angle once, and once more when it returns nothing or fails; an angle that still has no answer is
