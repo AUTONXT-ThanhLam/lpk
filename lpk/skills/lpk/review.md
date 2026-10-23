@@ -11,8 +11,8 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    imports, comments that narrate. Each line is one more place to block the merge.
 2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background) until it is green, then
    commit. The commit hook refuses code that no green `lpk verify` ran on.
-3. Run `git fetch`, then `lpk facts --base <target>` (the run's target; without `--base` it diffs
-   against the repo's default branch): it prints the bundle directory (`impact.md`,
+3. Run `git fetch`, then `lpk facts` (it diffs against the run's target; `--base <ref>` names
+   another): it prints the bundle directory (`impact.md`,
    `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
    branch, so check the target yourself with `git rev-list --count HEAD..<target>`. When the branch
    is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers see the code

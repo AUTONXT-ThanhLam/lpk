@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { ciCommands, defaultBranch, mergeBase } from '../git.mjs';
+import { ciCommands, defaultBranch, git, mergeBase } from '../git.mjs';
 import { repoOf } from '../out.mjs';
 import { owed } from '../owed.mjs';
 import { appendDecision } from '../records.mjs';
@@ -78,8 +78,14 @@ function ciLines(repo) {
   return [...jobs].map(([k, v]) => `  ${k}: ${v.join(' ; ')}`);
 }
 
+function pinned(repo, asked, kept) {
+  if (!asked) return kept;
+  if (asked !== 'HEAD' && asked !== '@') return asked;
+  return kept || git(['rev-parse', 'HEAD'], repo).trim();
+}
+
 async function start(repo, o) {
-  const target = o.target || o.base || readRun(repo)?.target || defaultBranch(repo);
+  const target = pinned(repo, o.target || o.base, readRun(repo)?.target) || defaultBranch(repo);
   if (o.lane && !['quick', 'full'].includes(o.lane)) { console.error(`lpk: --lane is quick or full\n${USAGE}`); return 2; }
   const pf = new URL('../preflight.mjs', import.meta.url);
   if (existsSync(pf)) {

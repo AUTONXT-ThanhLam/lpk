@@ -26,6 +26,11 @@ it.
    timeout of 600000 ms: the first one may wait for the trees' install.
 3. For a timing, polling or race finding, run `lpk repeat -- <command>`: it runs the command as many
    times as fit in two minutes and prints how many failed. One failure in many runs reproduces it.
+4. For a finding about what a screen shows or does, start the app from the repro worktree
+   (`lpk spawn`), open its page in a fresh isolated browser context with the chrome-devtools tools,
+   do what the finding says on the commit and on the base, close the page, and cite the snapshot,
+   console or network output as the evidence. A finding you could not reach in a browser is
+   UNSETTLED, never DROPPED.
 
 Rule from what the runs showed:
 - **CONFIRMED**: the repro fails on the commit. A repro that a signal killed is a crash, and a crash
