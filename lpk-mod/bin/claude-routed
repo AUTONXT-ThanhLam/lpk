@@ -6,7 +6,7 @@ url=http://127.0.0.1:$port
 up() { curl -s --max-time 1 "$url/__lpk_router" >/dev/null; }
 if ! up; then
   mkdir -p "$HOME/.config/lpk"
-  LPK_ROUTER_PORT=$port setsid -f node "$here/lpk-router.mjs" >>"$HOME/.config/lpk/router.err" 2>&1 </dev/null
+  LPK_ROUTER_PORT=$port setsid -f bash -c 'while :; do node "$1"; sleep 1; done' _ "$here/lpk-router.mjs" >>"$HOME/.config/lpk/router.err" 2>&1 </dev/null
   for _ in 1 2 3 4 5 6 7 8 9 10; do up && break; sleep 0.3; done
   up || { echo "lpk-router did not start; see ~/.config/lpk/router.err" >&2; exit 1; }
 fi
