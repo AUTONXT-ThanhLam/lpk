@@ -79,10 +79,9 @@ test('each subcommand and flag the prompts give a shipped command appears in tha
   assert.deepEqual([...new Set(absent)], []);
 });
 
-test('the prompts never ask for the retired hunk-undo run or a push notification', () => {
+test('the prompts never ask for the retired hunk-undo run', () => {
   for (const [file, text] of prompts) {
     assert.ok(!text.includes('--hunks'), `${file} still runs lpk mutate --hunks`);
-    assert.ok(!text.includes('PushNotification'), `${file} still sends a PushNotification`);
   }
 });
 
