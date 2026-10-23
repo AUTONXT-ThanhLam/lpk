@@ -153,3 +153,26 @@ test('lpk facts says how far the branch is behind main and whether it still merg
   const out = lpk(repo, '', 'facts', '--base', 'main', '--out', join(tmp, 'behind-bundle')).stdout;
   assert.match(out, /merge: 1 commit\(s\) behind main \(never fetched\), CONFLICTS in src\/a\.mjs; rebase onto main and rerun `lpk verify`/);
 });
+
+test('lpk check reads the run\'s target when no --base is given, so a branch cut from a feature branch shows only its own files', () => {
+  const repo = repoWith('stacked', { 'src/a.mjs': 'export const a = 1;\n' });
+  sh(repo, 'switch', '-q', '-c', 'studio');
+  write(repo, 'src/studio.mjs', 'eval(1);\n'); sh(repo, 'add', '-A'); sh(repo, 'commit', '-qm', 'studio');
+  sh(repo, 'switch', '-q', '-c', 'child');
+  write(repo, 'src/child.mjs', 'eval(2);\n'); sh(repo, 'add', '-A'); sh(repo, 'commit', '-qm', 'child');
+  assert.match(lpk(repo, 'one', 'run', 'start', '--target', 'studio', '--verify', 'true').stdout, /against studio/);
+  const out = lpk(repo, 'one', 'check').stdout;
+  assert.match(out, /src\/child\.mjs/);
+  assert.doesNotMatch(out, /src\/studio\.mjs/);
+});
+
+test('a second run start with --base HEAD after a commit keeps the target the first one pinned', () => {
+  const repo = repoWith('pin', { 'src/a.mjs': 'export const a = 1;\n' });
+  ok(lpk(repo, 'one', 'run', 'start', '--base', 'HEAD', '--verify', 'true'));
+  write(repo, 'src/a.mjs', 'export const a = 2;\n'); sh(repo, 'commit', '-qam', 'change');
+  ok(lpk(repo, 'one', 'run', 'start', '--base', 'HEAD', '--verify', 'true'));
+  const run = JSON.parse(readFileSync(runFile(repo), 'utf8'));
+  assert.equal(run.base, sh(repo, 'rev-parse', 'HEAD~1').trim());
+  assert.match(lpk(repo, 'one', 'check').stdout, /\(1 files against /);
+  assert.ok(JSON.parse(lpk(repo, 'one', 'reviews', 'owed', '--json').stdout).length > 0);
+});
