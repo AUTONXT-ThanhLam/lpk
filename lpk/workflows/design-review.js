@@ -12,7 +12,7 @@ export const meta = {
 // - sources: paths of the files the brief must trace to: the request, each linked ticket or
 //   document, the owner's answers, each saved verbatim.
 // - precedent: path of the `lpk precedent` output; baseSuite: the base test suite's measured time.
-// - timeBound: the owner's bound on the whole run (default 45 minutes).
+// - timeBound: the owner's bound on the whole run, when they gave one.
 // - round: which round this is (1 for the first, and again after a change of approach); from round 3
 //   on, a round that still has a High is the last.
 // - changed: the brief's line numbers the previous revision changed; the round reviews only these and
@@ -34,7 +34,7 @@ if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s
 if (round >= 2 && !Array.isArray(a.open)) missing.push('open (the previous round\'s High findings)')
 if (missing.length) return { error: `lpk:design-review needs ${missing.join(', ')} in args` }
 const changed = new Set((a.changed || []).map(Number))
-const bound = a.timeBound || '45 minutes'
+const bound = a.timeBound || ''
 const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')
 
 const S = { type: 'string' }
@@ -71,7 +71,7 @@ const ANGLES = [
   ...Object.entries(FOCUS).map(([focus, questions]) => ({ name: `design-critic:${focus}`, type: 'design-critic', schema: CRITIC,
     ask: `Check the brief against the code and its real behaviour, running what the design relies on.${a.precedent ? ` The \`lpk precedent\` output is in ${a.precedent}.` : ''}\nYour focus: answer only these questions, as deep as they go, and leave every other question to the other critics: ${questions}` })),
   { name: 'plan-sim', schema: SIM,
-    ask: `Walk the brief as lpk would run it. The lpk step files are in ${a.skillDir}. The owner's time bound for the whole run is ${bound}.${a.baseSuite ? ` The base test suite took ${a.baseSuite}.` : ''}` },
+    ask: `Walk the brief as lpk would run it. The lpk step files are in ${a.skillDir}. ${bound ? `The owner's time bound for the whole run is ${bound}.` : 'The owner set no time bound: fastest delivery that keeps quality, so name the long pole of each stage.'}${a.baseSuite ? ` The base test suite took ${a.baseSuite}.` : ''}` },
   { name: 'plan-trace', schema: TRACE,
     ask: `Trace the brief to its sources, each read whole:\n${a.sources.map((p) => `- ${p}`).join('\n')}` },
 ]
@@ -125,7 +125,7 @@ return {
   findings,
   stages: sim.stages || [],
   totalMinutes: sim.totalMinutes ?? null,
-  timeBound: bound,
+  timeBound: bound || null,
   traced: trace.length,
   untraced: trace.filter((r) => r.status !== 'kept'),
   missing: absent,

@@ -47,7 +47,7 @@ Stages that run at the same time cost their slowest member, not the sum.
 ## Ratings
 
 - **High**: the run would deadlock, a gate or scenario would pass on a broken change, work would be
-  lost, or the estimate passes the owner's time bound. An `[inferred]` High needs the step that
+  lost, or the estimate passes a time bound the owner gave. An `[inferred]` High needs the step that
   makes it happen.
 - **Medium**: the run would stall or redo work, but recover without the owner.
 - **Low**: slower or clumsier than it needs to be.
@@ -62,7 +62,7 @@ Do not consult the advisor: a verifier or the lead checks your answer.
 
 Answer in this shape and nothing else:
 1. `stages`: one line per stage: the stage, the minutes, and the facts the estimate rests on; then
-   the total against the owner's time bound.
+   the total, and against the owner's time bound when one was given.
 2. `findings`, High first: the rating, the brief lines, its cause (the property of the plan it
    breaks), the stage, the step where it goes wrong
    (state, then the wrong outcome), the evidence tagged `[ran]`, `[read]` or `[inferred]`, and the

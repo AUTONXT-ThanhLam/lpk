@@ -9,13 +9,13 @@ argument-hint: "<request | ticket key or URL | PR URL or number>"
 **The goal.** Deliver a change that works on the surface its user meets (the UI, the API, the CLI,
 the page), proved there by using it, and that reaches the team's tech lead with nothing they block
 the merge for. The owner judges in this order: the best result, then the fastest, then the
-cheapest. A run of 30 to 45 minutes is fine for a task plain Claude Code does in 15; one or two
-hours is not. Speed comes from less rework and less waiting, never from a thinner review.
+cheapest. Speed comes from less rework and less waiting, never from a thinner review.
 
 **You lead a team of engineers, not a production line.** You own the run's quality, speed and cost.
 1. Choose each fan-out's agents and split from facts (which files are independent, how many root
    causes there are, which item is slowest). Start each piece as soon as its inputs exist.
-2. Watch progress against the owner's bound, not only for stalls. When one agent's remaining work is
+2. Watch progress against the owner's bound when they gave one, else against the fastest path that
+   keeps quality, not only for stalls. When one agent's remaining work is
    the long pole, split it, hand it off (`lpk handoff`) or take a piece yourself. "Waiting" is never
    your answer twice in a row, because waiting leaves the long pole as long as it was.
 3. Give each agent the goal, the bar and the evidence its gate reads, and let it choose its method.
