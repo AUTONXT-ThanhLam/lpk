@@ -34,7 +34,7 @@ test('ccd moves the builder and the reviewers to DeepSeek and leaves the other r
   const seen = modelsSpawnedWith(on)
   const r = await $.command.run({ command: 'lpk-switch', args: 'ccd', origin: OWNER, presentation: PRESENT })
   expect(r.text).toContain('DeepSeek roles are on')
-  expect(w.statuses.at(-1)).toBe('lpk ccd: builder and reviewers on DeepSeek')
+  expect(w.statuses.at(-1)).toBe('lpk cc1 · ccd (builder and reviewers on DeepSeek)')
   expect(w.written[MODE]).toBe('on\n')
   for (const role of ['builder', 'bug-hunter', 'verifier', 'env']) await $.agent.spawn({ ...SPAWN, subagentType: `lpk:${role}` })
   for (const role of ['techlead', 'architect']) await $.agent.spawn({ ...SPAWN, subagentType: `lpk:${role}` })
@@ -55,7 +55,7 @@ test('moving to an account puts the roles back on Claude and says so', async ($,
   await $.agent.spawn(SPAWN)
   expect(w.written[MODE]).toBe('off\n')
   expect(r.text).toContain('DeepSeek roles are off')
-  expect(w.statuses.at(-1)).toBe('lpk cc: all on Claude · cc1')
+  expect(w.statuses.at(-1)).toBe('lpk cc1 · Claude only')
   expect(seen['lpk:builder']).toBeUndefined()
 })
 
@@ -96,4 +96,11 @@ test('a session behind another local proxy is not a routed session', async ($, o
   expect(r.text).toContain('claude-routed')
   expect(w.written[MODE]).toBeUndefined()
   expect(seen['lpk:builder']).toBeUndefined()
+})
+
+test('a routed session shows its account and mode in the status line as it starts', async ($, on) => {
+  const w = world(on, { env: ROUTED, files: { [MODE]: 'on\n' }, reply: ccStatus })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+  expect(w.statuses.at(-1)).toBe('lpk cc1 · ccd (builder and reviewers on DeepSeek)')
 })

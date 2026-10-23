@@ -1,6 +1,6 @@
 import type { AgentSpawnInput, CommandRunResult, PluginOptions } from 'claude-code'
 
-import type { Host } from './lpk'
+import { type Host, run } from './lpk'
 
 export const DEEPSEEK_MODEL = 'deepseek-flash'
 
@@ -41,13 +41,16 @@ export async function modeLine($: Host, options: PluginOptions): Promise<string>
   return on ? `DeepSeek roles: on (${rolesOf(options).join(', ')}) on ${DEEPSEEK_MODEL}; ${via}.` : `DeepSeek roles: off; ${via}.`
 }
 
-let pinnedAccount: string | undefined
+async function activeId($: Host): Promise<string | undefined> {
+  const status = await run($, ['cc-switch', 'status'], { timeoutMs: 30_000 }).catch(() => undefined)
+  return status ? /^\* (\S+)/m.exec(status.stdout)?.[1] : undefined
+}
 
 export async function pinMode($: Host, account?: string): Promise<void> {
-  pinnedAccount = account ?? pinnedAccount
   if (!(await routed($))) return $.ui.status(undefined)
-  const mode = (await deepseekOn($)) ? 'ccd: builder and reviewers on DeepSeek' : 'cc: all on Claude'
-  $.ui.status(`lpk ${mode}${pinnedAccount ? ` · ${pinnedAccount}` : ''}`)
+  const id = account ?? (await activeId($))
+  const roles = (await deepseekOn($)) ? 'ccd (builder and reviewers on DeepSeek)' : 'Claude only'
+  $.ui.status(`lpk ${id ?? 'account ?'} · ${roles}`)
 }
 
 export async function setDeepseek($: Host, on: boolean, options: PluginOptions): Promise<CommandRunResult> {
