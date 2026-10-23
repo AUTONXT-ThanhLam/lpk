@@ -8,7 +8,8 @@ import { codeReview, resolveRange, reviewRules, securityReview } from '../codere
 import { addFinding, readLedger } from '../findings.mjs';
 import { git } from '../git.mjs';
 import { baseOf, outDir, parseArgs, repoOf } from '../out.mjs';
-import { appendRecord } from '../records.mjs';
+import { requirementsOf } from '../proof.mjs';
+import { appendRecord, readDecisions } from '../records.mjs';
 import { readRun } from '../run.mjs';
 import { headTree, treeOf } from '../tree.mjs';
 
@@ -28,6 +29,18 @@ const CLEANUP = ['simplification', 'efficiency', 'reuse'];
 function alreadyRaised(repo) {
   const rows = readLedger(repo).findings.map((f) => `- ${f.id} ${f.file || ''}${f.line ? `:${f.line}` : ''} (${f.state}): ${f.claim}`);
   return rows.length ? `These findings were already raised on this change; review the fix delta, and report one of them again only if the delta did not fix it:\n${rows.join('\n')}` : '';
+}
+
+function intended(repo) {
+  const run = readRun(repo);
+  if (!run) return '';
+  let reqs = [];
+  try { reqs = requirementsOf(repo, run).requirements; } catch { reqs = []; }
+  const rows = [
+    ...reqs.filter((r) => r.text).map((r) => `- ${r.id}: ${r.text}`),
+    ...readDecisions(repo, { run: run.id }).map((d) => `- decided: ${d.what} (${d.why})`),
+  ];
+  return rows.length ? `This change is meant to do the following; behaviour these lines state is not a defect:\n${rows.join('\n')}` : '';
 }
 
 // A slice is reviewed before its commit, so its change is the working tree (the tree `lpk verify`
@@ -81,7 +94,7 @@ export async function main(argv) {
   const name = `${kind}-${model}-${r.a.slice(0, 8)}-${r.b.slice(0, 8)}-${process.pid}`;
   const dir = outDir(repo);
   const recordFile = join(dir, `${name}.json`);
-  const append = [reviewRules(repo, r.a), delta ? alreadyRaised(repo) : ''].filter(Boolean).join('\n\n');
+  const append = [reviewRules(repo, r.a), intended(repo), delta ? alreadyRaised(repo) : ''].filter(Boolean).join('\n\n');
   const run = { repo, a: r.a, b: r.b, level, model, fallbackModel: a.opt('--fallback-model') || OTHER[model], effort, appendSystemPrompt: append, timeoutMs, rawFile: join(dir, `${name}.stream.jsonl`) };
   const res = await (security ? securityReview(run) : codeReview(run));
 

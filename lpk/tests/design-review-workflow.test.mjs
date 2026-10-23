@@ -43,6 +43,13 @@ test('round 1 starts five focused critics, the plan simulator and the plan trace
   assert.deepEqual(out.counts, { High: 0, Medium: 1, Low: 0 });
 });
 
+test('the requirement ids no row proves reach the plan tracer as a fact and no other angle', async () => {
+  const { calls } = await run({ ...ARGS, coverage: 'R3' }, answers({}));
+  assert.match(calls.find((c) => c.opts.label === 'plan-trace').prompt, /not a finding[\s\S]*\nR3$/);
+  assert.equal(calls.filter((c) => /\nR3$/.test(c.prompt)).length, 1);
+  assert.doesNotMatch((await run(ARGS, answers({}))).calls.find((c) => c.opts.label === 'plan-trace').prompt, /not a finding/);
+});
+
 test('a High resting only on inference counts as Medium, and each angle keeps its Highs and at most three other findings', async () => {
   const many = [finding('High', [1], 'inferred'), finding('High', [2]), ...[3, 4, 5, 6].map((n) => finding('Low', [n]))];
   const { out } = await run(ARGS, answers({ 'design-critic:state': { findings: many } }));

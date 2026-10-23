@@ -105,9 +105,10 @@ When the review ends, start one `lpk:test-author` per slice, all in one message,
 failure rows and files; slices whose tests share a test file, helper, fixture, database or port
 share one test author. Tests written during the review were rewritten three times in a past run.
 
-The design is reviewed in rounds, at most three. From round 2 on, pass `open` (the previous round's
-High findings) and `changed`: only the angles with an open High run again, each checking its Highs
-are closed and reading the changed lines and what they reach. After each round:
+The design is reviewed in rounds, at most three. Before each round list the requirement ids no scenario or failure row
+`proves` (`jq -r '([.scenarios[]?,.failures[]?]|map(.proves[]?)) as $p|.requirements[]|select(.id as $i|$p|index($i)|not)|.id'
+brief.json`) and pass them as `coverage`, a fact for the plan tracer. From round 2 on, also pass `open` (the previous round's
+High findings) and `changed`: only the angles with an open High run again, each checking its Highs are closed and reading the changed lines and what they reach. After each round:
 1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
    High's cause, and what changes>"`, and append its Mediums and Lows to `notes.md` beside the brief.
 2. At any verdict and rating, close each `reuse-first` finding (the `reuse` critic's, or one naming
@@ -123,10 +124,9 @@ are closed and reading the changed lines and what they reach. After each round:
    a gate that runs the test). A cause that comes back after an earlier round fixed it was patched
    where it was seen: give it that mechanism now, and name it in the record. A High that is wrong is
    answered with a run, citing the command and its output in the brief beside the line it concerns:
-   a disagreement is settled by a run, never by argument.
-   A High only the owner can settle (a time bound they gave, the scope) is one question to them. Mediums and
-   Lows stay in `notes.md`, never in a revision. A revision grows the brief by at most a tenth
-   (`wc -w`): briefs that grew 40% a round drew new Highs.
+   a disagreement is settled by a run, never by argument. A High only the owner can settle (a time
+   bound they gave, the scope) is one question to them. Mediums and Lows stay in `notes.md`, never in
+   a revision. A revision grows the brief by at most a tenth (`wc -w`): briefs that grew 40% a round drew new Highs.
    Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
    round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the
