@@ -108,11 +108,12 @@ test('the child is told the run\'s requirements and decisions, so intended behav
   const runFile = join(dir, '.git', 'lpk', 'run.json');
   writeFileSync(runFile, JSON.stringify({ ...JSON.parse(readFileSync(runFile, 'utf8')), requirements: [{ id: 'R1', text: 'page(xs, n) returns n + 1 rows so the caller can tell there is a next page', source: 'request' }, { id: 'R2', source: 'request' }] }));
   writeFileSync(join(dir, '.git', 'lpk', 'decisions.jsonl'), `${JSON.stringify({ run: 'run1', what: 'keep take() unbounded', why: 'callers slice it themselves' })}\n${JSON.stringify({ run: 'other', what: 'not this run', why: 'x' })}\n`);
+  writeFileSync(join(dir, '.git', 'lpk', 'decisions.jsonl'), Array.from({ length: 50 }, (_, i) => JSON.stringify({ run: 'run1', what: `choice ${i}`, why: 'w' })).concat(JSON.stringify({ run: 'other', what: 'not this run', why: 'x' })).join('\n') + '\n');
   assert.equal(lpk(dir, 'report', 'code-review').status, 0);
   const text = stubCalls(dir)[0].args[stubCalls(dir)[0].args.indexOf('--append-system-prompt') + 1];
   assert.match(text, /R1: page\(xs, n\) returns n \+ 1 rows/);
-  assert.match(text, /decided: keep take\(\) unbounded \(callers slice it themselves\)/);
-  assert.doesNotMatch(text, /not this run|R2|undefined/);
+  assert.match(text, /decided: choice 49 \(w\)/);
+  assert.doesNotMatch(text, /choice 9 |not this run|R2|undefined/);
   assert.match(text, /Every query names its limit/);
 });
 

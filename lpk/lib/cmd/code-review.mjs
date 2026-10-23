@@ -21,6 +21,7 @@ const USAGE = `usage: lpk code-review [--repo <dir>] [--range <from>..<to> | --b
   --slice    a builder's self-review, before it commits: <merge base with --base>..the working tree
              (uncommitted and untracked code included); findings are printed, not added to the ledger`;
 
+const DECISIONS_SHOWN = 40;
 const OTHER = { sonnet: 'opus', opus: 'sonnet' };
 // The categories /code-review's own output contract names for cleanup rather than defects.
 const CLEANUP = ['simplification', 'efficiency', 'reuse'];
@@ -38,7 +39,7 @@ function intended(repo) {
   try { reqs = requirementsOf(repo, run).requirements; } catch { reqs = []; }
   const rows = [
     ...reqs.filter((r) => r.text).map((r) => `- ${r.id}: ${r.text}`),
-    ...readDecisions(repo, { run: run.id }).map((d) => `- decided: ${d.what} (${d.why})`),
+    ...readDecisions(repo, { run: run.id }).slice(-DECISIONS_SHOWN).map((d) => `- decided: ${d.what} (${d.why})`),
   ];
   return rows.length ? `This change is meant to do the following; behaviour these lines state is not a defect:\n${rows.join('\n')}` : '';
 }

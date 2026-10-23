@@ -43,11 +43,11 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
 - **The clock.** Run `date +%s` first and keep it. As each step starts, post what, the minutes from
   `echo $(( ($(date +%s) - <start>) / 60 ))` and what is next. An estimate sums what is left, each
   stage at what it or its like took in this run, as a range; an untimed stage is named unmeasured.
-- **A question stops the team**: nothing new starts while it is open. A technical choice and what
-  a command, the code or the ticket answers are yours: decide, log it (`lpk decide "<what>" --why
-  "<why>"`, the report lists them) and say it in the next update. Ask only what the owner alone
-  knows, or before anything destructive or outside this machine, once all other work is started:
-  once, in the user's terms, with your recommendation and no finding or requirement ids.
+- **A question stops the team**: nothing new starts while it is open. A technical choice and what a command,
+  the code or the ticket answers are yours: decide, log it (`lpk decide "<what>" --why "<why>"`, the report
+  lists them) and say it in the next update. Ask only what the owner alone knows, or before anything
+  destructive or outside this machine, once all other work is started: once, in the user's terms, with your
+  recommendation and no finding or requirement ids, and send that line with `PushNotification` (the owner is often away).
 - **Spend few turns on a small context**: each of your tool calls rereads your whole context (a
   lead averaged 400 calls at 156k tokens). Put independent commands in one call, wait for
   notifications instead of polling, give an agent a command's output file, and send reading or any
