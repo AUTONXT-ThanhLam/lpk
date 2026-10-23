@@ -47,12 +47,13 @@ test('ccd moves the builder and the reviewers to DeepSeek and leaves the other r
   expect(seen['lpk:architect']).toBeUndefined()
 })
 
-test('cc puts the roles back on Claude', async ($, on) => {
+test('moving to an account puts the roles back on Claude and says so', async ($, on) => {
   const w = world(on, { env: ROUTED, files: { [MODE]: 'on\n' }, reply: ccStatus })
   const seen = modelsSpawnedWith(on)
-  await $.command.run({ command: 'lpk-switch', args: 'cc', origin: OWNER, presentation: PRESENT })
+  const r = await $.command.run({ command: 'lpk-switch', args: 'cc1', origin: OWNER, presentation: PRESENT })
   await $.agent.spawn(SPAWN)
   expect(w.written[MODE]).toBe('off\n')
+  expect(r.text).toContain('DeepSeek roles are off')
   expect(seen['lpk:builder']).toBeUndefined()
 })
 

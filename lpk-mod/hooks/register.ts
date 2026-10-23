@@ -19,8 +19,8 @@ export const register: Register = (on, options) => {
     await startStatus($, options).catch((err: unknown) => $.ui.log(`lpk status band off: ${String(err)}`, { to: 'debug' }))
     await $.command.register({
       name: 'lpk-switch',
-      description: "Move to another account at once when the session is routed, else save the lpk run's state card (then /exit and claude -c); ccd and cc put the DeepSeek roles on and off",
-      argumentHint: '[account|ccd|cc]',
+      description: "Move to another account at once when the session is routed, else save the lpk run's state card (then /exit and claude -c); ccd puts the builder and reviewers on DeepSeek, an account puts them back on Claude",
+      argumentHint: '[cc1|cc2|ccd]',
     })
     await $.command.register({
       name: 'lpk-waive',
