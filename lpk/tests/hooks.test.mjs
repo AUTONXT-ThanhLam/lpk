@@ -140,6 +140,7 @@ test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no gen
   assert.equal(spawn(full), null);
   assert.match(reason(spawn(full, 'general-purpose')), /lpk:staff/);
   assert.match(reason(spawn(full, '')), /lpk:staff/);
+  assert.match(reason(spawn(full, 'claude')), /lpk:staff/);
   assert.equal(spawn(full, 'lpk:staff'), null);
   assert.equal(spawn(full, 'general-purpose', 'another-session'), null, 'outside a run, any agent');
 });
