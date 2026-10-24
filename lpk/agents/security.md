@@ -21,6 +21,9 @@ look for:
 - authentication and authorisation: a route, handler or job that skips the guard its siblings
   have, an object fetched by id without checking its owner, a role or tenant check on the client
   only, a token, session or reset flow that can be replayed, forged or never expires;
+- binding and tokens: a request body bound whole to a record (an extra `role` or `ownerId` field
+  sticks), a guard on the path string that `/Admin` or `/%61dmin` slips past, a webhook not verified
+  over its raw body, a token decoded without verifying its signature, algorithm and expiry;
 - secrets: a key, token or password committed, logged, returned in a response or error, or sent
   to a third party;
 - unsafe deserialisation: pickle, YAML load, Java or .NET serialisers, `eval`, or a type chosen by

@@ -31,7 +31,7 @@ needs.
 - blocks: high
 - when: added `\b(status|state|update|upsert|merge|cancel|approve|reject|revoke|resume|answer|finish|lock|unlock|claim|rotate)\b`
 - find: `\bSET\s+\"?(status|state)\"?\s*=(?![^;]*\bWHERE\b[^;]*\b(status|state)\b)`
-- rule: A state change checks its precondition inside the atomic write (compare-and-set `WHERE`, unique constraint, `ON CONFLICT`, row lock), never in an `if` before it. A terminal or user-stopped state is never revived by a later event, and leaving or detaching is not cancelling.
+- rule: A state change checks its precondition inside the atomic write (compare-and-set `WHERE`, unique constraint, `ON CONFLICT`, row lock), never in an `if` before it. A terminal or user-stopped state is never revived by a later event, and leaving or detaching is not cancelling. Each event a state refuses is refused: shipping a draft, cancelling a delivered order.
 - check: for each new status or lifecycle verb, list the transitions that can race it. Repro: fire two calls at once (`Promise.all`, two curls) and show both succeed or the stopped item come back.
 
 ### fail-closed: a missing or failing check refuses
@@ -45,8 +45,8 @@ needs.
 ### route-authz: every route and tool checks who is calling
 - blocks: high
 - when: added `(\b(app|router|server|fastify|api)\.(get|post|put|patch|delete|all|route)\(|@(app|router)\.(get|post|put|patch|delete)|\.tool\(|registerTool|addRoute)`
-- rule: Every new or changed route, handler and tool authenticates the caller, checks they may act on that object (owner, tenant, role, admin for admin actions) on the server, and rate-limits unauthenticated writes. A server credential never acts for an unchecked caller.
-- check: call it with no token, another user's token and a non-admin token. Repro: the request and the status that should have been 401 or 403.
+- rule: Every new or changed route, handler and tool authenticates the caller, checks they may act on that object (owner, tenant, role, admin for admin actions) on the server, and rate-limits unauthenticated writes. A server credential never acts for an unchecked caller. A handler binds only named fields of a request body to a record, never the whole body (a caller must not set `role`, `ownerId`, `tenantId` or a price), and a guard that matches the path string holds for its variants.
+- check: call it with no token, another user's token and a non-admin token; send one extra privilege field (`{"role":"admin"}`) in the body; call a guarded path as `/Admin`, `//admin`, `/x/../admin` and `/%61dmin`. Repro: the request and the status that should have been 401 or 403, or the field that stuck.
 
 ## Failure handling
 
@@ -147,7 +147,8 @@ needs.
 ### per-user-scope: per-user data is keyed per user
 - blocks: medium
 - when: added `(owner|tenant|user_?id|session|cache|new Map\(|global|singleton)`
-- rule: Ids, caches, stores and defaults that hold per-user data are keyed per user, and every sibling query applies the same scope.
+- find: `Cache-Control['"]?\s*[:,]\s*['"]?[^'"\n]*\b(public|s-maxage)\b`
+- rule: Ids, caches, stores and defaults that hold per-user data are keyed per user, and every sibling query applies the same scope. A response that depends on the caller is `private` or `no-store`, or varies on the header that identifies the caller, never `public` or `s-maxage` alone.
 - check: two users with the same name or id. Repro: the two calls and what one sees or overwrites of the other.
 
 ### partial-results: a dropped part is reported
@@ -162,14 +163,15 @@ needs.
 ### tests-prove: tests fail when the change is undone
 - blocks: high
 - when: always
-- rule: Each acceptance scenario and each new error branch has a test that drives the entry point the user or caller uses, asserts the specific outcome (which item, which status, which row), uses the data shape the bug needs, and runs real SQL or IO where the bug lives. Asserting a count, truthiness or a mock the test itself set up does not count.
-- check: `lpk mutate --test "<command>"` reverts each changed source file in a scratch copy and runs the tests; a file whose revert leaves them green is not proved by any test.
+- rule: Each acceptance scenario and each new error branch has a test that drives the entry point the user or caller uses, asserts the specific outcome (which item, which status, which row), uses the data shape the bug needs, and runs real SQL or IO where the bug lives. Asserting a count, truthiness or a mock the test itself set up does not count, nor does a test that cannot fail: an un-awaited `expect(...).rejects`, a soft assertion never collected (`assertAll`), an assertion inside a `try` whose `catch` swallows it, an expected value computed by the code under test, a snapshot as the only assertion, or a status-only assertion on a protocol that carries failure inside a 200 (GraphQL `errors`, SOAP Fault, JSON-RPC `error`). A change that edits or deletes an assertion, expected value, fixture or snapshot of an existing test needs a line of the request that changes that behaviour; otherwise the edit hides a regression.
+- check: `lpk mutate --test "<command>"` reverts each changed source file in a scratch copy and runs the tests; a file whose revert leaves them green is not proved by any test. `git diff <base> -- <test files>` lists the assertions and snapshots the change removed or edited.
 
 ### ci-runs-it: CI runs the new checks and still starts
 - blocks: high
 - when: path `(test|spec|__tests__|\.github/workflows|package\.json|pyproject|Makefile|tox\.ini|vitest|jest|playwright|tsconfig)`
 - find: `continue-on-error:\s*true|\|\|\s*true\b`
-- rule: New tests and scripts run in a CI job that starts, on the runtime version the dependencies need, also when the PR's base is not the default branch (a stacked PR whose base the gate skips). No gate is skipped, loosened or made non-blocking to pass, and tests avoid sleeps, wall-clock time, shared rows and fixed ports.
+- find: `waitForTimeout\(|networkidle|force:\s*true` in path `(test|spec|e2e|cypress)`
+- rule: New tests and scripts run in a CI job that starts, on the runtime version the dependencies need, also when the PR's base is not the default branch (a stacked PR whose base the gate skips). No gate is skipped, loosened or made non-blocking to pass, and tests avoid sleeps, wall-clock time, shared rows and fixed ports: they wait on a condition with a deadline (never `waitForTimeout` or `networkidle`), click only what a user could click (`force: true` passes on a covered or disabled control), and a new test that touches the clock, randomness, a port or async work runs under `lpk repeat` before it is trusted.
 - check: find each new test file or script in a CI command (`lpk facts` lists them) and read workflow contexts at the level they are used. Repro: the CI command list that never reaches the file.
 - find: `\|\|\s*true\b` in path `^(?!.*\.github/workflows/).*(Makefile|\.mk|Dockerfile[^/]*|package\.json|\.ya?ml)$`
 
@@ -183,8 +185,9 @@ needs.
 ### migration-safe: a migration survives the deploy
 - blocks: high
 - when: path `(migrat|\.sql$|schema\.prisma|constraint|\.cypher$)`
+- find: `\bCREATE\s+(UNIQUE\s+)?INDEX\s+(?!CONCURRENTLY\b)` in path `(migrat|\.sql$)`
 - find: `\b(DROP\s+(TABLE|COLUMN)|RENAME\s+(COLUMN|TO)|ALTER\s+COLUMN\s+\w+\s+(SET\s+NOT\s+NULL|TYPE)|ADD\s+COLUMN\s+(?![^,;]*DEFAULT)[^,;]*NOT\s+NULL)` in path `(migrat|\.sql$)`
-- rule: A migration works with the code still running during deploy (expand, then contract), avoids long locks and table rewrites, is reversible or says it is not, and new constraints hold on existing data.
+- rule: A migration works with the code still running during deploy (expand, then contract), avoids long locks and table rewrites (an index on an existing table is built `CONCURRENTLY` in a migration the runner does not wrap in a transaction; a backfill runs in batches), is reversible or says it is not, and new constraints hold on existing data.
 - check: run it on a copy with production-shaped data and run the old code against the new schema. Repro: the statement and the failure.
 
 ### mechanical-gates: the deterministic gates pass on the final tip
@@ -236,5 +239,5 @@ needs.
 ### ui-states: every async view shows every state
 - blocks: medium
 - when: path `\.(tsx|jsx|vue|svelte|dart)$`
-- rule: Each async view shows loading, error, empty and success distinctly; errors are visible and say what to do; a submit cannot fire twice; after an action fails or is cancelled, its busy state clears and the controls work again; destructive actions confirm; the layout main had (scroll, spacing, focus) still works.
-- check: on the page, try a slow network, a failing API, empty data and a double click; make an action fail once, then retry it without reloading. Repro: the screenshot.
+- rule: Each async view shows loading, error, empty and success distinctly; errors are visible and say what to do; a submit cannot fire twice; after an action fails or is cancelled, its busy state clears and the controls work again; destructive actions confirm; the layout main had (scroll, spacing, focus) still works. An optimistic update cancels in-flight queries, keeps a snapshot, restores it on error and revalidates when settled; an error thrown in an event handler or async code reaches the user (an error boundary catches neither); a lazy route chunk that 404s after a deploy offers a reload, not a blank page.
+- check: on the page, try a slow network, a failing API, empty data and a double click; make an action fail once, then retry it without reloading; fail an optimistic mutation and expect the view to return to the server's state. Repro: the screenshot.

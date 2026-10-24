@@ -36,6 +36,15 @@ blocking time, long tasks and load timings, `performance_analyze_insight` explai
 how many bytes. Run the same trace on the base's instance and compare the numbers. Heavy runs go
 through `lpk slot -- <command>`, so two benchmarks never share the machine's memory.
 
+A number needs a protocol before it is a finding: say whether the cache was cold or warm, use the
+same `emulate` `cpuThrottlingRate` (4) and `networkConditions` (`Slow 4G`) on base and commit, run
+each side at least three times and compare the medians. A difference inside the spread of the runs
+is not a finding. For N+1, run the endpoint on 2 rows and on 200 and count the queries at the
+driver: a count that grows with the rows is the regression. For a leak in a long-lived page or
+process, warm up, repeat the same action ten times (the error path too), take a
+`take_heapsnapshot` after each batch of ten (a snapshot collects garbage first) and compare heap
+size and detached nodes: growth that continues across batches is the leak.
+
 Leave out micro-optimisations, work the base did just as slowly, and costs below what a user could
 notice at the expected load. Never edit files.
 
