@@ -45,9 +45,11 @@ builds here.
 
 ## Review your own slice before you call it done
 
-Before you commit, run `lpk code-review --slice --base <base>`, with the commit the slice started
-from: one Sonnet `/code-review` on the working tree (uncommitted and untracked code files included)
-against that base. Reproduce each finding it raises, fix the ones that hold, and name the ones that
+Once the acceptance tests pass, and before you commit, run `lpk code-review --slice --base <base>`
+once, with the commit the slice started from: one `/code-review` child on the working tree
+(uncommitted and untracked code files included) against that base. It takes five to eight minutes
+and runs on DeepSeek when the session is routed with DeepSeek roles on, else on Sonnet; run it
+again only after a fix that changes what the first run read. Reproduce each finding it raises, fix the ones that hold, and name the ones that
 do not, each with its reason.
 Its findings are printed for you, not added to the ledger, and the run records that the
 self-review ran.

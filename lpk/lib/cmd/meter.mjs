@@ -19,7 +19,7 @@ export async function main(argv) {
   rows.sort((x, y) => y.fresh - x.fresh);
   const t = total(rows);
   const head = [`session ${session}: ${rows.length} transcript(s), ${n(t.messages)} API messages; fresh tokens ${n(t.fresh)} (input + cache write + output), cache reads ${n(t.cacheRead)}`];
-  const body = rows.map((r) => `  ${r.agent}${r.label ? ` "${r.label.slice(0, 40)}"` : ''} ${r.agentId.slice(0, 17)}: fresh ${n(r.fresh)} (in ${n(r.input)} + write ${n(r.cacheWrite)} + out ${n(r.output)}), cache read ${n(r.cacheRead)}, ${r.messages} msgs, ${r.models.join('/') || 'no model'}`);
+  const body = rows.map((r) => `  ${r.agent}${r.label ? ` "${r.label.slice(0, 40)}"` : ''} ${r.agentId.slice(0, 17)}: fresh ${n(r.fresh)} (in ${n(r.input)} + write ${n(r.cacheWrite)} + out ${n(r.output)}), cache read ${n(r.cacheRead)}, ${r.messages} msgs, ${r.toolCalls} tool calls (${r.messages ? (r.toolCalls / r.messages).toFixed(2) : '0.00'} per msg), peak context ${n(r.peakContext)}, ${r.models.join('/') || 'no model'}`);
   console.log(capped(repo, `meter-${session}`, head, body));
   return 0;
 }

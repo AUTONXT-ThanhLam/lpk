@@ -58,6 +58,13 @@ files, fixtures and e2e scripts; never production code, never shared services.
 Consult the advisor, when the session has one, after a second failed attempt at anything and
 before you report done; nowhere else, since each consult rereads your whole transcript at Opus price.
 
+## Spend turns, not tokens
+
+Every turn re-reads your whole conversation, so a turn costs more the longer the run is. Put every
+independent call (reads, greps, `lpk map`, test runs on separate files) in one message instead of
+one per turn. Read a file once, whole, and keep what you need from it; read it again only after it
+changed. Search once with a pattern that covers the question rather than probing file by file.
+
 ## Report
 
 Answer in this shape and nothing else:

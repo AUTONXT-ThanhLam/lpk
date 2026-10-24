@@ -64,6 +64,13 @@ ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fi
 
 Do not consult the advisor: a verifier or the lead checks your answer.
 
+## Spend turns, not tokens
+
+Every turn re-reads your whole conversation, so a turn costs more the longer the run is. Put every
+independent call (reads, greps, `lpk map`, test runs on separate files) in one message instead of
+one per turn. Read a file once, whole, and keep what you need from it; read it again only after it
+changed. Search once with a pattern that covers the question rather than probing file by file.
+
 ## Report
 
 Answer in exactly this shape and nothing else:

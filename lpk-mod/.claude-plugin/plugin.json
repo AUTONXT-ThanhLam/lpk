@@ -1,7 +1,7 @@
 {
   "name": "lpk-mod",
-  "version": "0.3.1",
-  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch, /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
+  "version": "0.4.0",
+  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch (an account at once under bin/claude-routed, and the DeepSeek roles with ccd), /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
   "author": {
     "name": "lam"
   },
@@ -19,6 +19,12 @@
       "title": "Memory floor (GB)",
       "description": "Below this much available memory, a second agent at once draws a hint to run the parts one at a time. lpk's own field of this name wins when it has one.",
       "default": 6
+    },
+    "deepseekRoles": {
+      "type": "string",
+      "title": "Roles that run on DeepSeek",
+      "description": "Comma-separated lpk agent names (without the lpk: prefix) that /lpk-switch ccd moves to deepseek-flash. Empty: builder, the reviewers, verifier, prover and env.",
+      "default": ""
     },
     "quotaFloorPercent": {
       "type": "number",
