@@ -85,6 +85,15 @@ test('a focused test added under a test path is reported while other rules stay 
   assert.doesNotMatch(out, /lpk-test-eval\s+tests\/a\.test\.js/);
 });
 
+test('lpk check reports a comment added in code or in a test, and not a tool directive or a comment already there', { skip: !HAS_SG && !process.env.CI && NO_SG }, () => {
+  const repo = repoWith(`cm-${Math.random().toString(36).slice(2, 8)}`, { 'src/c.js': 'const a = 1;\n// written long ago\nconst b = 2;\n' });
+  write(repo, 'src/c.js', 'const a = 1;\n// written long ago\nconst b = 2;\n// the retry count is three\n// eslint-disable-next-line no-console\nconsole.log(b);\n');
+  write(repo, 'tests/c.test.js', '// check the total\ntest("t", () => {});\n');
+  const out = lpk(repo, '', 'check', '--base', 'main').stdout;
+  const hits = out.split('\n').filter((l) => /^no-comments /.test(l)).map((l) => l.replace(/\s+/g, ' ').trim());
+  assert.deepEqual(hits, ['no-comments src/c.js:4 // the retry count is three', 'no-comments tests/c.test.js:1 // check the total']);
+});
+
 test('lpk rules --yield counts findings per rule by state, and --prune disables a learned rule that only drew drops', () => {
   const repo = repoWith('yield', { 'a.js': 'x\n' });
   const add = (id, ruleId) => JSON.stringify({ ev: 'add', finding: { id, run: 'r1', from: 'lpk:techlead', at: 'a..b', claim: 'c', repro: 'r', kind: 'rule', ruleId, severity: 'important' } });

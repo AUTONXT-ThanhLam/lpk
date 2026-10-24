@@ -72,7 +72,10 @@ newest review is on the head and no row is open.
    (`git worktree remove ../<repo>-review`).
 4. Update `~/.local/share/lpk/profiles/<repo>.md` with what you had to discover this time: start
    command, logins by variable name and their roles, test command, the tech lead's login,
-   known-red checks, test data prefix, conventions, and the screens a real drive reached.
+   known-red checks, test data prefix, conventions, and the screens a real drive reached. For each
+   feature the change or the Prover reached, write or correct its feature-map entry (how to reach
+   it, the login, the selector or shortcut, the file that owns it). For each approach tried and
+   abandoned, write a line: what was tried, why it was ruled out, the files it touches.
 
 ## The report
 

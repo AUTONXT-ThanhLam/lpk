@@ -26,6 +26,9 @@ the proof directory (`<bundle>/proof`).
 - When the diff adds a migration, the Prover runs it forward on data shaped by main's code, then
   starts main's app on the migrated schema, because a deploy runs both for a while.
 - The browser is the lpk Chrome, through `mcp__plugin_lpk_chrome-devtools__*`.
+- Give it the profile's feature-map entries for the screens and commands the scenarios touch, so it
+  opens each by its route and does not hunt for it. A route it had to correct comes back in its
+  `noticed`, and you write it into the profile at handover.
 
 ## After a fix
 

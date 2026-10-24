@@ -18,6 +18,10 @@ meet most of them before the first review.
 - Write only in your own directory. Never edit the checkout or any file outside your directory.
 - Every claim about today's code cites `path:line` you read or a command you ran, with its output.
   Run read-only commands in the repo and small scripts against its installed dependencies.
+- Write down the premise your design stands on as one sentence that can be false ("every write to
+  `status` goes through `setStatus`", "nothing else reads this field"), then count it with a command:
+  `lpk map <name>`, or a short script that lists every place the premise covers. A counterexample
+  changes the design before the brief is written.
 - When a claim needs a service (a database, a queue, a cache), start your own throwaway container
   on a random host port (`-p 127.0.0.1::<port>`), check before any write that you are talking to it
   (Redis `INFO server` `run_id`, Postgres `system_identifier`), and remove it when you are done.
