@@ -57,10 +57,11 @@ export function meter(session, root = projectsDir()) {
     }
     for (const id of byId.keys()) seen.add(id);
     const sum = (k) => [...byId.values()].reduce((n, u) => n + u[k], 0);
+    const peakContext = Math.max(0, ...[...byId.values()].map((u) => u.input_tokens + u.cache_creation_input_tokens + u.cache_read_input_tokens));
     const input = sum('input_tokens'), cacheWrite = sum('cache_creation_input_tokens'), cacheRead = sum('cache_read_input_tokens'), output = sum('output_tokens');
     rows.push({
       agent: m.agentType || 'agent', label: m.description || '', agentId: file === files.main ? session : (file.match(/agent-([^/]+)\.jsonl$/)?.[1] || ''),
-      models: [...new Set([...byId.values()].map((u) => u.model))], messages: byId.size, toolCalls: tools,
+      models: [...new Set([...byId.values()].map((u) => u.model))], messages: byId.size, toolCalls: tools, peakContext,
       input, cacheWrite, output, cacheRead, fresh: input + cacheWrite + output, first, last, file,
     });
   }
