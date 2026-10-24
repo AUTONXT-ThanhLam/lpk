@@ -41,7 +41,8 @@ In the Full lane you lead the build and never write it: every slice, a single on
 an `lpk:builder` as `slices.md` in this skill's directory says. Every later turn of the run pays
 for your context, and past runs where the lead built the change itself carried over 200k tokens
 of context through hundreds of turns; a builder's context ends with its slice. The Quick lane
-builds here.
+builds here, except the screens: `lpk:designer` runs in design mode on the requirements and
+returns its UI section, then in build mode with that section in its prompt (`SKILL.md`, Screens).
 
 ## Review your own slice before you call it done
 

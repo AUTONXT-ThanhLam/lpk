@@ -84,7 +84,7 @@ Read each step's file when the step starts; each file states its goal and how it
 2. **Design**: gather the facts, choose the lane, let rival architects write the brief, and have it
    checked while the tests are written: `design.md` in this skill's directory.
 3. **Build** test-first, with every line checked as it is written: `build.md` in this skill's
-   directory, and in the Full lane `slices.md` in this skill's directory, because builders build it.
+   directory, and in the Full lane `slices.md` in this skill's directory, because builders build it, and the designer builds its screens.
 4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:
    `review.md` in this skill's directory.
 5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory (the Prover runs inside the review net).
@@ -98,6 +98,12 @@ Read each step's file when the step starts; each file states its goal and how it
   scenarios that prove them at `lpk run start`, and owes one `/code-review`, `/security-review`
   and the Bug hunter.
 - **Full**: everything else. It owes the whole review net and the Prover.
+
+## Screens
+
+A request whose deliverable is a screen goes to `lpk:designer` in every lane, with or without git:
+it designs the screens, then builds them with its design kit (`build.md`, `slices.md`), and the
+lead never builds a screen. `lpk:ui-reviewer` reviews them, so the builder never reviews its own.
 
 `lpk floor` prints the exact facts that make a change Full. When a Quick change crosses them, run
 `lpk run lane full` and continue in the Full lane; the gates read the same facts at handover.

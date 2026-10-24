@@ -1,5 +1,5 @@
 // `lpk floor`: the exact facts of the change that owe the full-lane net, and the facts that owe each
-// conditional lens (mutant, regression, claims, designer, a11y, perf). What is owed is decided by
+// conditional lens (mutant, regression, claims, ui-reviewer, a11y, perf). What is owed is decided by
 // `lpk reviews owed` from these facts; this verb only prints them.
 import { floor } from '../floor.mjs';
 import { baseOf, capped, parseArgs, repoOf } from '../out.mjs';

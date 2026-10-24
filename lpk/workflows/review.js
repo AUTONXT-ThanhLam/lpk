@@ -127,7 +127,7 @@ const LENSES = {
   claims: typed('claims', FINDINGS, `Check every claim in words this change makes against its code, the drafted PR body included (in ${a.bundle}).`),
   ocr,
   perf: typed('perf', FINDINGS, `Find what this commit makes slower or hungrier than the base.${a.surface ? `\nRunning app: ${a.surface}` : ''}`),
-  designer: ui('designer', 'Review mode: what a person meets on each screen this commit changes.'),
+  'ui-reviewer': ui('ui-reviewer', 'Review mode: what a person meets on each screen this commit changes.'),
   a11y: ui('a11y', 'Check that the screens this commit touches work by keyboard, screen reader, large text, high contrast and reduced motion.'),
   prover,
   mutant: waitsForProver(typed('mutant', MUTANTS, `Command that runs the tests related to the changed files: ${a.testCmd || '(none given: find it in the repo)'}\nAdd each mutant no test catches to the ledger as kind test-gap. If those tests fail or flake on the change itself, add that to the ledger as one defect and return it with kind defect.`)),

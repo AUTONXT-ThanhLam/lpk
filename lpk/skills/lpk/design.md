@@ -98,7 +98,7 @@ Create the branch, named the way the repo names them, then start these in the ba
   suite's time, once known) and `round: 1`. It runs five design critics (one focus each), the plan
   simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
   or Low; a High that rests only on inference counts as Medium;
-- `lpk:designer` in design mode, when the change touches a screen.
+- `lpk:designer` in design mode, when the change touches a screen; its UI section joins the brief.
 
 When the review ends, start one `lpk:test-author` per slice, all in one message, each with the repo
 (the branch checked out), the brief's path, the test command, and only its slice's scenarios,

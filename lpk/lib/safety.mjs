@@ -68,7 +68,7 @@ export function gitTrip(input) {
 
 // The roles that review and never edit a checkout. The verifier writes its repro tests in the
 // shared repro worktrees under ~/.cache/lpk/repro/ and nowhere else inside a checkout.
-export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|plan-sim|plan-trace|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|designer)$/;
+export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|plan-sim|plan-trace|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|ui-reviewer)$/;
 export const REPRO = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'repro');
 const WRITES = /^(Edit|Write|MultiEdit|NotebookEdit)$/;
 
@@ -92,7 +92,7 @@ export function writeGuard(input) {
     return deny(`${type} writes only in its own directory under the run's git directory, and ${file} is in ${at.repo}.`);
   }
   const ro = READ_ONLY.test(type);
-  if (!ro && !/^(lpk:)?(builder|test-author)$/.test(type)) return null;
+  if (!ro && !/^(lpk:)?(builder|designer|test-author)$/.test(type)) return null;
   if (ro && /verifier$/.test(type) && `${file}/`.startsWith(`${REPRO}/`)) return null;
   const at = checkoutOf(file);
   if (!at) return null;

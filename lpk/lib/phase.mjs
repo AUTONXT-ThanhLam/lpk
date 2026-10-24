@@ -19,7 +19,7 @@
 // design, a fix no finding needed.
 
 export const PHASES = ['understand', 'design', 'build', 'review', 'fix', 'prove', 'deliver'];
-const LENSES = new Set(['techlead', 'bug-hunter', 'security', 'regression', 'claims', 'ocr', 'prover', 'mutant', 'verifier', 'perf', 'a11y', 'designer']);
+const LENSES = new Set(['techlead', 'bug-hunter', 'security', 'regression', 'claims', 'ocr', 'prover', 'mutant', 'verifier', 'perf', 'a11y', 'ui-reviewer']);
 const keyOf = (type) => String(type || '').split(':').pop();
 const isNet = (r) => r.id !== 'main' && (['Review', 'Verify'].includes(r.workflowPhase) || LENSES.has(keyOf(r.type)) || /^(Code|Security) reviewer$/.test(r.title));
 const ROUND = /^design review round (\d+): (\w+), (\d+)\/(\d+)\/(\d+)/i;

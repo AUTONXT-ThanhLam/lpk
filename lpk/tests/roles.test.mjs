@@ -29,7 +29,8 @@ const TABLE = {
   a11y: { model: 'sonnet', effort: 'medium', readOnly: true },
   perf: { model: 'sonnet', effort: 'medium', readOnly: true },
   mutant: { model: 'sonnet', effort: 'medium', readOnly: true },
-  designer: { model: 'sonnet', effort: 'high', readOnly: true },
+  designer: { model: 'opus', effort: 'high', readOnly: false },
+  'ui-reviewer': { model: 'sonnet', effort: 'high', readOnly: true },
   prover: { model: 'sonnet', effort: 'high', readOnly: true },
   env: { model: 'haiku', effort: 'medium', readOnly: false },
   staff: { model: 'sonnet', effort: 'high', readOnly: false },
@@ -71,7 +72,7 @@ test('the reviewing roles cannot edit files, and the roles that write code or te
 // The roles that drive the lpk Chrome, the verifier among them because it reproduces what the
 // browser lenses saw on a page. Every other role carries no browser tool definitions, and no role
 // publishes a page, so none carries the Artifact tools.
-const BROWSER = new Set(['a11y', 'designer', 'prover', 'env', 'perf', 'verifier']);
+const BROWSER = new Set(['a11y', 'designer', 'ui-reviewer', 'prover', 'env', 'perf', 'verifier']);
 test('only the roles that drive a browser carry its tools, and no role carries the Artifact tools', () => {
   for (const [name, { fm }] of Object.entries(agents)) {
     const denied = (fm.disallowedTools || '').split(',').map((t) => t.trim());
@@ -86,5 +87,18 @@ test('every agent ends with a short report section, so its reply has a fixed sha
     assert.ok(at >= 0, `${name} has a "## Report" section`);
     assert.ok(!body.slice(at + 1).includes('\n## '), `${name}'s report section is its last section`);
     assert.ok(body.slice(at).split('\n').length <= 20, `${name}'s report section stays within 20 lines`);
+  }
+});
+
+const section = (body, title) => {
+  const at = body.indexOf(`\n## ${title}`);
+  assert.ok(at >= 0, `a "## ${title}" section exists`);
+  const rest = body.slice(at + 1);
+  const end = rest.indexOf('\n## ', 1);
+  return end < 0 ? rest : rest.slice(0, end);
+};
+test('the designer who builds a screen and the ui-reviewer who judges it hold the same principles and tells', () => {
+  for (const title of ['Principles', 'The generated-UI tells (each one is a finding)']) {
+    assert.equal(section(agents['ui-reviewer'].body, title), section(agents.designer.body, title), title);
   }
 });

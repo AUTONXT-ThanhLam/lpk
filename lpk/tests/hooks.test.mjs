@@ -73,6 +73,7 @@ test('an lpk agent starts with the run card: base, brief, rules, what it may not
   assert.match(card, /rule applies to the change so far|Rules that apply to the change so far/);
   assert.match(card, /Edit only the files of your slice/);
   assert.ok(card.includes('select:mcp__plugin_lpk_lpk__finding_add,mcp__plugin_lpk_lpk__finding_list,mcp__plugin_lpk_lpk__finding_get,mcp__plugin_lpk_lpk__finding_verdict,mcp__plugin_lpk_lpk__finding_fixed'));
+  assert.match(context(start('lpk:designer')), /Edit only the files of your slice/);
   assert.match(context(start('lpk:techlead')), /You never edit a checkout/);
 });
 
