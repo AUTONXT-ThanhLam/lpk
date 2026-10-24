@@ -36,13 +36,16 @@ test('ccd moves the builder and the reviewers to DeepSeek and leaves the other r
   expect(r.text).toContain('DeepSeek roles are on')
   expect(w.statuses.at(-1)).toBe('lpk cc1 · ccd (builder and reviewers on DeepSeek)')
   expect(w.written[MODE]).toBe('on\n')
-  for (const role of ['builder', 'bug-hunter', 'verifier', 'env']) await $.agent.spawn({ ...SPAWN, subagentType: `lpk:${role}` })
+  for (const role of ['builder', 'bug-hunter', 'verifier', 'env', 'design-critic', 'plan-sim', 'plan-trace']) await $.agent.spawn({ ...SPAWN, subagentType: `lpk:${role}` })
   for (const role of ['techlead', 'architect']) await $.agent.spawn({ ...SPAWN, subagentType: `lpk:${role}` })
   expect(seen).toMatchObject({
     'lpk:builder': 'deepseek-flash',
     'lpk:bug-hunter': 'deepseek-flash',
     'lpk:verifier': 'deepseek-flash',
     'lpk:env': 'deepseek-flash',
+    'lpk:design-critic': 'deepseek-flash',
+    'lpk:plan-sim': 'deepseek-flash',
+    'lpk:plan-trace': 'deepseek-flash',
   })
   expect(seen['lpk:techlead']).toBeUndefined()
   expect(seen['lpk:architect']).toBeUndefined()
@@ -103,4 +106,17 @@ test('a routed session shows its account and mode in the status line as it start
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
   expect(w.statuses.at(-1)).toBe('lpk cc1 · ccd (builder and reviewers on DeepSeek)')
+})
+
+test('an agent on DeepSeek draws no Claude quota warning, and one on Claude still does', async ($, on) => {
+  const w = world(on, {
+    env: ROUTED,
+    files: { [MODE]: 'on\n', '/proc/meminfo': 'MemAvailable: 31457280 kB\n' },
+    rateLimits: [{ kind: 'seven_day', percentUsed: 92 }],
+  })
+  modelsSpawnedWith(on)
+  await $.agent.spawn(SPAWN)
+  expect(w.toasts).toEqual([])
+  await $.agent.spawn({ ...SPAWN, subagentType: 'lpk:techlead' })
+  expect(w.toasts).toHaveLength(1)
 })

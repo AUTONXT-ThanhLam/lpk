@@ -4,7 +4,7 @@ import { type Host, run } from './lpk'
 
 export const DEEPSEEK_MODEL = 'deepseek-flash'
 
-export const DEFAULT_ROLES = ['builder', 'bug-hunter', 'ocr', 'claims', 'security', 'regression', 'perf', 'mutant', 'verifier', 'prover', 'env']
+export const DEFAULT_ROLES = ['builder', 'bug-hunter', 'ocr', 'claims', 'security', 'regression', 'perf', 'mutant', 'verifier', 'prover', 'env', 'design-critic', 'plan-sim', 'plan-trace']
 
 export function rolesOf(options: PluginOptions): string[] {
   const named = typeof options.deepseekRoles === 'string' ? options.deepseekRoles.split(',').map((r) => r.trim()).filter(Boolean) : []

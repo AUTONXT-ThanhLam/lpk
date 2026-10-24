@@ -42,7 +42,7 @@ export async function availableGb($: Host): Promise<number | undefined> {
 // What the hint remembers between spawns: workflow starts it counted and when it last spoke.
 export type HintMemory = { workflowStarts: number[]; lastSaid: Record<string, number> }
 
-export async function spawnHint($: Host, e: AgentSpawnInput, options: PluginOptions, memory: HintMemory): Promise<void> {
+export async function spawnHint($: Host, e: AgentSpawnInput, options: PluginOptions, memory: HintMemory, offClaude = false): Promise<void> {
   const { workflowStarts, lastSaid } = memory
   if (e.resume) return
   const now = await $.clock.now()
@@ -62,7 +62,7 @@ export async function spawnHint($: Host, e: AgentSpawnInput, options: PluginOpti
       text: `lpk: ${fanOut} agents at once with ${gb.toFixed(1)} GB of memory available (floor ${floor.memoryGb} GB). Run the parts that build, test or start apps one at a time (\`lpk slot -- <cmd>\`); reading agents may go on.`,
     })
 
-  for (const w of (await $.session.usage()).rateLimits) {
+  for (const w of offClaude ? [] : (await $.session.usage()).rateLimits) {
     const left = Math.max(0, 100 - w.percentUsed)
     if (left < floor.quotaPercent)
       lines.push({

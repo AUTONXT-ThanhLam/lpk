@@ -4,6 +4,7 @@ import { readFileSync, appendFileSync, mkdirSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { StringDecoder } from 'node:string_decoder'
 
 const CONFIG = join(homedir(), '.config', 'lpk')
 
@@ -59,11 +60,51 @@ export function forwardHeaders(incoming, target, length) {
   return { ...out, ...target.auth, host: target.url.host, 'content-length': length }
 }
 
+const USAGE_FIELDS = { input_tokens: 'in', cache_read_input_tokens: 'cache_read', cache_creation_input_tokens: 'cache_write', output_tokens: 'out' }
+const JSON_CAP = 4 * 1024 * 1024
+
+export function usageTap(contentType) {
+  const streamed = String(contentType || '').includes('text/event-stream')
+  const buffered = String(contentType || '').includes('json')
+  const usage = {}
+  const decoder = new StringDecoder('utf8')
+  let pending = ''
+  const take = (u) => {
+    for (const [from, to] of Object.entries(USAGE_FIELDS)) if (u && typeof u[from] === 'number') usage[to] = u[from]
+  }
+  const read = (text) => {
+    try {
+      const d = JSON.parse(text)
+      take(d.message?.usage)
+      take(d.usage)
+    } catch {
+      return
+    }
+  }
+  return {
+    push(buffer) {
+      const chunk = decoder.write(buffer)
+      if (!streamed) {
+        if (buffered && pending.length < JSON_CAP) pending += chunk
+        return
+      }
+      const lines = (pending + chunk).split('\n')
+      pending = lines.pop()
+      for (const l of lines) if (l.startsWith('data:') && l.includes('"usage"')) read(l.slice(5))
+    },
+    fields() {
+      if (!streamed) read(pending)
+      else if (pending.startsWith('data:') && pending.includes('"usage"')) read(pending.slice(5))
+      return usage
+    },
+  }
+}
+
 export function createRouter(env) {
   const record = (fields) => {
     if (!env.logFile) return
     mkdirSync(dirname(env.logFile), { recursive: true })
-    appendFileSync(env.logFile, `${Object.entries(fields).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${v}`).join(' ')}\n`)
+    appendFileSync(env.logFile, `${Object.entries({ ...fields, ts: new Date().toISOString() }).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${v}`).join(' ')}\n`)
   }
   return http.createServer((req, res) => {
     if (req.url === '/__lpk_router') {
@@ -87,7 +128,18 @@ export function createRouter(env) {
         { host: target.url.hostname, port: target.url.port || (mod === https ? 443 : 80), path: target.basePath + req.url, method: req.method, headers: forwardHeaders(req.headers, target, body.length) },
         (r) => {
           const seen = Object.fromEntries(SEEN_HEADERS.map((h) => [h.replace('anthropic-ratelimit-unified-', 'rl-'), r.headers[h]]))
-          record({ upstream: target.upstream, account: target.account, model, path: req.url.split('?')[0], status: r.statusCode, ...seen })
+          const tap = usageTap(r.headers['content-type'])
+          let logged = false
+          const finish = () => {
+            if (logged) return
+            logged = true
+            record({ upstream: target.upstream, account: target.account, model, path: req.url.split('?')[0], status: r.statusCode, ...seen, ...tap.fields() })
+          }
+          r.on('data', (c) => tap.push(c))
+          r.on('end', finish)
+          r.on('close', finish)
+          r.on('error', () => res.destroy())
+          res.on('close', finish)
           res.writeHead(r.statusCode, r.headers)
           r.pipe(res)
         },

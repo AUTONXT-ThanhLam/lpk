@@ -42,8 +42,8 @@ export const register: Register = (on, options) => {
   const memory: HintMemory = { workflowStarts: [], lastSaid: {} }
   on('agent.spawn', async ($, e, next) => {
     markDue()
-    await spawnHint($, e, options, memory).catch((err: unknown) => $.ui.log(`spawn hint skipped: ${String(err)}`, { to: 'debug' }))
     const model = await roleModel($, e, options).catch(() => undefined)
+    await spawnHint($, e, options, memory, model !== undefined).catch((err: unknown) => $.ui.log(`spawn hint skipped: ${String(err)}`, { to: 'debug' }))
     return next(model ? { ...e, model } : e)
   }).catch(($, e, next) => next(e))
 

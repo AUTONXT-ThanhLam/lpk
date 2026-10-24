@@ -17,6 +17,9 @@ const upstream = (seen) =>
       seen.push({ url: req.url, headers: req.headers, body: Buffer.concat(chunks).toString() })
       res.setHeader('content-type', 'text/event-stream')
       res.setHeader('anthropic-ratelimit-unified-5h-utilization', '0.40')
+      res.write('event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":120,"cache_read_input_tokens":9000,"cache_creation_input_tokens":0,"output_tokens":1}}}\n\n')
+      res.write('event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":')
+      res.write('37}}\n\n')
       res.write('event: message_stop\ndata: {"type":"message_stop"}\n\n')
       res.end()
     })
@@ -118,4 +121,13 @@ test('the log names the account and the quota headers and holds no token', async
   assert.match(log, /upstream=anthropic account=cc2/)
   assert.match(log, /upstream=deepseek model=deepseek-flash/)
   for (const secret of ['tok-account-one', 'tok-account-two', 'sk-deepseek-key']) assert.equal(log.includes(secret), false, secret)
+})
+
+test('the log carries the time and the tokens of each request, read from the stream as it passes', async () => {
+  const before = readFileSync(logFile, 'utf8').split('\n').length
+  const r = await post(port, 'deepseek-flash')
+  assert.match(r.text, /message_stop/)
+  const last = readFileSync(logFile, 'utf8').trim().split('\n').at(-1)
+  assert.equal(readFileSync(logFile, 'utf8').split('\n').length, before + 1)
+  assert.match(last, /upstream=deepseek model=deepseek-flash .*in=120 cache_read=9000 cache_write=0 out=37 ts=\d{4}-\d\d-\d\dT[\d:.]+Z$/)
 })
