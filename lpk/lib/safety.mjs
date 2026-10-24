@@ -12,8 +12,9 @@ export const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreTool
 export const hint = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: `lpk: ${text}` } });
 
 // Where the owner's subscription tokens live, and the command that prints one. Matched as literal
-// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match.
-export const CREDENTIALS = ['.claude/.credentials.json', '.config/lpk/accounts', 'cc-switch token'];
+// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match. Both hosts'
+// stores are named: Claude Code's credential file and the folder Qoder keeps its login in.
+export const CREDENTIALS = ['.claude/.credentials.json', '.qoder/.auth', '.config/lpk/accounts', 'cc-switch token'];
 export function credentialTrip(input) {
   if (!/^(Bash|Read|Grep)$/.test(input.tool_name || '')) return null;
   const text = JSON.stringify(input.tool_input ?? {});

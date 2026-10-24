@@ -10,8 +10,8 @@ const TITLES = {
   'test-author': 'Test author', designer: 'Designer', 'ui-reviewer': 'UI reviewer', a11y: 'Accessibility reviewer', perf: 'Performance reviewer',
   env: 'Environment', Explore: 'Explorer', Plan: 'Planner', 'general-purpose': 'Helper', 'claude-code-guide': 'Guide',
 };
-// A workflow agent started without a type is a relay for a CLI lens; its label names the lens.
-const RELAYS = [[/^code-review/, 'Code reviewer'], [/^security-review/, 'Security reviewer'], [/^ocr/, 'OpenCodeReview']];
+// A workflow agent started without a type is a relay that runs one lens through the CLI; its label names it.
+const RELAYS = [[/^ocr/, 'OpenCodeReview']];
 
 export function titleOf(type, label = '') {
   if (type === 'workflow-subagent' || !type) return RELAYS.find(([re]) => re.test(label))?.[1] || 'Workflow agent';

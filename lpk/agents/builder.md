@@ -1,7 +1,6 @@
 ---
 name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, reviews its own slice, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
-model: sonnet
 effort: high
 maxTurns: 200
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
@@ -90,8 +89,10 @@ and report what conflicts instead of changing it.
 2. Run `lpk check --base <base>` in the worktree: fix each candidate, or know why it is right. Its
    last list is the comments your change left unedited beside the lines it edited: read each, and
    edit the ones your change made untrue.
-3. Before you commit, run `lpk code-review --slice --base <base>` once: one `/code-review` on your
-   working tree (uncommitted and untracked code files included) against the base you were given.
+3. Before you commit, dispatch `lpk:bug-hunter` once on the slice you have not committed: give it the
+   repo, the base you were given and the range `<base>..the working tree` (uncommitted and untracked
+   code files included), and ask for the defect that makes the code do something other than what its
+   author meant.
    Reproduce each finding it raises, fix the ones that hold at their root, and keep the reason for
    each one you do not fix.
 4. Commit in the worktree with a subject of at most 72 characters that says what changed and why.
@@ -109,7 +110,7 @@ Answer in this shape and nothing else:
   closes;
 - `tests`: the command and its result, as a verbatim summary; in a fix round, each fix's test
   output before the fix and after it;
-- `self-review`: each `lpk code-review --slice` finding, fixed, or not fixed and why;
+- `self-review`: each `lpk:bug-hunter` finding on the slice, fixed, or not fixed and why;
 - `contested:` each test or task that looks wrong, with why, or `none`;
 - `contract`: anything in the contract you found wrong, or `none`;
 - `shortcut:` each limit you chose on purpose, and when to revisit it, or `none`;

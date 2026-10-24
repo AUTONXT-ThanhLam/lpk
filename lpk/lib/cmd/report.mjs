@@ -48,7 +48,7 @@ export async function main(argv) {
     const toRead = ledger.filter(needsOwner);
     if (toRead.length) facts.push(['For the owner to read, not blocking:', ...toRead.map(ruling)].join('\n'));
     const ran = {};
-    for (const i of evidence(repo, run, ledger).items) { const k = i.model ? `${i.key} (${i.model})` : i.key; ran[k] = (ran[k] || 0) + 1; }
+    for (const i of evidence(repo, run, ledger).items) { ran[i.key] = (ran[i.key] || 0) + 1; }
     facts.push(`Lenses that ran: ${Object.entries(ran).map(([k, n]) => `${k} ×${n}`).join(', ') || 'none'}`);
   } catch (e) { facts.push(`Findings and lenses could not be read: ${e.message}`); }
   const recs = readRecords(repo, { run: run.id });

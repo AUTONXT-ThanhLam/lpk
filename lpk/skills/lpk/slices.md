@@ -31,7 +31,7 @@ Glue that joins the slices
 is a slice of its own, with its own builder, started once the slices it joins are in. Builders
 start after `lpk go`, when the design review has ended.
 
-Each builder reports its commit, its self-review (`lpk code-review --slice`) and any `contested:`
+Each builder reports its commit, its self-review (the `lpk:bug-hunter` run on its slice) and any `contested:`
 item. Rule on each contested item before you bring the slice in: the test or the task changes, or
 the builder was wrong, with the reason.
 

@@ -2,13 +2,15 @@
 // last read stopped, and what it said is folded into a small state kept in a cache file per
 // session. A transcript of tens of megabytes is read once; each later call reads only its new lines.
 // Tokens are counted as lib/meter.mjs counts them: each API message once by its id, fresh = input +
-// cache write + output, cache reads apart.
+// cache write + output, cache reads apart, and a transcript whose host recorded no counts (measured:
+// Qoder writes them all as 0) marks its state unrecorded so its tokens read as unmeasured.
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { projectsDir, sessionFiles } from './meter.mjs';
+import { agentFile, agentIdOf, projectsDirs, TOKEN_KEYS, usageRecorded } from './host.mjs';
+import { sessionFiles } from './meter.mjs';
 
-const V = 4;
+const V = 5;
 const PROMPT_MAX = 2000;
 const RELAY = '[Workflow harness — user request]';
 const ACTION_MAX = 70;
@@ -46,15 +48,17 @@ export function actionOf(name, input = {}) {
   return cut(oneLine(`${tool} ${arg || ''}`));
 }
 
-const fresh = () => ({ spans: [], waiting: false, error: '', offset: 0, first: '', last: '', prompt: '', sawAssistant: false, end: 'open', action: '', toolAt: '', asks: [], notes: {}, results: [], lpkAt: '', interruptedAt: '', usage: {} });
+const fresh = () => ({ spans: [], waiting: false, error: '', offset: 0, first: '', last: '', prompt: '', sawAssistant: false, end: 'open', action: '', toolAt: '', asks: [], notes: {}, results: [], lpkAt: '', interruptedAt: '', usage: {}, recorded: false });
 
 // Each API message's usage by its id, the largest of each count over its lines: a transcript writes
-// one line per content block, each carrying the same usage. The fifth number is when the message
-// was first written, so a run counts only its own messages.
+// one line per content block, each carrying the same usage. The fifth number is when the message was
+// first written, so a run counts only its own messages. `recorded` says the host wrote a count at
+// all; a transcript of only zeros measured nothing.
 function usage(st, m, at) {
   if (!m?.usage || !m.id || m.model === '<synthetic>') return;
+  if (usageRecorded(m.usage)) st.recorded = true;
   const prev = st.usage[m.id] || [0, 0, 0, 0, Date.parse(at || '') || 0];
-  st.usage[m.id] = [...['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens'].map((k, i) => Math.max(prev[i], m.usage[k] || 0)), prev[4]];
+  st.usage[m.id] = [...TOKEN_KEYS.map((k, i) => Math.max(prev[i], m.usage[k] || 0)), prev[4]];
 }
 
 const NOTE = /<task-id>([^<]+)<\/task-id>[\s\S]*?<status>([a-z_]+)<\/status>/g;
@@ -157,10 +161,13 @@ export function scanFile(prev, file) {
 
 // The session's tokens as lib/meter.mjs counts them: files in its order, each message id once, a
 // message a fork replays from an earlier file left out, and only messages written from `since` on.
+// `recorded` is false when no transcript of the session carried a count, so its caller prints the
+// totals as unmeasured rather than as 0.
 export function tokensOf(states, since = 0) {
   const seen = new Set();
-  const t = { fresh: 0, cacheRead: 0 };
+  const t = { fresh: 0, cacheRead: 0, recorded: false };
   for (const st of states) {
+    if (st.recorded) t.recorded = true;
     const mine = Object.entries(st.usage).filter(([id]) => !seen.has(id));
     for (const [, [input, cacheWrite, cacheRead, output, at]] of mine.filter(([, u]) => u[4] >= since)) { t.fresh += input + cacheWrite + output; t.cacheRead += cacheRead; }
     for (const id of Object.keys(st.usage)) seen.add(id);
@@ -171,17 +178,18 @@ export function tokensOf(states, since = 0) {
 const metaOf = (file) => { try { return JSON.parse(readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8')); } catch { return {}; } };
 
 // The session's main transcript, every agent with its meta file, and each workflow's journal, each
-// brought up to date in `cache`. Null when the session has no transcript on this machine.
-export function scanSession(session, cache, root = projectsDir()) {
-  const found = session ? sessionFiles(session, root) : null;
+// brought up to date in `cache`. Null when neither host's store holds a transcript of the session.
+export function scanSession(session, cache, root) {
+  const found = session ? sessionFiles(session, root || projectsDirs()) : null;
   if (!found) return null;
   const files = {};
   const take = (f) => { files[f] = scanFile(cache.files[f], f); return files[f]; };
   const main = found.main ? take(found.main) : null;
-  const own = found.agents.filter((f) => basename(f).startsWith('agent-'));
+  const own = found.agents.filter((f) => agentFile(basename(f)));
   const journals = new Set(own.filter((f) => f.includes('/workflows/')).map((f) => join(dirname(f), 'journal.jsonl')));
   const done = new Set([...journals].filter(existsSync).flatMap((j) => take(j).results));
-  const agents = own.map((f) => ({ id: basename(f).replace(/^agent-|\.jsonl$/g, ''), file: f, workflow: f.includes('/workflows/') ? basename(dirname(f)) : '', meta: metaOf(f), st: take(f) }));
+  const agents = own.map((f) => ({ id: agentIdOf(f), file: f, workflow: f.includes('/workflows/') ? basename(dirname(f)) : '', meta: metaOf(f), st: take(f) }));
   cache.files = files;
   return { main, agents, done };
+
 }

@@ -1,16 +1,17 @@
 # lpk
 
-A Claude Code plugin that carries one coding request to a delivered PR that works where its user
-meets it and reaches the tech lead with nothing they would block. Defects are caught in three
-layers, cheapest first:
+A plugin for Claude Code and Qoder that carries one coding request to a delivered PR that works
+where its user meets it and reaches the tech lead with nothing they would block. Defects are caught
+in three layers, cheapest first:
 
 - **the design**: three fresh reviewers (a critic running what the design relies on, a simulation of
   the run, a trace back to the owner's words) check the Design Brief in at most three rounds, before
   anything is built;
 - **the build**: each builder starts with the rules for its files, gets a hint after each edit, and
-  reviews its own slice before it reports done;
-- **the review net**: every lens runs at once on the frozen commit (the tech lead, `/code-review`,
-  `/security-review`, bug hunting, regression, claims, OpenCodeReview, mutants, and the screen
+  has a bug hunter read its slice before it reports done;
+- **the review net**: every lens runs at once on the frozen commit (the tech lead, two reviews of
+  the diff itself, the bug hunter, the security reviewer, regression, claims, OpenCodeReview,
+  mutants, and the screen
   lenses when screens change), a verifier reproduces each finding, and the Prover uses the change
   on its real surface.
 
@@ -18,6 +19,8 @@ Delivery gates read only what the CLI itself ran or computed: a verified tree, t
 the reviews each lane owes, the scenarios and CI. `lpk gates` prints what each gate read.
 
 ## Install
+
+Claude Code:
 
 ```
 /plugin marketplace add AUTONXT-ThanhLam/lpk
@@ -27,9 +30,20 @@ the reviews each lane owes, the scenarios and CI. `lpk gates` prints what each g
 Restart Claude Code. `/plugin` lists `lpk@lpk-dev`; `/plugin marketplace update lpk-dev` pulls
 new versions.
 
+Qoder, from a checkout of this repository:
+
+```
+qoder plugins install ./lpk        # or: qoder plugins validate ./lpk to check it first
+```
+
+In a running session `/plugins install lpk` does the same, and `/plugins reload` picks up a new
+build from the same directory. `--plugin-dir <path>` adds a plugin directory for one run.
+
 ## Needs
 
-Node 24, git, the GitHub CLI `gh` (signed in), the `claude` CLI and Google Chrome or Chromium.
+Node 24, git, the GitHub CLI `gh` (signed in) and Google Chrome or Chromium — and either Claude
+Code or Qoder to run it in. lpk needs no model CLI of its own: every agent it dispatches runs on the
+model your session chose.
 The rest comes with the plugin: the first session fetches gitleaks (pinned, checked against its
 release checksums) into `~/.local/share/lpk/bin` for the push guard, and OpenCodeReview and the
 Chrome DevTools server run through `npx` at pinned versions. `node <plugin>/bin/lpk setup` does
@@ -38,20 +52,18 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 ## Use
 
-- `/lpk:lpk <request, ticket or PR>` runs the whole flow; a PR with review comments runs the
-  feedback flow.
+- `/lpk:lpk <request, ticket or PR>` (Claude Code) or `/lpk <request, ticket or PR>` (Qoder) runs the
+  whole flow; a PR with review comments runs the feedback flow.
 - `/lpk:learn` turns defects found late (review comments, a run's confirmed findings, CI failures)
   into rules, saved at once.
 - `node <plugin>/bin/lpk` with no arguments prints every command.
 
 ## Roles
 
-Each agent's model and effort are set in its file under `agents/`, chosen by measured results:
-Opus where judgement sets the quality (the three architects, the plan simulator, the designer, which also builds the screens, the
-Prover), Sonnet where another layer checks the output (building, reviewing, verifying, the staff agent's side work, and the
-design critics, one focus each, that together found more than one Opus critic at less cost), Haiku
-for the environment. The reviewing roles cannot edit files, and the architects write only their
-own briefs.
+Every agent runs on the model the session chose, so `/model` (or Claude Code's model setting) is the
+run's one cost-and-quality knob; `effort` is still set per role in its file under `agents/`. What an
+agent may not do is set there too, not in prose: the reviewing roles cannot edit files, and the
+architects write only their own briefs.
 
 What lpk writes for you stays on your machine, under `~/.local/share/lpk/`: `profiles/<repo>.md`
 (how to start the app, log in, run what CI runs, and the tech lead's GitHub login, which turns on

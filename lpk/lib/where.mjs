@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { sessionId } from './host.mjs';
 import { git, top } from './git.mjs';
 
 // One file per live run, naming its marker: the hooks' only cost outside a run is listing it.
@@ -61,7 +62,7 @@ function legacy(at) {
   return r && r.repo === top(at.repo) ? join(at.common, 'lpk') : '';
 }
 
-export function runDir(repo, session = process.env.CLAUDE_CODE_SESSION_ID || '') {
+export function runDir(repo, session = sessionId()) {
   const at = checkout(repo);
   if (!at) return '';
   if (!at.linked || existsSync(at.own)) return at.own;

@@ -1,10 +1,9 @@
 // What a run needs from the machine, checked at once in under five seconds: the repo and its base,
-// the git author, gh, the lpk Chrome, free memory, the token the /code-review children run on,
-// gitleaks, and settings that remap models. It prints facts; it refuses only when there is no repo
-// or no base, since nothing after that can work.
+// the git author, gh, the lpk Chrome, free memory, gitleaks, and settings that remap models. It
+// prints facts; it refuses only when there is no repo or no base, since nothing after that can work.
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { freemem, homedir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
+import { freemem } from 'node:os';
 import { join } from 'node:path';
 import { defaultBranch, git, mergeBase, top } from './git.mjs';
 import { INSTALL } from './ast.mjs';
@@ -27,20 +26,6 @@ function memory() {
   let kb = 0;
   try { kb = Number(/MemAvailable:\s+(\d+)/.exec(readFileSync('/proc/meminfo', 'utf8'))?.[1] || 0); } catch { /* not Linux */ }
   return `free memory: ${((kb ? kb * 1024 : freemem()) / 2 ** 30).toFixed(1)} GiB`;
-}
-
-// Where the token for the /code-review children would come from. Only whether a file is there and
-// not empty is read, never what it holds.
-function token(env = process.env) {
-  if (env.CLAUDE_CODE_OAUTH_TOKEN) return 'code-review token: CLAUDE_CODE_OAUTH_TOKEN is set';
-  const home = env.HOME || homedir();
-  const dir = env.LPK_ACCOUNTS_DIR || join(home, '.config', 'lpk', 'accounts');
-  let active = '';
-  try { active = readFileSync(join(dir, 'active'), 'utf8').trim(); } catch { /* no accounts */ }
-  const file = active && join(dir, `${active}.token`);
-  if (file && existsSync(file) && statSync(file).size > 0) return `code-review token: account ${active} has one`;
-  if (existsSync(join(env.CLAUDE_CONFIG_DIR || join(home, '.claude'), '.credentials.json'))) return 'code-review token: the Claude Code login';
-  return 'code-review token: NONE found; /code-review children cannot sign in';
 }
 
 export async function preflight(repo, { target = '', verify = [], env = process.env } = {}) {
@@ -67,7 +52,6 @@ export async function preflight(repo, { target = '', verify = [], env = process.
     `gh: ${gh === 0 ? 'signed in' : gh === 'missing' ? 'not installed' : gh === 'timeout' ? 'did not answer in 3 s' : 'not signed in (`gh auth login`)'}`,
     browser,
     memory(),
-    token(env),
     leaks === 0 || existsSync(join(BIN, 'gitleaks')) ? 'gitleaks: installed' : 'gitleaks: missing; the PR body says secrets were not scanned (`lpk setup` fetches it)',
     sg === 0 ? 'ast-grep: installed' : `ast-grep: missing; lpk check runs only the regex patterns (\`${INSTALL}\`)`,
     ...(remap ? [remap] : []),

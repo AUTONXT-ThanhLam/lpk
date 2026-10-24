@@ -1,8 +1,7 @@
 // `lpk review start <from>..<to>`: names the range under review before the review workflow starts
 // (the whole change, a fix delta, or one rebased commit pair). The finding hook stamps it on every
-// finding raised from then on, `lpk code-review` reviews it, and the gates match each lens's
-// first prompt against it.
-import { resolveRange } from '../codereview.mjs';
+// finding raised from then on, and the gates match each lens's first prompt against it.
+import { resolveRange } from '../range.mjs';
 import { git } from '../git.mjs';
 import { parseArgs, repoOf } from '../out.mjs';
 import { appendRecord } from '../records.mjs';
@@ -22,7 +21,7 @@ export function main(argv) {
   if (u.error) { console.error(`lpk: ${u.error}; a review belongs to a run (lpk run start)`); return 1; }
   const replaced = before && before !== r.range ? before : '';
   appendRecord(repo, { kind: 'review-start', range: r.range, tree: git(['rev-parse', `${r.b}^{tree}`], repo).trim(), exit: 0, ...(replaced ? { replaced } : {}) });
-  // The whole ids: lens prompts and `lpk code-review` name the range exactly as printed here.
+  // The whole ids: every lens prompt names the range exactly as printed here.
   console.log(`reviewing ${r.range} (${git(['rev-list', '--count', r.range], repo).trim()} commit(s))${replaced ? `; replaces ${replaced}` : ''}`);
   return 0;
 }

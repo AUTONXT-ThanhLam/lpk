@@ -1,7 +1,6 @@
 ---
 name: plan-trace
 description: Maps every sentence of the owner's request, the tickets and documents it links and the owner's earlier answers to the Design Brief, and lists what the brief drops, changes or adds without a source. Give it the brief path and the source files (the request, each linked ticket or document, the owner's answers). It reads; it never edits.
-model: sonnet
 effort: high
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 background: true

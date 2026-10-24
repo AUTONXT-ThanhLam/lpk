@@ -7,7 +7,6 @@ import { test } from 'node:test';
 import { ENV, lens, lpk, repoWith, sh, write } from './gates-env.mjs';
 import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
 import { meter, total } from '../lib/meter.mjs';
-import { appendRecord } from '../lib/records.mjs';
 import { status } from '../lib/status.mjs';
 
 const MIN = 60_000;
@@ -72,7 +71,53 @@ test('the tokens are the run\'s own: what the session spent before its /lpk is l
   const repo = repoWith('status-tokens', { 'a.mjs': '1\n' });
   ok(lpk(repo, S, 'run', 'start', '--verify', 'true'));
   mainOf(S, [said(-120, 'an earlier task'), did(-119, [{ type: 'text', text: 'done' }], 'end_turn'), said(-20, `${LPK} the next task`), did(-5, tool('Read', { file_path: '/w/a.mjs' }))]);
-  assert.deepEqual(json(repo, S).tokens, { fresh: 130, cacheRead: 1000 });
+  assert.deepEqual(json(repo, S).tokens, { fresh: 130, cacheRead: 1000, recorded: true });
+});
+
+// Measured: Qoder writes every usage count in its transcripts as 0, so a session of it has no token
+// figure at all. `tokens.recorded` says so, and the band and `lpk status` print those words instead
+// of 0 (lib/host.mjs TOKENS_UNMEASURED).
+test('a session whose host recorded no counts reports its tokens as unmeasured, not as 0', async () => {
+  const S = 'status-zero';
+  const repo = repoWith('status-zero', { 'a.mjs': '1\n' });
+  const ZEROS = { input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 0 };
+  mainOf(S, [said(-30, `${LPK} fix it`), did(-9, tool('Bash', { command: 'npm test' }), 'tool_use', ZEROS)]);
+  agentOf(S, 'q1', { agentType: 'lpk:techlead', description: 'Review the range' }, [said(-8, 'Review a1b2c3d..e4f5a6b.'), did(-6, [{ type: 'text', text: 'done' }], 'end_turn', ZEROS)]);
+  const s = await status(repo, { session: S, now: NOW });
+  assert.deepEqual(s.tokens, { fresh: 0, cacheRead: 0, recorded: false }, 'its totals are no measurement at all');
+  assert.equal(s.team.filter((r) => r.id !== 'main').length, 1, 'the agent is still on the team: only its counts are missing');
+});
+
+// The two places that print a token figure — the band's head line and `lpk meter`'s total — go through
+// the same rule (lib/host.mjs tokenFigure): an unrecorded figure prints as the words, never as a
+// number, because `0 tokens` would read as a run that cost nothing.
+test('the band and lpk meter name an unrecorded token figure instead of printing a number', () => {
+  const S = 'status-words';
+  const repo = repoWith('status-words', { 'a.mjs': '1\n' });
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'true'));
+  const ZEROS = { input_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 0 };
+  mainOf(S, [said(-30, `${LPK} fix it`), did(-9, tool('Bash', { command: 'npm test' }), 'tool_use', ZEROS)]);
+  agentOf(S, 'q1', { agentType: 'lpk:bug-hunter', description: 'Hunt the range' }, [said(-8, 'Review a1b2c3d..e4f5a6b.'), did(-6, [{ type: 'text', text: 'done' }], 'end_turn', ZEROS)]);
+  assert.deepEqual(json(repo, S).tokens, { fresh: 0, cacheRead: 0, recorded: false });
+  const band = ok(lpk(repo, S, 'status'));
+  assert.match(band, /· worked \d+m · tokens not recorded by this host\n/);
+  assert.doesNotMatch(band, /\d[\d.,kM]* tokens/, 'no token number is printed for a host that recorded none');
+  const m = ok(lpk(repo, S, 'meter', '--session', S));
+  assert.match(m, /status-words: \d+ transcript\(s\), \d+ API messages; tokens not recorded by this host/);
+  assert.doesNotMatch(m, /fresh tokens 0/, 'and not the 0 its transcripts full of zeros add up to');
+  // The other side of the rule, in its own session and repo: a host that did write counts gets the
+  // number back, and not the words. (One transcript is append-only, as the incremental reader counts
+  // on, so the recorded session is a second one rather than this one rewritten.)
+  const T = 'status-figures';
+  const other = repoWith('status-figures', { 'a.mjs': '1\n' });
+  ok(lpk(other, T, 'run', 'start', '--verify', 'true'));
+  mainOf(T, [said(-30, `${LPK} fix it`), did(-9, tool('Bash', { command: 'npm test' }))]);
+  assert.deepEqual(json(other, T).tokens, { fresh: 130, cacheRead: 1000, recorded: true });
+  assert.match(ok(lpk(other, T, 'status')), /· 130 tokens\n/);
+  assert.doesNotMatch(ok(lpk(other, T, 'status')), /not recorded/);
+  const f = ok(lpk(other, T, 'meter', '--session', T));
+  assert.match(f, /fresh tokens 130 \(input \+ cache write \+ output\), cache reads 1,000/);
+  assert.doesNotMatch(f, /not recorded/);
 });
 
 test('the time worked is the union of the session\'s and its agents\' working spans, without the waits on the owner', async () => {
@@ -134,9 +179,14 @@ test('the step follows the run\'s records from understanding to delivery, and th
   const head = () => sh(repo, 'rev-parse', 'HEAD').trim();
   const range = `${base}..${head()}`;
   ok(lpk(repo, S, 'review', 'start', range));
-  assert.deepEqual(step(), ['review', { lensesDone: 0, lenses: 0, owed: 3, raised: 0, confirmed: 0, dropped: 0, verifiersRunning: 0 }]);
-  const net = (r, id, findings) => { for (const kind of ['code-review', 'security-review']) appendRecord(repo, { kind, range: r, model: 'sonnet', exit: 0, findings: 0 }); lens(S, id, 'lpk:bug-hunter', r, { findings }); };
-  net(range, 'bh1', [{ claim: 'a must stay odd' }]);
+  // The quick lane owes its whole fixed set on the one commit: lib/owed.mjs QUICK is the code
+  // reviewer and the bug hunter, each once, so two runs, none of them started yet.
+  assert.deepEqual(step(), ['review', { lensesDone: 0, lenses: 0, owed: 2, raised: 0, confirmed: 0, dropped: 0, verifiersRunning: 0 }]);
+  // The net ran: each lens of the set is a planted agent transcript on the range, the bug hunter
+  // with the finding it raised. (The headless `code-review`/`security-review` children went with the
+  // `claude` dependency, so no record of theirs is valid any more.)
+  const net = (r, cr, bh, findings) => { lens(S, cr, 'lpk:code-reviewer', r, { findings: [] }); lens(S, bh, 'lpk:bug-hunter', r, { findings }); };
+  net(range, 'cr1', 'bh1', [{ claim: 'a must stay odd' }]);
   addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' });
   ruleOn(repo, { id: 'F1', verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   assert.deepEqual(step(), ['fix', { left: ['F1'], fixed: 0, delta: 'not yet' }]);
@@ -145,7 +195,10 @@ test('the step follows the run\'s records from understanding to delivery, and th
   const fix = head();
   markFixed(repo, { id: 'F1', commit: fix, closedBy: 'repro', evidence: 'repro green', by: 'main' });
   assert.deepEqual(step(), ['fix', { left: [], fixed: 1, delta: 'owed' }]);
-  net(`${range.split('..')[1]}..${fix}`, 'bh2', []);
+  // The fix delta gets its own review, as `lpk review start` says it does, and both lenses run on it.
+  const delta = `${range.split('..')[1]}..${fix}`;
+  net(delta, 'cr2', 'bh2', []);
+  ok(lpk(repo, S, 'review', 'start', delta));
   assert.deepEqual(step(), ['prove', { scenarios: { passed: 0, total: 1 }, requirements: { proved: 0, total: 0 } }]);
   ok(lpk(repo, S, 'verify'));
   ok(lpk(repo, S, 'prove', '--all'));
@@ -165,7 +218,9 @@ test('a quick run that needed no fix leaves Design and Fix off its track', () =>
   sh(repo, 'commit', '-qam', 'Set a to 2');
   const range = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
   ok(lpk(repo, S, 'review', 'start', range));
-  for (const kind of ['code-review', 'security-review']) appendRecord(repo, { kind, range, model: 'sonnet', exit: 0, findings: 0 });
+  // Both lenses of the quick lane's set ran clean on the range: planted transcripts, as the band
+  // reads them; the headless CLI children this fixture used to record are gone with `claude`.
+  lens(S, 'crq', 'lpk:code-reviewer', range, { findings: [] });
   lens(S, 'bhq', 'lpk:bug-hunter', range, { findings: [] });
   addFinding(repo, { from: 'main', at: range, claim: 'a may be odd', repro: 'r', kind: 'defect', severity: 'nit' });
   ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'disproved', evidence: 'no caller reads a', by: 'main' });

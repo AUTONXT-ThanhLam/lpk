@@ -3,6 +3,7 @@
 // `gate:<row>`). It is the owner's channel: /lpk-waive calls it with `--via /lpk-waive`.
 // Run by an agent it records `via: cli`, which no gate accepts as the owner's waiver.
 import { parseArgs, repoOf } from '../out.mjs';
+import { sessionId } from '../host.mjs';
 import { appendRecord } from '../records.mjs';
 import { readRun } from '../run.mjs';
 
@@ -23,7 +24,7 @@ export function main(argv) {
   if (!run) { console.error('lpk: no lpk run in this repo; a waiver belongs to a run'); return 1; }
   for (const w of a.words) {
     const what = ROWS.includes(w) ? `gate:${w}` : w;
-    appendRecord(repo, { kind: 'waiver', run: run.id, what, why: a.opt('--why'), by: 'owner', via, session: process.env.CLAUDE_CODE_SESSION_ID || null, exit: 0 });
+    appendRecord(repo, { kind: 'waiver', run: run.id, what, why: a.opt('--why'), by: 'owner', via, session: sessionId() || null, exit: 0 });
     console.log(`waived ${what} in run ${run.id} via ${via}${via === 'cli' ? ' (not an owner waiver: the gates ignore it)' : ''}`);
   }
   return 0;

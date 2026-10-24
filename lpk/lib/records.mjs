@@ -5,7 +5,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readRun, runDir } from './run.mjs';
 
-const KINDS = ['code-review', 'security-review', 'self-review', 'verify', 'prove', 'repro', 'ci', 'review-start', 'waiver', 'handover', 'go'];
+const KINDS = ['verify', 'prove', 'repro', 'ci', 'review-start', 'waiver', 'handover', 'go'];
 
 function lines(file) {
   if (!existsSync(file)) return [];

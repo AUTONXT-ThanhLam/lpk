@@ -7,11 +7,11 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { hookBash, lens, lpk, repoWith, sh, tmp, write } from './gates-env.mjs';
 import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
-import { appendRecord } from '../lib/records.mjs';
 import { readRun } from '../lib/run.mjs';
 
 const head = (repo) => sh(repo, 'rev-parse', 'HEAD').trim();
 const base = (repo) => sh(repo, 'merge-base', 'main', 'HEAD').trim();
+const range = (repo) => `${base(repo)}..${head(repo)}`;
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 
 // A quick-lane run on `feat` with one command scenario, its change verified and committed.
@@ -24,10 +24,12 @@ function quickRun(name, session) {
   return repo;
 }
 
-// The quick lane's net on `range`: the CLI's two records and the Bug hunter's transcript.
-function quickNet(repo, session, range, hunter = { findings: [] }, id = 'bh1') {
-  for (const kind of ['code-review', 'security-review']) appendRecord(repo, { kind, range, model: 'sonnet', exit: 0, findings: 0 });
-  lens(session, id, 'lpk:bug-hunter', range, hunter);
+// The quick lane's net on `range`: the two agents it owes ran on it — the diff's code review and the
+// Bug hunter. Each transcript returns exactly the findings its id then holds in the ledger, since a
+// lens whose findings did not all reach the ledger counts for nothing.
+function quickNet(session, range, { reviewer = [], hunter = [], rid = 'cr1', hid = 'bh1' } = {}) {
+  lens(session, rid, 'lpk:code-reviewer', range, { findings: reviewer });
+  lens(session, hid, 'lpk:bug-hunter', range, { findings: hunter });
 }
 
 test('gh pr ready is refused while any gate does not hold, naming each and its way out, then let through', () => {
@@ -36,25 +38,24 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
   write(repo, 'src/b.mjs', 'export const b = 1;\n');
   let why = hookBash(repo, S, 'gh pr ready');
   assert.match(why, /- verify: code files that are not committed: src\/b\.mjs → add or ignore src\/b\.mjs/);
-  assert.match(why, /- reviews: code-review:sonnet on \w{12}\.\.\w{12} \(has not run on it\)/);
+  assert.match(why, /- reviews: code-reviewer on \w{12}\.\.\w{12} \(has not run on it\), bug-hunter on \w{12}\.\.\w{12} \(has not run on it\) → run what `lpk reviews owed` lists, on those ranges/);
   assert.match(why, /- scenarios: S1 not proved on HEAD's tree/);
   write(repo, '.git/info/exclude', 'src/b.mjs\n');
 
-  const range = `${base(repo)}..${head(repo)}`;
   // The Bug hunter returned two findings and only one reached the ledger: it did not run, as far as the gate can tell.
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }, { claim: 'y' }] });
-  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a is 2 for every caller', repro: 'node -e', kind: 'defect', severity: 'important' }).finding;
+  quickNet(S, range(repo), { hunter: [{ claim: 'x' }, { claim: 'y' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range(repo), claim: 'a is 2 for every caller', repro: 'node -e', kind: 'defect', severity: 'important' }).finding;
   why = hookBash(repo, S, 'cd . && gh pr ready');
   assert.match(why, /bug-hunter on \S+ \(ungraded: agent bh1 returned 2 findings, the ledger holds 1\)/);
   assert.match(why, new RegExp(`- findings: open, no verifier ruling: ${f.id}`));
   assert.doesNotMatch(why, /- verify:/);
 
-  addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'b', repro: 'r', kind: 'defect', severity: 'nit' });
+  addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range(repo), claim: 'b', repro: 'r', kind: 'defect', severity: 'nit' });
   ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
   ruleOn(repo, { id: 'F2', verdict: 'dropped', basis: 'disproved', evidence: 'not a defect', by: 'main' });
   why = hookBash(repo, S, 'gh pr ready');
   assert.doesNotMatch(why, /- findings:/, 'a ruling by someone other than the verifier does not block');
-  assert.doesNotMatch(why, /- reviews:/);
+  assert.doesNotMatch(why, /- reviews:/, 'both agents ran on the patch and every finding they returned is in the ledger');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds .*\n +.*F2 \(dropped by main\)/m);
   assert.match(ok(lpk(repo, S, 'waive', 'gate:scenarios', '--why', 'I am sure')), /not an owner waiver/);
   assert.equal(lpk(repo, S, 'waive', 'F2', '--why', 'I read it', '--via', '/lpk-waive').status, 2, 'a finding id is not waived');
@@ -77,7 +78,7 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
 test('after a rebase that leaves every patch unchanged, only lpk verify and the command scenarios are owed', () => {
   const S = 'rebase-session';
   const repo = quickRun('rebase', S);
-  quickNet(repo, S, `${base(repo)}..${head(repo)}`);
+  quickNet(S, range(repo));
   ok(lpk(repo, S, 'prove', '--all'));
   assert.equal(lpk(repo, S, 'gates').status, 0);
   sh(repo, 'switch', '-q', 'main'); write(repo, 'README.md', 'docs\n'); sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'Docs');
@@ -92,23 +93,25 @@ test('after a rebase that leaves every patch unchanged, only lpk verify and the 
   ok(lpk(repo, S, 'gates'));
 });
 
-test('a fix commit owes one Sonnet /code-review and the lens whose finding it fixed, on that commit only', () => {
+test('a fix commit owes one code review on its delta and the lens whose finding it fixed, on that commit only', () => {
   const S = 'fix-session';
   const repo = quickRun('fix', S);
-  const range = `${base(repo)}..${head(repo)}`;
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
-  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  const patch = range(repo);
+  // The quick lane's two agents ran on the patch and each returns exactly what its id holds there.
+  quickNet(S, patch, { hunter: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: patch, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
   sh(repo, 'commit', '-qam', 'Keep a odd');
   const fix = head(repo);
   markFixed(repo, { id: f.id, commit: fix, closedBy: 'repro', evidence: 'repro green', by: 'main' });
   const owed = lpk(repo, S, 'reviews', 'owed', '--json');
+  const delta = `${patch.split('..')[1].slice(0, 12)}..${fix.slice(0, 12)}`;
   assert.deepEqual(JSON.parse(owed.stdout).map((r) => [r.lens, r.range, r.why]), [
-    ['code-review:sonnet', `${range.split('..')[1].slice(0, 12)}..${fix.slice(0, 12)}`, 'fix delta; has not run on it'],
-    ['bug-hunter', `${range.split('..')[1].slice(0, 12)}..${fix.slice(0, 12)}`, 'fix delta; has not run on it'],
-  ]);
-  quickNet(repo, S, `${range.split('..')[1]}..${fix}`, { findings: [] }, 'bh2');
+    ['code-reviewer', delta, 'fix delta; has not run on it'],
+    ['bug-hunter', delta, 'fix delta; has not run on it'],
+  ], 'the delta owes one code review plus the lens whose finding was fixed, and nothing else');
+  quickNet(S, `${patch.split('..')[1]}..${fix}`, { rid: 'cr2', hid: 'bh2' });
   assert.match(ok(lpk(repo, S, 'reviews', 'owed')), /nothing owed/);
   assert.match(lpk(repo, S, 'report').stdout, /^Confirmed defects by the step they began in: build 1$/m);
 });
@@ -116,9 +119,9 @@ test('a fix commit owes one Sonnet /code-review and the lens whose finding it fi
 test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix delta once it is closed on the pick', () => {
   const S = 'pick-session';
   const repo = quickRun('pick', S);
-  const range = `${base(repo)}..${head(repo)}`;
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
-  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
+  const patch = range(repo);
+  quickNet(S, patch, { hunter: [{ claim: 'x' }] });
+  const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: patch, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   const wt = join(tmp, 'pick-fix-1');
   sh(repo, 'worktree', 'add', '-q', '-b', 'feat-fix-1', wt, 'HEAD');
@@ -130,6 +133,7 @@ test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix 
   const owedOn = () => JSON.parse(lpk(repo, S, 'reviews', 'owed', '--json').stdout).map((r) => r.why);
   assert.ok(owedOn().every((why) => !/fix delta/.test(why)), 'the pick is unreviewed new work until the fix follows it');
   assert.equal(markFixed(repo, { id: f.id, commit: picked, closedBy: 'repro', evidence: 'repro green on the pick', by: 'main' }).finding.fixedCommit, picked);
+  // Once the fix follows the pick, the delta owes its code review and the lens that raised the finding.
   assert.deepEqual(owedOn(), ['fix delta; has not run on it', 'fix delta; has not run on it']);
 });
 
@@ -165,7 +169,7 @@ test('after a later run starts, the gates of an ended run read its archived ledg
   const S = 'archive-session';
   const repo = quickRun('archived', S);
   const range = `${base(repo)}..${head(repo)}`;
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  quickNet(S, range, { hunter: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a is 2 for every caller', repro: 'r', kind: 'defect', severity: 'important' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'disproved', evidence: 'callers expect 2', by: 'lpk:verifier' });
   ok(lpk(repo, S, 'prove', '--all'));
@@ -186,7 +190,7 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   const S = 'stuck-session';
   const repo = quickRun('stuck', S);
   const range = `${base(repo)}..${head(repo)}`;
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  quickNet(S, range, { hunter: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   ok(lpk(repo, S, 'prove', '--all'));
@@ -205,7 +209,7 @@ test('an unsettled finding shows the owner the ruling asked and the area that ke
   const S = 'unsettled-session';
   const repo = quickRun('unsettled', S);
   const range = `${base(repo)}..${head(repo)}`;
-  quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
+  quickNet(S, range, { hunter: [{ claim: 'x' }] });
   addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'the cookie is readable', repro: 'r', kind: 'defect', severity: 'important', area: 'security' });
   assert.equal(ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'not-reproduced', evidence: 'the repro passed', by: 'lpk:verifier' }).finding.state, 'unsettled');
   assert.match(lpk(repo, S, 'report').stdout, /^- F1 unsettled \([^)]*dropped[^)]*not-reproduced[^)]*security\)[^\n]*the cookie is readable/m);

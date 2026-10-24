@@ -38,7 +38,10 @@ test('the status line prints the band from the session\'s cached status, well wi
   builderSession(S);
   assert.equal(lpk(repo, S, 'status', '--json', '--write-cache', '--session', S, '--repo', repo).status, 0);
   const { out, ms } = statusline(S, repo);
-  assert.match(plain(out), /^✓ Understand › ▶ Build › Review › Fix › Prove › Deliver {2}worked \d+m · 0 tokens$/, 'the agents are left to Claude Code\'s own list');
+  // Measured: a host writes no counts at all here (these transcripts carry no `usage`), so the band
+  // names the figure as unrecorded instead of printing the 0 its transcripts add up to (lib/host.mjs;
+  // the number side of the same rule is in tests/status.test.mjs).
+  assert.match(plain(out), /^✓ Understand › ▶ Build › Review › Fix › Prove › Deliver {2}worked \d+m · tokens not recorded by this host$/, 'the agents are left to Claude Code\'s own list');
   assert.match(out, /\x1b\[1;93m▶ Build\x1b\[0m/, 'the current step is bold bright yellow behind a ▶');
   assert.match(out, /\x1b\[2m✓ Understand\x1b\[22m/, 'a visited step is dim behind a ✓');
   assert.ok(ms < 1000, `took ${ms} ms`);

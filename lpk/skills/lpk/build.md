@@ -46,14 +46,13 @@ returns its UI section, then in build mode with that section in its prompt (`SKI
 
 ## Review your own slice before you call it done
 
-Once the acceptance tests pass, and before you commit, run `lpk code-review --slice --base <base>`
-once, with the commit the slice started from: one `/code-review` child on the working tree
-(uncommitted and untracked code files included) against that base. It takes five to eight minutes
-and runs on DeepSeek when the session is routed with DeepSeek roles on, else on Sonnet; run it
-again only after a fix that changes what the first run read. Reproduce each finding it raises, fix the ones that hold, and name the ones that
+Once the acceptance tests pass, and before you commit, dispatch `lpk:bug-hunter` once on the slice,
+giving it the commit the slice started from and the range `<base>..the working tree` (uncommitted and
+untracked code files included). Run it again only after a fix that changes what the first run read.
+Reproduce each finding it raises, fix the ones that hold, and name the ones that
 do not, each with its reason.
-Its findings are printed for you, not added to the ledger, and the run records that the
-self-review ran.
+Its findings go into the ledger as any other lens's do, which is what makes the self-review a fact a
+gate can read rather than a thing the builder says it did.
 
 ## When a fix draws a new problem
 

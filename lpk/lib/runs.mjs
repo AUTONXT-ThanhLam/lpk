@@ -4,11 +4,12 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { readLedger } from './findings.mjs';
+import { readLedger, ledgerFile } from './findings.mjs';
 import { defaultBranch, git, repoName } from './git.mjs';
+import { pluginManifest } from './host.mjs';
 import { meter } from './meter.mjs';
 import { readRecords } from './records.mjs';
-import { readRun } from './run.mjs';
+import { readRun, runDir } from './run.mjs';
 import { lensRuns } from './transcripts.mjs';
 
 export const runsFile = () => join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'lpk', 'runs.jsonl');
@@ -52,22 +53,30 @@ export function runRow(repo, extra = {}) {
     e.runs++;
     e.ended[l.ended] = (e.ended[l.ended] || 0) + 1;
   }
-  // Tokens, models and first-to-last wall time per agent type, from the transcripts.
+  // Tokens, models and first-to-last wall time per agent type, from the transcripts. `recorded` is
+  // false when the host that wrote them named no count at all, so the row's tokens read as
+  // unmeasured rather than as 0 (lib/host.mjs).
   const agents = {};
+  const hosts = new Set();
   for (const r of (run.session && meter(run.session)) || []) {
-    const a = (agents[r.agent] ||= { count: 0, fresh: 0, cacheRead: 0, models: [], first: r.first, last: r.last });
-    a.count++; a.fresh += r.fresh; a.cacheRead += r.cacheRead;
+    const a = (agents[r.agent] ||= { count: 0, fresh: 0, cacheRead: 0, models: [], first: r.first, last: r.last, recorded: false });
+    a.count++; a.fresh += r.fresh; a.cacheRead += r.cacheRead; a.recorded = a.recorded || r.recorded;
     a.models = [...new Set([...a.models, ...r.models])];
     if (r.first && r.first < a.first) a.first = r.first;
     if (r.last > a.last) a.last = r.last;
+    if (r.host) hosts.add(r.host);
   }
   let version = '';
-  try { version = JSON.parse(readFileSync(new URL('../.claude-plugin/plugin.json', import.meta.url), 'utf8')).version; } catch { /* no manifest */ }
+  try { version = JSON.parse(readFileSync(pluginManifest(), 'utf8')).version; } catch { /* no manifest */ }
   const reviewStarts = records.filter((r) => r.kind === 'review-start').length;
+  // Where the run's own files sit, named in the row: the ledger this run wrote its findings into, and
+  // the repo's `.git/lpk` record directory that holds it (and, once a later run archives it, the
+  // ledger under `runs/<id>/`). Without them a row says nothing about where to read the run again.
+  const dir = runDir(repo);
   return {
-    id: run.id, repo: repoName(repo), path: repo, session: run.session || null, target, branches: run.branches || [],
+    id: run.id, repo: repoName(repo), path: repo, ledger: ledgerFile(repo), records: dir, session: run.session || null, target, branches: run.branches || [],
     lane: run.lane, laneWhy: run.laneWhy || '', started: new Date(run.started).toISOString(), recorded: new Date().toISOString(),
-    wallMs: Date.now() - run.started, sha: head, base, cli: version,
+    wallMs: Date.now() - run.started, sha: head, base, cli: version, ...(hosts.size ? { hosts: [...hosts] } : {}),
     files: base ? git(['diff', '--name-only', base, head], repo).split('\n').filter(Boolean) : [],
     findingFiles: [...new Set(findings.map((f) => f.file).filter(Boolean))],
     yield: yieldOf(findings.filter((f) => f.kind !== 'test-gap')), testGaps: findings.filter((f) => f.kind === 'test-gap').length,

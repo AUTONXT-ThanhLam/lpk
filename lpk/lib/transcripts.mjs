@@ -1,28 +1,24 @@
-// Facts about the agents a session ran, read from the transcripts Claude Code keeps on disk: each
-// subagent's and each workflow agent's type, the range its first prompt names, and how it ended.
-// No agent writes these; a gate reads them to know a lens ran.
+// Facts about the agents a session ran, read from the transcripts the host keeps on disk: each
+// subagent's and each workflow agent's type, the range its first prompt names, and how it ended. No
+// agent writes these; a gate reads them to know a lens ran. Both hosts' stores are searched, so a
+// lens that ran on the other one is still seen, and each row names the store it came from.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
+import { agentFile, agentIdOf, hostOf, sessionDirs } from './host.mjs';
 
-const config = () => process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
 // The first `<sha>..<sha>` or `<sha>`: 7 to 40 hex characters with at least one digit, so a word
 // such as "defaced" is not taken for a commit.
 const SHA = '(?=[a-f]*\\d)[0-9a-f]{7,40}';
 const RANGE = new RegExp(`(?<![0-9a-zA-Z])(${SHA})(?:\\.\\.\\.?(${SHA}))?(?![0-9a-zA-Z])`);
 const RELAY = '[Workflow harness — user request]';
 
-// The session's directories under every project, since the session may have started in a parent
-// of the repo or a worktree of it.
-function sessionDirs(session) {
-  const root = join(config(), 'projects');
-  if (!session || !existsSync(root)) return [];
-  return readdirSync(root).map((p) => join(root, p, session)).filter((d) => existsSync(join(d, 'subagents')));
-}
+// The session's directories that hold subagents, on either host: the session may have started in a
+// parent of the repo or in a worktree of it, so every project folder of both stores is asked.
+const lensDirs = (session) => sessionDirs(session).filter((d) => existsSync(join(d, 'subagents')));
 
 function agentFiles(dir) {
   const sub = join(dir, 'subagents');
-  const here = (d) => (existsSync(d) ? readdirSync(d).filter((n) => /^agent-.+\.jsonl$/.test(n)).map((n) => join(d, n)) : []);
+  const here = (d) => (existsSync(d) ? readdirSync(d).filter((n) => agentFile(n)).map((n) => join(d, n)) : []);
   const wf = join(sub, 'workflows');
   return [...here(sub), ...(existsSync(wf) ? readdirSync(wf).flatMap((w) => here(join(wf, w))) : [])];
 }
@@ -44,19 +40,22 @@ export function lensRun(file) {
   const ended = !last ? 'running' : last.isApiErrorMessage ? 'error' : so ? 'structured' : last.message?.stop_reason === 'end_turn' ? 'end_turn' : 'running';
   return {
     agentType: meta.agentType || '',
-    agentId: entries.find((e) => e.agentId)?.agentId || file.match(/agent-(.+)\.jsonl$/)[1],
+    // Its own id where the lines carry one; else the name of its file, which on Qoder is the type and
+    // a hash rather than a bare id.
+    agentId: entries.find((e) => e.agentId)?.agentId || agentIdOf(file) || basename(file).replace(/\.jsonl$/, ''),
     range: m ? (m[2] ? `${m[1]}..${m[2]}` : m[1]) : '',
     ended,
     structured: so ? so.input ?? null : null,
     at: entries.at(-1)?.timestamp || '',
     started: entries[0]?.timestamp || '',
+    host: hostOf(file),
   };
 }
 
-// Every subagent and workflow agent of the session. `repo` is kept for callers; the transcripts
-// are found by session id alone.
+// Every subagent and workflow agent of the session. `repo` is kept for callers; the transcripts are
+// found by session id alone, in either host's store.
 export function lensRuns(repo, session) {
-  return sessionDirs(session).flatMap((d) => agentFiles(d).map(lensRun));
+  return lensDirs(session).flatMap((d) => agentFiles(d).map(lensRun));
 }
 
 // How many findings an agent's structured output returned: a prover's scenarios that its `results`

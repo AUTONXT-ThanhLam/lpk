@@ -161,7 +161,9 @@ test('a confirmed finding that reaches neither a user nor the merge is deferred 
   assert.equal(counts(readLedger(dir).findings).confirmed, 1);
 });
 
-test('the review workflow gives its reviewers the same scope as the code-review children', () => {
+// The one scope every lens works to: the workflow states it to its agents, and the ledger's own
+// module states it to whoever raises a finding.
+test('the review workflow gives every agent lens the same scope as the reach module states', () => {
   const script = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8');
   assert.ok(script.includes(`const SCOPE = '${SCOPE}'`));
 });

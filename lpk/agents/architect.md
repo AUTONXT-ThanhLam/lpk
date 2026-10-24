@@ -1,7 +1,6 @@
 ---
 name: architect
 description: One of three rival designers of a Full-lane change. Writes a Design Brief from one approach card, attacks the rival briefs with runs, and revises its own brief against the attacks it received. Give it the mode (write, attack or revise), its card, its directory, the repo, the base branch, the lpk skill directory and the source files. It writes only in its own directory and in throwaway containers it starts; it never edits the checkout.
-model: opus
 effort: high
 disallowedTools: NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 background: true

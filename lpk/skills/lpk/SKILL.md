@@ -54,8 +54,7 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
-- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; ToolSearch
-  `select:mcp__plugin_lpk_lpk__finding_list`); only a verifier rules. One you rule on goes in the report with its evidence.
+- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load `mcp__plugin_lpk_lpk__finding_list` if your tool list does not hold it yet); only a verifier rules. One you rule on goes in the report with its evidence.
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.
@@ -95,8 +94,7 @@ Read each step's file when the step starts; each file states its goal and how it
 - **Quick**: at most three changed files in one repo; no auth marker, credential path,
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
   contract. It skips the brief and the design check, records its numbered requirements and the
-  scenarios that prove them at `lpk run start`, and owes one `/code-review`, `/security-review`
-  and the Bug hunter.
+  scenarios that prove them at `lpk run start`, and owes the Bug hunter and the Security reviewer.
 - **Full**: everything else. It owes the whole review net and the Prover.
 
 ## Screens

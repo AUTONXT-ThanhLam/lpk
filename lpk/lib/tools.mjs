@@ -51,7 +51,6 @@ export function setup() {
   return [
     ['git', runs('git', ['--version']), 'required'],
     ['gh', runs('gh', ['auth', 'status']), 'install it and run `gh auth login`: PR, CI and review commands need it'],
-    ['claude', runs('claude', ['--version']), '`lpk code-review` runs the bundled /code-review and /security-review through it'],
     ['gitleaks', !g.error, `the push guard cannot look for committed secrets (${g.error})`],
     ['npx', runs('npx', ['--version']), 'OpenCodeReview and the Chrome DevTools server run through it'],
     ['chrome', chrome, 'proof on a running web app needs Google Chrome or Chromium'],

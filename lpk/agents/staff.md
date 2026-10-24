@@ -1,7 +1,6 @@
 ---
 name: staff
 description: Does the work of an lpk run that no other role owns - revising the Design Brief after a design review round, checking a contract or plan against the code, research and audits, drafts for the owner - with lpk's evidence rules. Give it the task, the files it may write, the sources to read and what the result must hold. It writes only the files its task names; it never commits, pushes or writes to a tracker.
-model: sonnet
 effort: high
 maxTurns: 150
 disallowedTools: NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*

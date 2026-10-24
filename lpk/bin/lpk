@@ -38,11 +38,12 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk verify  |  lpk go  |  lpk decide "<what>" --why "<why>"  |  lpk handoff <slice>
  review and proof
   lpk review start <from>..<to>  |  lpk reviews owed  |  lpk reviews fetch --reviewer <login>
-  lpk code-review [--range <from>..<to> | --base <ref>] [--security | --slice]
   lpk finding list|get|verdict|fixed|counts
   lpk repro <finding id> | --cmd "<command>" --at commit|base  |  lpk repeat -- <command>
   lpk mutate --test "<command>" --patch <mutant.diff>...  |  lpk compare --run "<command>" --inputs <dir>
   lpk prove --all | <scenario id>...  |  lpk spawn --port <port> -- <command>  |  lpk reap
+ measuring what the run cost
+  lpk bench [--json] [--lane quick|full] [--runs <n>] [--repo <dir>] [--no-transcripts]
  delivery
   lpk gates  |  lpk report  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
  the machine

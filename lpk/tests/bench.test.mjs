@@ -1,0 +1,203 @@
+// `lpk bench` reads only files that already exist, so the fixture plants them: two hosts'
+// transcripts, a findings ledger, the CLI records and the runs.jsonl rows. Each assertion is written
+// so it fails on both sides — a deleted rule, and the opposite rule — never green by omission.
+import assert from 'node:assert/strict';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { test } from 'node:test';
+import { ENV, lpk, tmp, write } from './verbs-env.mjs';
+
+const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
+// The fixture owns both stores: a Qoder variable inherited from the machine would point the reader at
+// the real one, where none of these sessions exist.
+ENV.QODER_CONFIG_DIR = join(ENV.HOME, '.qoder');
+const QODER = ENV.QODER_CONFIG_DIR;
+const DATA = join(ENV.XDG_DATA_HOME, 'lpk');
+const msg = (id, [input, write_, read, output], at, extra = {}) => ({ type: 'assistant', timestamp: at, message: { id, model: 'claude-sonnet-5-5', role: 'assistant', content: [{ type: 'text', text: 'x' }], usage: { input_tokens: input, cache_creation_input_tokens: write_, cache_read_input_tokens: read, output_tokens: output, ...(extra.credits !== undefined ? { credits: extra.credits } : {}) } } });
+const jsonl = (rows) => rows.map((r) => `${JSON.stringify(r)}`).join('\n') + '\n';
+const RUN1 = '20261021100000-r1';
+const RUN2 = '20261021100000-r2';
+const RUN3 = '20261021100000-r3';
+
+// A repo whose run directory holds a ledger and the CLI's own records, two sessions' transcripts (one
+// on each host) and three runs.jsonl rows: RUN1 measured on claude, RUN2 on the host that writes no
+// counts, RUN3 with no transcript at all.
+import { commit, repoWith, sh } from './verbs-env.mjs';
+
+function plant(name) {
+  const repo = repoWith(name, { 'src/a.ts': 'a\n', 'src/b.ts': 'b\n' });
+  const sha = sh(repo, 'rev-parse', 'HEAD').trim();
+  const lpkDir = join(repo, '.git', 'lpk');
+  mkdirSync(lpkDir, { recursive: true });
+  const ev = (o) => `${JSON.stringify({ time: '2026-10-21T10:00:00Z', ...o })}\n`;
+  writeFileSync(join(lpkDir, 'findings.jsonl'), [
+    ev({ ev: 'add', finding: { id: 'F1', run: RUN1, from: 'code-review:sonnet', at: `${sha}..${sha}`, claim: 'a', repro: 'b', kind: 'defect', severity: 'important', file: 'src/a.ts' } }),
+    ev({ ev: 'add', finding: { id: 'F2', run: RUN1, from: 'lpk:techlead', at: `${sha}..${sha}`, claim: 'a', repro: 'b', kind: 'defect', severity: 'important', file: 'src/a.ts' } }),
+    ev({ ev: 'add', finding: { id: 'F3', run: RUN1, from: 'lpk:bug-hunter', at: `${sha}..${sha}`, claim: 'a', repro: 'b', kind: 'defect', severity: 'important', file: 'src/b.ts' } }),
+    ev({ ev: 'fixed', id: 'F1', commit: sha, fix: 'a', closedBy: 'test', evidence: 'green', by: 'main' }),
+    ev({ ev: 'verdict', id: 'F2', state: 'confirmed', by: 'lpk:verifier', evidence: 'yes', born: 'design', cause: 'the brief chose one writer while the plan has two', reach: 'merge' }),
+    ev({ ev: 'verdict', id: 'F3', state: 'dropped', by: 'lpk:verifier', evidence: 'no', basis: 'disproved' }),
+  ].join(''));
+  writeFileSync(join(lpkDir, 'records.jsonl'), jsonl([
+    { at: '2026-10-21T10:01:00Z', run: RUN1, kind: 'code-review', model: 'sonnet', range: `${sha}..${sha}`, exit: 0, findings: 1, ids: ['F1'], durationMs: 4000, tokens: { fresh: 700, cacheRead: 900 } },
+    { at: '2026-10-21T10:02:00Z', run: RUN1, kind: 'security-review', model: 'sonnet', range: `${sha}..${sha}`, exit: 0, findings: 0, ids: [], durationMs: 1000, tokens: { fresh: 500, cacheRead: 100 } },
+    { at: '2026-10-21T10:03:00Z', run: RUN2, kind: 'code-review', model: 'opus', range: `${sha}..${sha}`, exit: 1, findings: 0, ids: [], durationMs: 800, tokens: { fresh: 10, cacheRead: 20 } },
+  ]));
+  // Claude Code's store: real counts, one message written twice, and two agents whose working spans
+  // overlap by ten seconds.
+  const main = join(CLAUDE, 'projects', '-work-repo');
+  write(main, 's-claude.jsonl', jsonl([
+    { type: 'user', timestamp: '2026-10-21T09:59:50Z', message: { content: 'go' } },
+    msg('m1', [100, 200, 5000, 50], '2026-10-21T10:00:00Z'),
+    msg('m1', [100, 200, 5000, 50], '2026-10-21T10:00:00Z'),
+    msg('m2', [1, 2, 3000, 3], '2026-10-21T10:00:40Z'),
+  ]));
+  write(main, 's-claude/subagents/agent-a1.jsonl', jsonl([msg('s1', [10, 10, 700, 10], '2026-10-21T10:00:00Z'), msg('s2', [1, 1, 700, 1], '2026-10-21T10:00:20Z')]));
+  write(main, 's-claude/subagents/agent-a1.meta.json', JSON.stringify({ agentType: 'lpk:techlead' }));
+  write(main, 's-claude/subagents/agent-a2.jsonl', jsonl([msg('s3', [5, 5, 40, 5], '2026-10-21T10:00:10Z'), msg('s4', [5, 5, 40, 5], '2026-10-21T10:00:30Z')]));
+  write(main, 's-claude/subagents/agent-a2.meta.json', JSON.stringify({ agentType: 'lpk:bug-hunter' }));
+  // Qoder's store: the same layout, every usage count written as 0.
+  const q = join(QODER, 'projects', '-work-repo');
+  write(q, 's-qoder.jsonl', jsonl([
+    { type: 'user', timestamp: '2026-10-21T09:59:00Z', message: { content: 'go' } },
+    msg('q1', [0, 0, 0, 0], '2026-10-21T10:00:00Z', { credits: 0.5 }),
+    msg('q2', [0, 0, 0, 0], '2026-10-21T10:01:00Z', { credits: 0.25 }),
+  ]));
+  write(DATA, 'runs.jsonl', jsonl([
+    { id: RUN1, repo: 'work-repo', path: repo, session: 's-claude', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T11:00:00.000Z', wallMs: 3600000, yield: {}, agents: {}, lenses: {}, files: [] },
+    { id: RUN2, repo: 'work-repo', path: repo, session: 's-qoder', lane: 'quick', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:30:00.000Z', wallMs: 1800000, yield: {}, agents: {}, lenses: {}, files: [] },
+    { id: RUN3, repo: 'work-repo', path: repo, session: 's-gone', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:10:00.000Z', wallMs: 600000, yield: {}, agents: {}, lenses: {}, files: [] },
+  ]));
+  return repo;
+}
+
+const bench = (cwd, ...args) => lpk(cwd, 'bench', ...args);
+const out = (cwd, ...args) => { const r = bench(cwd, '--json', ...args); assert.equal(r.status, 0, r.stderr); return JSON.parse(r.stdout); };
+
+// The row that decides whether the next spend goes before the build or into it. A ruled finding with
+// no birth recorded must not be counted as one, and a step nobody was born in reads 0, not absent.
+test('a ruled confirmed finding says where it was born', () => {
+  plant('bench-born');
+  const j = out(tmp);
+  assert.equal(j.born.counts.design, 1, 'the one finding ruled confirmed with born=design counts once');
+  assert.deepEqual(Object.keys(j.born.counts).sort(), ['build', 'design', 'fix', 'request'], 'every birth step is a key: 0 is a verdict, absence is a failure');
+  assert.equal(j.born.counts.build, 0);
+  assert.equal(j.born.ruled, 1, 'the finding dropped without a born is not counted as a birth: two verdicts, one step');
+  assert.match(j.born.note, /design 1 of 1 ruled finding/);
+});
+
+test('fresh tokens leave cache reads out, and say so per agent and per lens', () => {
+  plant('bench-tokens');
+  const j = out(tmp);
+  const by = Object.fromEntries(j.agents.map((a) => [a.agent, a]));
+  // main session: (100+200+50) + (1+2+3) = 356 fresh, and its 8000 cache reads apart from it.
+  assert.equal(by['main session'].fresh, 356, 'fresh is input + cache write + output only');
+  assert.equal(by['main session'].cacheRead, 8000, 'cache reads are counted, but apart');
+  assert.ok(by['main session'].fresh < by['main session'].cacheRead, 'had cache reads been counted as fresh the figure would be the larger one');
+  assert.equal(by['lpk:techlead'].fresh, 33, '(10+10+10) + (1+1+1): its 1400 cache reads are not in it');
+  assert.equal(by['lpk:techlead'].host, 'claude', 'a figure says which host produced it');
+  // The CLI child has no transcript: its cost is the records', and the lens row carries it.
+  const cr = j.lenses.find((l) => l.lens === 'code-review:sonnet');
+  assert.equal(cr.fresh, 700, 'the record\'s own fresh tokens, not a transcript\'s');
+  assert.equal(cr.fixed, 1);
+  assert.equal(cr.tokensPerFixed, 700, 'tokens per finding fixed = the lens cost over what it fixed');
+  const missing = j.lenses.find((l) => l.lens === 'security-review:sonnet');
+  assert.equal(missing.raised, 0, 'a lens that ran and raised nothing is a row of 0, not a missing row');
+  assert.equal(missing.findingsReturned, undefined);
+  assert.equal(j.cliLensRuns.find((c) => c.lens === 'security-review:sonnet').findingsReturned, 0);
+  assert.equal(j.cliLensRuns.find((c) => c.lens === 'security-review:sonnet').runs, 1);
+});
+
+test('a host that writes usage as zeros has no token figure: unavailable, never 0', () => {
+  plant('bench-qoder');
+  const j = out(tmp);
+  const q = j.hosts.find((h) => h.host === 'qoder');
+  const c = j.hosts.find((h) => h.host === 'claude');
+  assert.equal(q.tokensAvailable, false, 'the verdict is measured from the transcripts, not hardcoded');
+  assert.equal(q.fresh, null, 'a token figure that does not exist is null');
+  assert.equal(JSON.stringify(q.fresh), 'null', 'and stays null through the JSON, not 0');
+  assert.equal(c.tokensAvailable, true);
+  assert.ok(c.fresh > 0);
+  assert.match(q.note, /SKIPPED/, 'the note says the row was skipped and why');
+  assert.match(q.note, /unavailable, not 0/);
+  assert.ok(!JSON.stringify(q).includes('"fresh":0'), 'no zero of a token figure stands in for the absent measurement, not even per transcript');
+  // The run made on that host keeps its row, with the reason its cost is blank.
+  const r2 = j.wall.runs.find((r) => r.id === RUN2);
+  assert.ok(r2, 'a run of the unmeasured host is still a run');
+  assert.equal(r2.fresh, null);
+  assert.match(r2.note, /unavailable, not 0/);
+  assert.equal(r2.host, 'qoder');
+  // The one cost figure that host does write is credits, named apart from tokens.
+  assert.equal(q.creditsSum, 0.75, 'credits, summed once per message id');
+});
+
+test('a finding only one lens raised counts once, and a shared file does not count as unique', () => {
+  plant('bench-unique');
+  const j = out(tmp);
+  const by = Object.fromEntries(j.lenses.filter((l) => l.source === 'ledger').map((l) => [l.lens, l]));
+  assert.deepEqual(Object.keys(by).sort(), ['code-review:sonnet', 'lpk:bug-hunter', 'lpk:techlead']);
+  assert.equal(by['lpk:bug-hunter'].unique, 1, 'its finding stands alone on src/b.ts');
+  assert.equal(by['code-review:sonnet'].unique, 0, 'a second lens put a finding on the same file');
+  assert.equal(by['lpk:techlead'].unique, 0);
+  assert.equal(j.lenses.reduce((n, l) => n + l.unique, 0), 1, 'one unique finding in the whole table: counted once, not once per lens');
+  assert.equal(by['code-review:sonnet'].raised, 1);
+  assert.equal(by['code-review:sonnet'].fixed, 1);
+  assert.equal(by['lpk:bug-hunter'].dropped, 1, 'a contested finding is not counted as a fixed one');
+  assert.equal(by['lpk:techlead'].confirmed, 1);
+  assert.equal(by['lpk:techlead'].fixed, 0);
+});
+
+test('the critical path is the union of the lenses\' spans, not their sum', () => {
+  plant('bench-wall');
+  const j = out(tmp);
+  const r = j.wall.runs.find((x) => x.id === RUN1);
+  // Two agents: 10:00:00-10:00:20 and 10:00:10-10:00:30. The window holds 30s of work; 40s of agent
+  // time ran inside it, ten of those seconds beside the other agent.
+  assert.equal(r.criticalPathMs, 30000, 'the union of the overlapping spans');
+  assert.equal(r.lensMsSum, 40000, 'their sum is the larger figure, and not the critical path');
+  assert.ok(r.criticalPathMs < r.lensMsSum, 'a critical path that equalled the sum would say the run cannot overlap');
+  assert.ok(r.criticalPathMs > 0, 'and a broken span reader would say it did nothing at all');
+  assert.equal(r.longPole, 'lpk:techlead', 'the lens holding the most of the path');
+  assert.equal(r.findings, 3);
+  assert.equal(r.fixed, 1);
+  assert.equal(r.ledger, 'present');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN3).ledger, 'absent', 'a run with no ledger says so');
+});
+
+test('absence is printed as an empty verdict, and every key the gates read is there', () => {
+  const repo = plant('bench-absent');
+  mkdirSync(join(CLAUDE, 'projects', '-empty-ok'), { recursive: true });
+  const j = out(tmp);
+  for (const k of ['runs', 'hosts', 'lenses', 'cliLensRuns', 'born', 'agents', 'wall', 'context', 'missing']) assert.ok(k in j, `${k} is a key even when nothing was found`);
+  assert.ok(Array.isArray(j.lenses) && Array.isArray(j.cliLensRuns) && Array.isArray(j.agents) && Array.isArray(j.wall.runs));
+  assert.equal(j.runs.recorded, 3);
+  assert.equal(j.runs.withLedger, 1);
+  assert.equal(j.runs.withoutLedger, 2);
+  assert.equal(j.runs.unrecordedLedgers.length, 0, 'no orphan ledger here, and that is a 0-length array, not a missing key');
+  assert.equal(j.missing.tokensUnavailableFor.join(), 'qoder');
+  assert.ok(j.context.resident.agents.length > 0 && j.context.resident.skills.length > 0, 'the plugin itself is always measured');
+  assert.ok(j.context.residentBytes > 0 && j.context.onInvokeBytes > j.context.residentBytes);
+  // The repo filter narrows to its runs and still answers with arrays, not absent keys.
+  const only = out(repo, '--repo', repo);
+  assert.equal(only.runs.distinct, 3);
+  const none = out(repo, '--lane', 'full', '--runs', '1');
+  assert.equal(none.runs.distinct, 1);
+  assert.equal(none.lenses.length > 0, true);
+  // With the transcripts left unread, every cost row is a null and every array is there anyway: a
+  // skipped read is said, not faked as a zero.
+  const noRead = out(repo, '--no-transcripts');
+  assert.deepEqual(noRead.agents, [], 'no agent was read, so no agent row');
+  assert.equal(noRead.wall.runs.every((r) => r.fresh === null), true, 'a run whose transcripts were not read has no token figure');
+  assert.equal(noRead.wall.runs.length, 3, 'but every run keeps its row');
+  assert.equal(noRead.hosts.length, 2, 'both stores are still named, with their verdict');
+  assert.equal(out(repo, '--lane', 'quick').runs.distinct, 1);
+});
+
+test('bad arguments are refused, and the command is reachable as lpk bench', () => {
+  plant('bench-args');
+  const r = bench(tmp, '--nonsense');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /unknown option --nonsense/);
+  assert.match(bench(tmp, '--lane', 'full').stdout, /lens \| raised \| fixed/);
+  assert.match(bench(tmp, '--lane', 'full').stdout, /critical path .*lens sum/);
+});

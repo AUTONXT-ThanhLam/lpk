@@ -1,7 +1,6 @@
 ---
 name: env
 description: Gets a repo ready to run while the main session designs: dependencies installed, databases and services up, the app started on free ports, a test login working in the lpk Chrome. Give it the repo path, the repo profile path if one exists, and which surfaces the change touches. It never edits tracked files and stops only what it started.
-model: haiku
 effort: medium
 disallowedTools: Artifact, ArtifactComments, ArtifactData
 background: true

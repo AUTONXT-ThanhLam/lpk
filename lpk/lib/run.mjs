@@ -3,11 +3,11 @@
 // checks that define "verified" and the last verify. A run ends only by `lpk run end`; its file
 // moves under runs/<id>/, where the delivery gates still find it by its branch.
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { archiveLedger } from './findings.mjs';
 import { git } from './git.mjs';
+import { sessionId, sessionsDirs } from './host.mjs';
 import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
 
 export { codeOfCommit, treeOf } from './tree.mjs';
@@ -88,15 +88,17 @@ export function noteBranch(repo, run) {
   return true;
 }
 
-// The pid of a live Claude Code process holding `session`, from the files Claude Code keeps per
-// running process; 0 when none does.
+// The pid of a live host process holding `session`, from the per-process files each host keeps in its
+// own store; 0 when none does. Measured: Qoder keeps no such folder, so a session of it reads as one
+// that has exited, and `lpk run take` takes its run.
 export function sessionPid(session) {
-  const dir = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'sessions');
   let names = [];
-  try { names = readdirSync(dir).filter((n) => /^\d+\.json$/.test(n)); } catch { return 0; }
-  for (const n of names) {
+  for (const dir of sessionsDirs()) {
+    try { names.push(...readdirSync(dir).filter((n) => /^\d+\.json$/.test(n)).map((n) => join(dir, n))); } catch { /* nothing here */ }
+  }
+  for (const file of names) {
     try {
-      const s = JSON.parse(readFileSync(join(dir, n), 'utf8'));
+      const s = JSON.parse(readFileSync(file, 'utf8'));
       if (s.sessionId === session && s.pid) { process.kill(s.pid, 0); return s.pid; }
     } catch { /* not this one, or its process is gone */ }
   }
@@ -114,7 +116,7 @@ export function exitedRuns(session, repo) {
 export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false }) {
   const marker = startDir(repo) && join(startDir(repo), 'run.json');
   if (!marker) return { error: 'not inside a git repository' };
-  const st = parse(marker), me = process.env.CLAUDE_CODE_SESSION_ID || '';
+  const st = parse(marker), me = sessionId();
   if (st.error) return { error: st.error };
   const open = st.run;
   if (open && open.session && open.session !== me) {

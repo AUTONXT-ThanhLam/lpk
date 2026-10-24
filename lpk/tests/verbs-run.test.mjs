@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { commit, ENV, lpk, lpkAsync, repoWith, sh, tmp, write } from './verbs-env.mjs';
 import { listening } from '../lib/spawn.mjs';
+import { modelLanes, slotCount, width } from '../lib/cmd/slot.mjs';
 
 test('lpk repeat runs a command for as long as the budget allows and counts the runs that failed', () => {
   const dir = join(tmp, 'repeat');
@@ -28,8 +29,21 @@ test('lpk slot runs two heavy commands one after the other when memory allows on
   assert.equal(b.status, 0, b.out);
   const ev = readFileSync(join(dir, 'log'), 'utf8').trim().split('\n').map((l) => l.split(' ')[1]);
   assert.deepEqual(ev, ['start', 'end', 'start', 'end'], 'the second started only after the first ended');
-  assert.match(lpk(dir, 'slot', '--count', '--mb', '100000000').stdout, /^1 slot\(s\)/);
+  assert.match(lpk(dir, 'slot', '--count', '--mb', '100000000').stdout, /^1 lane\(s\): 1 memory slot\(s\)/);
   assert.equal(lpk(dir, 'slot', '--', 'exit 7').status, 7, 'the command\'s own exit code comes back');
+});
+
+// A wide fan-out on a backend that answers two streams is not speed: each lane gets a smaller
+// share, so the long pole only grows. The width must therefore be the tighter of the two ceilings.
+test('the lanes a run carries are the tighter of its memory and its backend\'s model streams', () => {
+  assert.equal(modelLanes({}), Infinity, 'a hosted model pool has no measured ceiling');
+  assert.equal(modelLanes({ ANTHROPIC_BASE_URL: 'https://api.anthropic.com' }), Infinity, 'the hosted API is uncapped');
+  assert.equal(modelLanes({ ANTHROPIC_BASE_URL: 'http://100.113.65.11:8080' }), 2, 'a self-hosted backend was measured flat past two streams');
+  assert.equal(modelLanes({ ANTHROPIC_BASE_URL: 'http://localhost:8080', LPK_MODEL_LANES: '5' }), 5, 'the owner\'s declared number wins');
+  assert.equal(modelLanes({ LPK_MODEL_LANES: '0' }), Infinity, '0 is not a declared ceiling');
+  assert.equal(width(2048, { LPK_MODEL_LANES: '1' }), 1);
+  assert.equal(width(2048, { ANTHROPIC_BASE_URL: 'http://localhost:8080' }), Math.min(slotCount(2048), 2));
+  assert.ok(width(2048, {}) >= 1, 'at least one lane whatever the machine');
 });
 
 test('a command given as words after -- reaches the program word for word, and one string runs as a command line', () => {

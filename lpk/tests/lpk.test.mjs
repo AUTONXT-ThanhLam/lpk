@@ -1,5 +1,5 @@
-// What the owner's agent relies on: the facts bundle, the push guard, the /code-review parser,
-// and that the skill only names commands, agents and workflows the plugin really ships.
+// What the owner's agent relies on: the facts bundle, the push guard, and that the skill only names
+// commands, agents and workflows the plugin really ships.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -7,7 +7,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { parseFindings } from '../lib/codereview-parse.mjs';
 import { touched } from '../lib/facts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -159,14 +158,6 @@ test('after a rebase onto main the push guard checks only the commits the branch
   const reason = JSON.parse(hook('git push --force-with-lease')).hookSpecificOutput.permissionDecisionReason;
   assert.match(reason, /"fix: a subject on the branch/);
   assert.doesNotMatch(reason, /chore: a subject merged on main/);
-});
-
-test('/code-review findings are read out of the prose around them', () => {
-  const text = 'Review done.\n```json\n[{"file":"a.ts","line":3,"summary":"x","failure_scenario":"path C:\\tmp breaks"}]\n```\nThat is all [1].';
-  assert.deepEqual(parseFindings(text).map((f) => f.file), ['a.ts']);
-  assert.deepEqual(parseFindings('No issues: []'), []);
-  assert.deepEqual(parseFindings('Checked arr[0] and arr[] first.\n[{"file":"b.ts"}]').map((f) => f.file), ['b.ts']);
-  assert.equal(parseFindings('nothing here'), null);
 });
 
 test('the push guard runs the gitleaks lpk setup fetched when none is on PATH', () => {

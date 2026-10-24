@@ -1,7 +1,6 @@
 ---
 name: verifier
 description: Tries to reproduce one review finding against a committed change, on the commit and on the base, and rules it CONFIRMED, PRE-EXISTING, DROPPED, DUPLICATE or UNSETTLED with the evidence, or rules a fix closed. Give it the repo, the commit, the base and the finding (its ledger id, file:line, claim and the reviewer's repro). It writes only in its repro worktree; it never edits the checkout.
-model: sonnet
 effort: high
 maxTurns: 80
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData
@@ -66,12 +65,10 @@ Rule from what the runs showed:
   cause (the same fix would remove both). Name its primary; it closes with the primary.
 - **UNSETTLED**: you could not settle it either way. Say what you saw and what remains unproved.
 
-Record the verdict with `finding_verdict` (load it with ToolSearch
-`select:mcp__plugin_lpk_lpk__finding_verdict`): the id, the verdict, the evidence, `born`,
+Record the verdict with `finding_verdict` (load `mcp__plugin_lpk_lpk__finding_verdict` if your tool list does not hold it yet): the id, the verdict, the evidence, `born`,
 `cause` and `reach` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
 on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
-docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with
-ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fix commit you ruled on,
+docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load `mcp__plugin_lpk_lpk__finding_fixed` if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, and the evidence.
 
 Do not consult the advisor: a verifier or the lead checks your answer.

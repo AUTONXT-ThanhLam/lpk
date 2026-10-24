@@ -23,7 +23,7 @@
         ]
       },
       {
-        "matcher": "Bash|Read|Grep|Edit|Write|MultiEdit|NotebookEdit|Agent|Task|mcp__plugin_lpk_chrome-devtools__(navigate_page|new_page)|mcp__.+__(createJiraIssue|editJiraIssue|addOrEditJiraIssueComment|addCommentToJiraIssue|transitionJiraIssue|createIssueLink|addWorklogToJiraIssue|createConfluenceContent|updateConfluenceContent|createConfluencePage|updateConfluencePage|createConfluenceFooterComment|createConfluenceInlineComment|executeWrite|executeDestructive|addGraphContext)",
+        "matcher": "Bash|Read|Grep|Edit|Write|NotebookEdit|Agent|Task|mcp__plugin_lpk_chrome-devtools__(navigate_page|new_page)|mcp__.+__(createJiraIssue|editJiraIssue|addOrEditJiraIssueComment|addCommentToJiraIssue|transitionJiraIssue|createIssueLink|addWorklogToJiraIssue|createConfluenceContent|updateConfluenceContent|createConfluencePage|updateConfluencePage|createConfluenceFooterComment|createConfluenceInlineComment|executeWrite|executeDestructive|addGraphContext)",
         "hooks": [
           {
             "type": "command",
@@ -45,7 +45,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "matcher": "Edit|Write|NotebookEdit|Bash",
         "hooks": [
           {
             "type": "command",

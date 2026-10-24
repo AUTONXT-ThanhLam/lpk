@@ -5,6 +5,7 @@ import { realpathSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { readLedger } from '../findings.mjs';
 import { git } from '../git.mjs';
+import { sessionId } from '../host.mjs';
 import { parseArgs, repoOf, targetOf } from '../out.mjs';
 import { appendRecord } from '../records.mjs';
 import { cleanRepro, logPath, reproTree, runIn } from '../repro.mjs';
@@ -42,7 +43,7 @@ export async function main(argv) {
   if (a.error) { console.error(`lpk: ${a.error}\n${USAGE}`); return 2; }
   let repo = repoOf(a.opt('--repo'));
   let run = repo ? readRun(repo) : null;
-  const held = !run && !a.opt('--repo') && activeRun(process.env.CLAUDE_CODE_SESSION_ID || '', false);
+  const held = !run && !a.opt('--repo') && activeRun(sessionId(), false);
   if (held) [repo, run] = [held.repo, held];
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
   const [word] = a.words;

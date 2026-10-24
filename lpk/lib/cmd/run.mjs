@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { ciCommands, defaultBranch, git, mergeBase } from '../git.mjs';
+import { sessionId } from '../host.mjs';
 import { repoOf } from '../out.mjs';
 import { owed } from '../owed.mjs';
 import { appendDecision } from '../records.mjs';
@@ -117,7 +118,7 @@ async function start(repo, o) {
 }
 
 function heldBy(r) {
-  const me = process.env.CLAUDE_CODE_SESSION_ID || '';
+  const me = sessionId();
   if (!r.session) return 'no session yet: the first hook of a session working here binds it';
   if (r.session === me) return 'this session';
   const pid = sessionPid(r.session);

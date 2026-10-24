@@ -2,6 +2,7 @@
 // directory), from its transcripts, each API message once. Fresh = input + cache write + output;
 // cache reads apart.
 import { capped, parseArgs, repoOf } from '../out.mjs';
+import { tokenFigure } from '../host.mjs';
 import { latestSession, meter, total } from '../meter.mjs';
 import { readRun } from '../run.mjs';
 
@@ -18,7 +19,12 @@ export async function main(argv) {
   if (a.flags.has('--json')) { console.log(JSON.stringify({ session, total: total(rows), agents: rows })); return 0; }
   rows.sort((x, y) => y.fresh - x.fresh);
   const t = total(rows);
-  const head = [`session ${session}: ${rows.length} transcript(s), ${n(t.messages)} API messages; fresh tokens ${n(t.fresh)} (input + cache write + output), cache reads ${n(t.cacheRead)}`];
+  // A session whose host wrote no counts has no cost to state: the words stand in for the figures, so
+  // its run never prints as one that cost 0 tokens (lib/host.mjs, measured: Qoder writes 0 for each).
+  const cost = tokenFigure(t.fresh, t.recorded);
+  const head = [`session ${session}: ${rows.length} transcript(s), ${n(t.messages)} API messages; ${typeof cost === 'number'
+    ? `fresh tokens ${n(cost)} (input + cache write + output), cache reads ${n(t.cacheRead)}`
+    : cost}`];
   const body = rows.map((r) => `  ${r.agent}${r.label ? ` "${r.label.slice(0, 40)}"` : ''} ${r.agentId.slice(0, 17)}: fresh ${n(r.fresh)} (in ${n(r.input)} + write ${n(r.cacheWrite)} + out ${n(r.output)}), cache read ${n(r.cacheRead)}, ${r.messages} msgs, ${r.toolCalls} tool calls (${r.messages ? (r.toolCalls / r.messages).toFixed(2) : '0.00'} per msg), peak context ${n(r.peakContext)}, ${r.models.join('/') || 'no model'}`);
   console.log(capped(repo, `meter-${session}`, head, body));
   return 0;

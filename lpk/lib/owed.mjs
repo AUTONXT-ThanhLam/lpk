@@ -1,26 +1,27 @@
 // The reviews a run still owes: for each of its patches, each lens of the lane's fixed set that has
-// not run on a range covering it. A lens ran when the CLI recorded its child run, or when a
-// transcript shows an agent of that type, given a range naming the patch, that ended with
-// structured output or end_turn and whose findings all reached the ledger. A fix commit owes only
-// the delta: one Sonnet /code-review (none when it touches no code) and the lenses whose findings
-// it fixed. After a rebase an unchanged patch keeps its reviews; a changed one owes a delta review.
+// not run on a range covering it. A lens ran when a transcript shows an agent of that type, given a
+// range naming the patch, that ended with structured output or end_turn and whose findings all
+// reached the ledger. A fix commit owes only the delta: one code review of it (none when it touches
+// no code) and the lenses whose findings it fixed. After a rebase an unchanged patch keeps its
+// reviews; a changed one owes a delta review.
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ledgerFile, readLedger } from './findings.mjs';
 import { commitsOf, pairs, patchesOf, rangesOf, touches } from './patches.mjs';
-import { readRecords } from './records.mjs';
 import { CODE, TEST } from './rules.mjs';
 import { readRun, runDir } from './run.mjs';
 import { findingCount, lensRuns } from './transcripts.mjs';
 
-const CR = (model, need = 1) => ({ key: 'code-review', model, need });
-export const FULL = [{ key: 'techlead' }, CR('sonnet', 2), CR('opus'), { key: 'security-review' }, { key: 'security' }, { key: 'bug-hunter' }, { key: 'regression' }, { key: 'claims' }, { key: 'ocr' }, { key: 'prover' }];
-export const QUICK = [CR('sonnet'), { key: 'security-review' }, { key: 'bug-hunter' }];
-const CLI = new Set(['code-review', 'security-review']);
-// A lens by the name the lpk:review workflow takes in args.lenses (`techlead`, `code-review:sonnet`).
-export const label = (q) => (q.key === 'code-review' ? `code-review:${q.model}` : q.key);
-// An agent type (`lpk:techlead`) or a CLI child's `from` (`code-review:sonnet`) as a lens key.
-const keyOf = (type) => { const t = String(type || ''); return CLI.has(t.split(':')[0]) ? t.split(':')[0] : t.split(':').pop(); };
+export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer', need: 2 }, { key: 'bug-hunter' }, { key: 'security' }, { key: 'regression' }, { key: 'claims' }, { key: 'ocr' }, { key: 'prover' }];
+export const QUICK = [{ key: 'code-reviewer' }, { key: 'bug-hunter' }];
+// A lens by the name the lpk:review workflow takes in args.lenses (`techlead`, `code-reviewer`).
+export const label = (q) => q.key;
+// An agent type (`lpk:techlead`) as a lens key.
+const keyOf = (type) => String(type || '').split(':').pop();
+
+// The lens a fix delta owes: the narrow diff review, the one lens measured to fix the most defects
+// per token spent.
+const DELTA = { key: 'code-reviewer' };
 
 // The run's findings: those its ledger left under runs/<id>/ when a later run started (findings.jsonl,
 // then findings.<n>.jsonl, in the order archiveLedger wrote them), and those in the live ledger.
@@ -35,12 +36,6 @@ export function ledgerFor(repo, run) {
 export function evidence(repo, run, ledger) {
   const items = [], notes = [];
   const counted = (agentId, n) => n === null || ledger.filter((f) => f.agentId === agentId).length === n;
-  for (const r of readRecords(repo, { run: run.id })) {
-    if (!CLI.has(r.kind) || !r.range) continue;
-    if (r.exit !== 0) notes.push({ key: r.kind, range: r.range, why: `exited ${r.exit}` });
-    else if (r.agentId && typeof r.findings === 'number' && !counted(r.agentId, r.findings)) notes.push({ key: r.kind, range: r.range, why: `ungraded: ${r.findings} findings returned, ${ledger.filter((f) => f.agentId === r.agentId).length} in the ledger` });
-    else items.push({ key: r.kind, model: String(r.model || ''), range: r.range });
-  }
   for (const s of [...new Set([run.session, ...(run.previous || [])].filter(Boolean))]) {
     for (const l of lensRuns(repo, s)) {
       const key = keyOf(l.agentType);
@@ -68,7 +63,7 @@ async function laneSet(repo, run, base, list) {
 }
 
 const covers = (repo, item, sha) => commitsOf(repo, item.range).includes(sha);
-const fits = (item, q) => item.key === q.key && (!q.model || item.model.includes(q.model));
+const fits = (item, q) => item.key === q.key;
 
 export async function owed(repo, run = readRun(repo)) {
   if (!run) throw new Error('no lpk run in this repo');
@@ -87,8 +82,8 @@ export async function owed(repo, run = readRun(repo)) {
     const direct = (q) => items.filter((i) => fits(i, q) && covers(repo, i, sha)).length;
     const inherited = (q) => (pair ? items.filter((i) => fits(i, q) && covers(repo, i, pair.old)).length : 0);
     const reqs = fixed.length
-      ? [...(touches(repo, sha, CODE) ? [{ ...CR('sonnet'), delta: true }] : []), ...[...new Set(fixed.map((f) => keyOf(f.from)))].filter((k) => k && k !== 'main').map((key) => ({ key, delta: true }))]
-      : [...set, ...(pair && !pair.same ? [{ ...CR('sonnet'), delta: true }] : [])];
+      ? [...(touches(repo, sha, CODE) ? [{ ...DELTA, delta: true }] : []), ...[...new Set(fixed.map((f) => keyOf(f.from)))].filter((k) => k && k !== 'main').map((key) => ({ key, delta: true }))]
+      : [...set, ...(pair && !pair.same ? [{ ...DELTA, delta: true }] : [])];
     for (const q of reqs) {
       const have = q.delta ? direct(q) : direct(q) + inherited(q);
       if (have >= (q.need || 1)) continue;

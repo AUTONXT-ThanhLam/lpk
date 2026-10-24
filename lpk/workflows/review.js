@@ -1,15 +1,15 @@
 export const meta = {
   name: 'review',
-  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, /security-review, bug hunter, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
+  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, bug hunter, security, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
   whenToUse: 'Step 4 of the lpk skill, on the committed and verified change after `lpk review start`; with args.delta, the one review of a fix round',
   phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per finding, as each lens returns' }],
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
-//   testCmd, e2e, proverGroups, mutantAfterProver, maxParallel, stallMs, lpk, delta }
+//   testCmd, e2e, proverGroups, mutantAfterProver, maxParallel, stallMs, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
-//   twice runs twice (two Sonnet /code-review children are 'code-review:sonnet' twice).
+//   twice runs twice.
 // - proverGroups: the scenarios and failure rows split into groups that share no page, app state or
 //   data (each a text naming its ids); one Prover per group, all at once. Without it one Prover
 //   proves every scenario.
@@ -17,18 +17,16 @@ export const meta = {
 //   share a database or a port. The mutant reruns the tests over and over and must never share
 //   either with the prover, so it then starts once the prover has answered; without it, at once.
 // - maxParallel: how many agents run at once (`lpk slot`); stallMs: { <lens>|verifier: ms }.
-// - lpk: how to call the lpk CLI (default 'lpk'); the /code-review relays are clamped to it.
-// - delta: { range, raisedBy, docsOnly } for a fix round: one Sonnet /code-review on the delta
-//   (none when docsOnly) plus the lenses that raised the fixed findings (their ledger `from`).
-// Every finding lands in the run's ledger: lpk agents add theirs with finding_add, the CLI adds its
-// children's. The ledger is the record; what this returns is a summary of it. Nothing here reads
+// - delta: { range, raisedBy, docsOnly } for a fix round: one bug hunt on the delta (none when
+//   docsOnly) plus the lenses that raised the fixed findings (their ledger `from`).
+// Every finding lands in the run's ledger, each lens adding its own with finding_add. The ledger is
+// the record; what this returns is a summary of it. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every lens and verifier that already finished.
 const a = args || {}
 const missing = ['repo', 'base', 'commit', 'range', 'bundle', 'request', 'scenarios'].filter((k) => !a[k])
 if (!a.delta && !(a.lenses || []).length) missing.push('lenses')
 if (a.delta && !a.delta.range) missing.push('delta.range')
 if (missing.length) return { error: `lpk:review needs ${missing.join(', ')} in args` }
-const LPK = a.lpk || 'lpk'
 const SCOPE = 'Raise a finding only when a person or a caller meets it on the surface the change touches (a screen, a response, CLI output, data they keep, a message they read), or when it would block the merge: a broken rule marked blocks: high, a hole in security, auth, data, concurrency, migration or permissions, a red CI job or gate, a test that cannot fail on the behaviour it claims to prove, a claim in the PR text or docs that the code contradicts, an undisclosed behaviour change. Style, naming, structure, edge cases no caller reaches and cleanups are not findings.'
 
 const S = { type: 'string' }
@@ -41,7 +39,6 @@ const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: 
 // The prover's findings are its FAIL and NOT PROVED results, each carrying its ledger id: no second list.
 const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: S, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
 const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
-const RECORD = { type: 'object', properties: { record: S, ids: { type: 'array', items: S }, error: S }, required: ['record', 'ids'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
   evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S, reach: { type: 'string', enum: ['user', 'merge', 'neither'] } }, required: ['verdict', 'evidence'] }
 
@@ -70,16 +67,6 @@ const gate = ((n) => {
 })(Math.max(1, Number(a.maxParallel) || 16))
 const stall = (name) => (a.stallMs && a.stallMs[name]) || undefined
 const call = (prompt, opts) => gate(() => agent(prompt, opts))
-
-// One headless child through `lpk code-review`, by an agent that may run only that command and
-// returns the record path and ledger ids the CLI printed: nothing it read is retyped.
-// A relay sits in one Bash call of up to 600 s, so it is not stalled before that.
-const child = (lens, model, security) => (label) => {
-  const cmd = `${LPK} code-review --repo ${a.repo}${security ? ' --security' : ''} --model ${model} --effort high${a.delta ? ` --range ${at}` : ''}`
-  return call(`${change}\nRun exactly this command, with a Bash timeout of 600000 ms, and wait for it:\n${cmd}\nIts last line names the record file and the ledger ids it added. Return that record path and those ids exactly as printed. If it exits non-zero, also return its error line as error.`,
-    { label, phase: 'Review', schema: RECORD, model: 'haiku', effort: 'low', bashCommandClamp: [`Bash(${LPK} code-review *)`], stallMs: stall(lens) || 660000 })
-    .then((o) => o && { findings: o.ids.map((id) => ({ id })), record: o.record, error: o.error })
-}
 
 const typed = (type, schema, ask) => (lens) => (label) => call(`${change}\n${ask}`, { label, phase: 'Review', agentType: `lpk:${type}`, schema, stallMs: stall(lens) })
 const skippedOf = (rows, key, why) => rows.filter((r) => r.status === 'skipped').map((r) => `did not review ${r[key]}${r[why] ? `: ${r[why]}` : ''}`)
@@ -118,10 +105,8 @@ const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterPr
 
 const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))
 const LENSES = {
-  'code-review:sonnet': (lens) => child(lens, 'sonnet', false),
-  'code-review:opus': (lens) => child(lens, 'opus', false),
-  'security-review': (lens) => child(lens, 'sonnet', true),
   techlead: typed('techlead', FINDINGS, 'Review this commit as the team\'s tech lead would before approving the merge: return each finding that would block it, with a verdict for every rule whose glob matches a changed file.'),
+  'code-reviewer': typed('code-reviewer', FINDINGS, 'Review only this commit\'s diff, against the base\'s REVIEW.md and the request above: name the rule broken, the intent contradicted, the case no test in the diff covers, and the leftover the diff creates.'),
   security: typed('security', FINDINGS, 'Find the security holes an attacker can exploit through this commit.'),
   'bug-hunter': typed('bug-hunter', FINDINGS, 'Hunt the correctness bugs this commit adds, line by line.'),
   regression: (lens) => (label) => typed('regression', GROUPS, 'Find what this commit breaks for what already worked on the base, here and in sibling repos.')(lens)(label)
@@ -135,11 +120,11 @@ const LENSES = {
   mutant: waitsForProver(typed('mutant', MUTANTS, `Command that runs the tests related to the changed files: ${a.testCmd || '(none given: find it in the repo)'}\nAdd each mutant no test catches to the ledger as kind test-gap. If those tests fail or flake on the change itself, add that to the ledger as one defect and return it with kind defect.`)),
 }
 
-// A fix round owes one Sonnet /code-review on the delta (none for a docs-only delta) and the lenses
-// that raised the fixed findings; a /code-review child that raised one is that Sonnet child.
-const lensOf = (from) => (from.startsWith('code-review:') ? 'code-review:sonnet' : from.startsWith('security-review:') ? 'security-review' : from.replace(/^lpk:/, ''))
+// A fix round owes one code review on the delta (none for a docs-only delta) and the lenses that
+// raised the fixed findings.
+const lensOf = (from) => String(from || '').replace(/^lpk:/, '')
 const owed = a.delta
-  ? [...new Set([...(a.delta.docsOnly ? [] : ['code-review:sonnet']), ...(a.delta.raisedBy || []).filter((f) => f !== 'main').map(lensOf)])]
+  ? [...new Set([...(a.delta.docsOnly ? [] : ['code-reviewer']), ...(a.delta.raisedBy || []).filter((f) => f !== 'main').map(lensOf)])]
   : a.lenses
 const unknown = owed.filter((l) => !LENSES[l])
 if (unknown.length) return { error: `unknown lens ${unknown.join(', ')}; lenses are ${Object.keys(LENSES).join(', ')}` }
@@ -159,8 +144,8 @@ async function graded(r) {
     try {
       const out = await LENSES[r.lens](r.lens)(label)
       if (out && !out.error) return out
-      // A /code-review child that added some findings and had others refused is not run again: a
-      // fresh child would add the same findings a second time. Its ids are verified, the error listed.
+      // A lens that added some findings and had others refused is not run again: a fresh one would
+      // add the same findings a second time. Its ids are verified, the error listed.
       if (out && (out.findings || []).some((f) => f.id)) return { ...out, missed: [...(out.missed || []), `${out.error}; not run again, since its other findings are in the ledger`] }
       why = out ? out.error : 'no answer (an API error, or the agent was skipped)'
     } catch (e) { why = String((e && e.message) || e) }
@@ -188,7 +173,7 @@ const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens
   const toVerify = fs.filter((f) => f.id && !gap(f))
   return parallel(toVerify.map((f) => () => verify(r.label)(f))).then((verdicts) => ({
     lens: r.label, ids, verdicts: verdicts.filter(Boolean), unrecorded, missed: out.missed || [],
-    ...(out.record ? { record: out.record } : {}), ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: fs.filter((f) => f.id && gap(f)).map((f) => f.id) } : {}),
+    ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: fs.filter((f) => f.id && gap(f)).map((f) => f.id) } : {}),
   }))
 })
 proved()
@@ -207,5 +192,5 @@ return {
   scenarios: done.flatMap((x) => x.scenarios || []),
   ungraded: done.filter((x) => x.ungraded).map((x) => `${x.lens}: ${x.ungraded}`),
   notCovered: done.flatMap((x) => [...(x.missed || []).map((m) => `${x.lens}: ${m}`), ...(x.unrecorded || []).map((u) => `${x.lens} returned a finding it never added to the ledger: ${u}`)]),
-  lenses: done.map((x) => ({ lens: x.lens, ...(x.ungraded ? { ungraded: x.ungraded } : { ids: x.ids }), ...(x.record ? { record: x.record } : {}) })),
+  lenses: done.map((x) => ({ lens: x.lens, ...(x.ungraded ? { ungraded: x.ungraded } : { ids: x.ids }) })),
 }

@@ -1,7 +1,6 @@
 ---
 name: perf
 description: Looks for what a committed change makes slower or hungrier than the base, at the load its users actually bring, and returns each regression with a measurement on both. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios, and the URL of the running app when the change touches a screen. It reads code and runs read-only commands; it never edits.
-model: sonnet
 effort: medium
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData
 color: cyan
@@ -60,8 +59,7 @@ notice at the expected load. Never edit files.
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch
-`select:mcp__plugin_lpk_lpk__finding_add`), `kind` `defect`, `severity` `important` or `nit`,
+Add each finding with `finding_add` as you find it (load `mcp__plugin_lpk_lpk__finding_add` if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list: the gate counts the findings you return against the ledger rows you added,
 and a mismatch counts your review as not run.

@@ -9,6 +9,7 @@ import { activeMs, crew, STALL_MS } from './crew.mjs';
 import { counts } from './findings.mjs';
 import { gates } from './gates.mjs';
 import { git } from './git.mjs';
+import { sessionId } from './host.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { designRound, phaseDetail, phaseOf } from './phase.mjs';
@@ -69,7 +70,7 @@ export async function status(repo, { session = '', now = Date.now(), withGates =
   if (st.error) throw new Error(st.error);
   const run = st.run;
   const dir = runDir(repo);
-  session ||= process.env.CLAUDE_CODE_SESSION_ID || run?.session || '';
+  session ||= sessionId() || run?.session || '';
   const cache = readCache(session || '-');
   const scan = session ? scanSession(session, cache) : null;
   const main = scan?.main;
@@ -104,7 +105,9 @@ export async function status(repo, { session = '', now = Date.now(), withGates =
     ...(yourTurn ? [{ what: 'reply', why: 'the Captain ended its turn and no agent runs' }] : []),
     ...(g?.rows || []).filter((r) => !r.holds && String(r.wayOut || '').startsWith('or the owner waives')).map((r) => ({ what: `gate:${r.gate}`, why: String(r.why || '').split('\n')[0] })),
   ];
-  const tokens = scan ? tokensOf([main, ...scan.agents.map((a) => a.st)].filter(Boolean), started || now) : { fresh: 0, cacheRead: 0 };
+  // A session with no transcript here has measured nothing, which is not the same as 0 tokens: the
+  // band and `lpk status` read `tokens.recorded` (lib/host.mjs TOKENS_UNMEASURED).
+  const tokens = scan ? tokensOf([main, ...scan.agents.map((a) => a.st)].filter(Boolean), started || now) : { fresh: 0, cacheRead: 0, recorded: false };
   return {
     v: 1, repo, session, open: Boolean(mine && (run || lpkAt)), mine,
     run: run ? { id: run.id, lane: run.lane, target: run.target, branch: run.branch || null, started: new Date(run.started).toISOString() } : null,

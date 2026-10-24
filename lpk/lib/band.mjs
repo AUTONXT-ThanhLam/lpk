@@ -4,11 +4,16 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { tokenFigure } from './host.mjs';
 
 export const NAMES = { understand: 'Understand', design: 'Design', build: 'Build', review: 'Review', fix: 'Fix', prove: 'Prove', deliver: 'Deliver' };
 // A duration as the band shows it: seconds under a minute, minutes under an hour, then hours.
 const mins = (ms) => { const s = Math.round(ms / 1000); return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : `${Math.floor(s / 3600)}h ${String(Math.round((s % 3600) / 60)).padStart(2, '0')}m`; };
 const tokens = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
+// The token figure of the band's head line: a host that wrote no counts (measured: Qoder writes every
+// usage figure as 0) has no number to show, and the words lib/host.mjs names stand in, so an
+// unmeasured run never reads as one that cost nothing.
+const tokenText = (t) => { const f = tokenFigure(t.fresh, t.recorded); return typeof f === 'number' ? `${tokens(f)} tokens` : f; };
 const MARK = { landed: '●', building: '◐', waiting: '○' };
 
 // The step's own line, as the band prints it.
@@ -46,7 +51,7 @@ export function viewOf(s) {
   return {
     track: s.track.map((p, i) => ({ name: NAMES[p], state: i === at ? 'current' : s.phasesVisited.includes(p) ? 'visited' : 'next' })),
     quiet: s.stuck ? `nothing moved for ${mins(s.quietMs)}` : '',
-    head: `worked ${mins(s.activeMs)} · ${tokens(s.tokens.fresh)} tokens`,
+    head: `worked ${mins(s.activeMs)} · ${tokenText(s.tokens)}`,
     detail: detailText(s), rows,
     waits: s.waits.map((w) => w.what).join(', '),
     line: `lpk ${NAMES[s.phase]}${s.stuck ? ' · quiet' : ''} · ${mins(s.activeMs)}${s.waits.length ? ' · waits on you' : ''}`,

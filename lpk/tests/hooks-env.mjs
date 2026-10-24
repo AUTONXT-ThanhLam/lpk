@@ -12,8 +12,13 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
 export const tmp = mkdtempSync(join(tmpdir(), 'lpk-hooks-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
+// `lib/host.mjs` answers for the host whose names the environment carries, so both families are
+// dropped from what a child inherits: a suite launched by Qoder would else hand its own
+// `QODER_SESSION_ID` to every hook and `lpk` run here, and a test could pass or fail by who started
+// it. The helper's own `CLAUDE_*` is what a child runs under.
+export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^(CLAUDE|QODER)_/.test(k)));
 export const HOME = join(tmp, 'home');
-export const ENV = { ...process.env, HOME, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), CLAUDE_PLUGIN_ROOT: ROOT };
+export const ENV = { ...noHost(process.env), HOME, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), CLAUDE_PLUGIN_ROOT: ROOT };
 export const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 export const write = (dir, path, text) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), text); };
 export const lpk = (cwd, session, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), ...args], { cwd, env: { ...ENV, CLAUDE_CODE_SESSION_ID: session }, encoding: 'utf8' });

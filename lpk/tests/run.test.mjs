@@ -6,6 +6,10 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, hook, lpk, reason, repoWith, sh, tmp, write } from './hooks-env.mjs';
 
+// `runs.jsonl` is written where XDG_DATA_HOME points: read the child's file, not the owner's ledger.
+process.env.XDG_DATA_HOME = ENV.XDG_DATA_HOME;
+const { readRuns } = await import('../lib/runs.mjs');
+
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const start = (repo, session, ...args) => ok(lpk(repo, session, 'run', 'start', '--target', 'main', ...(args.length ? args : ['--verify', 'true'])));
 const commitHook = (repo, session, command) => hook('PreToolUse', 'commit', { tool_name: 'Bash', cwd: repo, session_id: session, tool_input: { command } });
@@ -175,4 +179,24 @@ test('a second run start with --base HEAD after a commit keeps the target the fi
   assert.equal(run.base, sh(repo, 'rev-parse', 'HEAD~1').trim());
   assert.match(lpk(repo, 'one', 'check').stdout, /\(1 files against /);
   assert.ok(JSON.parse(lpk(repo, 'one', 'reviews', 'owed', '--json').stdout).length > 0);
+});
+
+// A run's row in `runs.jsonl` is the only thing `lpk bench` and `lpk report` have of a run that is
+// over, so it names where the run's own files are: the ledger its findings were written to and the
+// repo's `.git/lpk` record directory that holds it.
+test('the run\'s row says where its ledger and its records are, so a past run stays readable', () => {
+  const repo = repoWith('rowpaths', { 'src/a.mjs': 'export const a = 1;\n' });
+  start(repo, 'rp');
+  const id = JSON.parse(readFileSync(runFile(repo), 'utf8')).id;
+  const dir = join(runFile(repo), '..');
+  writeFileSync(join(dir, 'findings.jsonl'), `${JSON.stringify({ ev: 'add', finding: { id: 'F1', run: id, from: 'lpk:techlead', at: 'a..b', claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } })}\n`);
+  ok(lpk(repo, 'rp', 'run', 'end'));
+  const row = readRuns().at(-1);
+  assert.equal(row.id, id, 'the ended run wrote its row');
+  assert.equal(row.ledger, join(dir, 'findings.jsonl'));
+  assert.ok(existsSync(row.ledger), `the row's ledger is a file that is there: ${row.ledger}`);
+  assert.equal(row.records, dir, 'and the record dir is the repo\'s .git/lpk');
+  // The row is written while the live ledger still stands, so a reader that has only the row finds the
+  // findings of the run it names.
+  assert.equal(JSON.parse(readFileSync(row.ledger, 'utf8').trim()).finding.id, 'F1');
 });

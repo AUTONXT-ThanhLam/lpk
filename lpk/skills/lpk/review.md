@@ -27,6 +27,9 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
 
 ## Run the net
 
+Run `lpk slot --count`: it prints the lanes this machine and this model backend carry at once.
+Take that number as the workflow's `args.maxParallel`, so a backend that answers two streams is not
+handed sixteen lenses at once.
 Run `lpk review start <base>..<commit>`: it records the range under review, and every finding is
 stamped with it. Start `lpk repro prepare` in the background right after it: it creates and installs
 the repro trees of the commit and the base while the net runs, so the first verifier does not wait
@@ -106,7 +109,7 @@ other.
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
-   with ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`; give its id, `commit` the fix's SHA
+   with `mcp__plugin_lpk_lpk__finding_fixed` (load it if your tool list does not hold it yet); give its id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
@@ -121,9 +124,9 @@ other.
 Then one delta review: rerun the self-check on the files the fixes touched,
 `lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background,
 and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
-`lpk code-review --range <reviewed commit>..<fix head>` plus the lenses that raised the fixed
+`lpk:bug-hunter` run on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed
 findings, in parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
-no `/code-review`: the lens that raised it re-checks it. Never re-run the whole net: past runs that
+no bug hunt: the lens that raised it re-checks it. Never re-run the whole net: past runs that
 did spent more time there than in the build, and each pass found something new on new lines.
 
 **Done when** `lpk reviews owed` is empty and the ledger holds no open finding and no confirmed

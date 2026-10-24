@@ -8,7 +8,7 @@
     {
       "name": "lpk",
       "source": "./lpk",
-      "description": "One coding request to a delivered change: a design reviewed in at most three rounds, a test-first build with rules and a self-review per slice, a dense parallel review net with a verifier per finding, and delivery gates that read only evidence. Plus a rule catalog, the lpk Chrome DevTools server and a push guard."
+      "description": "One coding request to a delivered change: a design an architect and a design critic review in at most three rounds, a test-first build where each slice reviews itself against the rule catalog, a dense parallel review net run by role - security, performance, accessibility, regression, bug hunt, UI - with a verifier ruling on each finding, proof on the running surface, and delivery gates that read only the evidence a run records. Plus a rule catalog, a findings ledger, the lpk Chrome DevTools server and a push guard. Loads from its plugin directory on any host that loads one, with no dependency on a particular assistant CLI."
     },
     {
       "name": "drawio",
