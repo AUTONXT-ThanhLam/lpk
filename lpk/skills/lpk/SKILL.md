@@ -59,6 +59,10 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.
+- **Spawn `lpk:` agents as their files define them.** Never pass `model`: it overrides the role's
+  model and the DeepSeek routing. Drafts, briefs and fix rounds go to `lpk:staff` or `lpk:builder`,
+  not `general-purpose`: one run sent 29 spawns with `model: opus`, and 15 `general-purpose` drafters
+  read 162M cache tokens of Claude quota.
 - **The advisor** (a Sonnet session with an Opus `advisorModel`; subagents inherit it, and each
   consult rereads the whole transcript at Opus price): consult it before choosing the design
   approach, before `lpk go`, after a second failed attempt at anything, and before the final report.

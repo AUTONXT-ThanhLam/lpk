@@ -22,6 +22,14 @@ independent call (reads, greps, `lpk map`, test runs on separate files) in one m
 one per turn. Read a file once, whole, and keep what you need from it; read it again only after it
 changed. Search once with a pattern that covers the question rather than probing file by file.
 
+## Stop at a checkpoint
+
+A turn costs the whole conversation so far, so a long run costs more with every turn. Count your tool
+calls. From about 150, finish the group of tests you are on and, once the tests of what you have
+built pass and every file is saved, stop and report `CHECKPOINT`: what is done, what is left and the
+files you touched. Never stop with a half-written file or a red test of your own, and never begin a
+new group after 150. The lead starts a fresh builder from `lpk handoff` with a short context.
+
 ## Start with what will judge the slice
 
 - the brief, the contract for your slice (types, routes, signatures, events) and its tests, and the
