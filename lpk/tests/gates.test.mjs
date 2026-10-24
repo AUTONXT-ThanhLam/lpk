@@ -98,7 +98,7 @@ test('a fix commit owes one Sonnet /code-review and the lens whose finding it fi
   const range = `${base(repo)}..${head(repo)}`;
   quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   write(repo, 'src/a.mjs', 'export const a = 3;\n');
   sh(repo, 'commit', '-qam', 'Keep a odd');
   const fix = head(repo);
@@ -119,7 +119,7 @@ test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix 
   const range = `${base(repo)}..${head(repo)}`;
   quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   const wt = join(tmp, 'pick-fix-1');
   sh(repo, 'worktree', 'add', '-q', '-b', 'feat-fix-1', wt, 'HEAD');
   write(wt, 'src/a.mjs', 'export const a = 3;\n'); sh(wt, 'commit', '-qam', 'Keep a odd');
@@ -133,17 +133,17 @@ test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix 
   assert.deepEqual(owedOn(), ['fix delta; has not run on it', 'fix delta; has not run on it']);
 });
 
-test('a confirmed finding the owner\'s policy defers holds no gate and is listed as a known limit', () => {
+test('a confirmed finding the owner defers holds no gate and is listed as a known limit', () => {
   const S = 'defer-session';
   const repo = quickRun('defer', S);
   const range = `${base(repo)}..${head(repo)}`;
   const f = addFinding(repo, { from: 'lpk:bug-hunter', at: range, claim: 'the tooltip truncates a long name', repro: 'r', kind: 'defect', severity: 'nit' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'a fixed width', evidence: 'seen', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'a fixed width', evidence: 'seen', by: 'lpk:verifier' });
   assert.match(lpk(repo, S, 'gates').stdout, /findings[\s\S]*confirmed and not fixed: F1/);
   ok(lpk(repo, S, 'finding', 'fixed', f.id, '--closed-by', 'owner', '--evidence', 'owner: skip what users cannot reach'));
   const report = lpk(repo, S, 'report').stdout;
   assert.match(report, /^findings +holds/m);
-  assert.match(report, /^Known limits, deferred by the owner's policy \(for the PR body\):\n- F1 defect\/nit: the tooltip truncates a long name — owner: skip what users cannot reach$/m);
+  assert.match(report, /^Known limits, not fixed \(for the PR body\):\n- F1 defect\/nit: the tooltip truncates a long name — owner: skip what users cannot reach$/m);
 });
 
 test('a push of the run\'s branch waits for the owner\'s grant, from any session and after the run ends', () => {
@@ -188,7 +188,7 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   const range = `${base(repo)}..${head(repo)}`;
   quickNet(repo, S, range, { findings: [{ claim: 'x' }] });
   const f = addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   ok(lpk(repo, S, 'prove', '--all'));
   ok(lpk(repo, S, 'run', 'end'));
   assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: confirmed and not fixed: F1 → [^\n]*finding_fixed/, 'its ledger is still live');

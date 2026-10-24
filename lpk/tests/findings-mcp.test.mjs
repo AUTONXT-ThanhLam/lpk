@@ -69,7 +69,7 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     assert.match(raised.result.content[0].text, /^F1 recorded \(lpk:bug-hunter a\.ts:9, open\)/);
     const causeless = await call('verdict', { id: 'F1', verdict: 'confirmed', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
     assert.match(causeless.result.content[0].text, /born: the step the defect began in/);
-    const ruled = await call('verdict', { id: 'F1', verdict: 'confirmed', born: 'design', cause: 'the brief never says a retry must not repeat the charge', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
+    const ruled = await call('verdict', { id: 'F1', verdict: 'confirmed', reach: 'user', born: 'design', cause: 'the brief never says a retry must not repeat the charge', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
     assert.match(ruled.result.content[0].text, /F1 is confirmed/);
     const wrong = await call('add', { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit', verdict: 'confirmed' }, { agent_type: 'lpk:bug-hunter' });
     assert.match(wrong.result.content[0].text, /unknown field verdict/);
@@ -81,7 +81,7 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     assert.deepEqual(readLedger(dir).findings.map((f) => [f.id, f.from, f.agentId, f.at, f.run, f.state, f.by]), [['F1', 'lpk:bug-hunter', 'a1', range, 'run7', 'confirmed', VERIFIER]]);
     assert.deepEqual(list.result.tools.find((t) => t.name === 'finding_fixed').inputSchema.required, ['id', 'closedBy', 'evidence']);
     const deferred = await call('fixed', { id: 'F1', closedBy: 'owner', evidence: 'owner: skip what users cannot reach' });
-    assert.match(deferred.result.content[0].text, /^F1 deferred by the owner's policy: owner: skip what users cannot reach$/);
+    assert.match(deferred.result.content[0].text, /^F1 deferred: owner: skip what users cannot reach$/);
   } finally {
     proc.kill();
   }

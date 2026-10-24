@@ -68,11 +68,12 @@ the report for the owner to read.
 
 ## Fix what is real, in one round
 
-Each `confirmed` finding is fixed at its root, whatever its stated severity, all in one round,
-unless the owner said in this run that findings users cannot reach may wait: then a confirmed
-finding no user meets is closed with `finding_fixed` `closedBy: "owner"`, no commit, and the
-owner's words quoted verbatim as `evidence`; the ledger refuses one in a protected area or a failing
-scenario, and the PR body lists it as a known limit. Start
+Only a confirmed finding that a user meets or that blocks the merge is fixed: the verifier records
+it as `reach` `user` or `merge`. One with `reach` `neither` is real but no user reaches it and
+nothing blocks the merge, so the ledger defers it at once and the PR body lists it as a known limit;
+it never starts a fix, a delta review or another round. A finding in a protected area or a failing
+scenario is never `neither`. The reviewers are told the same scope, so they raise few of those.
+Everything else is fixed at its root, whatever its stated severity, all in one round. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
 also uses (the env agent's `db` line), start when the net returns, because shared runs break each
@@ -112,7 +113,8 @@ other.
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
 8. `unsettled` findings and the ones you ruled on yourself go in the report with their evidence
-   (`lpk report` lists them for the owner to read; they do not block); so do `preexisting` ones.
+   (`lpk report` lists them for the owner to read; they do not block); so do `preexisting` ones
+   and the deferred ones.
    Surviving mutants (`test-gap`) are listed in the report.
 9. A refactor a finding seems to call for is a separate PR, named in the report.
 

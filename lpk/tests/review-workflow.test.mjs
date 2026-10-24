@@ -38,7 +38,7 @@ async function run(args, answer) {
 }
 
 const found = (...ids) => ({ findings: ids.map((id) => ({ id, file: 'a.js', line: 2, claim: `claim of ${id}`, repro: `repro of ${id}` })) });
-const confirm = { verdict: 'confirmed', evidence: 'exit 1 on the commit, 0 on the base' };
+const confirm = { verdict: 'confirmed', reach: 'user', evidence: 'exit 1 on the commit, 0 on the base' };
 
 test('every owed lens starts at once, the /code-review children through a clamped relay, and each finding gets its own verifier', async () => {
   const lenses = ['techlead', 'code-review:sonnet', 'code-review:sonnet', 'code-review:opus', 'security-review', 'bug-hunter', 'prover', 'mutant'];

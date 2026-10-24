@@ -2,6 +2,7 @@
 // without passing a multi-line claim and reproduction through a shell command line. Plain stdio
 // JSON-RPC, one message per line: the plugin ships no dependencies and this must start anywhere.
 // The PreToolUse hook on these tools stamps repo, run, from, agentId, at and by (lib/stamp.mjs).
+import { REACH } from '../lib/reach.mjs';
 import { addFinding, BORN, counts, findingsText, getFinding, KINDS, markFixed, PROTECTED, readLedger, ruleOn, SEVERITIES, STATES, VERDICTS, CLOSED_BY } from '../lib/findings.mjs';
 import { top } from '../lib/git.mjs';
 
@@ -41,7 +42,7 @@ const TOOLS = [
   },
   {
     name: 'finding_verdict',
-    description: 'Rule on one finding with evidence: confirmed (with born and cause), preexisting (also fails on the base), dropped (with basis), duplicate (with primary) or unsettled.',
+    description: 'Rule on one finding with evidence: confirmed (with born, cause and reach), preexisting (also fails on the base), dropped (with basis), duplicate (with primary) or unsettled.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -52,6 +53,7 @@ const TOOLS = [
         primary: str('for duplicate: the finding it repeats'),
         born: { type: 'string', enum: BORN, description: 'for confirmed: the step the defect began in' },
         cause: str('for confirmed: why the defect exists, at the place it starts, in one sentence'),
+        reach: { type: 'string', enum: REACH, description: 'for confirmed: user (a person or caller meets it), merge (the tech lead would block the merge on it) or neither (the finding is deferred, listed as a known limit)' },
         ...stamped, by: str(STAMP),
       },
       required: ['id', 'verdict', 'evidence'],
@@ -89,7 +91,7 @@ function call(name, input) {
   if (name === 'finding_add') return say(addFinding(repo, { ...a, run }), (f) => `${f.id} recorded (${f.from}${where(f)}, open).`);
   if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
   if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
-  if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => (f.state === 'deferred' ? `${f.id} deferred by the owner's policy: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`));
+  if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => (f.state === 'deferred' ? `${f.id} deferred: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`));
   if (name === 'finding_list') {
     const all = readLedger(repo).findings;
     const c = counts(all);

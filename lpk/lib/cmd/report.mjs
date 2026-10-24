@@ -44,7 +44,7 @@ export async function main(argv) {
     const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
     if (born.length) facts.push(`Confirmed defects by the step they began in: ${born.map(([b, n]) => `${b} ${n}`).join(', ')}`);
     const deferred = ledger.filter((f) => f.state === 'deferred');
-    if (deferred.length) facts.push(['Known limits, deferred by the owner\'s policy (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence}`)].join('\n'));
+    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence}`)].join('\n'));
     const toRead = ledger.filter(needsOwner);
     if (toRead.length) facts.push(['For the owner to read, not blocking:', ...toRead.map(ruling)].join('\n'));
     const ran = {};

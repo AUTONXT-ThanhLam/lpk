@@ -46,7 +46,17 @@ Rule from what the runs showed:
   asked; `design` when the brief (`brief.md` beside the run's `run.json`, or in the Quick
   lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
   or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
-  commit that fixed an earlier finding of this run; else `build`.
+  commit that fixed an earlier finding of this run; else `build`. `reach`: who meets it, the
+  question that decides whether it is fixed in this run. `user` when a person or a caller meets it
+  on the surface the change touches (a screen, a response, CLI output, data they keep, a message
+  they read) or an acceptance scenario fails; `merge` when the tech lead would block the merge on
+  it (a broken rule marked `blocks: high`, a hole in security, auth, data, concurrency, migration
+  or permissions, a red CI job or gate, a test that cannot fail on the behaviour it claims to
+  prove, a claim in the PR text or docs that the code contradicts, an undisclosed behaviour
+  change); `neither` when it is real but no user reaches it and nothing blocks the merge (style,
+  naming, structure, a case no caller produces, a cleanup). A `neither` finding is deferred at
+  once and listed as a known limit, so name the caller or input you looked for and did not find.
+  When in doubt between `neither` and the other two, it is not `neither`.
 - **PRE-EXISTING**: the same failure on the base.
 - **DROPPED**, with its basis: `disproved` (the guard at `file:line`, the test that covers it, the
   input that cannot reach it) or `not-reproduced` (what you ran and what it showed). A finding in
@@ -57,8 +67,8 @@ Rule from what the runs showed:
 - **UNSETTLED**: you could not settle it either way. Say what you saw and what remains unproved.
 
 Record the verdict with `finding_verdict` (load it with ToolSearch
-`select:mcp__plugin_lpk_lpk__finding_verdict`): the id, the verdict, the evidence, `born` and
-`cause` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
+`select:mcp__plugin_lpk_lpk__finding_verdict`): the id, the verdict, the evidence, `born`,
+`cause` and `reach` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
 on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
 docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with
 ToolSearch `select:mcp__plugin_lpk_lpk__finding_fixed`): the id, `commit` the fix commit you ruled on,
@@ -79,5 +89,5 @@ Answer in exactly this shape and nothing else:
 - `verdict`: CONFIRMED, PRE-EXISTING, DROPPED, DUPLICATE or UNSETTLED;
 - `evidence`: the `lpk repro` or `lpk repeat` command and its real output on the commit and on the
   base `[ran]`, or the exact input, state and outcome traced with `file:line` `[read]`;
-- `born` and `cause`: for CONFIRMED, as recorded;
+- `born`, `cause` and `reach`: for CONFIRMED, as recorded;
 - `fix`: for CONFIRMED, the fix at that cause in one sentence.

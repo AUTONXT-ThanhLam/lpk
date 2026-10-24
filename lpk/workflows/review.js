@@ -29,6 +29,7 @@ if (!a.delta && !(a.lenses || []).length) missing.push('lenses')
 if (a.delta && !a.delta.range) missing.push('delta.range')
 if (missing.length) return { error: `lpk:review needs ${missing.join(', ')} in args` }
 const LPK = a.lpk || 'lpk'
+const SCOPE = 'Raise a finding only when a person or a caller meets it on the surface the change touches (a screen, a response, CLI output, data they keep, a message they read), or when it would block the merge: a broken rule marked blocks: high, a hole in security, auth, data, concurrency, migration or permissions, a red CI job or gate, a test that cannot fail on the behaviour it claims to prove, a claim in the PR text or docs that the code contradicts, an undisclosed behaviour change. Style, naming, structure, edge cases no caller reaches and cleanups are not findings.'
 
 const S = { type: 'string' }
 const FINDING = { type: 'object', properties: { id: S, file: S, line: { type: 'integer' }, claim: S, repro: S }, required: ['id', 'claim', 'repro'] }
@@ -42,7 +43,7 @@ const PROVED = { type: 'object', properties: { results: { type: 'array', items: 
 const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
 const RECORD = { type: 'object', properties: { record: S, ids: { type: 'array', items: S }, error: S }, required: ['record', 'ids'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
-  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S }, required: ['verdict', 'evidence'] }
+  evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S, reach: { type: 'string', enum: ['user', 'merge', 'neither'] } }, required: ['verdict', 'evidence'] }
 
 // What is under review. A delta round reviews the fix delta, and everything is stamped with it.
 const at = a.delta ? a.delta.range : a.range
@@ -54,6 +55,7 @@ This is the fix delta of the change ${a.range}: review only what the delta chang
 Request: ${a.request}
 Acceptance scenarios:
 ${a.scenarios}${a.failureModes ? `\nFailure-mode table (what the design says happens when each dependency fails, is slow, repeats or grows; the code must match it):\n${a.failureModes}` : ''}
+${SCOPE}
 Add each finding to the ledger with finding_add (kind and severity; area for security, auth, data, concurrency, migration or permissions; ruleId for a broken rule) and return each with the id the ledger gave it.`
 
 // At most args.maxParallel agents at once. A waiter resumes in its own async context, so the order
@@ -170,7 +172,7 @@ async function graded(r) {
 // Every verifier has the same options and the same prompt up to the finding, so they share one
 // cached prefix; the finding's own text comes last.
 const verifyHead = `Repo ${a.repo}, base ${a.base}, commit under review ${commit}, reviewed range ${at}.
-Rule on the ledger finding below with finding_verdict: confirmed with born and cause, preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return the same verdict.
+Rule on the ledger finding below with finding_verdict: confirmed with born, cause and reach (user, merge or neither), preexisting, unsettled, dropped with its basis (not-reproduced or disproved), or duplicate naming its primary (the earlier findings are in finding_list; a different defect on the same line is not a duplicate). Return the same verdict.
 Finding:`
 const verify = (lens) => (f) => call(`${verifyHead} ${f.id} from ${lens}${f.claim ? `\n${f.file || ''}${f.line ? `:${f.line}` : ''} ${f.claim}\nReviewer's reproduction: ${f.repro}` : ' (read it with finding_get)'}`,
   { label: `verify:${f.id}`, phase: 'Verify', agentType: 'lpk:verifier', schema: VERDICT, stallMs: stall('verifier') })
@@ -196,7 +198,8 @@ const verdicts = done.flatMap((x) => x.verdicts || [])
 const is = (...vs) => verdicts.filter((v) => vs.includes(v.verdict))
 return {
   range: at,
-  confirmed: is('confirmed'),
+  confirmed: is('confirmed').filter((v) => v.reach !== 'neither'),
+  deferred: is('confirmed').filter((v) => v.reach === 'neither'),
   unsettled: is('unsettled', 'none'),
   preexisting: is('preexisting'),
   dropped: is('dropped', 'duplicate'),

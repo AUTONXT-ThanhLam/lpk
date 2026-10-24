@@ -44,7 +44,7 @@ in this skill's directory. The tech lead reads these sections first:
   point it drives, and its red run on the base;
 - **Proof and what was not verified**, with commands and their output in a `<details>` block;
 - **Shortcuts**: each limit the builders chose on purpose, and when to revisit it, and each finding
-  `lpk report` lists as deferred by the owner's policy, or "none";
+  `lpk report` lists as a known limit, or "none";
 - **How to undo it**: the revert, and any data or config step a revert does not undo.
 When the final body differs from the one the net checked, give it and the bundle to `lpk:claims`
 again, and fix each sentence the code does not back.
