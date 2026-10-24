@@ -7,6 +7,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 
 import { dirname, join } from 'node:path';
 import { git } from './git.mjs';
 import { locked } from './lock.mjs';
+import { REACH } from './reach.mjs';
 import { readRun, runDir } from './run.mjs';
 
 export const STATES = ['open', 'confirmed', 'unsettled', 'dropped', 'preexisting', 'duplicate', 'fixed', 'deferred'];
@@ -51,7 +52,7 @@ export function readLedger(repo, file = ledgerFile(repo)) {
     else if (e.ev === 'verdict') {
       const { ev, time, id, state, ...rest } = e;
       const f = byId.get(id);
-      for (const k of ['by', 'evidence', 'basis', 'primary', 'asked', 'born', 'cause']) delete f[k];
+      for (const k of ['by', 'evidence', 'basis', 'primary', 'asked', 'born', 'cause', 'reach']) delete f[k];
       Object.assign(f, rest, { state, ruledAt: time });
     } else if (e.ev === 'fixed') {
       Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time });
@@ -117,7 +118,7 @@ export function addFinding(repo, input) {
 // A ruling on one finding. A ruling the verifier made and settled stands; one anybody else made,
 // or an unsettled one, may be ruled on again. In a protected area a not-reproduced drop is kept
 // as unsettled.
-export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, cause }) {
+export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, cause, reach }) {
   if (!VERDICTS.includes(verdict)) return { error: `verdict is one of ${VERDICTS.join(', ')}` };
   const why = text(evidence);
   if (!why) return { error: 'evidence: the reproduction and its output, or why it does not hold' };
@@ -125,10 +126,13 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
   if (verdict === 'dropped' && !['not-reproduced', 'disproved'].includes(basis)) return { error: 'basis: not-reproduced (the repro did not fail) or disproved (evidence shows the claim is false)' };
   if (verdict === 'confirmed' && !BORN.includes(born)) return { error: `born: the step the defect began in, one of ${BORN.join(', ')}` };
   if (verdict === 'confirmed' && !text(cause)) return { error: 'cause: why the defect exists, at the place it starts, in one sentence' };
+  if (verdict === 'confirmed' && !REACH.includes(reach)) return { error: `reach: who meets the defect, one of ${REACH.join(', ')} (user: a person or caller meets it; merge: the tech lead would block the merge on it; neither: no one meets it and it blocks nothing)` };
   return locked(ledgerDir(repo), () => {
     const { findings } = readLedger(repo);
     const f = findings.find((x) => x.id === text(id));
     if (!f) return { error: `no finding ${text(id)}` };
+    if (verdict === 'confirmed' && reach === 'neither' && PROTECTED.includes(f.area)) return { error: `${f.id} is in the ${f.area} area: it reaches the merge, so reach is merge` };
+    if (verdict === 'confirmed' && reach === 'neither' && f.kind === 'scenario') return { error: `${f.id} is an acceptance scenario that fails: a user meets it, so reach is user` };
     if (f.state === 'fixed') return { error: `${f.id} is fixed in ${f.fixedCommit}` };
     if (f.state !== 'open' && f.state !== 'unsettled' && f.by === VERIFIER) return { error: `${f.id} is already ${f.state} by the verifier (${f.evidence})` };
     const e = { ev: 'verdict', id: f.id, state: verdict, by: text(by), evidence: why };
@@ -139,9 +143,10 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
       e.primary = p.id;
     }
     if (verdict === 'dropped') e.basis = basis;
-    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause) });
+    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause), reach });
     if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(f.area)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
     append(repo, e);
+    if (verdict === 'confirmed' && reach === 'neither') append(repo, { ev: 'deferred', id: f.id, evidence: `no user meets it and it blocks no merge: ${text(cause)}`, by: text(by) });
     return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
   });
 }

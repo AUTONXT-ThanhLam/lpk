@@ -1,0 +1,3 @@
+export const REACH = ['user', 'merge', 'neither'];
+
+export const SCOPE = 'Raise a finding only when a person or a caller meets it on the surface the change touches (a screen, a response, CLI output, data they keep, a message they read), or when it would block the merge: a broken rule marked blocks: high, a hole in security, auth, data, concurrency, migration or permissions, a red CI job or gate, a test that cannot fail on the behaviour it claims to prove, a claim in the PR text or docs that the code contradicts, an undisclosed behaviour change. Style, naming, structure, edge cases no caller reaches and cleanups are not findings.';

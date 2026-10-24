@@ -10,6 +10,7 @@ import { addFinding, readLedger } from '../findings.mjs';
 import { git } from '../git.mjs';
 import { baseOf, outDir, parseArgs, repoOf } from '../out.mjs';
 import { requirementsOf } from '../proof.mjs';
+import { SCOPE } from '../reach.mjs';
 import { appendRecord, readDecisions } from '../records.mjs';
 import { readRun } from '../run.mjs';
 import { headTree, treeOf } from '../tree.mjs';
@@ -102,7 +103,7 @@ export async function main(argv) {
   const name = `${kind}-${model}-${r.a.slice(0, 8)}-${r.b.slice(0, 8)}-${process.pid}`;
   const dir = outDir(repo);
   const recordFile = join(dir, `${name}.json`);
-  const append = [reviewRules(repo, r.a), intended(repo), delta ? alreadyRaised(repo) : ''].filter(Boolean).join('\n\n');
+  const append = [SCOPE, reviewRules(repo, r.a), intended(repo), delta ? alreadyRaised(repo) : ''].filter(Boolean).join('\n\n');
   const run = { repo, a: r.a, b: r.b, level, model, fallbackModel: a.opt('--fallback-model') || OTHER[model], effort, appendSystemPrompt: append, timeoutMs, rawFile: join(dir, `${name}.stream.jsonl`) };
   const res = await (security ? securityReview(run) : codeReview(run));
 

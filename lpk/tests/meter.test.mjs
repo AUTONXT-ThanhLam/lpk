@@ -49,7 +49,7 @@ test('the run\'s row in runs.jsonl holds its lane, each lens\'s yield, the files
   const a = raise('lpk:techlead');
   raise('lpk:bug-hunter');
   raise('lpk:techlead', { kind: 'test-gap' });
-  assert.ok(ruleOn(repo, { id: a.id, verdict: 'confirmed', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'ran it', by: 'lpk:verifier' }).finding);
+  assert.ok(ruleOn(repo, { id: a.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'ran it', by: 'lpk:verifier' }).finding);
   const row = recordRun(repo);
   assert.equal(readRuns().at(-1).id, 'run1');
   assert.deepEqual([row.lane, row.laneWhy, row.files, row.findingFiles, row.testGaps], ['quick', 'one file', ['a.js'], ['a.js'], 1]);
