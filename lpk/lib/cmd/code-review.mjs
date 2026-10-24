@@ -2,7 +2,8 @@
 // change. It adds what the child found to the run's findings ledger itself, keeps the child's
 // output and a record of the run under the run directory, and ends with one line naming the
 // record and the ledger ids, which is all a workflow relay returns.
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { codeReview, resolveRange, reviewRules, securityReview } from '../codereview.mjs';
 import { addFinding, readLedger } from '../findings.mjs';
@@ -19,10 +20,16 @@ const USAGE = `usage: lpk code-review [--repo <dir>] [--range <from>..<to> | --b
   --range    a fix delta: only <from>..<to>, told which findings the ledger already holds
   --security /security-review instead of /code-review
   --slice    a builder's self-review, before it commits: <merge base with --base>..the working tree
-             (uncommitted and untracked code included); findings are printed, not added to the ledger`;
+             (uncommitted and untracked code included); findings are printed, not added to the ledger;
+             runs on deepseek-flash when this session is routed with DeepSeek roles on, else on sonnet`;
 
 const DECISIONS_SHOWN = 40;
 const OTHER = { sonnet: 'opus', opus: 'sonnet' };
+
+export function sliceModel(env = process.env, home = homedir()) {
+  if (!env.LPK_ROUTER_URL || env.ANTHROPIC_BASE_URL !== env.LPK_ROUTER_URL) return 'sonnet';
+  try { return readFileSync(join(home, '.config', 'lpk', 'deepseek.mode'), 'utf8').trim() === 'on' ? 'deepseek-flash' : 'sonnet'; } catch { return 'sonnet'; }
+}
 // The categories /code-review's own output contract names for cleanup rather than defects.
 const CLEANUP = ['simplification', 'efficiency', 'reuse'];
 
@@ -87,7 +94,7 @@ export async function main(argv) {
   const r = rangeOf(repo, a, slice);
   if (r.error) { console.error(`lpk: ${r.error}`); return 2; }
   const kind = security ? 'security-review' : slice ? 'self-review' : 'code-review';
-  const model = a.opt('--model') || 'sonnet', effort = a.opt('--effort') || 'high', level = a.opt('--level') || 'high';
+  const model = a.opt('--model') || (slice ? sliceModel() : 'sonnet'), effort = a.opt('--effort') || 'high', level = a.opt('--level') || 'high';
   const delta = Boolean(a.opt('--range'));
   const timeoutMs = Number(a.opt('--timeout') || 540) * 1000;
   if (!(timeoutMs > 0)) { console.error('lpk: --timeout is a number of seconds'); return 2; }

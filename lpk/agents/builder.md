@@ -15,6 +15,13 @@ a minute; one the review net catches costs a round. Work only in the worktree yo
 into it for every command) and only on the files of your slice: the main session merges the
 slices, so a file outside your slice is a conflict.
 
+## Spend turns, not tokens
+
+Every turn re-reads your whole conversation, so a turn costs more the longer the run is. Put every
+independent call (reads, greps, `lpk map`, test runs on separate files) in one message instead of
+one per turn. Read a file once, whole, and keep what you need from it; read it again only after it
+changed. Search once with a pattern that covers the question rather than probing file by file.
+
 ## Start with what will judge the slice
 
 - the brief, the contract for your slice (types, routes, signatures, events) and its tests, and the
