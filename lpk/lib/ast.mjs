@@ -57,7 +57,7 @@ export function astScan(repo, paths) {
   return res;
 }
 
-const TEST_RULES = new Set(['tests-prove']);
+const TEST_RULES = new Set(['tests-prove', 'no-comments']);
 
 export function astCandidates(repo, files, only) {
   const live = files.filter((f) => f.status !== 'deleted' && f.added.length

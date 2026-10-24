@@ -12,8 +12,8 @@ You prepare the ground so the session that builds the change never waits for an 
 database or a login. Work fast; report as soon as the surface answers.
 
 1. Read `~/.local/share/lpk/profiles/<repo>.md` if it exists: start commands, ports, login, test
-   data prefix, checks that are red on main. Without one, read the README, package scripts,
-   compose files and `.env.example` to find them.
+   data prefix, checks that are red on main, and the feature map (how each feature is reached). Without
+   one, read the README, package scripts, compose files and `.env.example` to find them.
 2. Install dependencies only if they are missing or the lockfile changed (`npm ci`, `pnpm i
    --frozen-lockfile`, `uv sync`, ...). Start what the change needs: the database and services in
    containers named with the repo's test prefix, then the app on ports nothing else listens on
@@ -27,7 +27,8 @@ database or a login. Work fast; report as soon as the surface answers.
    decides who may do what, also have a second test user with a different role ready (the profile
    names it, or create it through the app's own seed or admin screens, never by writing to the
    database by hand) and sign it in in a second context, so the prover can try each scenario as
-   someone who must be refused.
+   someone who must be refused. For each surface the change touches, follow its feature-map entry
+   and confirm the page or command opens; an entry that no longer does is named in the report.
 4. When the change touches a running surface, give the prover a reference: if `free -g` still shows
    8 GB or more available with the branch app running, start a second instance of the base commit
    from its own worktree (`git worktree add --detach /tmp/<repo>-main <base>`, dependencies linked
@@ -48,6 +49,8 @@ Answer in this shape and nothing else:
 - `app`: URL(s) and the command that started each, with its PID;
 - `services`: container names and ports;
 - `login`: each isolatedContext name with its user and role, or why it failed;
+- `feature map`: the entries for the touched surfaces that opened, and those that did not, with what you
+  found instead;
 - `main`: the reference instance's URL and the commit it runs, or why there is none;
 - `tests`: the command, and the tests already red before the change;
 - `db`: the database and port the test command uses and the ones the app uses, as the env files

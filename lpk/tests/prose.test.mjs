@@ -31,7 +31,7 @@ test('lpk check lists the comments beside the lines the change edited, and only 
   write(repo, 'docs/chip.md', '# a heading\ntext changed\n');
   const out = spawnSync('node', [LPK, 'check', '--base', 'main'], { cwd: repo, env: ENV, encoding: 'utf8' }).stdout;
   assert.match(out, /src\/chip\.ts:1 {2}\/\/ Shows only when a file is still reading or failed\./);
-  assert.doesNotMatch(out, /chip\.ts:3 /, 'a comment the change wrote is not listed');
+  assert.doesNotMatch(out.slice(out.indexOf('left unedited')), /chip\.ts:3 /, 'a comment the change wrote is not listed as unedited');
   assert.doesNotMatch(out, /far away/);
   assert.match(out, /src\/gone\.ts:2 {2}\/\/ about b/, 'a comment above deleted code is listed');
   assert.doesNotMatch(out, /docs\/chip\.md:/);

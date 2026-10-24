@@ -207,6 +207,12 @@ needs.
 - rule: Error messages, guard names, comments, docblocks, docs, API schemas, UI copy, commit messages and the PR body state only what the code checks, and change when the code beneath them changes. Dead branches go with their producer.
 - check: for each new message or comment, point at the line that makes each noun and verb true. Repro: the input that makes the text false.
 
+### no-comments: the change adds no code comments
+- blocks: low
+- when: always
+- rule: Lines the change adds carry no comments: a comment nobody maintains drifts from the code and sends the next reader the wrong way. What it said goes in a name, a test, the commit message or the PR body. Tool directives (`eslint-disable`, `@ts-expect-error`, `noqa`, `nolint`, `SAFETY:`, a shebang) and license headers stay, and comments other people wrote are left as they are.
+- check: `lpk check` reports each comment on an added line. Repro: the comment, and the name or test that would say the same thing.
+
 ### disclose-and-order: the PR says what changes and in what order
 - blocks: medium
 - when: always

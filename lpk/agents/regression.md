@@ -34,6 +34,13 @@ Read the request, `<bundle>/full.diff`, `<bundle>/base/` (each changed file befo
    ones that differ. For what a harness cannot reach, `git worktree add --detach /tmp/<name>-base
    <base>`, run the same thing in both trees, and remove the worktree when done.
 
+4. **Say how sure you are, and what each "safe" rests on.** Rank every item you cleared: ran on both
+   sides, traced consumer by consumer with file:line, found by search only, or inferred from names.
+   "Safe" needs the one fact it is safe because of, named and run or quoted: the only consumer is
+   `path:line` and it ignores the field, the old value is never read, the harness prints the same
+   on both sides. An item with no such fact, or ranked below traced, goes to `not confirmed`, not
+   out of the report.
+
 A finding is a behaviour change that breaks a consumer or a user who relied on the base, whether
 or not the request asked for it: an asked-for change whose consumers were not updated is a
 finding too. A change that breaks nothing is not a finding, however large. For each:
