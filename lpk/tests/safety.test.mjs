@@ -65,7 +65,7 @@ test('during a run a Jira or Confluence write is denied, and outside a run it go
 test('a reviewing role cannot write in a checkout, a verifier writes in the repro worktree, and a builder outside its worktree is only told', () => {
   const repo = repoWith('roles', { 'src/a.ts': 'a\n' });
   const edit = (agent_type, file_path) => pre({ tool_name: 'Edit', agent_id: 'x1', agent_type, cwd: repo, tool_input: { file_path, old_string: 'a', new_string: 'b' } });
-  for (const role of ['lpk:techlead', 'lpk:bug-hunter', 'lpk:security', 'lpk:perf', 'lpk:a11y', 'lpk:designer', 'lpk:verifier']) {
+  for (const role of ['lpk:techlead', 'lpk:bug-hunter', 'lpk:security', 'lpk:perf', 'lpk:a11y', 'lpk:ui-reviewer', 'lpk:verifier']) {
     assert.equal(edit(role, join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny', role);
   }
   assert.equal(edit('lpk:techlead', join(tmp, 'notes.md')), null, 'scratch outside a checkout');
@@ -76,6 +76,9 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   const told = edit('lpk:builder', join(repo, 'src/a.ts'));
   assert.equal(told.hookSpecificOutput.permissionDecision, undefined);
   assert.match(context(told), /a builder works in its own worktree/);
+  const designed = edit('lpk:designer', join(repo, 'src/a.ts'));
+  assert.equal(designed.hookSpecificOutput.permissionDecision, undefined);
+  assert.match(context(designed), /a builder works in its own worktree/);
   assert.match(context(edit('lpk:test-author', join(repo, 'src/a.ts'))), /production code/);
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
   assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');

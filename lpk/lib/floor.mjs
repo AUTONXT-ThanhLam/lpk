@@ -91,10 +91,10 @@ export function floor(repo, base) {
     if (DOC_PATH.test(p)) lens('claims', `doc ${p}`);
     else if ((l = at(COMMENT))) lens('claims', `comment at ${where(l)}`);
     if ((l = at(MESSAGE))) lens('claims', `message at ${where(l)}`);
-    if (SCREEN.test(p)) { lens('designer', `screen file ${p}`); lens('a11y', `screen file ${p}`); }
+    if (SCREEN.test(p)) { lens('ui-reviewer', `screen file ${p}`); lens('a11y', `screen file ${p}`); }
     if ((l = at(QUERY))) lens('perf', `query at ${where(l)}`);
     if (SCREEN.test(p) && (l = at(RENDER))) lens('perf', `render at ${where(l)}`);
   }
-  const order = ['mutant', 'regression', 'claims', 'designer', 'a11y', 'perf'];
+  const order = ['mutant', 'regression', 'claims', 'ui-reviewer', 'a11y', 'perf'];
   return { full: why.length > 0, why, lenses: order.filter((k) => lensWhy[k]), lensWhy, files: files.map((f) => f.path) };
 }

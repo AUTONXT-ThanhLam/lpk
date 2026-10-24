@@ -78,7 +78,7 @@ export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), on
 // A subagent shares the session id, so its tool calls reach this hook too: only the main session
 // and a builder (on its own worktree) are handed candidates, since the others cannot fix them.
 export function afterTool(input) {
-  if (input.agent_id && !/(^|:)builder$/.test(input.agent_type || '')) return null;
+  if (input.agent_id && !/(^|:)(builder|designer)$/.test(input.agent_type || '')) return null;
   const { repo, run } = runOf(input);
   if (!run) return null;
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;

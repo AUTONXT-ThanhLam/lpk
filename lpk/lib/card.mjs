@@ -17,7 +17,7 @@ const RULES_SHOWN = 25;
 function limits(type) {
   const all = `Never read the owner's tokens (${CREDENTIALS.map((c) => `\`${c}\``).join(', ')}) and never run git ${GIT_TRIPS.map((t) => `\`${t.id}\``).join(', ')}.`;
   const role = READ_ONLY.test(type) ? `You never edit a checkout; scratch files go under /tmp.${/verifier$/.test(type) ? ` Repro tests go in the repro worktrees under ${REPRO}/.` : ''}`
-    : /builder$/.test(type) ? 'Edit only the files of your slice, in your own worktree: not the main checkout, not another slice\'s files.'
+    : /(builder|designer)$/.test(type) ? 'Edit only the files of your slice, in your own worktree: not the main checkout, not another slice\'s files.'
       : /test-author$/.test(type) ? 'Edit only tests, fixtures and e2e scripts; production code is the builders\'.'
         : /env$/.test(type) ? 'Never edit tracked files; stop only what you started.' : '';
   return [all, role].filter(Boolean).join(' ');

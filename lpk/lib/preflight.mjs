@@ -20,7 +20,7 @@ async function chrome(port) {
   try {
     const r = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(1000) });
     return r.ok ? `Chrome on ${port}: up` : `Chrome on ${port}: answered ${r.status}`;
-  } catch { return `Chrome on ${port}: not running (the prover and designer need it; start the lpk Chrome)`; }
+  } catch { return `Chrome on ${port}: not running (the prover, designer and ui-reviewer need it; start the lpk Chrome)`; }
 }
 
 function memory() {
