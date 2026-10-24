@@ -56,7 +56,7 @@ changes.
 ### js-traps: JavaScript's global traps are absent
 - blocks: medium
 - when: path `\.(m|c)?(j|t)sx?$`
-- rule: No assignment to a built-in prototype, no `document.write`, no string passed to `setTimeout`, `setInterval` or `new Function`, and no React component declared inside another component (it remounts on every render and loses its state).
+- rule: No assignment to a built-in prototype, no `document.write`, no string passed to `setTimeout`, `setInterval` or `new Function`, no React component declared inside another component (it remounts on every render and loses its state), and no `Boolean`, `Number`, `parseInt` or `z.coerce.boolean()` on a user, query or env string (`"false"` becomes true, `""` becomes 0, `"12abc"` becomes 12): parse against the values the field allows.
 - check: for each candidate, what else on the page sees the change or what input reaches the string. Repro: the state that resets or the code that runs.
 
 ### rust-traps: Rust code does not panic or race where it can recover

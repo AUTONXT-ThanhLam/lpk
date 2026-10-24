@@ -43,7 +43,10 @@ a page boundary, an empty list that throws); never write a catalogue of edges. W
 an invariant over many inputs (a round trip, no item lost or duplicated across pages) and the repo
 already has a property-testing library (fast-check, hypothesis, jqwik), one property test replaces
 the table. Never add a dependency for it: a new dependency is a change of its own the reviewer
-weighs.
+weighs. For an entity with states (an order, a subscription) the events each state must refuse are
+one table-driven test, not a test per cell. An expected value is written out, never computed with
+the code under test, and a new test that touches the clock, randomness, a port or async work runs
+under `lpk repeat` before you report it done.
 
 Run the tests on the base and show each one failing for the right reason: the behaviour is
 missing, not an import error or a typo. A test that passes before the change is wrong: fix it or

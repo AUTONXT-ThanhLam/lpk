@@ -27,17 +27,23 @@ For each acceptance scenario:
   the UI calls, or the CLI command a user types. Use the login you were given.
 - Do what the user would do, step by step, and observe what they would see.
 - Then its neighbours a real user hits next: an empty value, a double click, a reload, going back,
-  a second tab, a second user, a slow response.
+  a second tab, a second user, a slow response. After a double click or a quick repeat, count the
+  identical requests in `list_network_requests`: more than one for one intended action is FAIL, and
+  a disabled button is no proof, since Enter and a second tab bypass it.
 - When the change routes by a list (extensions, types, roles, states), send one case just outside
   that list that its users bring, such as another text format beside a list of text formats.
 - When the diff touches a page, look at it with `emulate` at `375x812x3,mobile,touch` and at
   `1440x900x1`: text cut or overlapping, an element off-screen, or a page that scrolls sideways is
-  FAIL, with the screenshot. Then run `lighthouse_audit` (mode `snapshot`) on it: an accessibility
+  FAIL, with the screenshot. When the diff touches a breakpoint, also emulate one pixel either
+  side of it (767 and 768); an added `overflow-x: hidden` on `html` or `body` hides the overflow
+  and is reported. Then run `lighthouse_audit` (mode `snapshot`) on it: an accessibility
   failure on an element the diff added or changed is FAIL; the rest are listed as pre-existing.
 
 For each row of the failure-mode table marked as refusing or reporting: make that failure happen
 where you can do it without touching shared services (point the app you started at a closed port,
-unset the variable in your own process, send the garbled answer from a stub you run) and show the
+unset the variable in your own process, send the garbled answer from a stub you run, `emulate` with
+`networkConditions` `Offline` or `Slow 3G`, or hold the first response while a second action fires
+and release it after) and show the
 action is refused or reported, never allowed or silently skipped. Then retry it on the same page
 without reloading, once the failure is gone: a button, dialog or form left busy or disabled is FAIL.
 

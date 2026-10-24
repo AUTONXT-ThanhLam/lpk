@@ -26,6 +26,8 @@ it.
    timeout of 600000 ms: the first one may wait for the trees' install.
 3. For a timing, polling or race finding, run `lpk repeat -- <command>`: it runs the command as many
    times as fit in two minutes and prints how many failed. One failure in many runs reproduces it.
+   Run it on the test alone and then on its whole file or suite: a failure only in the suite is
+   shared state or order, and a fix that passes alone is not closed.
 4. For a finding about what a screen shows or does, start the app from the repro worktree
    (`lpk spawn`), open its page in a fresh isolated browser context with the chrome-devtools tools,
    do what the finding says on the commit and on the base, close the page, and cite the snapshot,
