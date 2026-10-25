@@ -71,6 +71,13 @@ const call = (prompt, opts) => gate(() => agent(prompt, opts))
 const typed = (type, schema, ask) => (lens) => (label) => call(`${change}\n${ask}`, { label, phase: 'Review', agentType: `lpk:${type}`, schema, stallMs: stall(lens) })
 const skippedOf = (rows, key, why) => rows.filter((r) => r.status === 'skipped').map((r) => `did not review ${r[key]}${r[why] ? `: ${r[why]}` : ''}`)
 
+// Split an array into groups of at most size items. Returns [] when input is empty.
+const batchFiles = (paths, size) => {
+  if (!paths.length) return []
+  const n = Math.ceil(paths.length / size)
+  return Array.from({ length: n }, (_, i) => paths.slice(i * size, (i + 1) * size))
+}
+
 // OpenCodeReview's split: ocr picks the reviewable files, each batch of at most ten (four batches
 // at most) gets its own reviewer, and a file no batch accounts for comes back as not reviewed.
 const ocr = (lens) => async (label) => {
@@ -79,8 +86,10 @@ const ocr = (lens) => async (label) => {
   if (!p || p.error) return { error: `ocr delegate preview failed: ${p ? p.error : 'no answer'}` }
   const paths = [...new Set(p.paths)].sort()
   if (!paths.length) return { findings: [], missed: [] }
-  const n = Math.min(4, Math.ceil(paths.length / 10)), size = Math.ceil(paths.length / n)
-  const outs = await parallel(Array.from({ length: n }, (_, i) => paths.slice(i * size, (i + 1) * size)).map((b, i) => () =>
+  const n = Math.min(4, Math.ceil(paths.length / 10))
+  const batchSize = Math.ceil(paths.length / n)
+  const batches = batchFiles(paths, batchSize)
+  const outs = await parallel(batches.map((b, i) => () =>
     call(`${change}\nReview these files of the commit, each one on its own:\n${b.join('\n')}`, { label: `${label}:${i + 1}`, phase: 'Review', agentType: 'lpk:ocr', schema: BATCH, stallMs: stall(lens) })))
   // A batch that did not answer leaves its files in the not-reviewed list, like a file it skipped.
   const files = outs.flatMap((o) => (o ? o.files : []))
