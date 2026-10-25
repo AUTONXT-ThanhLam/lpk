@@ -27,7 +27,7 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
    verifier's ruling, one fix round and one delta review, the full review net, and the order of the
    steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
 
-**Why the flow has this shape.** Past runs showed where defects come from and where time goes:
+**Why the flow has this shape.** Where defects come from and where time goes:
 - defects born in the plan or the design are the cheapest to fix, so before anything is built
   three rival designs attack each other with runs, and the one that survives is checked against
   the code, the way the run will go and the owner's words, in at most three rounds;
@@ -35,9 +35,9 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   rules for its files, gets `lpk check` hints after each edit and reviews its own slice;
 - recall grows with reviewer diversity, so a dense review net runs every lens at once, and the net
   costs its slowest lens, not the sum;
-- 65% of late true findings sat on the previous fix's own lines, so there is one batched fix round,
+- late true findings sit on the previous fix's own lines, so there is one batched fix round,
   and a finding on a fix's own lines means redesign or revert, never a third patch;
-- waiting cost a third of the wall time, so all that does not wait on the next step runs at once.
+- waiting adds wall time, so all that does not wait on the next step runs at once.
 
 ## How you work, in every step
 
@@ -49,8 +49,8 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   lists them) and say it in the next update. Ask only what the owner alone knows, or before anything
   destructive or outside this machine, once all other work is started: once, in the user's terms, with your
   recommendation and no finding or requirement ids, and send that line with `PushNotification` (the owner is often away).
-- **Spend few turns on a small context**: each of your tool calls rereads your whole context (a
-  lead averaged 400 calls at 156k tokens). Put independent commands in one call, wait for
+- **Spend few turns on a small context**: each of your tool calls rereads your whole context, so a
+  long lead session gets dearer with every call. Put independent commands in one call, wait for
   notifications instead of polling, give an agent a command's output file, and send reading or any
   work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix

@@ -13,8 +13,7 @@ slice in the background, all in one message, each with its worktree, the base, i
 and tests, the test command, the brief, `notes.md` beside it and the profile path. You are notified as each one finishes.
 When the slice changes a function, field or output shape that other files read, also give it a map:
 `lpk map <each name> > <file outside the repo>`, never read by you, and its path. A builder given
-the map reads the lines it lists instead of searching the repo; on a slice of eight files that cut
-its diff by about 40% and its cost by about 8%.
+the map reads the lines it lists instead of searching the repo.
 A slice whose files are screens (`lpk floor` lists them as `screen file`) goes to `lpk:designer` in
 build mode, started the same way with the UI section of the brief added and, like a builder, only
 after `lpk go`; every other slice goes to

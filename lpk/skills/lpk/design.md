@@ -126,7 +126,7 @@ High findings) and `changed`: only the angles with an open High run again, each 
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument. A High only the owner can settle (a time
    bound they gave, the scope) is one question to them. Mediums and Lows stay in `notes.md`, never in
-   a revision. A revision grows the brief by at most a tenth (`wc -w`): briefs that grew 40% a round drew new Highs.
+   a revision. A revision grows the brief by at most a tenth (`wc -w`): a brief that grows faster draws new Highs.
    Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
    round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the

@@ -129,8 +129,8 @@ Then one delta review: rerun the self-check on the files the fixes touched,
 and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
 `lpk:bug-hunter` run on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed
 findings, in parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
-no bug hunt: the lens that raised it re-checks it. Never re-run the whole net: past runs that
-did spent more time there than in the build, and each pass found something new on new lines.
+no bug hunt: the lens that raised it re-checks it. Never re-run the whole net: a full re-run
+spends more time there than the build, and each pass finds something new on new lines.
 
 **Done when** `lpk reviews owed` is empty and the ledger holds no open finding and no confirmed
 finding that is not fixed or pre-existing.
