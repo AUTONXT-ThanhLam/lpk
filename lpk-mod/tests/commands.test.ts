@@ -73,18 +73,22 @@ test('lpk-switch writes the state card, moves cc-switch and tells the owner to /
   expect(card).toContain('{"base":"abc"}')
   expect(card).toContain('lpk: you are inside an lpk run')
   expect(card).toContain('lpk:techlead: review the slice (a1, running)')
-  expect(w.ran).toContainEqual(['cc-switch'])
+  expect(w.ran).toContainEqual(['cc-switch', 'cc2'])
   expect(r.text).toContain('Now on cc2')
   expect(r.text).toContain('/exit, then run `claude -c`')
   expect(r.text).toContain('1 agent(s) still at work')
   expect(r.context?.[0]).toContain(card.trim())
 })
 
-test('lpk-switch with no account lists the accounts and switches nothing', async ($, on) => {
-  const w = world(on, { reply: (a) => (a[0] === 'cc-switch' ? { stdout: STATUS } : undefined) })
+test('lpk-switch with no account moves to the next one after the active', async ($, on) => {
+  const w = world(on, {
+    reply: (a) =>
+      (a[0] === 'cc-switch' && a[1] === 'status' ? { stdout: `${STATUS}  cc3 third    5-hour   0% (resets 16:00)  weekly   5%\n` } : undefined) ??
+      (a[0] === 'cc-switch' ? { stdout: 'Now on cc2 (home). In a running session: /exit, then claude -c.\n' } : undefined),
+  })
   const r = await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
-  expect(r.text).toContain('/lpk-switch cc2')
-  expect(w.ran).toEqual([['cc-switch', 'status']])
+  expect(w.ran).toContainEqual(['cc-switch', 'cc2'])
+  expect(r.text).toContain('Now on cc2')
 })
 
 test('lpk-switch to an unknown account switches nothing', async ($, on) => {

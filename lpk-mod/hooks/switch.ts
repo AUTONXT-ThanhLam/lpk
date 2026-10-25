@@ -5,7 +5,6 @@
 import type { CommandRunInput, CommandRunResult, PluginOptions } from 'claude-code'
 
 import { type Host, lpkRoot, run, runDir, runLpk, runStatus, words } from './lpk'
-import { deepseekOn, modeLine, pinMode, routed, setDeepseek } from './mode'
 
 const ACTIVE = new Set(['pending', 'running', 'waiting'])
 
@@ -58,28 +57,11 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     return { text: `\`cc-switch status\` did not list the accounts (exit ${status.exitCode}): ${(status.stderr || status.stdout).trim()}` }
   const from = accounts.find((a) => a.isActive)
   const wanted = words(e.args)[0]?.toLowerCase()
-  if (wanted === 'ccd') return setDeepseek($, true, options)
-  if (!wanted || !from) {
-    const other = accounts.find((a) => !a.isActive)
-    return { text: `${listed(accounts)}\n${await modeLine($, options)}\n\nType /lpk-switch <account> to move there${other ? `, e.g. /lpk-switch ${other.id}` : ''}; /lpk-switch ccd puts the DeepSeek roles on, and moving to an account puts them off.` }
-  }
-  const to = accounts.find((a) => a.id.toLowerCase() === wanted || a.name.toLowerCase() === wanted)
+  if (!from) return { text: `No account is marked active:\n${listed(accounts)}\nType /lpk-switch <account> to choose one.` }
+  const to = wanted
+    ? accounts.find((a) => a.id.toLowerCase() === wanted || a.name.toLowerCase() === wanted)
+    : accounts[(accounts.indexOf(from) + 1) % accounts.length]
   if (!to) return { text: `no account "${wanted}". The accounts:\n${listed(accounts)}` }
-
-  if (await routed($)) {
-    const wasOnDeepseek = await deepseekOn($)
-    if (wasOnDeepseek) await setDeepseek($, false, options)
-    const roles = wasOnDeepseek ? ' DeepSeek roles are off: new agents run on Claude.' : ''
-    if (to.isActive) {
-      await pinMode($, to.id)
-      return { text: `The router already sends this session's requests as ${to.id} (${to.name}); nothing was switched.${roles}` }
-    }
-    const flip = await run($, ['cc-switch'], { timeoutMs: 90_000 })
-    if (flip.exitCode !== 0 || !flip.stdout.includes(`Now on ${to.id}`))
-      return { text: `cc-switch did not move to ${to.id} (exit ${flip.exitCode}):\n${(flip.stdout + flip.stderr).trim()}` }
-    await pinMode($, to.id)
-    return { text: `Now on ${to.id} (${to.name}). The router sends this session's next request as ${to.id}: no restart. The first request there reads its prompt cache cold.${roles}` }
-  }
 
   const cwd = await $.session.cwd()
   const card = await stateCard($, options, cwd, to)
@@ -93,7 +75,7 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
 
   let moved = `cc-switch already points at ${to.id} (${to.name}); nothing was switched.`
   if (!to.isActive) {
-    const flip = await run($, ['cc-switch'], { timeoutMs: 90_000 })
+    const flip = await run($, ['cc-switch', to.id], { timeoutMs: 90_000 })
     if (flip.exitCode !== 0 || !flip.stdout.includes(`Now on ${to.id}`))
       return { text: `cc-switch did not move to ${to.id} (exit ${flip.exitCode}):\n${(flip.stdout + flip.stderr).trim()}\nState card: ${where}` }
     // cc-switch's first line says where it moved; its account lines are redrawn as a list.
@@ -105,6 +87,6 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     : ''
   return {
     text: `${moved}\nState card: ${where}${busy}\nThis session keeps the account it started on until it restarts. Next: type /exit, then run \`claude -c\` in this folder.`,
-    context: [`The owner is moving this session to the account ${to.id} with /lpk-switch. The state card, read it first after the restart:\n\n${card.text}`],
+    context: [`The owner is moving this session to the account ${to.id} with /lpk-switch. After the restart, agents and workflows that were running here are gone: continue their unfinished work with new agents or a new workflow, not by messaging old agent ids. The state card, read it first after the restart:\n\n${card.text}`],
   }
 }

@@ -18,7 +18,7 @@
     {
       "name": "lpk-mod",
       "source": "./lpk-mod",
-      "description": "The owner's lpk commands in Claude Code: /lpk-switch changes account (at once, when started with bin/claude-routed) and puts the builder and reviewers on DeepSeek (ccd) or back on Claude (cc), /lpk-waive releases a gate; a spawn hint and compaction instructions."
+      "description": "The owner's lpk commands in Claude Code: /lpk-switch saves the run state and points claude at another account, /lpk-waive releases a gate; a spawn hint and compaction instructions."
     }
   ]
 }
