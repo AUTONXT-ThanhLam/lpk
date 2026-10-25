@@ -3,7 +3,7 @@
 // JSON-RPC, one message per line: the plugin ships no dependencies and this must start anywhere.
 // The PreToolUse hook on these tools stamps repo, run, from, agentId, at and by (lib/stamp.mjs).
 import { REACH } from '../lib/reach.mjs';
-import { addFinding, BORN, counts, findingsText, getFinding, KINDS, markFixed, PROTECTED, readLedger, ruleOn, SEVERITIES, STATES, VERDICTS, CLOSED_BY } from '../lib/findings.mjs';
+import { addFinding, BORN, counts, findingsText, getFinding, KINDS, markFixed, PROTECTED, readLedger, ruleOn, SEVERITIES, STATES, VERDICTS, VERIFIER, CLOSED_BY } from '../lib/findings.mjs';
 import { top } from '../lib/git.mjs';
 
 const PROTOCOL = ['2024-11-05', '2025-03-26', '2025-06-18'];
@@ -90,7 +90,10 @@ function call(name, input) {
   if (!repo) return bad('lpk: no repo was stamped and this server does not run in a git repository, so there is no ledger to use');
   if (name === 'finding_add') return say(addFinding(repo, { ...a, run }), (f) => `${f.id} recorded (${f.from}${where(f)}, open).`);
   if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
-  if (name === 'finding_verdict') return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
+  if (name === 'finding_verdict') {
+    if (a.by !== VERIFIER) return bad(`lpk: only ${VERIFIER} rules on a finding, and this call came from ${a.by || 'nobody'}. Start ${VERIFIER} with the finding's id, claim and reproduction, and it rules with evidence.`);
+    return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
+  }
   if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => (f.state === 'deferred' ? `${f.id} deferred: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`));
   if (name === 'finding_list') {
     const all = readLedger(repo).findings;

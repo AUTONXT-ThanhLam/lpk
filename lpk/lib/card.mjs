@@ -4,7 +4,7 @@
 // transcripts on disk, in whichever host's store the session is (lib/host.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { pluginRoot } from './host.mjs';
+import { hostName, pluginRoot } from './host.mjs';
 import { baseOf, runOf } from './hooks.mjs';
 import { changeOf, loadRules, triggered } from './rules.mjs';
 import { CREDENTIALS, GIT_TRIPS, READ_ONLY, REPRO } from './safety.mjs';
@@ -13,6 +13,9 @@ import { treeOf } from './run.mjs';
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
 export const LEDGER_TOOLS = ['add', 'list', 'get', 'verdict', 'fixed'].map((t) => `mcp__plugin_lpk_lpk__finding_${t}`);
+const ledgerHint = () => (hostName() === 'qoder'
+  ? '- The findings ledger tools are deferred: `mcp_list` (keyword `finding`) names them, `mcp_get` loads one, `mcp_call` runs it with its own fields as `arguments`; the finding hook stamps the repo, run, who and range into that call.'
+  : `- The findings ledger tools are deferred: load them before the first call with ToolSearch, query \`select:${LEDGER_TOOLS.join(',')}\`.`);
 const RULES_SHOWN = 25;
 
 // What an agent of this type may not touch; the first line is every lpk agent's.
@@ -40,7 +43,7 @@ export function runCard(input) {
     ...['brief.md', 'brief.json'].filter((f) => existsSync(join(dir, f))).map((f) => `- Design Brief: ${join(dir, f)}`),
     rules.length ? `- Rules that apply to the change so far (\`lpk rules --id <id>\` prints one): ${rules.slice(0, RULES_SHOWN).join(', ')}${rules.length > RULES_SHOWN ? `, and ${rules.length - RULES_SHOWN} more (\`lpk rules\`)` : ''}.` : '- No rule applies to the change so far.',
     `- ${limits(type)}`,
-    `- The findings ledger tools are deferred: load them before the first call with ToolSearch, query \`select:${LEDGER_TOOLS.join(',')}\`.`,
+    ledgerHint(),
   ].join('\n');
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: text } };
 }

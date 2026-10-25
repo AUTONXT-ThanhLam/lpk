@@ -113,6 +113,17 @@ test('the commit gate lets in the tree lpk verify ran on before the commit; buil
   assert.equal(commitHook(tmp, 'c', 'git status'), null, 'not a commit');
 });
 
+test('in a run, a commit on the branch the change merges into is refused until the change has its own branch', () => {
+  const repo = repoWith('onbase', { 'src/a.mjs': 'export const a = 1;\n' });
+  sh(repo, 'switch', 'main');
+  start(repo, 'b');
+  ok(lpk(repo, 'b', 'verify'));
+  assert.match(reason(commitHook(repo, 'b', 'git commit -am x')), /commit refused, this run delivers a branch and main is the base/);
+  sh(repo, 'switch', '-c', 'fix/own');
+  ok(lpk(repo, 'b', 'verify'));
+  assert.equal(commitHook(repo, 'b', 'git commit -am x'), null);
+});
+
 test('in a run, a candidate comes back once, right after the edit that adds it, also to a session in the parent directory', () => {
   const repo = repoWith('post', { 'src/a.mjs': 'export const a = 1;\n' });
   start(repo, 'p');

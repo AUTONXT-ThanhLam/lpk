@@ -26,7 +26,7 @@ suite on a database, queue, port or container the slices share, run once in `lpk
 that share a stateful resource wait on each other and add their times, so give each slice its own
 instance of it or order the slices. A builder that reports `CHECKPOINT`, or stops at its turn limit with work left, is handed
 off: run `lpk handoff <slice>` and start a fresh `lpk:builder` (`lpk:designer` for a screen slice) in the same worktree. Never continue
-it with `SendMessage`, which keeps its whole conversation and the cost of every later turn.
+it by messaging the same agent, which keeps its whole conversation and the cost of every later turn.
 Glue that joins the slices
 is a slice of its own, with its own builder, started once the slices it joins are in. Builders
 start after `lpk go`, when the design review has ended.
@@ -46,5 +46,5 @@ why in the report. Before removing the other, run the unit tests it wrote agains
 one that fails there is a case the kept code misses; fix it or say why it does not apply.
 
 Bring each slice in with `git cherry-pick`. A conflict means the slice left its files: abort the
-pick and send it back to that slice's builder (SendMessage) to fix at the contract. Then remove
+pick and send it back to that slice's builder (message it where the host has one; else start that builder again with the conflict and the contract) to fix at the contract. Then remove
 the worktrees and their branches.

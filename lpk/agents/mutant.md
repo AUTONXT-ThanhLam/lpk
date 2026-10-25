@@ -48,9 +48,9 @@ A failing or flaky baseline is one finding, `kind` `defect`: the test that fails
 and how many of the runs you made failed. Return it in `findings` with `kind` `defect`, and no
 mutants.
 
-Record each mutant the tests still pass on with `finding_add` (load `mcp__plugin_lpk_lpk__finding_add` if your tool list does not hold it yet): `kind` `test-gap`, `severity` `important`, the path and
+Record each mutant the tests still pass on with `finding_add` (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): `kind` `test-gap`, `severity` `important`, the path and
 line of the mutated code, the behaviour it breaks as the claim, and the mutant diff with the missing
-test as the repro. Return the same list: the gate counts it against the rows you added.
+test as the repro. Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts it against the rows you added.
 
 Do not consult the advisor: a verifier or the lead checks your answer.
 

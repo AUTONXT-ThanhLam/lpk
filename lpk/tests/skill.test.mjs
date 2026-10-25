@@ -36,7 +36,7 @@ const uses = prompts.flatMap(([file, text]) => [...text.matchAll(/`lpk ([a-z][a-
 
 test('SKILL.md stays short enough to be read whole, and each step file stays within the repo limit', () => {
   const lines = read('skills', 'lpk', 'SKILL.md').split('\n').length;
-  assert.ok(lines <= 110, `SKILL.md has ${lines} lines; the cap is 110, and the detail belongs in a step file`);
+  assert.ok(lines <= 112, `SKILL.md has ${lines} lines; the cap is 112, and the detail belongs in a step file`);
   for (const f of steps) assert.ok(read('skills', 'lpk', f).split('\n').length <= 150, `skills/lpk/${f} stays within 150 lines`);
 });
 

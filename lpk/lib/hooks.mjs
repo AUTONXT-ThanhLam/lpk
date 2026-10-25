@@ -155,6 +155,13 @@ export function beforeCommit(input) {
   const damaged = !run && repo && runState(repo).error;
   if (damaged) throw new Error(damaged);
   if (!run) return null;
+  // The run delivers a branch its target can merge: a commit on the target itself would put the
+  // change where the review, the rollback and the PR cannot see it as its own.
+  const branch = git(['branch', '--show-current'], repo).trim();
+  const target = String(run.target || '').replace(/^origin\//, '');
+  if (branch && (branch === target || ['main', 'master'].includes(branch))) {
+    return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, this run delivers a branch and ${branch} is the base it merges into. Create the change's branch first (\`git switch -c <type>/<name>\`), commit there, and \`lpk verify\` there so the run names it.` } };
+  }
   // Staged tests alone commit only through a bare `git commit -m <msg>`: a pathspec, -a, -i or a
   // `git add` in the same command would commit source the staged list does not show.
   const staged = BARE_COMMIT.test(cmd) ? git(['diff', '--cached', '--name-only'], repo).split('\n').filter(Boolean) : [];

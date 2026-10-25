@@ -187,8 +187,9 @@ test('a run made on Qoder is measured from its store, and its all-zero usage rea
     assert.deepEqual([r.fresh, r.input, r.cacheWrite, r.output, r.cacheRead, r.peakContext], [0, 0, 0, 0, 0, 0]);
     assert.ok(r.first && r.last, `${r.agent}: its own clock is read even when its counts are not`);
   }
-  assert.deepEqual(withEnv({}, () => total(meter(QS))), { fresh: 0, cacheRead: 0, messages: 4, recorded: false });
-  assert.equal(tokenFigure(0, total(meter(QS)).recorded), TOKENS_UNMEASURED, 'no token total prints for a run the host did not measure');
+  const totals = withEnv({}, () => total(meter(QS)));
+  assert.deepEqual(totals, { fresh: 0, cacheRead: 0, messages: 4, recorded: false });
+  assert.equal(tokenFigure(0, totals.recorded), TOKENS_UNMEASURED, 'no token total prints for a run the host did not measure');
 
   // The rule itself, both ways.
   assert.equal(usageRecorded(ZEROS), false);

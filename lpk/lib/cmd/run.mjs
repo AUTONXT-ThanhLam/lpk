@@ -111,6 +111,9 @@ async function start(repo, o) {
   console.log(`lpk run ${run.id} ${r.took ? 'taken over by this session' : r.amended ? 'amended (ledger and verify kept)' : 'started'} in ${repo} against ${target} (${base.slice(0, 12)}), ${run.lane} lane${run.branch ? `, branch ${run.branch}` : ''}.`);
   console.log(`Checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}. Scenarios: ${run.scenarios.length ? run.scenarios.map((s) => `${s.id} ${s.cmd ? `\`${s.cmd}\`${s.expect !== undefined ? ` expecting "${s.expect}"` : ''}` : `(agent-judged) ${s.agentJudged}`}${s.proves ? ` proves ${s.proves.join(', ')}` : ''}`).join('; ') : 'none yet'}.`);
   if (run.requirements?.length) console.log(`Requirements: ${run.requirements.map((q) => `${q.id} ${q.text}`).join('; ')}.`);
+  const on = currentBranch(repo);
+  const targetName = String(target || '').replace(/^origin\//, '');
+  if (on && (on === targetName || ['main', 'master'].includes(on))) console.log(`This checkout is on ${on}, the branch the change merges into: create the change's own branch (\`git switch -c <type>/<name>\`) before the first commit, and \`lpk verify\` there; a commit here is refused.`);
   console.log(`Until \`lpk run end\` the main session commits only a tree with a green \`lpk verify\`; handing over the branch (\`gh pr create\` without --draft, \`gh pr ready\`) waits for \`lpk gates\`. Draft pushes: ${run.granted.draftPush ? 'granted' : 'not granted; ask the owner before the first push'}.`);
   const ci = ciLines(repo);
   console.log(ci.length ? ['CI runs these; each one that checks the code you will touch belongs among the checks:', ...ci].join('\n') : 'CI: no GitHub Actions or GitLab CI steps found; the checks are the repo\'s own test, lint and typecheck commands.');

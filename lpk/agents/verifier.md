@@ -65,10 +65,10 @@ Rule from what the runs showed:
   cause (the same fix would remove both). Name its primary; it closes with the primary.
 - **UNSETTLED**: you could not settle it either way. Say what you saw and what remains unproved.
 
-Record the verdict with `finding_verdict` (load `mcp__plugin_lpk_lpk__finding_verdict` if your tool list does not hold it yet): the id, the verdict, the evidence, `born`,
+Record the verdict with `finding_verdict` (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): the id, the verdict, the evidence, `born`,
 `cause` and `reach` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
 on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
-docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load `mcp__plugin_lpk_lpk__finding_fixed` if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
+docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, and the evidence.
 
 Do not consult the advisor: a verifier or the lead checks your answer.

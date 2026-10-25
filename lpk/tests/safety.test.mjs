@@ -65,6 +65,10 @@ test('during a run a Jira or Confluence write is denied, and outside a run it go
   assert.match(reason(call('mcp__atlassian__editJiraIssue')), /connector writes wait until the run ends.*`connector:editJiraIssue`/);
   assert.match(reason(call('mcp__8a65d552-86da-4090-85ff-b3b7ab2879a0__createConfluenceContent')), /connector:createConfluenceContent/);
   assert.equal(reaches('PreToolUse', 'pre', 'mcp__atlassian__getJiraIssue'), false, 'reads never reach the hook');
+  // Qoder reaches a deferred MCP tool through `mcp_call`; the gate reads the tool it names.
+  const wrapped = (tool) => pre({ tool_name: 'mcp_call', session_id: 'jira', cwd: repo, tool_input: { toolName: tool, arguments: { issueIdOrKey: 'KD-1' } } });
+  assert.match(reason(wrapped('mcp__atlassian__editJiraIssue')), /connector:editJiraIssue/);
+  assert.equal(wrapped('mcp__atlassian__getJiraIssue'), null, 'a wrapped read goes through');
 });
 
 test('a reviewing role cannot write in a checkout, a verifier writes in the repro worktree, and a builder outside its worktree is only told', () => {

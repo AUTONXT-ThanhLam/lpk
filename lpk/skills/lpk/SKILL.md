@@ -19,9 +19,10 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
    the long pole, split it, hand it off (`lpk handoff`) or take a piece yourself. "Waiting" is never
    your answer twice in a row, because waiting leaves the long pole as long as it was.
 3. Give each agent the goal, the bar and the evidence its gate reads, and let it choose its method.
-4. Agents working side by side are peers: once all are started, send each (SendMessage) the others'
-   agent ids and what each owns, so they tell each other directly when their work touches another's
-   files, contract or findings, and report what they told whom.
+4. Agents working side by side are peers: once all are started, send each (SendMessage; where the
+   host has none, give it to each in the next prompt you write) the others' agent ids and what each
+   owns, so they tell each other directly when their work touches another's files, contract or
+   findings, and report what they told whom.
 5. Keep fixed what the owner trusts the result through: the gates and the evidence they read, the
    verifier's ruling, one fix round and one delta review, the full review net, and the order of the
    steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
@@ -54,7 +55,7 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
-- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load `mcp__plugin_lpk_lpk__finding_list` if your tool list does not hold it yet); only a verifier rules. One you rule on goes in the report with its evidence.
+- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load them with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder if your tool list does not hold them); only a verifier rules, so never add a finding a reviewer already recorded under its id and never rule on one yourself. One ruled on goes in the report with its evidence.
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.
@@ -62,9 +63,12 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   model and the DeepSeek routing. Drafts, briefs and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`: one run sent 29 spawns with `model: opus`, and 15 `general-purpose` drafters
   read 162M cache tokens of Claude quota.
-- **The advisor** (a Sonnet session with an Opus `advisorModel`; subagents inherit it, and each
-  consult rereads the whole transcript at Opus price): consult it before choosing the design
-  approach, before `lpk go`, after a second failed attempt at anything, and before the final report.
+- **The advisor**, where the host has one (a Sonnet session with an Opus `advisorModel`; each consult
+  rereads the whole transcript at Opus price): consult it before choosing the design approach, before
+  `lpk go`, after a second failed attempt, and before the final report. Without an advisor model, ask
+  `lpk:staff` once with the request, the diff and the draft report, for what the run claims but did not do.
+- **When your host lacks a tool lpk names**, do its job another way: `design.md`/`review.md` carry
+  the Workflow path; relay facts in the next prompt, ask in your reply, and the reply notifies.
 - **Evidence, not words.** A gate passes on what the CLI ran (`lpk gates` prints it), not on "done".
   Every text a person reads follows `writing.md` in this skill's directory.
 
@@ -94,7 +98,7 @@ Read each step's file when the step starts; each file states its goal and how it
 - **Quick**: at most three changed files in one repo; no auth marker, credential path,
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
   contract. It skips the brief and the design check, records its numbered requirements and the
-  scenarios that prove them at `lpk run start`, and owes the Bug hunter and the Security reviewer.
+  scenarios that prove them at `lpk run start`, and owes the Code reviewer and the Bug hunter.
 - **Full**: everything else. It owes the whole review net and the Prover.
 
 ## Screens

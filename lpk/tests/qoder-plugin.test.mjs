@@ -228,11 +228,15 @@ test('no matcher names a tool that neither host has', () => {
   }
 });
 
-test('the tool matchers stay host-neutral: every tool they name exists on both hosts', () => {
+test('the tool matchers stay host-neutral: every tool they name exists on both hosts, or is Qoder\'s MCP wrapper', () => {
+  // `mcp_call` is how Qoder reaches a deferred MCP tool; it has no Claude Code counterpart, and the
+  // direct MCP names beside it cover Claude. Matching it is the only way a stamp or a connector gate
+  // sees the call on Qoder.
+  const WRAPPERS = ['mcp_call'];
   for (const [event, verb, matcher] of toolMatchers(json(HOOKS))) {
     for (const alt of alternatives(matcher)) {
       if (!isToolName(alt)) continue;
-      assert.ok(BOTH.includes(alt), `${event} (${verb}): ${alt} is host-only (${CLAUDE_ONLY.includes(alt) ? 'Claude Code has it, Qoder does not' : 'not in the Qoder tool set'}), so it must not be matched`);
+      assert.ok(BOTH.includes(alt) || WRAPPERS.includes(alt), `${event} (${verb}): ${alt} is host-only (${CLAUDE_ONLY.includes(alt) ? 'Claude Code has it, Qoder does not' : 'not in the Qoder tool set'}), so it must not be matched`);
     }
   }
 });
@@ -262,6 +266,7 @@ test('Qoder names the lpk MCP tools exactly as the stamp matcher expects', () =>
     const fqn = mcpToolName(name, 'lpk', tool);
     assert.match(fqn, new RegExp(`^(${matcher})$`), `${fqn} is what Qoder calls the tool; the stamp matcher ${matcher} would miss it`);
   }
+  assert.match('mcp_call', new RegExp(`^(${matcher})$`), `Qoder reaches a deferred tool through mcp_call; the stamp matcher ${matcher} would miss it`);
 });
 
 test('a hyphen in a server name survives the MCP name the matcher is written against', () => {

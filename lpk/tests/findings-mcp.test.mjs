@@ -67,6 +67,9 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     const call = (tool, args, who) => ask(proc, { jsonrpc: '2.0', id: ++n, method: 'tools/call', params: { name: `finding_${tool}`, arguments: stampFinding(hook(dir, tool, args, who)) } });
     const raised = await call('add', { claim: 'the retry repeats a side effect', repro: 'ran it twice', kind: 'defect', severity: 'important', file: 'a.ts', line: 9 }, { agent_type: 'lpk:bug-hunter', agent_id: 'a1' });
     assert.match(raised.result.content[0].text, /^F1 recorded \(lpk:bug-hunter a\.ts:9, open\)/);
+    const leadRuling = await call('verdict', { id: 'F1', verdict: 'duplicate', evidence: 'the lead says so', primary: 'F1' }, { agent_type: 'main' });
+    assert.equal(leadRuling.result.isError, true);
+    assert.match(leadRuling.result.content[0].text, /only lpk:verifier rules on a finding/);
     const causeless = await call('verdict', { id: 'F1', verdict: 'confirmed', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
     assert.match(causeless.result.content[0].text, /born: the step the defect began in/);
     const ruled = await call('verdict', { id: 'F1', verdict: 'confirmed', reach: 'user', born: 'design', cause: 'the brief never says a retry must not repeat the charge', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });

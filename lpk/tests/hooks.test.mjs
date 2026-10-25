@@ -167,6 +167,19 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   const call = { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'stamp', cwd: outer, agent_type: 'lpk:bug-hunter', agent_id: 'a1', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } };
   const stamped = hook('PreToolUse', 'stamp', call).hookSpecificOutput.updatedInput;
   assert.deepEqual([stamped.repo, stamped.run, stamped.from, stamped.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
+  // Qoder names the same tool without the plugin segment; it is stamped the same.
+  const qoder = hook('PreToolUse', 'stamp', { ...call, tool_name: 'mcp__lpk__finding_add' }).hookSpecificOutput.updatedInput;
+  assert.deepEqual([qoder.repo, qoder.run, qoder.from, qoder.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
+  // On Qoder a deferred MCP tool arrives as `mcp_call`; the stamps go into the arguments it carries.
+  const wrapped = hook('PreToolUse', 'stamp', { ...call, tool_name: 'mcp_call', tool_input: { toolName: 'mcp__lpk__finding_add', arguments: { ...call.tool_input, at: 'what-the-agent-said' } } }).hookSpecificOutput.updatedInput;
+  assert.equal(wrapped.toolName, 'mcp__lpk__finding_add');
+  assert.deepEqual([wrapped.arguments.repo, wrapped.arguments.run, wrapped.arguments.from, wrapped.arguments.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
+  // Before `lpk review start`, a builder's own review still records the range it read.
+  writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, base: 'abcdef1234567890' }));
+  const early = hook('PreToolUse', 'stamp', { ...call, tool_input: { ...call.tool_input, at: 'what-the-agent-said' } }).hookSpecificOutput.updatedInput;
+  assert.equal(early.at, 'abcdef123456..staged');
+  assert.equal(early.repo, inner);
+  writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, reviewRange: 'main..feat' }));
   const { addFinding, readLedger } = await import('../lib/findings.mjs');
   const { repo, ...args } = stamped;
   assert.equal(addFinding(repo, args).error, undefined);

@@ -98,7 +98,9 @@ and report what conflicts instead of changing it.
 4. Commit in the worktree with a subject of at most 72 characters that says what changed and why.
 
 When the lead gives you your peers' agent ids, and your work touches a file or contract a peer owns,
-or you find something that changes its work, tell that peer directly with SendMessage.
+or you find something that changes its work, tell that peer directly with SendMessage; if your
+tool list has no SendMessage, name the change, the peer and the files in your reply, and the lead
+relays it.
 
 Consult the advisor, when the session has one, after a second failed attempt at anything and
 before you report done; nowhere else, since each consult rereads your whole transcript at Opus price.

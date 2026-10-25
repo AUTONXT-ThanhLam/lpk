@@ -92,7 +92,7 @@ other.
    file go to one builder. Each works in its own worktree off the reviewed commit
    (`lpk run worktree ../<repo>-fix-<n> <reviewed commit> --branch <branch>-fix-<n>`), all started in one
    message. Size the groups from the slowest cause, so no builder is the long pole. A finding
-   confirmed later goes to the builder whose commit fixes its cause (SendMessage), else to the one
+   confirmed later goes to the builder whose commit fixes its cause (message it where the host has one, else a fresh builder with the finding), else to the one
    that owns its files, else to a new builder. Until the green verify of step 6, the builder amends its cause's commit to close it too.
 4. Give each builder its findings (ids, claims, repros, rulings), the related-test command and the
    bar of step 2. Builders run the related tests and `lpk check`, never `lpk verify`. Where their
@@ -109,7 +109,8 @@ other.
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
-   with `mcp__plugin_lpk_lpk__finding_fixed` (load it if your tool list does not hold it yet); give its id, `commit` the fix's SHA
+   with `finding_fixed`, loaded with ToolSearch on Claude Code or `mcp_list` on Qoder if your tool
+   list does not hold it yet; give its id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
