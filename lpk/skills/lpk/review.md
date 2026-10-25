@@ -45,7 +45,9 @@ app share a database or a port, because then each breaks the other's runs. When 
 failure rows run on two or more surfaces or screens, set `proverGroups`, one group per surface or
 screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
 Prover per group finishes sooner and, with a shorter context, reads more carefully than one Prover
-proving them all. Without the Workflow tool, start the agents it starts yourself, all in one
+proving them all. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
+lines the workflow hunts in up to four bug hunters, each on its share of the group diffs, so each
+reads a shorter context; the tech lead and the code reviews still read the whole diff. Without the Workflow tool, start the agents it starts yourself, all in one
 message.
 
 The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per finding as each

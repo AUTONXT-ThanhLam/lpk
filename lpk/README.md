@@ -10,8 +10,8 @@ in three layers, cheapest first:
 - **the build**: each builder starts with the rules for its files, gets a hint after each edit, and
   has a bug hunter read its slice before it reports done;
 - **the review net**: every lens runs at once on the frozen commit (the tech lead, two reviews of
-  the diff itself, the bug hunter, the security reviewer, regression, claims, OpenCodeReview,
-  mutants, and the screen
+  the diff itself, the bug hunter, the security reviewer, regression, claims, OpenCodeReview
+  on a change of more than ten files, mutants, and the screen
   lenses when screens change), a verifier reproduces each finding, and the Prover uses the change
   on its real surface.
 

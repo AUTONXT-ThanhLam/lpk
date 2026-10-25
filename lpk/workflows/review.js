@@ -6,7 +6,7 @@ export const meta = {
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
-//   testCmd, e2e, proverGroups, mutantAfterProver, maxParallel, stallMs, delta }
+//   testCmd, e2e, proverGroups, bugGroups, mutantAfterProver, maxParallel, stallMs, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
 //   twice runs twice.
@@ -105,6 +105,25 @@ const proverDone = new Promise((r) => { proved = r })
 const groups = (a.proverGroups || []).filter(Boolean)
 const groupOf = new Map()
 const groupFor = (label) => groupOf.get(label.replace(/ \(retry\)$/, ''))
+
+const shardsOf = (groups, from, per, most) => {
+  const total = groups.reduce((n, g) => n + g.lines, 0)
+  if (groups.length < 2 || total <= from) return []
+  const count = Math.min(most, groups.length, Math.ceil(total / per))
+  const goal = total / count
+  const shards = [[]]
+  let sum = 0
+  for (const g of groups) {
+    if (sum > 0 && sum + g.lines / 2 > goal && shards.length < count) { shards.push([]); sum = 0 }
+    shards[shards.length - 1].push(g)
+    sum += g.lines
+  }
+  return shards
+}
+const shards = a.delta ? [] : shardsOf((a.bugGroups || []).filter((g) => g && g.diff), 600, 500, 4)
+const shardOf = new Map()
+const shardFor = (label) => shardOf.get(label.replace(/ \(retry\)$/, ''))
+const huntAsk = 'Hunt the correctness bugs this commit adds, line by line.'
 const prover = (lens) => (label) => (a.surface
   ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.bundle}/proof\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
@@ -117,7 +136,11 @@ const LENSES = {
   techlead: typed('techlead', FINDINGS, 'Review this commit as the team\'s tech lead would before approving the merge: return each finding that would block it, with a verdict for every rule whose glob matches a changed file.'),
   'code-reviewer': typed('code-reviewer', FINDINGS, 'Review only this commit\'s diff, against the base\'s REVIEW.md and the request above: name the rule broken, the intent contradicted, the case no test in the diff covers, and the leftover the diff creates.'),
   security: typed('security', FINDINGS, 'Find the security holes an attacker can exploit through this commit.'),
-  'bug-hunter': typed('bug-hunter', FINDINGS, 'Hunt the correctness bugs this commit adds, line by line.'),
+  'bug-hunter': (lens) => (label) => {
+    const shard = shardFor(label)
+    const only = shard ? `\nHunt only the files of these group diffs; other bug hunters hunt the rest of the commit at the same time, so read another file only to follow a caller or a callee:\n${shard.map((g) => `${g.diff} (${g.files.join(', ')})`).join('\n')}` : ''
+    return typed('bug-hunter', FINDINGS, `${huntAsk}${only}`)(lens)(label)
+  },
   regression: (lens) => (label) => typed('regression', GROUPS, 'Find what this commit breaks for what already worked on the base, here and in sibling repos.')(lens)(label)
     .then((o) => o && { findings: o.findings, missed: skippedOf(o.groups, 'id', 'changes') }),
   claims: typed('claims', FINDINGS, `Check every claim in words this change makes against its code, the drafted PR body included (in ${a.bundle}).`),
@@ -140,6 +163,7 @@ if (unknown.length) return { error: `unknown lens ${unknown.join(', ')}; lenses 
 if (a.delta && (a.delta.raisedBy || []).includes('main')) log('findings the session raised itself are re-checked by the session, not by a lens')
 const runs = owed.flatMap((lens, i) => {
   const label = owed.indexOf(lens) === i ? lens : `${lens}#${owed.slice(0, i + 1).filter((l) => l === lens).length}`
+  if (lens === 'bug-hunter' && shards.length > 1) return shards.map((sh, k) => { shardOf.set(`${label}:${k + 1}`, sh); return { lens, label: `${label}:${k + 1}` } })
   if (lens !== 'prover' || groups.length < 2) return [{ lens, label }]
   return groups.map((g, k) => { groupOf.set(`${label}:${k + 1}`, g); return { lens, label: `${label}:${k + 1}` } })
 })

@@ -128,6 +128,23 @@ test('proverGroups starts one Prover per group at once, each told only its group
   assert.deepEqual(out.scenarios.map((x) => x.scenario), ['S1', 'S2']);
 });
 
+test('a large change is hunted by up to four bug hunters, each told only its group diffs; a small one and a fix delta keep one', async () => {
+  const grp = (id, lines) => ({ id, files: [`src/${id}.ts`], lines, diff: `/b/${id}.diff` });
+  const big = [grp('g1', 300), grp('g2', 300), grp('g3', 300), grp('g4', 300)];
+  const hunt = async (extra) => {
+    const { calls } = await run({ ...ARGS, lenses: ['bug-hunter'], ...extra }, (p, o) => (o.agentType === 'lpk:verifier' ? confirm : found()));
+    return calls.filter((c) => c.opts.agentType === 'lpk:bug-hunter');
+  };
+  const split = await hunt({ bugGroups: big });
+  assert.deepEqual(split.map((c) => c.opts.label), ['bug-hunter:1', 'bug-hunter:2', 'bug-hunter:3']);
+  assert.ok(split.every((c, i) => c.running === i), 'the shards start at once');
+  const told = split.map((c) => big.filter((g) => c.prompt.includes(g.diff)).map((g) => g.id));
+  assert.deepEqual(told.flat(), ['g1', 'g2', 'g3', 'g4'], 'every group diff goes to exactly one hunter');
+  assert.equal((await hunt({ bugGroups: big.map((g) => ({ ...g, lines: 100 })) })).length, 1);
+  assert.equal((await hunt({ bugGroups: big, delta: { range: R, raisedBy: ['bug-hunter'] } })).length, 1);
+  assert.ok(!(await hunt({})).some((c) => c.prompt.includes('Hunt only the files')));
+});
+
 test('a lens that fails runs once more, then is ungraded with the reason', async () => {
   const { out, calls } = await run({ ...ARGS, lenses: ['techlead', 'bug-hunter', 'security'] }, (prompt, o) => {
     if (o.agentType === 'lpk:techlead') return null;

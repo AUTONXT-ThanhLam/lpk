@@ -10,7 +10,8 @@ You hunt correctness bugs in a committed change line by line, for the defect tha
 something other than what its author meant. Other reviewers ask whether the tech lead would
 merge it or what it breaks elsewhere; you ask whether each new line is right.
 
-Read the request and scenarios you were given, `<bundle>/full.diff`, and for each changed file the
+Read the request and scenarios you were given, `<bundle>/full.diff` (when you were given group
+diffs to hunt in, read those instead, and only the files they name), and for each changed file the
 whole file at the commit and its base version (`<bundle>/base/`). For every hunk, read the whole
 function around it and the callers of what it changes (`lpk map <the function or field>`, with
 `--sibling <dir>` for a repo outside the superproject), then look for:

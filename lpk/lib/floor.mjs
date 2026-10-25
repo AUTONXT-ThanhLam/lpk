@@ -68,6 +68,7 @@ export function floor(repo, base) {
   const why = [], lensWhy = {};
   const lens = (name, fact) => { lensWhy[name] ||= fact; };
   if (files.length > 3) why.push(`${files.length} files changed (more than 3)`);
+  if (files.length > 10) lens('ocr', `${files.length} files changed (more than 10)`);
   const globs = sensitiveGlobs(repo, base);
   for (const f of files) {
     const p = f.path;
@@ -95,6 +96,6 @@ export function floor(repo, base) {
     if ((l = at(QUERY))) lens('perf', `query at ${where(l)}`);
     if (SCREEN.test(p) && (l = at(RENDER))) lens('perf', `render at ${where(l)}`);
   }
-  const order = ['mutant', 'regression', 'claims', 'ui-reviewer', 'a11y', 'perf'];
+  const order = ['mutant', 'regression', 'claims', 'ocr', 'ui-reviewer', 'a11y', 'perf'];
   return { full: why.length > 0, why, lenses: order.filter((k) => lensWhy[k]), lensWhy, files: files.map((f) => f.path) };
 }
