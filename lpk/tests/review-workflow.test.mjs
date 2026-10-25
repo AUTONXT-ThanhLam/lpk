@@ -276,3 +276,13 @@ test('a mutant that finds the tests failing on the change itself sends that defe
   assert.deepEqual(out.confirmed.map((v) => v.id), ['F3']);
   assert.deepEqual(out.testGaps, []);
 });
+
+test('a change that touches only documentation owes the tech lead and the claims lens, not the whole net', () => {
+  const repo = repoWith('owed-docs', { 'README.md': 'one\n', 'a.mjs': 'const a = 1;\n' });
+  assert.equal(lpk(repo, 'S', 'run', 'start', '--verify', 'true').status, 0);
+  write(repo, 'README.md', 'two\n');
+  assert.equal(lpk(repo, 'S', 'verify').status, 0);
+  sh(repo, 'commit', '-qam', 'Reword the README');
+  const rows = JSON.parse(lpk(repo, 'S', 'reviews', 'owed', '--json').stdout);
+  assert.deepEqual([...new Set(rows.map((r) => r.lens))].sort(), ['claims', 'techlead']);
+});

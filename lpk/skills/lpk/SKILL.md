@@ -60,7 +60,7 @@ cheapest. Speed comes from less rework and less waiting, never from a thinner re
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.
 - **Spawn `lpk:` agents as their files define them.** Never pass `model`: it overrides the role's
-  model and the DeepSeek routing. Drafts, briefs and fix rounds go to `lpk:staff` or `lpk:builder`,
+  model. Drafts, briefs and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`: one run sent 29 spawns with `model: opus`, and 15 `general-purpose` drafters
   read 162M cache tokens of Claude quota.
 - **The advisor**, where the host has one (a Sonnet session with an Opus `advisorModel`; each consult
@@ -99,7 +99,7 @@ Read each step's file when the step starts; each file states its goal and how it
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
   contract. It skips the brief and the design check, records its numbered requirements and the
   scenarios that prove them at `lpk run start`, and owes the Code reviewer and the Bug hunter.
-- **Full**: everything else. It owes the whole review net and the Prover.
+- **Full**: everything else: the whole review net and the Prover (documentation only: Tech lead, Claims).
 
 ## Screens
 
