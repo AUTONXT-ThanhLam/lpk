@@ -27,12 +27,14 @@ export const meta = {
 // keeps every High and at most three other findings: a revision answers Highs only. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every angle that already answered.
 const a = args || {}
-const missing = ['repo', 'base', 'brief', 'skillDir', 'round'].filter((k) => !a[k])
+const BRIEF_WORDS = 5000
+const missing = ['repo', 'base', 'brief', 'skillDir', 'round', 'words'].filter((k) => !a[k])
 if (!(a.sources || []).length) missing.push('sources')
 const round = Number(a.round)
 if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s lines the previous revision changed)')
 if (round >= 2 && !Array.isArray(a.open)) missing.push('open (the previous round\'s High findings)')
 if (missing.length) return { error: `lpk:design-review needs ${missing.join(', ')} in args` }
+if (Number(a.words) > BRIEF_WORDS) return { error: `lpk:design-review: the brief has ${a.words} words (wc -w); cut it to ${BRIEF_WORDS} or fewer before the round` }
 const changed = new Set((a.changed || []).map(Number))
 const bound = a.timeBound || ''
 const briefJson = a.briefJson || a.brief.replace(/[^/]*$/, 'brief.json')
