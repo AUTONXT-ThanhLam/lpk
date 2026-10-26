@@ -11,7 +11,7 @@ const BODY = readFileSync(join(ROOT, 'workflows', 'design-review.js'), 'utf8').r
 const AsyncFunction = (async () => {}).constructor;
 const parallel = (thunks) => Promise.all(thunks.map((t) => Promise.resolve().then(t).catch(() => null)));
 
-const ARGS = { repo: '/r', base: 'main', brief: '/r/.git/lpk/brief.md', skillDir: '/p/skills/lpk', sources: ['/r/.git/lpk/sources/request.md'], round: 1 };
+const ARGS = { repo: '/r', base: 'main', brief: '/r/.git/lpk/brief.md', skillDir: '/p/skills/lpk', sources: ['/r/.git/lpk/sources/request.md'], round: 1, words: 3000 };
 const LATER = { ...ARGS, round: 2, changed: [30] };
 
 // Runs the workflow; `answer(opts)` gives each agent's return, and every call is kept with how many
@@ -41,6 +41,15 @@ test('round 1 starts five focused critics, the plan simulator and the plan trace
   assert.match(calls[6].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
   assert.equal(out.verdict, 'pass');
   assert.deepEqual(out.counts, { High: 0, Medium: 1, Low: 0 });
+});
+
+test('a brief over the word limit is refused before any critic starts', async () => {
+  const { out, calls } = await run({ ...ARGS, words: 5001 }, answers({}));
+  assert.match(out.error, /5001 words[\s\S]*5000 or fewer/);
+  assert.equal(calls.length, 0);
+  assert.match((await run({ ...ARGS, words: undefined }, answers({}))).out.error, /needs words/);
+  assert.match((await run({ ...LATER, words: 5280, open: [] }, answers({}))).out.error, /5280 words/);
+  assert.match((await run({ ...LATER, words: undefined, open: [] }, answers({}))).out.error, /needs words/);
 });
 
 test('the requirement ids no row proves reach the plan tracer as a fact and no other angle', async () => {

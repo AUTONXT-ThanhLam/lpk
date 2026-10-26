@@ -21,9 +21,9 @@ These are exact and cheap; run them before you design:
 
 Quick or Full, as SKILL.md says, with the reason in one sentence (the lane's why). One PR carries
 one ticket and stays under about 1,500 changed lines, because review rounds grow with both. When
-the request bundles tickets or will pass that size, split it now into one branch and PR per ticket
-or slice, in merge order. A plan of several PRs is a brief too (the PRs, their order, the contract
-between them), reviewed like one: an unreviewed contract once broke the base in ten places. Then
+the request bundles tickets or will pass that size, tell the owner in one line what it costs and the
+split you suggest (one PR per ticket or slice, in merge order); where they want one PR, keep one run
+whose slices become commits. A plan of several PRs is a brief too (the PRs, their order, the contract between them), reviewed like one: an unreviewed contract once broke the base in ten places. Then
 each PR is its own lpk run in its own worktree, side by side.
 
 The Quick lane skips the rest of this file: number the requirements `R1`, `R2`… with their
@@ -51,7 +51,7 @@ compaction and every agent reads the same text, record the choice with `lpk deci
 brief in chat on one screen. The briefs you did not take are the alternatives a `redesign` starts
 from.
 
-The brief follows `writing.md` in this skill's directory. It holds:
+The brief follows `writing.md` in this skill's directory and stays at 5,000 words or fewer (`wc -w`): a longer brief draws more Highs per round and takes longer to revise. A change that needs more states the contract between its slices and each slice's scenarios; how a slice does its work is its builder's, shown by its tests. It holds:
 - who uses the change, where they meet it, and the before and after in their terms;
 - the requirements, numbered `R1`, `R2`… in one list, each with its source (a quote, a document
   and section, or `inferred`). Every sentence of the owner's that asks for, forbids or limits
@@ -93,7 +93,7 @@ Prover PASS or a new test naming it with `lpk verify` green proves each requirem
 
 Create the branch, named the way the repo names them, then start these in the background at once:
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
-  `skillDir` (this skill's directory), `sources` (those files), `precedent` (the path of the
+  `skillDir` (this skill's directory), `words` (`wc -w` of the brief), `sources` (those files), `precedent` (the path of the
   `lpk precedent` output), `timeBound` (only when the owner gave one), `baseSuite` (the base test
   suite's time, once known) and `round: 1`. It runs five design critics (one focus each), the plan
   simulator and the plan tracer at once, each fresh, and returns their findings rated High, Medium
@@ -107,11 +107,11 @@ share one test author. Tests written during the review were rewritten three time
 
 The design is reviewed in rounds, at most three. Before each round list the requirement ids no scenario or failure row
 `proves` (`jq -r '([.scenarios[]?,.failures[]?]|map(.proves[]?)) as $p|.requirements[]|select(.id as $i|$p|index($i)|not)|.id'
-brief.json`) and pass them as `coverage`, a fact for the plan tracer. From round 2 on, also pass `open` (the previous round's
+brief.json`) and pass them as `coverage`, a fact for the plan tracer. Pass `words` (`wc -w` of the brief) every round. From round 2 on, also pass `open` (the previous round's
 High findings) and `changed`: only the angles with an open High run again, each checking its Highs are closed and reading the changed lines and what they reach. After each round:
 1. Record it: `lpk decide "design review round <n>: <verdict>, <High>/<Medium>/<Low>" --why "<each
    High's cause, and what changes>"`, and append its Mediums and Lows to `notes.md` beside the brief.
-2. At any verdict and rating, close each `reuse-first` finding (the `reuse` critic's, or one naming
+2. Until the verdict is `last`, close each `reuse-first` finding (the `reuse` critic's, or one naming
    the rule) in the brief before the build: the helper or the dependency's API takes over the
    mechanism, or the brief cites the run that shows where it falls short.
 3. `pass`: the review is done. `incomplete`: an angle never answered; run the round again.
@@ -126,7 +126,7 @@ High findings) and `changed`: only the angles with an open High run again, each 
    answered with a run, citing the command and its output in the brief beside the line it concerns:
    a disagreement is settled by a run, never by argument. A High only the owner can settle (a time
    bound they gave, the scope) is one question to them. Mediums and Lows stay in `notes.md`, never in
-   a revision. A revision grows the brief by at most a tenth (`wc -w`): a brief that grows faster draws new Highs.
+   a revision. A revision grows the brief by at most a tenth and keeps it within 5,000 words: a brief that grows faster draws new Highs.
    Before editing, copy the brief to `brief.r<n>.md` (or hand the revision to `lpk:staff`); then run
    round n+1 with `changed` from `diff --unchanged-line-format= --old-line-format= --new-line-format="%dn%c'\012'" brief.r<n>.md brief.md`.
 5. `redesign`: a design critic's open High is still open on the lines the revision changed, so the
@@ -134,7 +134,7 @@ High findings) and `changed`: only the angles with an open High run again, each 
    dependency does it. Choose a different approach, from the briefs the duel did not take, the
    alternatives the brief weighed or a new one, never a third patch, and review it as round 1 again
    (no `changed`). A second `redesign` in one review is answered as `last`.
-6. `last`: round 3 still has Highs. Answer each with a run, or carry it into the build as a named risk with its test.
+6. `last`: round 3 still has Highs. The brief is final: no staff revision and no further round, whatever the Highs say. Answer each with a run cited in `lpk decide`, or carry it, a `reuse-first` finding included, into the build as a named risk with its test, and hand the builders the list.
 7. A High raised again after the brief answered it with a run: take the side the run supports, or
    the safer one, and log it.
 
