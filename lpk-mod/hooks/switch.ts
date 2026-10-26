@@ -8,14 +8,14 @@ import { type Host, lpkRoot, run, runDir, runLpk, runStatus, words } from './lpk
 
 const ACTIVE = new Set(['pending', 'running', 'waiting'])
 
-export type Account = { id: string; name: string; isActive: boolean; quota: string }
+export type Account = { id: string; name: string; isActive: boolean; quota: string; limited: boolean }
 
 // `cc-switch status` prints one line an account: `* cc1 name   5-hour 40% ...`, `*` on the active.
 export function parseAccounts(text: string): Account[] {
   const out: Account[] = []
   for (const line of text.split('\n')) {
     const m = /^([* ]) (\S+) (\S+)\s*(.*)$/.exec(line)
-    if (m) out.push({ isActive: m[1] === '*', id: m[2] ?? '', name: m[3] ?? '', quota: (m[4] ?? '').trim() })
+    if (m) out.push({ isActive: m[1] === '*', id: m[2] ?? '', name: m[3] ?? '', quota: (m[4] ?? '').trim(), limited: /\bLIMITED\b/.test(m[4] ?? '') })
   }
   return out
 }
@@ -55,22 +55,39 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
   const accounts = parseAccounts(status.stdout)
   if (status.exitCode !== 0 || accounts.length === 0)
     return { text: `\`cc-switch status\` did not list the accounts (exit ${status.exitCode}): ${(status.stderr || status.stdout).trim()}` }
-  const from = accounts.find((a) => a.isActive)
+  const ownId = ((await $.env.get('LPK_ACCOUNT')) ?? '').trim()
+  const own = accounts.find((a) => a.id === ownId)
+  const from = own ?? accounts.find((a) => a.isActive)
   const wanted = words(e.args)[0]?.toLowerCase()
   if (!from) return { text: `No account is marked active:\n${listed(accounts)}\nType /lpk-switch <account> to choose one.` }
+  const others = [...accounts.slice(accounts.indexOf(from) + 1), ...accounts.slice(0, accounts.indexOf(from))]
   const to = wanted
     ? accounts.find((a) => a.id.toLowerCase() === wanted || a.name.toLowerCase() === wanted)
-    : accounts[(accounts.indexOf(from) + 1) % accounts.length]
-  if (!to) return { text: `no account "${wanted}". The accounts:\n${listed(accounts)}` }
+    : others.find((a) => !a.limited)
+  if (wanted && !to) return { text: `no account "${wanted}". The accounts:\n${listed(accounts)}` }
+  if (!to) return { text: `Every other account is at its limit, so there is nowhere to move this session:\n${listed(accounts)}\nNothing changed.` }
+  if (own && to.id === own.id) return { text: `This session already runs on ${own.id} (${own.name}). Nothing changed.\n${listed(accounts)}` }
 
   const cwd = await $.session.cwd()
   const card = await stateCard($, options, cwd, to)
   const dir = await runDir($, cwd)
   let where = 'not written to disk: this folder is not inside a git repository'
+  let cardPath = ''
   if (dir) {
     const made = await run($, ['mkdir', '-p', dir])
     const path = `${dir}/state-card.md`
     where = made.exitCode === 0 ? await $.fs.write(path, `${card.text}\n`).then(() => path, (err: unknown) => `not written: ${String(err)}`) : `not written: ${made.stderr.trim()}`
+    if (where === path) cardPath = path
+  }
+
+  const swappable = card.agents.length === 0 && Boolean(await $.env.get('CC_SWAP_LAUNCHER')) && Boolean(await $.env.get('CC_SWAP_REQUEST'))
+  if (swappable) {
+    const started = await run($, ['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', to.id], { env: { CLAUDE_CODE_SESSION_ID: await $.session.id(), CC_SWAP_CARD: cardPath } })
+    if (started.exitCode !== 0) return { text: `Could not start the restart (exit ${started.exitCode}): ${started.stderr.trim()}\nState card: ${where}` }
+    return {
+      text: `Moving this session to ${to.id} (${to.name}); claude restarts on the same conversation in a few seconds.\nState card: ${where}${to.limited ? `\n${to.id} is at its limit: the next turn there stops on quota.` : ''}`,
+      context: [`The owner moved this session to the account ${to.id} with /lpk-switch and claude restarts on it. Agents and workflows that were running here are gone: continue their unfinished work with new agents or a new workflow, not by messaging old agent ids. The state card, read it first after the restart:\n\n${card.text}`],
+    }
   }
 
   let moved = `cc-switch already points at ${to.id} (${to.name}); nothing was switched.`
@@ -82,11 +99,13 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     const after = parseAccounts(flip.stdout)
     moved = `${flip.stdout.split('\n')[0]?.trim()}${after.length ? `\n${listed(after)}` : ''}`
   }
+  const ownLine = own ? `This session runs on ${own.id} (${own.name}). ` : `This session's own account is not known (it was not started through \`claude\` with LPK_ACCOUNT), so ${from.id} is the one cc-switch had active. `
+  if (to.limited) moved += `\n${to.id} (${to.name}) is at its limit: the next claude start there stops on quota.`
   const busy = card.agents.length
     ? `\n${card.agents.length} agent(s) still at work: /exit ends them and their unfinished work is lost. Wait for their notifications first unless they are failing on quota.`
     : ''
   return {
-    text: `${moved}\nState card: ${where}${busy}\nThis session keeps the account it started on until it restarts. Next: type /exit, then run \`claude -c\` in this folder.`,
+    text: `${ownLine}${moved}\nState card: ${where}${busy}\nThis session keeps the account it started on until it restarts. Next: type /exit, then run \`claude -c\` in this folder.`,
     context: [`The owner is moving this session to the account ${to.id} with /lpk-switch. After the restart, agents and workflows that were running here are gone: continue their unfinished work with new agents or a new workflow, not by messaging old agent ids. The state card, read it first after the restart:\n\n${card.text}`],
   }
 }
