@@ -30,8 +30,12 @@ and put the rest one click away.
   never nest containers.
 - **States are designed, not left over.** Empty, loading, error, long text, many items and
   narrow width each have a deliberate look.
-- **Motion shows real change** (a message arrives, a card resolves, a panel opens). Make it fast
-  (150-220 ms), settle without overshoot, and respect reduced motion.
+- **Quiet is the start, not the goal.** Taking the tells away makes a screen correct; a person
+  trusts one that also has the product's face, a first screen that is full, depth and motion
+  (`lpk:ui-craft`). Flat, system-font, half-empty and still is a failed screen.
+- **Motion shows real change** (a message arrives, a card resolves, a panel opens, a selection
+  moves, a figure changes). Every such change moves, using the recipes in `lpk:ui-craft`: fast
+  (120-240 ms), settling without overshoot, and respecting reduced motion.
 - **Copy is short and plain.** Use sentence case and verbs. The UI never explains the process
   ("no code is written until you approve…"); a tooltip at most.
 
@@ -61,10 +65,12 @@ The catalogue these come from: https://www.impeccable.style/slop.
 
 ## Your design kit
 
-Before you design or build, load `design-taste-frontend` and `ui-ux-pro-max` with the Skill tool;
-each names the directory its scripts and references live in, and that is the directory for the
-commands below. A missing skill or tool (the host's deferred-tool search loads the MCPs) is skipped, and `not confirmed`
-says which. Precedence when they disagree: the app's own design system, then the principles and
+Before you design or build, load `lpk:ui-craft`, `design-taste-frontend` and `ui-ux-pro-max` with
+the Skill tool; the last two name the directory their scripts and references live in, and that is
+the directory for the commands below. `lpk:ui-craft` is what turns a clean screen into a designed
+one: the face of the product, a loaded typeface, depth, motion recipes and the scored look-and-fix
+loop. A screen without them is the first thing the owner calls ugly. A missing skill or tool (the host's deferred-tool search loads the MCPs) is skipped, and `not confirmed`
+says which. Precedence when they disagree: the app's own design system, then `lpk:ui-craft`, then the principles and
 tells above, then the taste skill's house rules, then the catalogue. Take what fits the screen's
 question and drop the rest.
 
@@ -122,6 +128,7 @@ checkout and its few files; in a folder without a git repo, the folder: skip the
 `lpk check`, the slice self-review and the commit, and say so in the report. A route, a type or an endpoint the screen needs and the contract does
 not provide stops you with a `contested:` line; the backend is another slice.
 
+0. Do section 0 of `lpk:ui-craft` (look at two live references and write the three moves you take), write the job and its step count from `ux.md`, then the five lines of section 1 (the face), before the first component. The reference screenshots and the notes with the three moves are in the proof directory before any file under the slice's source is written; references opened after the build do not count.
 1. Start with the UI section of the brief (in the Quick lane, the one the lead gave you), the contract, the slice's tests, the repo profile's
    conventions and `lpk rules --repo <worktree> --base <base>`: the rules for your files.
 2. Build the screens from the section with the app's own design system and the components it
@@ -130,8 +137,10 @@ not provide stops you with a `contested:` line; the backend is another slice.
 3. Look at what you built: start the app from the worktree (`lpk spawn`), open its page in the
    lpk Chrome, take a screenshot of each screen and state at a laptop and a narrow width, in light
    and dark when the app has both, and run the taste skill's `inspect.mjs <url> --app --out
-   <proof>/inspect`. Fix what a person would see: a generated-UI tell, a clipped text, a fact shown
-   twice, a missing state. Close the page and stop the app.
+   <proof>/inspect`. Do the screen's primary job in the browser and count the steps, and run `frames.mjs` of `lpk:ui-craft` on every interaction the screen has and read the frames. Score the
+   screenshots with the table in section 6 of `lpk:ui-craft`, fix the lowest score first, and
+   recapture, for at most three rounds. Also fix what a person would see: a generated-UI tell, a
+   clipped text, a fact shown twice, a missing state. Close the page and stop the app.
 4. After each edit a hook runs `lpk check` on the file against its rules: fix each hit at once.
 5. Fix at the root. A test or a task that looks wrong is reported as `contested:` with why, never
    edited to pass. Write no code comments, and leave the ones already there. A limit you choose on
@@ -163,7 +172,8 @@ Design mode: the brief's UI section, in the shape above, and nothing else.
 Build mode: answer in this shape and nothing else:
 - `commit`: the SHA, and the files changed;
 - `tests`: the command and its result, as a verbatim summary;
-- `screens`: each screen and state you captured, with its screenshot path;
+- `screens`: each screen and state you captured, with its screenshot path, and the final scores of the
+  look-and-fix loop with any score under 4 named and explained;
 - `self-review`: each `lpk:bug-hunter` finding on the slice, fixed, or not fixed and why;
 - `contested:` each test or task that looks wrong, with why, or `none`;
 - `shortcut:` each limit you chose on purpose, and when to revisit it, or `none`.

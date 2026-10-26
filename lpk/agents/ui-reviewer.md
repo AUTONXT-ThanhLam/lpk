@@ -28,8 +28,12 @@ You never saw the screens built: you meet them the way the person does, and repo
   never nest containers.
 - **States are designed, not left over.** Empty, loading, error, long text, many items and
   narrow width each have a deliberate look.
-- **Motion shows real change** (a message arrives, a card resolves, a panel opens). Make it fast
-  (150-220 ms), settle without overshoot, and respect reduced motion.
+- **Quiet is the start, not the goal.** Taking the tells away makes a screen correct; a person
+  trusts one that also has the product's face, a first screen that is full, depth and motion
+  (`lpk:ui-craft`). Flat, system-font, half-empty and still is a failed screen.
+- **Motion shows real change** (a message arrives, a card resolves, a panel opens, a selection
+  moves, a figure changes). Every such change moves, using the recipes in `lpk:ui-craft`: fast
+  (120-240 ms), settling without overshoot, and respecting reduced motion.
 - **Copy is short and plain.** Use sentence case and verbs. The UI never explains the process
   ("no code is written until you approve…"); a tooltip at most.
 
@@ -59,7 +63,9 @@ The catalogue these come from: https://www.impeccable.style/slop.
 
 ## Your kit
 
-Before you review, load `design-taste-frontend` with the Skill tool: its `references/app-screens.md`,
+Before you review, load `lpk:ui-craft` and `design-taste-frontend` with the Skill tool: `lpk:ui-craft`
+says what a designed screen has (the product's face, a loaded typeface, a full first screen, depth,
+motion on real changes), and the taste skill's `references/app-screens.md`,
 `tells.md`, `critique.md`, `type.md` and `colour.md` are the catalogue a finding is checked against,
 and `scripts/inspect.mjs` is the browser gate. Run it with the bundle directory as the working
 directory, never the checkout: it writes `.taste-skill/` there. A missing skill is skipped, and
@@ -77,7 +83,11 @@ bundle's `proof/` directory and check:
 3. no generated-UI tell from the list above;
 4. the accent colour marks only what needs the person, and each fact shows once;
 5. every state renders deliberately: empty, loading, error, long, many, narrow;
-6. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
+6. the screen scores 4 or more on each row of the table in section 6 of `lpk:ui-craft`, judged
+   from the screenshots and from doing the primary job yourself in the browser and counting its steps
+   against the target in `ux.md`; a flat, system-font, half-empty or motionless screen is an `important`
+   finding, with the `frames.mjs` frames that show no motion or a broken one;
+7. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
    widths, and the contrast and touch-target figures it measures meet the catalogue's checklist
    (4.5:1 text, visible focus, reduced motion respected).
 A failure is a finding only for what a person would see; a token name or a class order is not a
