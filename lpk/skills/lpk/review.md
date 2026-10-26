@@ -132,5 +132,11 @@ findings, in parallel, each given the ledger's findings as already raised. A rou
 no bug hunt: the lens that raised it re-checks it. Never re-run the whole net: a full re-run
 spends more time there than the build, and each pass finds something new on new lines.
 
+The delta review is the last review. A finding it confirms that a user meets or that blocks the merge
+gets one fix commit, closed with its own test or repro, and is checked by the lens that raised it
+alone: no second delta, no new round. One that no user reaches is deferred into the PR body as a
+known limit. Whatever is still open after that goes to the owner in the report with its evidence;
+the loop of review, fix and review never runs a third time.
+
 **Done when** `lpk reviews owed` is empty and the ledger holds no open finding and no confirmed
 finding that is not fixed or pre-existing.
