@@ -123,9 +123,9 @@ const refuse = (why) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', pe
 export function spawnRule(input) {
   if (!/^(Agent|Task)$/.test(input.tool_name || '')) return null;
   const type = input.tool_input?.subagent_type;
+  if (GENERAL.has(type)) return refuse('lpk: a general agent works without lpk\'s rules, on the lead\'s model or the one the spawn names; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
   const { repo, run } = runOf(input, false);
   if (!run) return null;
-  if (GENERAL.has(type)) return refuse('lpk: this session holds an lpk run, and a general agent works without its rules on the lead\'s model; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
   if (type !== 'lpk:builder' || run.lane !== 'full' || !existsSync(join(dirname(run.marker), 'brief.json')) || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
   return refuse('lpk: no builder before go: this run has a Design Brief but no `lpk go`; end its review, and run `lpk go` when the owner says go.');
 }
