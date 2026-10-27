@@ -6,7 +6,7 @@ unless `lpk gates` holds on the HEAD it names.
 
 ## CI
 
-Run `lpk ci <pr>` after each push: for each failing job it prints whether it is also red on main's
+After each push wait for CI with Monitor on `gh pr checks <pr> --watch`, never a foreground `sleep`, then run `lpk ci <pr>`: for each failing job it prints whether it is also red on main's
 latest run, red only here, or flipped on one rerun, and each new test file's pass count in CI. A
 job red only here is a finding: reproduce it here, fix it at its cause, `lpk verify`, commit and
 push, and add its command to the run's checks and the repo profile. A new test file with no passes

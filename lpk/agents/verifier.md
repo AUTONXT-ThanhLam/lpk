@@ -55,7 +55,9 @@ Rule from what the runs showed:
   change); `neither` when it is real but no user reaches it and nothing blocks the merge (style,
   naming, structure, a case no caller produces, a cleanup). A `neither` finding is deferred at
   once and listed as a known limit, so name the caller or input you looked for and did not find.
-  When in doubt between `neither` and the other two, it is not `neither`.
+  When in doubt between `neither` and the other two, it is not `neither`. `area`: set it when the
+  defect touches security, auth, data, concurrency, migration or permissions and the finding names
+  none; such a finding is never a known limit.
 - **PRE-EXISTING**: the same failure on the base.
 - **DROPPED**, with its basis: `disproved` (the guard at `file:line`, the test that covers it, the
   input that cannot reach it) or `not-reproduced` (what you ran and what it showed). A finding in

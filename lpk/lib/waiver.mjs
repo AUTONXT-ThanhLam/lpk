@@ -3,8 +3,10 @@
 // `git:reset --hard`). The PostToolUse hook records each option the owner picked as a
 // waiver record of the run; what the owner did not pick, and a dialog that closed on its own while
 // the owner was away, records nothing.
+import { top } from './git.mjs';
 import { records } from './hooks.mjs';
 import { WAIVE_SOURCE } from './records.mjs';
+import { sessionRuns } from './run.mjs';
 
 export { WAIVE_SOURCE };
 
@@ -23,6 +25,13 @@ export function picks(toolInput, toolResponse) {
     return (q.options ?? []).map((o) => o.label).filter((l) => l && items.includes(`,${l.split(',').map((s) => s.trim()).join(',')},`))
       .map((what) => ({ question: q.question, what }));
   });
+}
+
+// The run a waiver belongs to: the one in the repo the call runs in, else the session's only run.
+export function waiverRun(input) {
+  const held = sessionRuns(input.session_id);
+  const here = input.cwd ? held.find((r) => r.repo === top(input.cwd)) : null;
+  return here || (held.length === 1 ? held[0] : null);
 }
 
 // Records the picks against the session's run; returns how many were recorded.

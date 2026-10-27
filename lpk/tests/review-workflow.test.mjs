@@ -194,7 +194,7 @@ test('no more agents run at once than args.maxParallel allows', async () => {
 
 test('the lenses `lpk reviews owed` lists are the workflow\'s own names, a lens owed twice listed twice', async () => {
   const repo = repoWith('owed-full', { 'a.mjs': 'const a = 1;\n' });
-  assert.equal(lpk(repo, 'S', 'run', 'start', '--verify', 'true').status, 0);
+  assert.equal(lpk(repo, 'S', 'run', 'start', '--bar', 'production', '--verify', 'true').status, 0);
   write(repo, 'a.mjs', 'const a = 2;\n');
   assert.equal(lpk(repo, 'S', 'verify').status, 0);
   sh(repo, 'commit', '-qam', 'Set a to 2');
@@ -279,7 +279,7 @@ test('a mutant that finds the tests failing on the change itself sends that defe
 
 test('a change that touches only documentation owes the tech lead and the claims lens, not the whole net', () => {
   const repo = repoWith('owed-docs', { 'README.md': 'one\n', 'a.mjs': 'const a = 1;\n' });
-  assert.equal(lpk(repo, 'S', 'run', 'start', '--verify', 'true').status, 0);
+  assert.equal(lpk(repo, 'S', 'run', 'start', '--bar', 'production', '--verify', 'true').status, 0);
   write(repo, 'README.md', 'two\n');
   assert.equal(lpk(repo, 'S', 'verify').status, 0);
   sh(repo, 'commit', '-qam', 'Reword the README');

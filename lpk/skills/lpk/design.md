@@ -20,11 +20,10 @@ These are exact and cheap; run them before you design:
 ## Choose the lane
 
 Quick or Full, as SKILL.md says, with the reason in one sentence (the lane's why). One PR carries
-one ticket and stays under about 1,500 changed lines, because review rounds grow with both. When
-the request bundles tickets or will pass that size, tell the owner in one line what it costs and the
-split you suggest (one PR per ticket or slice, in merge order); where they want one PR, keep one run
-whose slices become commits. A plan of several PRs is a brief too (the PRs, their order, the contract between them), reviewed like one: an unreviewed contract once broke the base in ten places. Then
-each PR is its own lpk run in its own worktree, side by side.
+one ticket and stays under about 1,500 changed lines, because review rounds grow with both. When the request bundles tickets or will pass that size, tell the owner in one line what it costs and the
+split you suggest (one PR per ticket or slice, in merge order); where they want one PR, keep one run whose slices become commits. A plan of several PRs is a brief too (the PRs, their order, the contract between them), reviewed like one: an unreviewed contract once broke the base in ten places. Then each PR is its own lpk run in its own worktree, side by side.
+
+The bar is separate from the lane. A run starts at the increment bar: a small change a person can use now, owing the Code reviewer and the Bug hunter (and Security when the floor lists an auth, credential, migration or `SENSITIVE.md` fact); a confirmed finding outside the protected areas and the scenarios is a known limit, listed in the PR body as the next increment. `lpk run start --bar production` raises it, and it never lowers.
 
 The Quick lane skips the rest of this file: number the requirements `R1`, `R2`… with their
 sources, write the failure table for what the change calls or stores (a few rows), then go to

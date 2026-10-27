@@ -192,7 +192,7 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   assert.deepEqual(hook('PreToolUse', 'stamp', verdict).hookSpecificOutput.updatedInput, { id: 'F1', verdict: 'dropped', repo: inner, run: run.id, by: 'lpk:verifier' });
 });
 
-test('the finding hook keeps the run of the repo the call runs in, else takes the one its session holds', () => {
+test('the finding hook keeps the run of the repo the call runs in, else the only run its session holds, and guesses between two never', () => {
   const stamp = (cwd, session) => hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_list', session_id: session, cwd, tool_input: {} }).hookSpecificOutput.updatedInput;
   const runId = (dir) => JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')).id;
   const here = repoWith('stamp-here', { 'a.mjs': '1\n' });
@@ -208,8 +208,21 @@ test('the finding hook keeps the run of the repo the call runs in, else takes th
   // One unreadable entry in the index of live runs is skipped, not a failed hook.
   mkdirSync(join(tmp, 'state', 'lpk', 'active', 'unreadable'), { recursive: true });
   assert.deepEqual([stamp(here, 'two').repo, stamp(here, 'two').run], [here, hereRun], 'the cwd repo\'s own run wins over a newer one elsewhere');
-  assert.deepEqual([stamp(plain, 'two').repo, stamp(plain, 'two').run], [there, thereRun], 'outside any repo, the newest run the session holds');
-  assert.deepEqual([stamp(foreign, 'two').repo, stamp(foreign, 'two').run], [there, thereRun], 'from a repo with another session\'s run, this session\'s own');
+  assert.equal(stamp(plain, 'two').run, undefined, 'outside any repo, two runs held leave the call unstamped');
+  assert.deepEqual(stamp(foreign, 'two'), { repo: foreign }, 'from a repo with another session\'s run, two held runs are not guessed between');
+  const add = (cwd) => hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd, agent_type: 'lpk:bug-hunter', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } });
+  const denied = reason(add(foreign));
+  assert.match(denied, /holds 2 open lpk runs/);
+  assert.ok(denied.includes(`${here} (run ${hereRun})`) && denied.includes(`${there} (run ${thereRun})`) && denied.includes('with `repo` set to the repo of the run'));
+  assert.equal(hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd: foreign, agent_type: 'lpk:bug-hunter', tool_input: { repo: here, claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } }).hookSpecificOutput.updatedInput.run, hereRun, 'a call naming the repo of one held run lands there');
+  assert.match(reason(hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd: foreign, tool_input: { repo: foreign, claim: 'c' } })), /holds 2 open lpk runs/, 'a repo that is none of them is not taken');
+  assert.equal(add(there).hookSpecificOutput.updatedInput.run, thereRun, 'from inside one of them, that run');
+  const named = (cwd, repo) => hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_verdict', session_id: 'two', cwd, tool_input: { repo, id: 'F1', verdict: 'dropped' } }).hookSpecificOutput.updatedInput.run;
+  assert.equal(named(there, here), hereRun, 'a call naming one held run from inside another lands in the named one');
+  assert.equal(named(there, `${here}/`), hereRun, 'a trailing slash names the same repo');
+  const lone = repoWith('stamp-lone', { 'a.mjs': '1\n' });
+  const loneRun = runId(startRun(lone, 'solo'));
+  assert.deepEqual([stamp(plain, 'solo').repo, stamp(plain, 'solo').run], [lone, loneRun], 'outside any repo, the one run the session holds');
   assert.deepEqual(stamp(foreign, 'nobody'), { repo: foreign }, 'a session with no run gets none');
   assert.equal(stamp(loose, 'two').run, runId(looseDir), 'an unbound run in the cwd repo is used');
   assert.equal(stamp(plain, 'three').run, undefined, 'an unbound run elsewhere is not taken');
@@ -225,4 +238,20 @@ test('a commit whose subject a push would refuse is named right after the commit
   write(repo, 'a.txt', 'c\n'); sh(repo, 'commit', '-qam', long);
   assert.match(context(after('git commit -F msg.txt')), new RegExp(`over 72 characters[\\s\\S]*\\(74\\): "${long}"`));
   assert.equal(after('git status'), null);
+});
+
+test('the owner\'s waiver lands in the run of the repo the question was asked in, never a guess between two held runs', () => {
+  const one = repoWith('waive-one', { 'a.mjs': '1\n' });
+  const two = repoWith('waive-two', { 'a.mjs': '1\n' });
+  const outside = join(tmp, 'waive-outside');
+  mkdirSync(outside);
+  const oneDir = startRun(one, 'pair');
+  const twoDir = startRun(two, 'pair');
+  const q = { question: 'Waive the findings gate?', options: [{ label: 'gate:findings' }] };
+  const ask = (cwd) => hook('PostToolUse', 'waive', { tool_name: 'AskUserQuestion', session_id: 'pair', cwd, tool_input: { metadata: { source: 'lpk:waive' }, questions: [q] }, tool_response: { answers: { [q.question]: 'gate:findings' } } });
+  const waivers = (dir) => records(dir).filter((r) => r.kind === 'waiver').length;
+  ask(one);
+  assert.deepEqual([waivers(oneDir), waivers(twoDir)], [1, 0], 'asked inside the first repo, it is that run\'s');
+  assert.match(context(ask(outside)), /NOT recorded/, 'asked outside both repos, it says so');
+  assert.deepEqual([waivers(oneDir), waivers(twoDir)], [1, 0], 'and records nothing');
 });

@@ -54,6 +54,7 @@ const TOOLS = [
         born: { type: 'string', enum: BORN, description: 'for confirmed: the step the defect began in' },
         cause: str('for confirmed: why the defect exists, at the place it starts, in one sentence'),
         reach: { type: 'string', enum: REACH, description: 'for confirmed: user (a person or caller meets it), merge (the tech lead would block the merge on it) or neither (the finding is deferred, listed as a known limit)' },
+        area: { type: 'string', enum: PROTECTED, description: 'for confirmed: set it when the defect is in a protected area and the finding has none; such a finding is never a known limit' },
         ...stamped, by: str(STAMP),
       },
       required: ['id', 'verdict', 'evidence'],
