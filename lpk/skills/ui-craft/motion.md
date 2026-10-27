@@ -8,7 +8,7 @@ tooltip. The app's own system wins where it speaks.
 | How often a person meets it | Decision |
 |---|---|
 | Hundreds of times a day, or started from the keyboard (shortcut, palette toggle, arrow keys in a list) | Does not animate. It appears and disappears in the same frame |
-| Dozens of times a day (row hover, menu open, tab switch, selection) | 120 ms or less, opacity and a small scale only |
+| Dozens of times a day (row hover, menu open, tab switch, selection) | 150 ms or less, opacity and a small scale only |
 | Occasional (dialog, toast, popover on a detail) | The recipes below |
 
 - A menu that animates on every open is a delay for someone who opens it forty times a day: a key

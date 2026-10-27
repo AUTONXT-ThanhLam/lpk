@@ -117,10 +117,11 @@ const ease = [0.22, 1, 0.36, 1] as const
   happens sets the duration: motion a person triggers dozens of times a day (row hover, menu open,
   tab switch, selection) stays at 150 ms or less; an action started from the keyboard, or repeated
   a hundred times a day, does not animate at all; the 180-240 ms recipes are for occasional changes.
-- **Popover, menu, tooltip and toast**: it opens from the point of its trigger (`transform-origin`
-  set there) with opacity and `scale(0.95)` to 1, never from `scale(0)`; a modal stays centred.
-  Use a transition, not a keyframe, for anything that can be re-triggered mid-flight, and
-  `@starting-style` for the entrance of an element that mounts.
+- **Popover and menu**: it opens from the point of its trigger (`transform-origin` set there) with
+  opacity and `scale(0.95)` to 1, never from `scale(0)`; a modal stays centred. A toast and a
+  tooltip take the values of the table in `motion.md`. Use a transition, not a keyframe, for
+  anything that can be re-triggered mid-flight, and `@starting-style` for the entrance of an
+  element that mounts.
 - **Status change**: the dot or label crossfades colour in 200 ms; a running item has a spinner
   that turns, nothing pulses.
 - **Figures that change after load**: roll or crossfade the digit, 300 ms, never on first paint.

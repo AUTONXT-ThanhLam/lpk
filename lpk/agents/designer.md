@@ -184,14 +184,16 @@ list it under `not confirmed` in your report.
 
 ## A new app with no design system
 
-Write `DESIGN.md` at the app's root from the five decisions of section 1 of `lpk:ui-craft`: the
-ground ramp, the one hue, the type, the spacing and the radii. Its format is a YAML front matter
-between `---` lines (`name`, then `colors`, `typography`, `rounded` and `spacing` maps whose
-values are hex colours, `{fontFamily, fontSize}` pairs and px sizes), followed by `## Overview` and
-`## Colors` sections in two or three plain sentences. Run
+In design mode, return the five decisions of section 1 of `lpk:ui-craft` in the UI section. In
+build mode the slice that builds the app's shell writes `DESIGN.md` at the app's root from them
+(ground ramp, one hue, type, spacing, radii); every other slice reads it and never writes it. Its
+format is a YAML front matter between `---` lines (`name`, then `colors`, `typography`, `rounded`
+and `spacing` maps whose values are hex colours, `{fontFamily, fontSize}` pairs and px sizes),
+followed by `## Overview` and `## Colors` sections in two or three plain sentences. Run
 `npx -y @google/design.md@0.4.0 lint DESIGN.md` until it exits 0. That proves the file is well
-formed and nothing more: `impeccable detect` does not check a screen against it. The app's tokens
-and `DESIGN.md` say the same thing.
+formed and nothing more: `impeccable detect` on a live URL does not read it (run on an HTML file
+beside it, it lists colours outside it as advisory `design-system-color` entries, which
+`--no-advisory` hides). The app's tokens and `DESIGN.md` say the same thing.
 
 ## Design mode
 
