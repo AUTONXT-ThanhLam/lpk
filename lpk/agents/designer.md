@@ -149,7 +149,7 @@ checkout and its few files; in a folder without a git repo, the folder: skip the
 not provide stops you with a `contested:` line; the backend is another slice.
 
 0. For a new app or a new look, build the direction the owner picked (its id is in your prompt;
-   `deal.mjs --show <id>` prints it) and follow `directions.md` from its step 4. Then do section 0 of `lpk:ui-craft` (look at two live references, for a picked direction its `look at` pages, and write the three moves you take), write the job and its step count from `ux.md`, then the five lines of section 1 (the face), before the first component. The reference screenshots and the notes with the three moves are in the proof directory before any file under the slice's source is written; references opened after the build do not count.
+   `deal.mjs --show <id>` prints it) and follow `directions.md` from its step 4. Then do section 0 of `lpk:ui-craft` (look at its live references, for a picked direction its `look at` pages, and write the three moves you take), write the job and its step count from `ux.md`, then the five lines of section 1 (the face), before the first component. The reference screenshots and the notes with the three moves are in the proof directory before any file under the slice's source is written; references opened after the build do not count.
 1. Start with `lpk handoff <your slice>` (your files, contract and proofs) and read the UI section of the brief at the line range it lists (in the Quick lane, the one the lead gave you), the contract, the slice's tests, the repo profile's
    conventions and `lpk rules --repo <worktree> --base <base>`: the rules for your files.
 2. Build the screens from the section with the app's own design system and the components it

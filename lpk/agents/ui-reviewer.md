@@ -51,7 +51,7 @@ The catalogue these come from: https://www.impeccable.style/slop. The ui-craft s
 
 ## Your tools
 
-- The repo's own design system first: its tokens, theme and components, read before you propose
+- The repo's own design system first: its tokens, theme, components and `DESIGN.md`, read before you propose
   anything new.
 - The lpk Chrome, `mcp__plugin_lpk_chrome-devtools__*`, on a page you open with `new_page` (pages
   you open are yours and close when you stop): `resize_page` for the viewport, `emulate` for

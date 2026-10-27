@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -67,7 +67,7 @@ test('every direction in the library can be built as written: readable text in b
 test('ten deals in a row never repeat the deal before, and each deal holds three different accents and body faces', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  const history = join(dir, 'dealt.json');
+  const history = join(dir, 'dealt.jsonl');
   const deals = Array.from({ length: 10 }, (_, i) => run(history, '--seed', String(i + 1)).map((e) => e.id));
   const byId = Object.fromEntries(LIBRARY.directions.map((e) => [e.id, e]));
   for (const [i, ids] of deals.entries()) {
@@ -79,8 +79,8 @@ test('ten deals in a row never repeat the deal before, and each deal holds three
 });
 
 const writeHistory = (dir, ...deals) => {
-  const history = join(dir, 'dealt.json');
-  writeFileSync(history, JSON.stringify(deals.map((ids, i) => ({ at: `2026-10-0${i + 1}T00:00:00.000Z`, seed: i, ids }))));
+  const history = join(dir, 'dealt.jsonl');
+  writeFileSync(history, deals.map((ids, i) => `${JSON.stringify({ at: `2026-10-0${i + 1}T00:00:00.000Z`, seed: i, ids })}\n`).join(''));
   return history;
 };
 const allIdsBut = (...kept) => LIBRARY.directions.map((e) => e.id).filter((id) => !kept.includes(id));
@@ -105,4 +105,17 @@ test('when the fresh directions cannot fill a deal, the banner names each direct
   for (const id of reused) assert.ok(banner.includes(id), `the banner hides that ${id} was dealt recently: ${banner}`);
   assert.equal(dealt.length, 3);
   assert.equal(reused.length, 1, `a deal reuses more recent directions than it needs: ${dealt}`);
+});
+
+test('deals run at the same time each keep their entry in the history', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const history = join(dir, 'dealt.jsonl');
+  const deal = (seed) =>
+    new Promise((resolve, reject) =>
+      execFile('node', [join(DIR, 'deal.mjs'), '--json', '--seed', String(seed)], { env: { ...process.env, LPK_DEAL_HISTORY: history } }, (error) => (error ? reject(error) : resolve()))
+    );
+  await Promise.all(Array.from({ length: 8 }, (_, i) => deal(i + 1)));
+  const seeds = readFileSync(history, 'utf8').trim().split('\n').map((line) => JSON.parse(line).seed);
+  assert.deepEqual(seeds.sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8]);
 });

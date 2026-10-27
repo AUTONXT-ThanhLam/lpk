@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const LIBRARY = JSON.parse(readFileSync(join(HERE, 'directions.json'), 'utf8'));
 const SOURCE = `https://raw.githubusercontent.com/VoltAgent/awesome-design-md/${LIBRARY.commit}/`;
-const HISTORY = process.env.LPK_DEAL_HISTORY || join(homedir(), '.local', 'share', 'lpk', 'design-kit', 'dealt.json');
+const HISTORY = process.env.LPK_DEAL_HISTORY || join(homedir(), '.local', 'share', 'lpk', 'design-kit', 'dealt.jsonl');
 const RECENT_DEALS = 4;
 const AXES = ['density', 'depth', 'shell'];
 
@@ -28,11 +28,20 @@ const count = Number(options.count ?? 3);
 if (!Number.isInteger(count) || count < 1 || count > 6 || (options.seed !== undefined && !Number.isInteger(Number(options.seed)))) fail(usage, 2);
 
 const readHistory = () => {
+  let lines;
   try {
-    return JSON.parse(readFileSync(HISTORY, 'utf8'));
+    lines = readFileSync(HISTORY, 'utf8').split('\n');
   } catch {
     return [];
   }
+  return lines.flatMap((line) => {
+    try {
+      const deal = JSON.parse(line);
+      return Array.isArray(deal?.ids) ? [deal] : [];
+    } catch {
+      return [];
+    }
+  });
 };
 
 let seed = Number(options.seed ?? Math.floor(Math.random() * 2 ** 31)) | 0;
@@ -106,17 +115,11 @@ if (show) {
   process.exit(0);
 }
 const history = readHistory();
-const recent = new Set(history.slice(0, RECENT_DEALS).flatMap((h) => h.ids));
+const recent = new Set(history.slice(-RECENT_DEALS).flatMap((h) => h.ids));
 const picked = deal(LIBRARY.directions, { count, recent });
 if (!picked) fail(`the library holds no ${count} directions with distinct accents and distinct body faces`, 1);
 mkdirSync(dirname(HISTORY), { recursive: true });
-const staged = `${HISTORY}.${process.pid}.tmp`;
-try {
-  writeFileSync(staged, JSON.stringify([{ at: new Date().toISOString(), seed: firstSeed, ids: picked.map((e) => e.id) }, ...history].slice(0, 50), null, 1));
-  renameSync(staged, HISTORY);
-} finally {
-  rmSync(staged, { force: true });
-}
+appendFileSync(HISTORY, `${JSON.stringify({ at: new Date().toISOString(), seed: firstSeed, ids: picked.map((e) => e.id) })}\n`);
 const reused = picked.filter((e) => recent.has(e.id)).map((e) => e.id);
 const fromRecent = reused.length
   ? `reused from the last ${RECENT_DEALS} deals, since the rest cannot fill a deal of distinct accents and faces: ${reused.join(', ')}`

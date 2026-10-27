@@ -18,7 +18,7 @@ dense where the work needs it; never luxury, editorial or showy. Read `ux.md` in
 directory. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
 references are its own screens. An app with none, or a screen whose owner asked for a new look, takes
 its look from a dealt direction (`directions.md`), and the references are that direction's `look
-at` pages. Either way open two of them in the lpk Chrome, screenshot each product screen into the
+at` pages. Either way open two of them (one when a direction names only one) in the lpk Chrome, screenshot each product screen into the
 proof directory, and write three moves you take from them (a type setting, a row anatomy, a motion,
 a keyboard behaviour), each with the measured value. `benchmarks.md` lists more products by kind of
 screen, for a part of the screen the references do not show.
@@ -27,9 +27,9 @@ screen, for a part of the screen the references do not show.
 
 Write these five lines into your notes (the proof directory) and check each against the first screenshot.
 In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
-picked direction (`directions.md` step 4) and only lines 1 and 5 are yours. Its values (ramp, accent,
-faces and weights) then win over the defaults below, such as eight steps or never `#fff` on `#000`;
-the tells still apply.
+picked direction (`directions.md` step 4) and only lines 1 and 5 are yours. Every value the design
+system or the direction sets wins over a default in sections 1-4, such as a size, a weight, a
+radius, a shadow or never `#fff` on `#000`. The tells never give way, and no direction asks for one.
 
 1. **The question** the screen answers, in the words of the trade.
 2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
