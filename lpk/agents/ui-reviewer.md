@@ -60,7 +60,7 @@ The catalogue these come from: https://www.impeccable.style/slop. The ui-craft s
   `take_snapshot` for the accessibility tree, `performance_start_trace` while an animation runs
   for long tasks and layout shifts (CLS). `lighthouse_audit` in `snapshot` mode lists failing
   accessibility rules, contrast included; read the colour tokens against the screenshot for what it
-  skips. `DO_NOT_TRACK=1 npx -y impeccable@4.7.0 detect --json <url>` is the machine check for the
+  skips. `DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>` is the machine check for the
   tells (exit 2 lists them), and `audit.mjs` of `lpk:ui-craft` reads the live page for off-scale
   spacing, clipped text, covered controls and Tab stops without a focus ring.
 

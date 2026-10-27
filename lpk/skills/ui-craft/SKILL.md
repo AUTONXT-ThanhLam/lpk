@@ -67,6 +67,9 @@ first rows, and the right half is never blank because nothing was selected.
 - Controls that share a row share a height from 24, 28, 32, 40, 48 px (32 is the default).
 - Selected means two things at once (surface step and ink), never a coloured side stripe. Hover,
   pressed and selected are each one tone step from the resting state.
+- A disabled control sets its reduced contrast, `cursor: not-allowed` and the native `disabled`
+  attribute together, and says why on hover or beside it. A state change never changes
+  `border-width`, padding or height, so nothing around the control shifts.
 
 ## 4. Type that carries the hierarchy
 
@@ -109,23 +112,30 @@ const ease = [0.22, 1, 0.36, 1] as const
   form) the sheet resizes over the text of its neighbours.
 - **Panel swap**: crossfade with an 8 px shift in the direction of travel, 180 ms.
 - **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover)`, one
-  small response for every control. How often it happens sets the duration: motion a person
-  triggers dozens of times a day (row hover, menu open, tab switch, selection) stays at 150 ms or
-  less; the 180-240 ms recipes are for occasional changes.
+  small response for every control; a press also takes `scale(0.97)` in 100-160 ms. How often it
+  happens sets the duration: motion a person triggers dozens of times a day (row hover, menu open,
+  tab switch, selection) stays at 150 ms or less; an action started from the keyboard, or repeated
+  a hundred times a day, does not animate at all; the 180-240 ms recipes are for occasional changes.
+- **Popover, menu, tooltip and toast**: it opens from the point of its trigger (`transform-origin`
+  set there) with opacity and `scale(0.95)` to 1, never from `scale(0)`; a modal stays centred.
+  Use a transition, not a keyframe, for anything that can be re-triggered mid-flight, and
+  `@starting-style` for the entrance of an element that mounts.
 - **Status change**: the dot or label crossfades colour in 200 ms; a running item has a spinner
   that turns, nothing pulses.
 - **Figures that change after load**: roll or crossfade the digit, 300 ms, never on first paint.
 - **Loading to content**: skeleton blocks of the final shape, then a 200 ms opacity swap with no
   layout shift.
-- **Where**: transform and opacity only, 120-240 ms, `ease` above or a spring with damping that
-  settles without overshoot. An exit is faster than its entrance. One focal motion at a time. No
-  bounce, no stagger above eight items, no looping decoration, and error text is never animated.
+- **Where**: transform and opacity only (a list item's collapsing `height` is the one exception),
+  120-240 ms, `ease` above or a spring with damping that settles without overshoot, and never
+  `transition: all`. An exit is faster than its entrance. One focal motion at a time. No bounce,
+  no stagger above eight items (30-80 ms apart), no looping decoration, and error text is never
+  animated.
 
 ## 6. The look-and-fix loop
 
 Screenshots only, never the code. Before you score, run the three machine checks and fix what they
 print: `lighthouse_audit` in `snapshot` mode on the page (every failing accessibility rule);
-`DO_NOT_TRACK=1 npx -y impeccable@4.7.0 detect --json <url>` (exit 2 lists generated-UI tells such
+`DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>`, and again with `--viewport 390x844` (exit 2 lists generated-UI tells such
 as side stripes, gradient text, nested cards and low contrast: fix each, or write why it does not
 apply; its entries about body text near 16 px, line height 1.5 and Inter or Geist as the face do not
 apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which

@@ -103,3 +103,19 @@ app's tokens; do not rewrite their behaviour.
   the primary action are always visible, never behind hover. Disclosure goes two levels deep at
   most, and the trigger says what is behind it.
 - Targets are at least 24x24 px (WCAG 2.5.8).
+
+## 10. Worst-case data
+
+Before the browser gate, render every field, list and figure of the screen with these values at
+1440 and 390 wide, and fix what breaks (text over text, a row growing past its neighbours, a figure
+that shifts the layout, a control pushed out of reach).
+
+- Names and labels: one character; 60 characters with no space; an unbroken email or URL; accents,
+  Vietnamese, CJK or emoji; the initials of a one-word name.
+- Counts: 0, 1, 2 (plural forms), twelve tags that need a "+8", a thousand rows, 999,999 and a
+  figure in the billions.
+- Missing and odd: `null`, an empty string, `NaN`, a date in the past, today and the future.
+- Changing: a live figure without `tabular-nums`; every status on screen at once; the current
+  person inside their own list; partial data, some fields in and some out.
+- The page itself: 320 px wide, 2560 px wide, zoom at 200%, right to left, and an action that
+  exists only on hover when the screen is touched.
