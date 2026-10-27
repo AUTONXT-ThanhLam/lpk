@@ -4,8 +4,9 @@
 // waiver record of the run; what the owner did not pick, and a dialog that closed on its own while
 // the owner was away, records nothing.
 import { records } from './hooks.mjs';
+import { WAIVE_SOURCE } from './records.mjs';
 
-export const WAIVE_SOURCE = 'lpk:waive';
+export { WAIVE_SOURCE };
 
 // The way out a deny names: the exact label to put on the waiver question's option.
 export const waiverHow = (id) => `The owner can release it: ask with AskUserQuestion, \`metadata: { source: "${WAIVE_SOURCE}" }\`, an option labelled exactly \`${id}\`; their pick is recorded and this check lets it through.`;

@@ -5,7 +5,7 @@
 import { parseArgs, repoOf } from '../out.mjs';
 import { sessionId } from '../host.mjs';
 import { appendRecord } from '../records.mjs';
-import { readRun } from '../run.mjs';
+import { activeRun, readRun } from '../run.mjs';
 
 const ROWS = ['verify', 'findings', 'reviews', 'scenarios', 'requirements', 'ci', 'error'];
 const VIA = ['cli', '/lpk-waive', 'ask'];
@@ -19,9 +19,11 @@ export function main(argv) {
   if (a.error || !a.words.length || !a.opt('--why') || !VIA.includes(via)) { console.error(`lpk: ${a.error || (!VIA.includes(via) ? `--via is one of ${VIA.join(', ')}` : 'name what is waived and --why')}\n${USAGE}`); return 2; }
   const findings = a.words.filter((w) => FINDING.test(w));
   if (findings.length) { console.error(`lpk: ${findings.join(', ')}: ${NOT_FINDINGS}\n${USAGE}`); return 2; }
-  const repo = repoOf(a.opt('--repo'));
-  const run = repo && readRun(repo);
-  if (!run) { console.error('lpk: no lpk run in this repo; a waiver belongs to a run'); return 1; }
+  const here = repoOf(a.opt('--repo'));
+  const own = here && readRun(here);
+  const run = own || (a.opt('--repo') ? null : activeRun(sessionId(), false, process.cwd()));
+  if (!run) { console.error('lpk: no lpk run in this repo, and this session holds none elsewhere; a waiver belongs to a run'); return 1; }
+  const repo = own ? here : run.repo;
   for (const w of a.words) {
     const what = ROWS.includes(w) ? `gate:${w}` : w;
     appendRecord(repo, { kind: 'waiver', run: run.id, what, why: a.opt('--why'), by: 'owner', via, session: sessionId() || null, exit: 0 });
