@@ -29,10 +29,12 @@ rejected ones out.
 ## 2. Look at where each comes from
 
 For each direction open its first `look at` page in the lpk Chrome, screenshot it as
-`ref-<id>.png`, and read the source file the entry names for what the entry leaves out. The source
-files describe mostly marketing pages: read them for the components and states they do name (button
-anatomy, inputs, how a selected item and a focused field look), not for an app's row data. Write one
-line per direction: the two or three moves you take, with their values.
+`ref-<id>.png`, and read the source file the entry names for what the entry leaves out (run a taste
+skill's source command from the proof directory, outside the checkout, since `draw.mjs` writes
+`.taste-skill/` into its working directory). The source files describe mostly marketing pages:
+read them for the components and states they do name (button anatomy, inputs, how a selected item
+and a focused field look), not for an app's row data. Write one line per direction: the two or three
+moves you take, with their values.
 
 ## 3. Sketch the first screen in each
 
