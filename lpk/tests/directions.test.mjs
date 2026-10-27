@@ -64,13 +64,27 @@ test('every direction in the library can be built as written: readable text in b
   assert.deepEqual(broken, []);
 });
 
-test('ten deals in a row never repeat the deal before, and each deal holds three different accents and body faces', (t) => {
+test('every composition says what fills the first screen, and each kind of screen has three or more', () => {
+  const { compositions } = JSON.parse(readFileSync(join(DIR, 'compositions.json'), 'utf8'));
+  const ids = [...LIBRARY.directions, ...compositions].map((e) => e.id);
+  assert.equal(new Set(ids).size, ids.length, 'an id is used twice across directions and compositions');
+  const broken = compositions.filter((c) => !c.kinds?.length || !['largest', 'needs_person', 'layout', 'fold'].every((k) => c[k]?.length >= 30));
+  assert.deepEqual(broken.map((c) => c.id), []);
+  for (const kind of new Set(compositions.flatMap((c) => c.kinds))) assert.ok(compositions.filter((c) => c.kinds.includes(kind)).length >= 3, `fewer than three compositions for a ${kind} screen`);
+});
+
+test('ten deals in a row never repeat the deal before, and each deal holds three different accents, body faces and compositions in both schemes', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const history = join(dir, 'dealt.jsonl');
-  const deals = Array.from({ length: 10 }, (_, i) => run(history, '--seed', String(i + 1)).map((e) => e.id));
+  const dealt = Array.from({ length: 10 }, (_, i) => run(history, '--kind', 'list', '--seed', String(i + 1)));
+  const deals = dealt.map((deal) => deal.map((e) => e.id));
   const byId = Object.fromEntries(LIBRARY.directions.map((e) => [e.id, e]));
   for (const [i, ids] of deals.entries()) {
+    assert.equal(new Set(ids.map((id) => byId[id].theme)).size, 2, `deal ${i + 1} is all one scheme: ${ids}`);
+    const arranged = dealt[i].map((e) => e.composition.id);
+    assert.equal(new Set(arranged).size, 3, `deal ${i + 1} repeats a composition: ${arranged}`);
+    if (i) assert.deepEqual(arranged.filter((id) => dealt[i - 1].some((e) => e.composition.id === id)), [], `deal ${i + 1} repeats a composition of deal ${i}`);
     assert.equal(new Set(ids.map((id) => byId[id].hue)).size, 3, `deal ${i + 1} repeats an accent: ${ids}`);
     assert.equal(new Set(ids.map((id) => byId[id].type.body.family)).size, 3, `deal ${i + 1} repeats a body face: ${ids}`);
     if (i) assert.deepEqual(ids.filter((id) => deals[i - 1].includes(id)), [], `deal ${i + 1} repeats deal ${i}`);
@@ -85,12 +99,12 @@ const writeHistory = (dir, ...deals) => {
 };
 const allIdsBut = (...kept) => LIBRARY.directions.map((e) => e.id).filter((id) => !kept.includes(id));
 
-test('a deal finds the one set of fresh directions with distinct accents and faces, where a first-fit pick fails', (t) => {
+test('a deal finds the one set of fresh directions with distinct accents and faces in both schemes, where a first-fit pick fails', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  const history = writeHistory(dir, allIdsBut('mintlify', 'posthog', 'sentry', 'taste-framed-sheet'));
+  const history = writeHistory(dir, allIdsBut('mintlify', 'posthog', 'supabase', 'taste-framed-sheet'));
   const ids = run(history, '--seed', '1').map((e) => e.id);
-  assert.deepEqual(ids.sort(), ['mintlify', 'posthog', 'sentry']);
+  assert.deepEqual(ids.sort(), ['mintlify', 'posthog', 'supabase']);
 });
 
 test('when the fresh directions cannot fill a deal, the banner names each direction it reused from recent deals', (t) => {

@@ -27,7 +27,8 @@ screen, for a part of the screen the references do not show.
 
 Write these five lines into your notes (the proof directory) and check each against the first screenshot.
 In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
-picked direction (`directions.md` step 4) and only lines 1 and 5 are yours. Every value the design
+picked direction (`directions.md` step 4) and only lines 1 and 5 are yours; its dealt composition
+lays out the first screen within section 2. Every value the design
 system or the direction sets wins over a default in sections 1-4, such as a size, a weight, a
 radius, a shadow or never `#fff` on `#000`. The tells never give way.
 

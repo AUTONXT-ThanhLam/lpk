@@ -58,7 +58,8 @@ builds here, except the screens: `lpk:designer` runs in design mode on the requi
 returns its UI section, then in build mode with that section in its prompt (`SKILL.md`, Screens).
 
 In either lane, for an app with no design system or a new look, the UI section holds sketches of
-three dealt directions; ask the owner which to build and put the pick in the build-mode prompt. When
+three dealt directions, each with its composition; ask the owner which to build and put the pick
+(the direction and composition ids) in the build-mode prompt. When
 the owner is away, pick the sketch that scores highest on Focal point, Hierarchy and Identity
 (`lpk:ui-craft` `directions.md` step 3), log why with `lpk decide`, and say so in the report.
 

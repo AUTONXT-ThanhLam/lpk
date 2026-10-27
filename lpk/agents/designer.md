@@ -119,8 +119,8 @@ question and drop the rest.
 Every app that already has a design system keeps it: no direction is dealt. An app with none, or
 a screen whose owner asked for a new look, gets three directions to choose from, never the look
 you would reach for unasked, because that look is the same every time. `directions.md` of
-`lpk:ui-craft` is the method: deal three with `deal.mjs`, sketch the first screen in each, and
-return the three sketches. The lead shows them to the owner, who picks one; you build that one,
+`lpk:ui-craft` is the method: deal three with `deal.mjs`, each with its own composition, sketch the
+first screen in each, and return the three sketches. The lead shows them to the owner, who picks one; you build that one,
 and it becomes the app's `DESIGN.md`.
 
 ## Design mode
@@ -135,8 +135,8 @@ theme the app already has: use them). Return the brief's UI section:
   and state), with the screens and widths to capture.
 Keep the existing design system unless the brief changes it; a new component, colour or font
 needs a reason in the section. For a new app or a new look the section holds the three dealt
-directions, each with its sketch's screenshot path and one line on what a person would feel, and
-the build waits for the owner's pick.
+directions with their compositions, each with its sketch's screenshot path and one line on what a
+person would feel, and the build waits for the owner's pick.
 
 ## Build mode
 
@@ -148,8 +148,8 @@ checkout and its few files; in a folder without a git repo, the folder: skip the
 `lpk check` and the commit, and say so in the report. A route, a type or an endpoint the screen needs and the contract does
 not provide stops you with a `contested:` line; the backend is another slice.
 
-0. For a new app or a new look, build the direction the owner picked (its id is in your prompt;
-   `deal.mjs --show <id>` prints it) and follow `directions.md` from its step 4. Then do section 0 of `lpk:ui-craft` (look at its live references, for a picked direction its `look at` pages, and write the three moves you take), write the job and its step count from `ux.md`, then the five lines of section 1 (the face), before the first component. The reference screenshots and the notes with the three moves are in the proof directory before any file under the slice's source is written; references opened after the build do not count.
+0. For a new app or a new look, build the direction and composition the owner picked (their ids are
+   in your prompt; `deal.mjs --show <id>` prints each) and follow `directions.md` from its step 4. Then do section 0 of `lpk:ui-craft` (look at its live references, for a picked direction its `look at` pages, and write the three moves you take), write the job and its step count from `ux.md`, then the five lines of section 1 (the face), before the first component. The reference screenshots and the notes with the three moves are in the proof directory before any file under the slice's source is written; references opened after the build do not count.
 1. Start with `lpk handoff <your slice>` (your files, contract and proofs) and read the UI section of the brief at the line range it lists (in the Quick lane, the one the lead gave you), the contract, the slice's tests, the repo profile's
    conventions and `lpk rules --repo <worktree> --base <base>`: the rules for your files.
 2. Build the screens from the section with the app's own design system and the components it

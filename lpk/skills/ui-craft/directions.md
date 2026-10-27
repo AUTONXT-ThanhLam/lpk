@@ -4,24 +4,35 @@ For an app with no design system, or a screen whose owner asked for a new look. 
 system keeps it, and none of this runs.
 
 A designer left to choose reaches for the same look every time: a cool grey ground, a blue accent,
-Inter or Geist, a sidebar. Ten builds of one brief then come out as ten copies. The look is
-therefore dealt from `directions.json` in this directory, a library of directions taken from the
+Inter or Geist, a sidebar, a title over a block over a table. Ten builds of one brief then come out
+as ten copies, and a new colour on the same skeleton does not change that. The look is therefore
+dealt from `directions.json` in this directory, a library of directions taken from the
 design systems of real high-end products (Linear, Stripe, Mercury, Raycast, Notion and others, from
 the DESIGN.md files of `VoltAgent/awesome-design-md` at the commit the library names) and the app
-styles of the taste skill. Three are dealt, sketched side by side, and a person picks by eye.
+styles of the taste skill, and each comes with a composition from `compositions.json`: what fills
+the largest region of the first screen, where the items that need the person sit, the widths, and
+what shows above the fold. Three are dealt, sketched side by side, and a person picks by eye.
 
 ## 1. Deal three
 
 ```
-node deal.mjs --count 3
+node deal.mjs --count 3 --kind list
 ```
 
-Run it from this directory. Every direction carries both schemes: its `ramp` and the other scheme
-printed after it, each with its accent and the text on that accent. When the brief or the app fixes
-a scheme, every sketch uses that scheme's ramp. The three differ in accent and in body face and, as
-far as the library allows, in two of density, depth and shell. Directions dealt in the last four
-deals on this machine are avoided; when the rest cannot fill a deal, the first line of the output
-names the ones it reused. Save the output as `directions.txt` in the proof directory. Never trade a
+Run it from this directory. `--kind` names the screen the sketches show: `list` (a collection of
+records, some waiting on the person), `overview` (the state of something at a glance) or `detail`
+(one object). For any other screen leave it out: no composition is dealt, and each sketch still
+takes a skeleton of its own, written in the notes before it is drawn.
+
+Every direction carries both schemes: its `ramp` and the other scheme printed after it, each with
+its accent and the text on that accent. When the brief or the app fixes a scheme, every sketch uses
+that scheme's ramp. The three always differ in accent, in body face and in composition, and hold a
+light and a dark direction. Directions dealt in the last four deals on this machine are avoided;
+when the rest cannot fill a deal, the first line of the output names the ones it reused. Among the
+rest, the ones dealt longest ago come first, then the set with the most different shells, then the
+most different density and depth. Compositions rotate the same way, the ones dealt longest ago
+first.
+Save the output as `directions.txt` in the proof directory. Never trade a
 dealt direction for one you prefer. When one cannot serve the screen (a dense terminal for a form a
 person fills once a year), write why in the notes and deal three again; the history keeps the
 rejected ones out.
@@ -40,8 +51,10 @@ moves you take, with their values.
 
 Build the screen's first view at 1440x900 as one HTML file per direction, `sketch-<id>/index.html`
 in the proof directory, outside the checkout. Each holds the same content: the brief's real data,
-with the item that needs the person. Each takes its direction whole: the ramp, the accent where its
-`use` says, the faces (`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/<package>/index.css">`),
+with the item that needs the person. Each is laid out by its composition: the largest region, the
+place and widths it gives, and what it puts above the fold. Two sketches that show the same skeleton
+at thumbnail size are one sketch: redo the second from its composition. Each takes its direction
+whole: the ramp, the accent where its `use` says, the faces (`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/<package>/index.css">`),
 the radius, density, depth and shell, and its move. When the brief's text needs a script a face's
 `subsets` lacks (Vietnamese names, for example), load a face whose `subsets` hold it as the fallback
 for that text and say so in the notes. No interaction, states or motion: a sketch
@@ -49,13 +62,14 @@ answers "is this the look", and three take about fifteen turns together. Screens
 `sketch-<id>.png`.
 
 In design mode return the three with their screenshot paths, one line each on what a person would
-feel using it ("quiet and exact", "warm and roomy"), and the direction ids. The lead shows the
+feel using it ("quiet and exact", "warm and roomy"), and the direction and composition ids. The lead shows the
 sketches to the owner, who picks one. When the owner is away, the lead picks the sketch that scores
 highest on Focal point, Hierarchy and Identity (`SKILL.md` section 6) and logs why with `lpk decide`.
 
 ## 4. Build the one picked
 
-`deal.mjs --show <id>` prints the picked direction again. It fills the five lines of `SKILL.md`
+`deal.mjs --show <id>` prints the picked direction again, and `deal.mjs --show <composition id>`
+its composition, which lays out the first screen. The direction fills the five lines of `SKILL.md`
 section 1:
 
 - the ground is its ramp, in both schemes;
