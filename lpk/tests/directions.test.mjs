@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'ui-craft');
+const LIBRARY = JSON.parse(readFileSync(join(DIR, 'directions.json'), 'utf8'));
+const HUES = ['neutral', 'blue', 'indigo', 'violet', 'green', 'teal', 'orange', 'red', 'yellow', 'pink'];
+
+const hex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+const luminance = (h) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+function problems(e) {
+  const found = [];
+  const need = (ok, what) => ok || found.push(what);
+  need(/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.id ?? ''), 'id');
+  need(/^design-md\/[^/]+\/DESIGN\.md$/.test(e.source) || /^taste-skill:[a-z-]+$/.test(e.source), 'source');
+  need(Array.isArray(e.live) && e.live.length >= 1 && e.live.length <= 3 && e.live.every((u) => u.startsWith('https://')), 'live');
+  need(['light', 'dark'].includes(e.theme) && HUES.includes(e.hue), 'theme or hue');
+  need(['compact', 'regular', 'airy'].includes(e.density) && ['flat', 'hairline', 'shadow'].includes(e.depth), 'density or depth');
+  need(['sidebar', 'icon-rail', 'top-bar', 'framed-sheet', 'none'].includes(e.shell), 'shell');
+  for (const scheme of ['ramp', 'dark']) {
+    const r = e[scheme] ?? {};
+    if (!['ground', 'raised', 'line', 'muted', 'ink'].every((k) => hex(r[k]))) {
+      found.push(`${scheme} colours`);
+      continue;
+    }
+    need(contrast(r.ink, r.ground) >= 7, `${scheme} ink on ground`);
+    need(contrast(r.muted, r.ground) >= 4.5 && contrast(r.muted, r.raised) >= 4.5, `${scheme} muted text`);
+  }
+  const a = e.accent ?? {};
+  need(hex(a.value) && hex(a.on) && hex(a.dark) && contrast(a.on, a.value) >= 4.5, 'text on the accent');
+  need(hex(a.dark) && hex(e.dark?.ground) && contrast(a.dark, e.dark.ground) >= 3, 'accent in the other scheme');
+  const t = e.type ?? {};
+  const face = (f) => typeof f?.family === 'string' && /^@fontsource(-variable)?\/[a-z0-9-]+$/.test(f.package ?? '');
+  need(face(t.body) && (t.display === null || face(t.display)), 'a free face from Fontsource');
+  need(t.body_px >= 13 && t.body_px <= 15 && t.title_px >= 20 && t.title_px <= 32, 'type sizes');
+  const r = e.radius ?? {};
+  need(r.control >= 2 && r.card <= 16 && r.card >= r.control, 'radius');
+  need(e.move?.length >= 40 && e.keep_out?.length >= 20, 'move and keep_out');
+  return found;
+}
+
+const run = (history, ...args) =>
+  JSON.parse(execFileSync('node', [join(DIR, 'deal.mjs'), '--json', ...args], { env: { ...process.env, LPK_DEAL_HISTORY: history }, encoding: 'utf8' }));
+
+test('every direction in the library can be built as written: readable text in both schemes, a free face', () => {
+  const ids = LIBRARY.directions.map((e) => e.id);
+  assert.equal(new Set(ids).size, ids.length, 'an id is used twice');
+  assert.match(LIBRARY.commit, /^[0-9a-f]{40}$/);
+  const broken = LIBRARY.directions.map((e) => [e.id, problems(e)]).filter(([, p]) => p.length);
+  assert.deepEqual(broken, []);
+});
+
+test('ten deals in a row never repeat the deal before, and each deal holds three different accents and body faces', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const history = join(dir, 'dealt.json');
+  const deals = Array.from({ length: 10 }, (_, i) => run(history, '--seed', String(i + 1)).map((e) => e.id));
+  const byId = Object.fromEntries(LIBRARY.directions.map((e) => [e.id, e]));
+  for (const [i, ids] of deals.entries()) {
+    assert.equal(new Set(ids.map((id) => byId[id].hue)).size, 3, `deal ${i + 1} repeats an accent: ${ids}`);
+    assert.equal(new Set(ids.map((id) => byId[id].type.body.family)).size, 3, `deal ${i + 1} repeats a body face: ${ids}`);
+    if (i) assert.deepEqual(ids.filter((id) => deals[i - 1].includes(id)), [], `deal ${i + 1} repeats deal ${i}`);
+  }
+  assert.ok(new Set(deals.flat()).size >= 20, 'ten deals reach fewer than 20 directions');
+});
+
+test('a deal for a light app holds only light directions', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  assert.deepEqual([...new Set(run(join(dir, 'dealt.json'), '--theme', 'light').map((e) => e.theme))], ['light']);
+});

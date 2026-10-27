@@ -12,18 +12,22 @@ leave out. This file says what to put in. Each section ends in something a scree
 
 ## 0. Study the best before you decide
 
-The bar is the products of large, well-run companies: the best SaaS products (Linear, Vercel,
-Stripe, Notion, Figma, Attio, Clerk) and the design systems of enterprise software (GitHub Primer,
-Atlassian, IBM Carbon, Microsoft Fluent). The owner may have no words for it: you carry the
-judgement. Calm, precise, dense where the work needs it, one restrained accent; never luxury,
-editorial or showy. Read `benchmarks.md` and `ux.md` in this skill's directory. Then open two live pages from
-`benchmarks.md` that sit closest to the screen's kind in the lpk Chrome, screenshot each product
-screen into the proof directory, and write three moves you take from them (a type setting, a row
-anatomy, a motion, a keyboard behaviour), each with the measured value.
+The bar is the products of large, well-run companies, the high-end SaaS a person pays for because it
+is a pleasure to use. The owner may have no words for it: you carry the judgement. Calm, precise,
+dense where the work needs it; never luxury, editorial or showy. Read `ux.md` in this skill's
+directory. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
+references are its own screens. An app with none, or a screen whose owner asked for a new look, takes
+its look from a dealt direction (`directions.md`), and the references are that direction's `look
+at` pages. Either way open two of them in the lpk Chrome, screenshot each product screen into the
+proof directory, and write three moves you take from them (a type setting, a row anatomy, a motion,
+a keyboard behaviour), each with the measured value. `benchmarks.md` lists more products by kind of
+screen, for a part of the screen the references do not show.
 
 ## 1. Decide the face before any code
 
 Write these five lines into your notes (the proof directory) and check each against the first screenshot.
+In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
+picked direction (`directions.md` step 4) and only lines 1 and 5 are yours.
 
 1. **The question** the screen answers, in the words of the trade.
 2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
