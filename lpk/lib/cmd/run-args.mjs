@@ -9,8 +9,9 @@ export const USAGE = `usage:
                   With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
                  (--bar production raises the run from the default increment bar to production; it is never lowered)
   lpk run take [--repo <dir>]             (take over a run whose session has exited, or reopen the one that delivered this branch)
-  lpk run worktree <path> [<commit>] [--branch <name>] [--repo <dir>]
-                                          (git worktree add, -b <name> or --detach, at <commit> or HEAD;
+  lpk run worktree <name | path> [<commit>] [--branch <name>] [--repo <dir>]
+                                          (git worktree add, -b <name> or --detach, at <commit> or HEAD; a bare name is made under the repo's
+                                           git directory, lpk/wt/<run>/<name>, and lpk run end removes it when clean;
                                            lpk calls from the new worktree work in this run)
   lpk run end [--abandon "<why>"] [--repo <dir>]
   lpk run status [--repo <dir>]
