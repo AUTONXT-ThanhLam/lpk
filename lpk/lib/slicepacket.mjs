@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const one = (s) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+const flat = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+const one = (s) => (flat(s).length > 400 ? `${flat(s).slice(0, 399)}…` : flat(s));
 const overlaps = (row, ids) => (row.proves || []).some((p) => ids.includes(p));
 
 export function sliceBrief(brief, slice) {
@@ -9,7 +10,7 @@ export function sliceBrief(brief, slice) {
   const reqs = (brief.requirements || []).filter((q) => ids.includes(q.id));
   const rows = [...(brief.scenarios || []), ...(brief.failures || [])].filter((x) => overlaps(x, ids));
   return [
-    slice.contract ? `contract: ${one(typeof slice.contract === 'string' ? slice.contract : JSON.stringify(slice.contract))}` : 'contract: none written in brief.json for this slice; read the brief section that names its files',
+    slice.contract ? `contract: ${flat(typeof slice.contract === 'string' ? slice.contract : JSON.stringify(slice.contract))}` : 'contract: none written in brief.json for this slice; read the brief section that names its files',
     ...reqs.map((q) => `requirement ${q.id}: ${one(q.text)}`),
     ...rows.map((x) => `proof ${x.id}: ${one(x.text || x.cmd || x.provedBy)} (proves ${(x.proves || []).join(', ')})`),
   ];

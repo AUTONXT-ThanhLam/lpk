@@ -6,9 +6,9 @@ if (!url) {
   process.exit(2);
 }
 const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
-const spaceScale = (opt('space', '0,1,2,4,6,8,10,12,16,20,24,32,40,48,64,80,96')).split(',').map(Number);
-const radiusScale = (opt('radius', '0,2,3,4,6,8,10,12,9999')).split(',').map(Number);
-const heights = (opt('heights', '20,24,28,32,36,40,44,48')).split(',').map(Number);
+const spaceScale = (opt('space', '0,2,4,8,12,16,24,32,40,48,64')).split(',').map(Number);
+const radiusScale = (opt('radius', '0,4,5,6,8,10,12,9999')).split(',').map(Number);
+const heights = (opt('heights', '24,28,32,40,48')).split(',').map(Number);
 const probe = `(${function (spaceScale, radiusScale, heights) {
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   const sel = (e) => { let p = e.tagName.toLowerCase(); if (e.id) p += '#' + e.id; else if (e.classList[0]) p += '.' + [...e.classList].slice(0, 2).join('.'); return p + (e.textContent.trim() ? ` "${e.textContent.trim().slice(0, 24)}"` : ''); };

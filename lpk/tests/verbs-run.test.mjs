@@ -99,7 +99,7 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
   sh(repo, 'worktree', 'add', '-q', '-b', 'slice-api', wt);
   commit(wt, 'Start the api slice', { 'a.js': 'a2\n' });
   write(wt, 'b.js', 'b2\n');
-  write(join(repo, '.git', 'lpk'), 'brief.json', JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }, { id: 'R2', text: 'other' }], scenarios: [{ id: 'S1', text: 'call a twice', proves: ['R1'] }, { id: 'S2', text: 'unrelated', proves: ['R2'] }], slices: [{ id: 'api', files: ['a.js'], contract: 'a() returns 2', proves: ['R1'] }] }));
+  write(join(repo, '.git', 'lpk'), 'brief.json', JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }, { id: 'R2', text: 'other' }], scenarios: [{ id: 'S1', text: 'call a twice', proves: ['R1'] }, { id: 'S2', text: 'unrelated', proves: ['R2'] }], slices: [{ id: 'api', files: ['a.js'], contract: `a() returns 2${' word'.repeat(120)} END-OF-CONTRACT`, proves: ['R1'] }] }));
   write(join(repo, '.git', 'lpk'), 'brief.md', '# Brief\n\n## Contract\ntext\n');
   const r = lpk(repo, 'handoff', 'api', '--base', 'main');
   assert.equal(r.status, 2, 'handoff takes no --base');
@@ -111,7 +111,7 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
   assert.match(h.stdout, /uncommitted: 1 path\(s\)\n {2} M b\.js/);
   assert.match(h.stdout, /changed beyond the slice's files: b\.js/);
   assert.match(h.stdout, /last lpk verify: none in this run/);
-  assert.match(h.stdout, /contract: a\(\) returns 2\nrequirement R1: a is doubled\nproof S1: call a twice \(proves R1\)/);
+  assert.match(h.stdout, /contract: a\(\) returns 2( word)+ END-OF-CONTRACT\nrequirement R1: a is doubled\nproof S1: call a twice \(proves R1\)/);
   assert.doesNotMatch(h.stdout, /R2|unrelated/);
   assert.match(h.stdout, /line 3: ## Contract/);
   assert.match(h.stdout, /files to read first \(2\):\n {2}a\.js \(2 lines\)\n {2}b\.js \(2 lines\)/);

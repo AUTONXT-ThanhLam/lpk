@@ -151,6 +151,13 @@ test('lpk-switch with no account stops when every other account is at its limit'
   expect(r.text).toContain('Every other account is at its limit')
 })
 
+test('lpk-switch with one account says there is no other account', async ($, on) => {
+  const w = world(on, { env: { LPK_ACCOUNT: 'cc1' }, reply: (a) => (a[1] === 'status' ? { stdout: ON_CC1 } : flipped(a)) })
+  const r = await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
+  expect(w.ran).toEqual([['cc-switch', 'status']])
+  expect(r.text).toContain('Only one account exists')
+})
+
 test('lpk-switch to an unknown account switches nothing', async ($, on) => {
   const w = world(on, { reply: (a) => (a[0] === 'cc-switch' ? { stdout: STATUS } : undefined) })
   const r = await $.command.run({ command: 'lpk-switch', args: 'cc9', origin: OWNER, presentation: PRESENT })
