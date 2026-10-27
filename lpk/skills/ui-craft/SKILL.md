@@ -29,7 +29,7 @@ Write these five lines into your notes (the proof directory) and check each agai
 In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
 picked direction (`directions.md` step 4) and only lines 1 and 5 are yours. Every value the design
 system or the direction sets wins over a default in sections 1-4, such as a size, a weight, a
-radius, a shadow or never `#fff` on `#000`. The tells never give way, and no direction asks for one.
+radius, a shadow or never `#fff` on `#000`. The tells never give way.
 
 1. **The question** the screen answers, in the words of the trade.
 2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
