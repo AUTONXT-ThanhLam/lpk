@@ -24,7 +24,7 @@ Read the part the screen needs, not the file. `SKILL.md` wins every conflict wit
 `gsap-core`, `gsap-timeline`, `gsap-scrolltrigger`, `gsap-plugins` (SplitText, Flip, DrawSVG),
 `gsap-utils`, `gsap-react` or `gsap-frameworks` (Vue, Svelte) and `gsap-performance` are for
 motion on public pages only. On an app screen their "recommend GSAP" wording and their bounce,
-elastic and two-second examples lose to `SKILL.md`: use `motion`, 120-240 ms, no overshoot. A
+elastic and two-second examples lose to `SKILL.md`: use `motion`, 120-240 ms in and 80-150 ms out, no overshoot. A
 scroll-scrubbed video world (`scroll-world`) needs paid accounts and the owner's say: never start
 one from a slice.
 

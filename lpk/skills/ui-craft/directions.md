@@ -16,20 +16,23 @@ styles of the taste skill. Three are dealt, sketched side by side, and a person 
 node deal.mjs --count 3
 ```
 
-Run it from this directory; add `--theme light` or `--theme dark` when the brief or the app fixes
-the scheme. The three differ in accent and in body face and, as far as the library allows, in at
-least two of scheme, density, depth and shell; none of them was dealt in the last four deals on this
-machine, so the next app is dealt others. Save the output as `directions.txt` in the proof
-directory. Never trade a dealt direction for one you prefer. When one cannot serve the screen (a
-dense terminal for a form a person fills once a year), write why in the notes and deal one more
-with `--count 1`.
+Run it from this directory. Every direction carries both schemes: its `ramp` and the other scheme
+printed after it, each with its accent and the text on that accent. When the brief or the app fixes
+a scheme, every sketch uses that scheme's ramp. The three differ in accent and in body face and, as
+far as the library allows, in two of density, depth and shell. Directions dealt in the last four
+deals on this machine are avoided; when the rest cannot fill a deal, the first line of the output
+names the ones it reused. Save the output as `directions.txt` in the proof directory. Never trade a
+dealt direction for one you prefer. When one cannot serve the screen (a dense terminal for a form a
+person fills once a year), write why in the notes and deal three again; the history keeps the
+rejected ones out.
 
 ## 2. Look at where each comes from
 
 For each direction open its first `look at` page in the lpk Chrome, screenshot it as
-`ref-<id>.png`, and read the source file the entry names for what the entry leaves out: button
-anatomy, row height, how a selected item and a focused field look. Write one line per direction:
-the two or three moves you take, with their values.
+`ref-<id>.png`, and read the source file the entry names for what the entry leaves out. The source
+files describe mostly marketing pages: read them for the components and states they do name (button
+anatomy, inputs, how a selected item and a focused field look), not for an app's row data. Write one
+line per direction: the two or three moves you take, with their values.
 
 ## 3. Sketch the first screen in each
 
@@ -37,14 +40,16 @@ Build the screen's first view at 1440x900 as one HTML file per direction, `sketc
 in the proof directory, outside the checkout. Each holds the same content: the brief's real data,
 with the item that needs the person. Each takes its direction whole: the ramp, the accent where its
 `use` says, the faces (`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/<package>/index.css">`),
-the radius, density, depth and shell, and its move. No interaction, states or motion: a sketch
+the radius, density, depth and shell, and its move. When the brief's text needs a script a face's
+`subsets` lacks (Vietnamese names, for example), load a face whose `subsets` hold it as the fallback
+for that text and say so in the notes. No interaction, states or motion: a sketch
 answers "is this the look", and three take about fifteen turns together. Screenshot each as
 `sketch-<id>.png`.
 
 In design mode return the three with their screenshot paths, one line each on what a person would
 feel using it ("quiet and exact", "warm and roomy"), and the direction ids. The lead shows the
 sketches to the owner, who picks one. When the owner is away, the lead picks the sketch that scores
-highest on Focal point, Hierarchy and Identity (`SKILL.md` section 6) and logs why.
+highest on Focal point, Hierarchy and Identity (`SKILL.md` section 6) and logs why with `lpk decide`.
 
 ## 4. Build the one picked
 
@@ -61,8 +66,8 @@ section 1:
 
 It is a direction, not a copy. The mark, the name, the illustrations and the copy are this
 product's; nothing of the source product's logo, wordmark face, imagery or text is used. Covering
-the name, nobody should take the screen for the source product either. The `look at` pages of the
-picked direction are the two references of `SKILL.md` section 0.
+the name, nobody should take the screen for the source product either. The picked direction's
+`look at` pages are the references of `SKILL.md` section 0.
 
 ## 5. Write it down as DESIGN.md
 

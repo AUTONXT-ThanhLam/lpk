@@ -27,7 +27,9 @@ screen, for a part of the screen the references do not show.
 
 Write these five lines into your notes (the proof directory) and check each against the first screenshot.
 In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
-picked direction (`directions.md` step 4) and only lines 1 and 5 are yours.
+picked direction (`directions.md` step 4) and only lines 1 and 5 are yours. Its values (ramp, accent,
+faces and weights) then win over the defaults below, such as eight steps or never `#fff` on `#000`;
+the tells still apply.
 
 1. **The question** the screen answers, in the words of the trade.
 2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
@@ -132,10 +134,10 @@ const ease = [0.22, 1, 0.36, 1] as const
 - **Loading to content**: skeleton blocks of the final shape, then a 200 ms opacity swap with no
   layout shift.
 - **Where**: transform and opacity only (a list item's collapsing `height` is the one exception),
-  120-240 ms, `ease` above or a spring with damping that settles without overshoot, and never
-  `transition: all`. An exit is faster than its entrance. One focal motion at a time. No bounce,
-  no stagger above eight items (30-80 ms apart), no looping decoration, and error text is never
-  animated.
+  120-240 ms for an entrance and 80-150 ms for an exit (the table in `motion.md`), `ease` above or
+  a spring with damping that settles without overshoot, and never `transition: all`. An exit is
+  faster than its entrance. One focal motion at a time. No bounce, no stagger above eight items
+  (30-80 ms apart), no looping decoration, and error text is never animated.
 
 ## 6. The look-and-fix loop
 

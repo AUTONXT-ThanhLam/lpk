@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -41,12 +41,14 @@ function problems(e) {
   const a = e.accent ?? {};
   need(hex(a.value) && hex(a.on) && hex(a.dark) && contrast(a.on, a.value) >= 4.5, 'text on the accent');
   need(hex(a.dark) && hex(e.dark?.ground) && contrast(a.dark, e.dark.ground) >= 3, 'accent in the other scheme');
+  need(hex(a.on_dark) && hex(a.dark) && contrast(a.on_dark, a.dark) >= 4.5, 'text on the accent in the other scheme');
   const t = e.type ?? {};
-  const face = (f) => typeof f?.family === 'string' && /^@fontsource(-variable)?\/[a-z0-9-]+$/.test(f.package ?? '');
+  const face = (f) =>
+    typeof f?.family === 'string' && /^@fontsource(-variable)?\/[a-z0-9-]+$/.test(f.package ?? '') && Array.isArray(f.subsets) && f.subsets.includes('latin');
   need(face(t.body) && (t.display === null || face(t.display)), 'a free face from Fontsource');
   need(t.body_px >= 13 && t.body_px <= 15 && t.title_px >= 20 && t.title_px <= 32, 'type sizes');
   const r = e.radius ?? {};
-  need(r.control >= 2 && r.card <= 16 && r.card >= r.control, 'radius');
+  need(r.control >= 2 && r.card <= 12 && r.card >= r.control, 'radius');
   need(e.move?.length >= 40 && e.keep_out?.length >= 20, 'move and keep_out');
   return found;
 }
@@ -76,8 +78,31 @@ test('ten deals in a row never repeat the deal before, and each deal holds three
   assert.ok(new Set(deals.flat()).size >= 20, 'ten deals reach fewer than 20 directions');
 });
 
-test('a deal for a light app holds only light directions', (t) => {
+const writeHistory = (dir, ...deals) => {
+  const history = join(dir, 'dealt.json');
+  writeFileSync(history, JSON.stringify(deals.map((ids, i) => ({ at: `2026-10-0${i + 1}T00:00:00.000Z`, seed: i, ids }))));
+  return history;
+};
+const allIdsBut = (...kept) => LIBRARY.directions.map((e) => e.id).filter((id) => !kept.includes(id));
+
+test('a deal finds the one set of fresh directions with distinct accents and faces, where a first-fit pick fails', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  assert.deepEqual([...new Set(run(join(dir, 'dealt.json'), '--theme', 'light').map((e) => e.theme))], ['light']);
+  const history = writeHistory(dir, allIdsBut('mintlify', 'posthog', 'sentry', 'taste-framed-sheet'));
+  const ids = run(history, '--seed', '1').map((e) => e.id);
+  assert.deepEqual(ids.sort(), ['mintlify', 'posthog', 'sentry']);
+});
+
+test('when the fresh directions cannot fill a deal, the banner names each direction it reused from recent deals', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const recent = allIdsBut('linear', 'vercel');
+  const history = writeHistory(dir, recent.slice(0, 10), recent.slice(10, 20), recent.slice(20));
+  const out = execFileSync('node', [join(DIR, 'deal.mjs'), '--seed', '3'], { env: { ...process.env, LPK_DEAL_HISTORY: history }, encoding: 'utf8' });
+  const dealt = [...out.matchAll(/^## .+ \(([a-z0-9-]+)\)$/gm)].map((m) => m[1]);
+  const reused = dealt.filter((id) => recent.includes(id));
+  const banner = out.split('\n')[0];
+  for (const id of reused) assert.ok(banner.includes(id), `the banner hides that ${id} was dealt recently: ${banner}`);
+  assert.equal(dealt.length, 3);
+  assert.equal(reused.length, 1, `a deal reuses more recent directions than it needs: ${dealt}`);
 });

@@ -33,7 +33,7 @@ You never saw the screens built: you meet them the way the person does, and repo
   (`lpk:ui-craft`). Flat, system-font, half-empty and still is a failed screen.
 - **Motion shows real change** (a message arrives, a card resolves, a panel opens, a selection
   moves, a figure changes). Every such change moves, using the recipes in `lpk:ui-craft`: fast
-  (120-240 ms), settling without overshoot, and respecting reduced motion.
+  (120-240 ms in, 80-150 ms out), settling without overshoot, and respecting reduced motion.
 - **Copy is short and plain.** Use sentence case and verbs. The UI never explains the process
   ("no code is written until you approve…"); a tooltip at most.
 

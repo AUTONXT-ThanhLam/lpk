@@ -127,7 +127,6 @@ for the exit, with no JavaScript.
   .popover,
   .popover:popover-open {
     transform: none;
-    transition-property: opacity;
   }
 }
 ```
