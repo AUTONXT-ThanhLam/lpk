@@ -283,3 +283,15 @@ test('a branch whose run lives in its own worktree meets the gates when pushed f
   assert.match(hookBash(repo, 'other', 'git push -u origin feat-w'), /the owner has not granted draft pushes/);
   assert.match(hookBash(repo, 'other', 'gh pr ready feat-w'), /delivery gates of run/);
 });
+
+test('the owner\'s /lpk-waive reaches the session\'s run from a directory outside its repo', () => {
+  const S = 'outside-session';
+  const repo = quickRun('outside', S);
+  const outside = join(tmp, 'outside-parent');
+  write(outside, 'README', 'not the run\'s repo\n');
+  const r = lpk(outside, S, 'waive', 'gate:scenarios', '--why', 'the owner decided', '--via', '/lpk-waive');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /waived gate:scenarios in run \S+ via \/lpk-waive/);
+  assert.match(lpk(repo, S, 'gates').stdout, /^scenarios +holds[\s\S]*waived by the owner/m);
+  assert.equal(lpk(outside, 'another-session', 'waive', 'gate:scenarios', '--why', 'x', '--via', '/lpk-waive').status, 1, 'another session holds no run there');
+});
