@@ -5,7 +5,7 @@
 import { parseArgs, repoOf } from '../out.mjs';
 import { sessionId } from '../host.mjs';
 import { appendRecord } from '../records.mjs';
-import { activeRun, readRun } from '../run.mjs';
+import { activeRun, runHere } from '../run.mjs';
 
 const ROWS = ['verify', 'findings', 'reviews', 'scenarios', 'requirements', 'ci', 'error'];
 const VIA = ['cli', '/lpk-waive', 'ask'];
@@ -20,7 +20,8 @@ export function main(argv) {
   const findings = a.words.filter((w) => FINDING.test(w));
   if (findings.length) { console.error(`lpk: ${findings.join(', ')}: ${NOT_FINDINGS}\n${USAGE}`); return 2; }
   const here = repoOf(a.opt('--repo'));
-  const own = here && readRun(here);
+  let own = null;
+  try { own = here && runHere(here); } catch { own = null; }
   const run = own || (a.opt('--repo') ? null : activeRun(sessionId(), false, process.cwd()));
   if (!run) { console.error('lpk: no lpk run in this repo, and this session holds none elsewhere; a waiver belongs to a run'); return 1; }
   const repo = own ? here : run.repo;

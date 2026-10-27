@@ -6,13 +6,15 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, w
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { archiveLedger } from './findings.mjs';
-import { git } from './git.mjs';
-import { sessionId, sessionsDirs } from './host.mjs';
+import { git, top } from './git.mjs';
+import { sessionId } from './host.mjs';
+import { gone, heirs, sessionPid } from './sessions.mjs';
 import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
 
 export { codeOfCommit, treeOf } from './tree.mjs';
 export { verify } from './verify.mjs';
 export { ACTIVE, markerOf, runDir };
+export { exitedRuns, sessionPid } from './sessions.mjs';
 
 const DAY = 24 * 3600 * 1000;
 export const runState = (repo, session) => parse(markerOf(repo, session));
@@ -33,10 +35,17 @@ export const runFor = (repo, session, bind = true) => claim(readRun(repo, sessio
 
 function claim(r, session, bind = true) {
   if (!r || (!r.session && Date.now() - r.started > DAY)) return null;
-  if (r.session && session && r.session !== session) return null;
+  if (r.session && session && r.session !== session) return gone(r.session, session) ? adopt(r, session) : null;
   if (!r.session && !bind) return null;
   if (!r.session && session) { r.session = session; writeRun(r); }
   return r;
+}
+
+export function adopt(run, session) {
+  run.previous = [...(run.previous || []), run.session];
+  run.session = session;
+  writeRun(run);
+  return run;
 }
 
 // This session's newest run in any repo, for a hook called from a directory outside it.
@@ -48,7 +57,16 @@ export function activeRun(session, bind = true, cwd = '') {
   }).filter(Boolean);
   const above = (r) => cwd && (r.repo === cwd || r.repo.startsWith(`${cwd.replace(/\/$/, '')}/`));
   const mine = runs.filter((r) => (r.session ? r.session === session : above(r))).sort((a, b) => b.started - a.started);
-  return claim(bind ? mine[0] : mine.find((r) => r.session), session, bind);
+  let pick = bind ? mine[0] : mine.find((r) => r.session);
+  if (!pick) { const only = heirs(session, top(cwd)); if (only.length === 1) pick = only[0]; }
+  return claim(pick, session, bind);
+}
+
+// The run this checkout delivers: the open one, else the ended run of the current branch.
+export function runHere(repo) {
+  const st = runState(repo);
+  if (st.error) throw new Error(st.error);
+  return st.run || runForBranch(repo, currentBranch(repo));
 }
 
 // Runs that ended, newest first, each as its runs/<id>/run.json left it.
@@ -88,29 +106,6 @@ export function noteBranch(repo, run) {
   return true;
 }
 
-// The pid of a live host process holding `session`, from the per-process files each host keeps in its
-// own store; 0 when none does. Measured: Qoder keeps no such folder, so a session of it reads as one
-// that has exited, and `lpk run take` takes its run.
-export function sessionPid(session) {
-  let names = [];
-  for (const dir of sessionsDirs()) {
-    try { names.push(...readdirSync(dir).filter((n) => /^\d+\.json$/.test(n)).map((n) => join(dir, n))); } catch { /* nothing here */ }
-  }
-  for (const file of names) {
-    try {
-      const s = JSON.parse(readFileSync(file, 'utf8'));
-      if (s.sessionId === session && s.pid) { process.kill(s.pid, 0); return s.pid; }
-    } catch { /* not this one, or its process is gone */ }
-  }
-  return 0;
-}
-export function exitedRuns(session, repo) {
-  const at = checkout(repo);
-  if (!at) return [];
-  const near = (r) => r.repo === repo || r.repo?.startsWith(`${repo}/`) || r.marker.startsWith(`${at.common}/`);
-  return registered().map((x) => x.run).filter((r) => r?.session && r.session !== session && near(r) && !sessionPid(r.session));
-}
-
 // Starts a run, or with an open one: amends it when it is this session's (same id, ledger and
 // verify kept), takes it with `take` when its session's process is gone, else refuses.
 export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false }) {
@@ -123,10 +118,7 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
     if (!take) return { error: `a run of session ${open.session} is open in this repo since ${new Date(open.started).toISOString()}; \`lpk run start --take\` takes it over once that session has exited, \`lpk run end\` ends it` };
     const pid = sessionPid(open.session);
     if (pid) return { error: `session ${open.session} still runs (pid ${pid}); --take only takes a run whose session has exited` };
-    open.previous = [...(open.previous || []), open.session];
-    open.session = me;
-    writeRun(open);
-    return { run: open, took: true };
+    return { run: adopt(open, me), took: true };
   }
   if (take && !open) return { error: 'no open run to take' };
   if (!verify.length && !open) return { error: 'name at least one check with --verify "<command>": the commands CI runs for this change' };

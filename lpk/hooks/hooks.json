@@ -80,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" waive",
+            "command": "{ git rev-parse --git-dir --git-common-dir 2>/dev/null | while IFS= read -r d; do [ -d \"$d/lpk\" ] && echo y; done; ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null; } | grep -q . || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" waive",
             "timeout": 10
           }
         ]
@@ -109,11 +109,11 @@
         ]
       },
       {
-        "matcher": "compact|resume",
+        "matcher": "startup|clear|compact|resume",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$(ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null)\" ] || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" start",
+            "command": "{ git rev-parse --git-dir --git-common-dir 2>/dev/null | while IFS= read -r d; do [ -d \"$d/lpk\" ] && echo y; done; ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null; } | grep -q . || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" start",
             "timeout": 30
           }
         ]
