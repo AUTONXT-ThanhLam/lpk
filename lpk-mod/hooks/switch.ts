@@ -65,6 +65,7 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     ? accounts.find((a) => a.id.toLowerCase() === wanted || a.name.toLowerCase() === wanted)
     : others.find((a) => !a.limited)
   if (wanted && !to) return { text: `no account "${wanted}". The accounts:\n${listed(accounts)}` }
+  if (!to && !others.length) return { text: `Only one account exists (${from.id}, ${from.name}), so there is nowhere to move this session. Nothing changed.\n${listed(accounts)}` }
   if (!to) return { text: `Every other account is at its limit, so there is nowhere to move this session:\n${listed(accounts)}\nNothing changed.` }
   if (own && to.id === own.id) return { text: `This session already runs on ${own.id} (${own.name}). Nothing changed.\n${listed(accounts)}` }
 
