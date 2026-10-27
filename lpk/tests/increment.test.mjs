@@ -17,9 +17,9 @@ function incrementRun(name, S, ...extra) {
   return repo;
 }
 
-const confirm = (repo, claim, area) => {
+const confirm = (repo, claim, area, ruledArea) => {
   const f = addFinding(repo, { from: 'lpk:bug-hunter', at: `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`, claim, repro: 'r', kind: 'defect', severity: 'nit', ...(area ? { area } : {}) }).finding;
-  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'c', evidence: 'seen', by: 'lpk:verifier' });
+  ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'c', evidence: 'seen', by: 'lpk:verifier', ...(ruledArea ? { area: ruledArea } : {}) });
   return f;
 };
 
@@ -30,8 +30,11 @@ test('a new run is at the increment bar: it owes two lenses, lists a confirmed f
   assert.deepEqual(owedLenses(repo, S).sort(), ['bug-hunter', 'code-reviewer']);
   confirm(repo, 'a long name is cut off in the tooltip');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds[\s\S]*known limits of the increment bar[^\n]*F1/m);
+  assert.match(lpk(repo, S, 'report').stdout, /Known limits, not fixed[^\n]*\n- F1 /);
   confirm(repo, 'a token is logged', 'security');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +DENY[\s\S]*confirmed and not fixed: F2/m);
+  confirm(repo, 'a query joins the input', undefined, 'data');
+  assert.match(lpk(repo, S, 'gates').stdout, /^findings +DENY[\s\S]*confirmed and not fixed: F2, F3/m);
   const push = hookBash(repo, S, 'git push origin feat');
   assert.doesNotMatch(push, /no green `lpk verify`/);
   assert.match(push, /has not granted draft pushes/);

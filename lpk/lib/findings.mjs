@@ -118,7 +118,7 @@ export function addFinding(repo, input) {
 // A ruling on one finding. A ruling the verifier made and settled stands; one anybody else made,
 // or an unsettled one, may be ruled on again. In a protected area a not-reproduced drop is kept
 // as unsettled.
-export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, cause, reach }) {
+export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, cause, reach, area }) {
   if (!VERDICTS.includes(verdict)) return { error: `verdict is one of ${VERDICTS.join(', ')}` };
   const why = text(evidence);
   if (!why) return { error: 'evidence: the reproduction and its output, or why it does not hold' };
@@ -127,11 +127,13 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
   if (verdict === 'confirmed' && !BORN.includes(born)) return { error: `born: the step the defect began in, one of ${BORN.join(', ')}` };
   if (verdict === 'confirmed' && !text(cause)) return { error: 'cause: why the defect exists, at the place it starts, in one sentence' };
   if (verdict === 'confirmed' && !REACH.includes(reach)) return { error: `reach: who meets the defect, one of ${REACH.join(', ')} (user: a person or caller meets it; merge: the tech lead would block the merge on it; neither: no one meets it and it blocks nothing)` };
+  if (area !== undefined && !PROTECTED.includes(area)) return { error: `area is one of ${PROTECTED.join(', ')}` };
   return locked(ledgerDir(repo), () => {
     const { findings } = readLedger(repo);
     const f = findings.find((x) => x.id === text(id));
     if (!f) return { error: `no finding ${text(id)}` };
-    if (verdict === 'confirmed' && reach === 'neither' && PROTECTED.includes(f.area)) return { error: `${f.id} is in the ${f.area} area: it reaches the merge, so reach is merge` };
+    const within = area ?? f.area;
+    if (verdict === 'confirmed' && reach === 'neither' && PROTECTED.includes(within)) return { error: `${f.id} is in the ${within} area: it reaches the merge, so reach is merge` };
     if (verdict === 'confirmed' && reach === 'neither' && f.kind === 'scenario') return { error: `${f.id} is an acceptance scenario that fails: a user meets it, so reach is user` };
     if (f.state === 'fixed') return { error: `${f.id} is fixed in ${f.fixedCommit}` };
     if (f.state !== 'open' && f.state !== 'unsettled' && f.by === VERIFIER) return { error: `${f.id} is already ${f.state} by the verifier (${f.evidence})` };
@@ -143,7 +145,7 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
       e.primary = p.id;
     }
     if (verdict === 'dropped') e.basis = basis;
-    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause), reach });
+    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause), reach, ...(area ? { area } : {}) });
     if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(f.area)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
     append(repo, e);
     if (verdict === 'confirmed' && reach === 'neither') append(repo, { ev: 'deferred', id: f.id, evidence: `no user meets it and it blocks no merge: ${text(cause)}`, by: text(by) });

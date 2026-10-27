@@ -5,10 +5,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { floor } from './floor.mjs';
 import { git } from './git.mjs';
-import { isIncrement } from './bar.mjs';
-import { needsOwner, PROTECTED, readLedger, stateOf } from './findings.mjs';
+import { knownLimits } from './bar.mjs';
+import { needsOwner, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { named, proofsOf, proverResults, trace, verifiedGreen } from './proof.mjs';
@@ -34,10 +33,8 @@ function findingsGate(repo, run) {
   const all = ledgerFor(repo, run);
   const open = all.filter((f) => stateOf(f, all) === 'open' && f.state !== 'duplicate');
   const confirmed = all.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap');
-  const secure = isIncrement(run) && floor(repo, patchesOf(repo, run.target).base).sensitive;
-  const limit = (f) => isIncrement(run) && !secure && !PROTECTED.includes(f.area) && f.kind !== 'scenario';
-  const unfixed = confirmed.filter((f) => !limit(f));
-  const limits = confirmed.filter(limit);
+  const limits = knownLimits(repo, run, confirmed);
+  const unfixed = confirmed.filter((f) => !limits.includes(f));
   // Unsettled findings and rulings made by someone other than the verifier do not block: they are
   // named here and in `lpk report`, for the owner to read.
   const owner = all.filter(needsOwner);
