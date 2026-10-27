@@ -3,7 +3,7 @@
 // the agent's id and the range under review. Whatever the agent put in those fields is replaced, so
 // the ledger records who called, not who the caller said it was.
 import { top } from './git.mjs';
-import { activeRun, exitedRuns, readRun } from './run.mjs';
+import { exitedRuns, readRun, sessionRuns } from './run.mjs';
 
 // Both hosts name the plugin's MCP tools differently: Claude Code prefixes the plugin
 // (`mcp__plugin_lpk_lpk__`), Qoder measured as `mcp__lpk__`. The hook must stamp both.
@@ -23,21 +23,25 @@ function findingCall(input) {
 }
 
 // The call's input with the stamps in place, or null for a tool that is not a finding tool. The run
-// is the one of the repo the call runs in when this session may use it, else the run this session
-// holds wherever it is, as the other hooks take it (hooks.mjs runOf): an agent starts in the
-// session's directory, which may hold no run (the superproject of the submodule the run works in)
-// or another session's. Outside an lpk run of this session only the repo is stamped, and the hook
+// is the one of the repo the call runs in when this session may use it, else the one run this session
+// holds wherever it is: an agent starts in the session's directory, which may hold no run (the
+// superproject of the submodule the run works in) or another session's. A session holding two runs
+// is never guessed between: the call must name the repo of one of them. Outside one run of this session only the repo is stamped, and the hook
 // refuses to add or rule and says why.
 export function stampFinding(input) {
   const call = findingCall(input);
   if (!call) return null;
   const out = { ...call.args };
+  const named = out.repo;
   for (const k of STAMPED) delete out[k];
   const shape = (stamped) => (call.wrapped ? { ...input.tool_input, arguments: stamped } : stamped);
   let repo = input.cwd ? top(input.cwd) : '';
   let run = repo ? readRun(repo, input.session_id) : null;
   const mine = (r) => r?.id && (!r.session || r.session === input.session_id);
-  if (!mine(run)) run = activeRun(input.session_id, false);
+  const held = sessionRuns(input.session_id);
+  const asked = named ? held.find((r) => r.repo === top(String(named))) : null;
+  if (asked) run = asked;
+  else if (!mine(run)) run = held.length === 1 ? held[0] : null;
   if (mine(run)) repo = run.repo || repo;
   if (!repo) return shape(out);
   out.repo = repo;
@@ -64,6 +68,8 @@ export function stampHookOutput(input) {
   const call = findingCall(input);
   const inner = call.wrapped ? updatedInput.arguments : updatedInput;
   if (inner.run || !['add', 'verdict', 'fixed'].includes(call.tool)) return { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput } };
+  const held = sessionRuns(input.session_id);
+  if (held.length > 1) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: session ${input.session_id} holds ${held.length} open lpk runs: ${held.map((r) => `${r.repo} (run ${r.id})`).join(', ')}, and this call runs in ${input.cwd}, which is in none of them. Call again with \`repo\` set to the repo of the run the finding belongs to.` } };
   const exited = exitedRuns(input.session_id, inner.repo);
   const why = `lpk: session ${input.session_id || '(none)'} holds no open lpk run in ${inner.repo || input.cwd} or elsewhere, so the ledger cannot record who ${call.tool === 'add' ? 'raises' : 'rules on'} a finding.${exited.length
     ? ` Open runs whose session has exited: ${exited.map((r) => `${r.repo} (session ${r.session})`).join(', ')}. The main session continues one with \`lpk run take --repo <dir>\`; then call again.`

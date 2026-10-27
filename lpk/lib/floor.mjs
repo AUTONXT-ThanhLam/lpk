@@ -66,6 +66,7 @@ function globRe(g) {
 export function floor(repo, base) {
   const files = diffLines(repo, base);
   const why = [], lensWhy = {};
+  let sensitive = false;
   const lens = (name, fact) => { lensWhy[name] ||= fact; };
   if (files.length > 3) why.push(`${files.length} files changed (more than 3)`);
   const counted = why.length;
@@ -73,15 +74,15 @@ export function floor(repo, base) {
   const globs = sensitiveGlobs(repo, base);
   for (const f of files) {
     const p = f.path;
-    if (CREDENTIAL.test(p)) why.push(`credential path ${p}`);
-    if (MIGRATION.test(p)) why.push(`migration ${p}`);
+    if (CREDENTIAL.test(p)) { why.push(`credential path ${p}`); sensitive = true; }
+    if (MIGRATION.test(p)) { why.push(`migration ${p}`); sensitive = true; }
     if (MANIFEST.test(p)) why.push(`manifest ${p}`);
-    for (const g of globs) if (g.re.test(p)) why.push(`${p} matches SENSITIVE.md \`${g.glob}\``);
+    for (const g of globs) if (g.re.test(p)) { why.push(`${p} matches SENSITIVE.md \`${g.glob}\``); sensitive = true; }
     const auth = words(p).match(AUTH);
-    if (auth) why.push(`auth marker \`${auth[2]}\` in the path ${p}`);
+    if (auth) { why.push(`auth marker \`${auth[2]}\` in the path ${p}`); sensitive = true; }
     // In lines, only source code counts: prose about a login is not a login.
     const lineAuth = CODE.test(p) && !TEST.test(p) && f.lines.find((l) => AUTH.test(words(l.text)));
-    if (lineAuth) why.push(`auth marker \`${words(lineAuth.text).match(AUTH)[2]}\` at ${p}:${lineAuth.n}`);
+    if (lineAuth) { why.push(`auth marker \`${words(lineAuth.text).match(AUTH)[2]}\` at ${p}:${lineAuth.n}`); sensitive = true; }
     const at = (re) => f.lines.find((l) => re.test(l.text));
     const where = (l) => `${p}:${l.n}${l.side === '-' ? ' (removed)' : ''}`;
     if (TEST.test(p)) { lens('mutant', `test file ${p}`); continue; }
@@ -99,5 +100,5 @@ export function floor(repo, base) {
   }
   const order = ['mutant', 'regression', 'claims', 'ocr', 'ui-reviewer', 'a11y', 'perf'];
   const docsOnly = files.length > 0 && why.length === counted && files.every((f) => DOC_PATH.test(f.path) && !CODE.test(f.path));
-  return { full: why.length > 0, docsOnly, why, lenses: order.filter((k) => lensWhy[k]), lensWhy, files: files.map((f) => f.path) };
+  return { full: why.length > 0, sensitive, docsOnly, why, lenses: order.filter((k) => lensWhy[k]), lensWhy, files: files.map((f) => f.path) };
 }

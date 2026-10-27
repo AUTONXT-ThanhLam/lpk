@@ -6,6 +6,7 @@
 // reviews; a changed one owes a delta review.
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { isIncrement } from './bar.mjs';
 import { ledgerFile, readLedger } from './findings.mjs';
 import { commitsOf, pairs, patchesOf, rangesOf, touches } from './patches.mjs';
 import { CODE, TEST } from './rules.mjs';
@@ -59,6 +60,7 @@ async function laneSet(repo, run, base, list) {
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
   if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };
+  if (isIncrement(run)) return { set: [...QUICK, ...(floor?.sensitive ? [{ key: 'security' }] : [])], why: 'increment bar' };
   if (run.lane === 'quick' && floor && !floor.full) return { set: QUICK, why: '' };
   const why = run.lane !== 'quick' ? '' : floor ? `quick lane, but lpk floor: ${floor.why.join('; ')}` : 'quick lane, and lpk floor is not installed to clear it';
   return { set: [...FULL, ...[...new Set(extra)].filter((k) => !FULL.some((q) => q.key === k)).map((key) => ({ key }))], why };

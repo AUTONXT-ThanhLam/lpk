@@ -17,7 +17,7 @@ const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.std
 // A quick-lane run on `feat` with one command scenario, its change verified and committed.
 function quickRun(name, session) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
+  ok(lpk(repo, session, 'run', 'start', '--bar', 'production', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, session, 'verify'));
   sh(repo, 'commit', '-qam', 'Set a to 2');
@@ -91,6 +91,20 @@ test('after a rebase that leaves every patch unchanged, only lpk verify and the 
   ok(lpk(repo, S, 'prove', '--all'));
   assert.match(ok(lpk(repo, S, 'reviews', 'owed')), /nothing owed/);
   ok(lpk(repo, S, 'gates'));
+});
+
+test('a change that touches an auth path owes the security lens, and one that does not never does', () => {
+  const S = 'security-session';
+  const plain = quickRun('plain-change', S);
+  const lensesOf = (repo) => JSON.parse(lpk(repo, S, 'reviews', 'owed', '--json').stdout).map((r) => r.lens);
+  assert.ok(!lensesOf(plain).includes('security'));
+  const sensitive = repoWith('auth-change', { 'src/a.mjs': 'export const a = 1;\n' });
+  ok(lpk(sensitive, S, 'run', 'start', '--bar', 'production', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--expect', '', '--verify', 'true'));
+  write(sensitive, 'src/login.mjs', 'export const login = 1;\n');
+  ok(lpk(sensitive, S, 'verify'));
+  sh(sensitive, 'add', '-A');
+  sh(sensitive, 'commit', '-qm', 'Add login');
+  assert.ok(lensesOf(sensitive).includes('security'));
 });
 
 test('a fix commit owes one code review on its delta and the lens whose finding it fixed, on that commit only', () => {
@@ -175,7 +189,7 @@ test('after a later run starts, the gates of an ended run read its archived ledg
   ok(lpk(repo, S, 'prove', '--all'));
   ok(lpk(repo, S, 'run', 'end'));
   sh(repo, 'switch', '-q', 'main');
-  ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
+  ok(lpk(repo, 'next-session', 'run', 'start', '--bar', 'production', '--verify', 'true'));
   sh(repo, 'switch', '-q', 'feat');
   assert.equal(hookBash(repo, 'next-session', 'gh pr ready'), null);
   // A query judges the open run, and adopts no branch into it.
@@ -197,7 +211,7 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   ok(lpk(repo, S, 'run', 'end'));
   assert.match(hookBash(repo, S, 'gh pr ready'), /- findings: confirmed and not fixed: F1 → [^\n]*finding_fixed/, 'its ledger is still live');
   sh(repo, 'switch', '-q', 'main');
-  ok(lpk(repo, 'next-session', 'run', 'start', '--verify', 'true'));
+  ok(lpk(repo, 'next-session', 'run', 'start', '--bar', 'production', '--verify', 'true'));
   sh(repo, 'switch', '-q', 'feat');
   const why = hookBash(repo, S, 'gh pr ready');
   assert.match(why, /- findings: confirmed and not fixed: F1 → [^\n]*gate:findings/);
@@ -221,7 +235,7 @@ test('a branch the run never noted is its branch: work merged in after a start o
   const S = 'merge-session';
   const repo = repoWith('merged', { 'src/a.mjs': 'export const a = 1;\n' });
   sh(repo, 'switch', '-q', 'main');
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'true', '--scenario', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--bar', 'production', '--verify', 'true', '--scenario', 'true'));
   sh(repo, 'switch', '-qc', 'slice'); write(repo, 'src/b.mjs', 'export const b = 1;\n'); sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'Add b');
   sh(repo, 'switch', '-q', 'main'); sh(repo, 'switch', '-qc', 'work'); sh(repo, 'merge', '-q', '--ff-only', 'slice');
   assert.match(hookBash(repo, S, 'gh pr create --title "Add b" --body x'), /`gh pr create` without --draft on work is refused/);
@@ -238,9 +252,9 @@ test('a check or a scenario changed by lpk run start voids what the old one prov
   ok(lpk(repo, S, 'prove', '--all'));
   const rows = () => lpk(repo, S, 'gates').stdout;
   assert.match(rows(), /^verify\s+holds[\s\S]*^scenarios\s+holds/m);
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'false'));
+  ok(lpk(repo, S, 'run', 'start', '--bar', 'production', '--verify', 'false'));
   assert.match(rows(), /^verify\s+DENY/m);
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'true', '--scenario', 'test -f nowhere'));
+  ok(lpk(repo, S, 'run', 'start', '--bar', 'production', '--verify', 'true', '--scenario', 'test -f nowhere'));
   assert.match(rows(), /^verify\s+holds[\s\S]*^scenarios\s+DENY[^\n]*\n\s+S1 not proved on HEAD's tree/m);
 });
 
@@ -258,7 +272,7 @@ test('the owner\'s waiver of gate:error lets through a call the gate cannot deci
 test('a new file staged before lpk verify is in the tree it verified, so the commit after it holds', () => {
   const S = 'staged-session';
   const repo = repoWith('staged', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--bar', 'production', '--verify', 'true'));
   write(repo, 'src/new.mjs', 'export const n = 1;\n'); sh(repo, 'add', 'src/new.mjs');
   ok(lpk(repo, S, 'verify'));
   sh(repo, 'commit', '-qm', 'Add new');
@@ -278,7 +292,7 @@ test('a branch whose run lives in its own worktree meets the gates when pushed f
   const repo = repoWith('wt-push', { 'src/a.mjs': 'export const a = 1;\n' });
   const wt = join(tmp, 'wt-push-w');
   sh(repo, 'worktree', 'add', '-q', '-b', 'feat-w', wt, 'main');
-  ok(lpk(wt, 'w', 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(wt, 'w', 'run', 'start', '--bar', 'production', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
   write(wt, 'src/a.mjs', 'export const a = 2;\n'); sh(wt, 'commit', '-qam', 'Set a to 2');
   assert.match(hookBash(repo, 'other', 'git push -u origin feat-w'), /the owner has not granted draft pushes/);
   assert.match(hookBash(repo, 'other', 'gh pr ready feat-w'), /delivery gates of run/);

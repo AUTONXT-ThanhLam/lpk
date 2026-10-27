@@ -7,6 +7,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { commits, defaultBranch, git, runsGit, top } from './git.mjs';
+import { isIncrement } from './bar.mjs';
 import { failing, gates } from './gates.mjs';
 import { handover, pushedBranches, readyBranch } from './handover.mjs';
 import { appendRecord, readRecords, WAIVE_SOURCE, waived } from './records.mjs';
@@ -103,7 +104,7 @@ async function onPush(input, cmd) {
     if (handedOver(repo, run, branch)) { const d = await gated(repo, { ...run, branch }, 'a push to a branch handed over for review', { ci: false }); if (d) return d; continue; }
     const code = (ref) => codeOfCommit(repo, ref).code;
     const base = git(['merge-base', run.target, 'HEAD'], repo).trim();
-    if (code('HEAD') !== code(base || run.base) && !(run.verified?.green && run.verified.code === code('HEAD'))) {
+    if (!isIncrement(run) && code('HEAD') !== code(base || run.base) && !(run.verified?.green && run.verified.code === code('HEAD'))) {
       return deny('lpk: this push publishes code no green `lpk verify` was recorded for: the last verify failed, or the code it ran on differs from HEAD (an edit or a rebase since, or a code file left uncommitted). Commit or remove the stray code files, run `lpk verify` until it is green, commit, then push.');
     }
     if (!run.granted?.draftPush && await gated(repo, { ...run, branch }, 'push', { ci: false })) {

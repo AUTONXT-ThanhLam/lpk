@@ -5,8 +5,10 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { floor } from './floor.mjs';
 import { git } from './git.mjs';
-import { needsOwner, readLedger, stateOf } from './findings.mjs';
+import { isIncrement } from './bar.mjs';
+import { needsOwner, PROTECTED, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { named, proofsOf, proverResults, trace, verifiedGreen } from './proof.mjs';
@@ -31,16 +33,21 @@ function verifyGate(repo, run, recs) {
 function findingsGate(repo, run) {
   const all = ledgerFor(repo, run);
   const open = all.filter((f) => stateOf(f, all) === 'open' && f.state !== 'duplicate');
-  const unfixed = all.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap');
+  const confirmed = all.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap');
+  const secure = isIncrement(run) && floor(repo, patchesOf(repo, run.target).base).sensitive;
+  const limit = (f) => isIncrement(run) && !secure && !PROTECTED.includes(f.area) && f.kind !== 'scenario';
+  const unfixed = confirmed.filter((f) => !limit(f));
+  const limits = confirmed.filter(limit);
   // Unsettled findings and rulings made by someone other than the verifier do not block: they are
   // named here and in `lpk report`, for the owner to read.
   const owner = all.filter(needsOwner);
   const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
+  const known = limits.length ? `known limits of the increment bar, listed in the PR body: ${list(limits.map((f) => f.id))}` : '';
   const note = owner.length ? `${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}: for the owner to read, not blocking` : '';
   // The ledger tools read only the live ledger: once a later run has archived this ended run's
   // findings, no agent can rule on or close them, and only the owner's waiver is left.
   const archived = why.length && run.ended && !readLedger(repo).findings.some((f) => f.run === run.id);
-  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, note].filter(Boolean).join('; '),
+  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, known, note].filter(Boolean).join('; '),
     wayOut: archived ? `run ${run.id} has ended and a later run archived its findings, so no agent can rule on or close them any more`
       : [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
 }

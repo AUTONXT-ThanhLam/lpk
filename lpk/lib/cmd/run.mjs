@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { ciCommands, defaultBranch, git, mergeBase } from '../git.mjs';
+import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
 import { repoOf } from '../out.mjs';
 import { owed } from '../owed.mjs';
@@ -15,80 +15,13 @@ import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
 import { linkWorktree } from '../where.mjs';
-
-const USAGE = `usage:
-  lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
-                 (--req numbers R1, R2... in order; --proves names the ones the scenario before it proves.
-                  With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
-  lpk run take [--repo <dir>]             (take over a run whose session has exited, or reopen the one that delivered this branch)
-  lpk run worktree <path> [<commit>] [--branch <name>] [--repo <dir>]
-                                          (git worktree add, -b <name> or --detach, at <commit> or HEAD;
-                                           lpk calls from the new worktree work in this run)
-  lpk run end [--abandon "<why>"] [--repo <dir>]
-  lpk run status [--repo <dir>]
-  lpk run lane full --why "<why>" [--repo <dir>]
-  lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]`;
-
-const VALUED = new Set(['--verify', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch']);
-const BARE = new Set(['--take', '--draft-push']);
-
-// Options in order, so each --expect belongs to the --scenario before it.
-function parse(argv) {
-  const o = { words: [], verify: [], scenarios: [], requirements: [], flags: new Set() };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (BARE.has(a)) { o.flags.add(a); continue; }
-    if (!a.startsWith('--')) { o.words.push(a); continue; }
-    if (!VALUED.has(a)) return { error: `unknown option ${a}` };
-    const v = argv[++i];
-    if (v === undefined) return { error: `${a} needs a value` };
-    if (a === '--verify') o.verify.push(v);
-    else if (a === '--scenario') o.scenarios.push({ id: `S${o.scenarios.length + 1}`, cmd: v });
-    else if (a === '--judged') o.scenarios.push({ id: `S${o.scenarios.length + 1}`, agentJudged: v });
-    else if (a === '--expect') { const s = o.scenarios.at(-1); if (!s?.cmd || s.expect !== undefined) return { error: '--expect follows the --scenario "<command>" it checks' }; s.expect = v; }
-    else if (a === '--req') o.requirements.push({ id: `R${o.requirements.length + 1}`, text: v, source: 'lpk run start --req' });
-    else if (a === '--proves') {
-      const s = o.scenarios.at(-1);
-      if (!s || s.proves) return { error: '--proves follows the --scenario or --judged it belongs to' };
-      s.proves = v.split(',').map((x) => x.trim()).filter(Boolean);
-      if (!s.proves.length || s.proves.some((x) => !/^R\d+$/.test(x))) return { error: '--proves takes requirement ids, as in --proves R1,R2' };
-    }
-    else o[a.slice(2)] = v;
-  }
-  return o;
-}
-
-// The scenarios brief.json names, as run.json records them: its ids, so `proves` in the brief and
-// the proof records name the same scenario.
-function briefScenarios(repo) {
-  const file = join(runDir(repo), 'brief.json');
-  const list = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).scenarios || [] : [];
-  return list.map((s, i) => {
-    const id = s.id || `S${i + 1}`;
-    if (!s.cmd && !s.text) throw new Error(`brief.json scenario ${id} has neither a \`cmd\` nor a \`text\``);
-    return { id, ...(s.cmd ? { cmd: s.cmd, ...(s.expect !== undefined ? { expect: s.expect } : {}) } : { agentJudged: s.text }), ...(s.proves ? { proves: s.proves } : {}) };
-  });
-}
-
-function ciLines(repo) {
-  const jobs = new Map();
-  for (const c of ciCommands(repo)) {
-    const k = `${c.workflow} ${c.job}`;
-    const lines = c.run.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
-    jobs.set(k, [...(jobs.get(k) || []), (lines.length > 1 ? `[${lines.join(' ; ')}]` : lines[0] || '').slice(0, 240)]);
-  }
-  return [...jobs].map(([k, v]) => `  ${k}: ${v.join(' ; ')}`);
-}
-
-function pinned(repo, asked, kept) {
-  if (!asked) return kept;
-  if (asked !== 'HEAD' && asked !== '@') return asked;
-  return kept || git(['rev-parse', 'HEAD'], repo).trim();
-}
+import { BARS } from '../bar.mjs';
+import { briefScenarios, ciLines, parse, pinned, USAGE } from './run-args.mjs';
 
 async function start(repo, o) {
   const target = pinned(repo, o.target || o.base, readRun(repo)?.target) || defaultBranch(repo);
   if (o.lane && !['quick', 'full'].includes(o.lane)) { console.error(`lpk: --lane is quick or full\n${USAGE}`); return 2; }
+  if (o.bar && !BARS.includes(o.bar)) { console.error(`lpk: --bar is ${BARS.join(' or ')}\n${USAGE}`); return 2; }
   const pf = new URL('../preflight.mjs', import.meta.url);
   if (existsSync(pf)) {
     const p = await (await import(pf)).preflight(repo, { target, verify: o.verify });
@@ -104,12 +37,12 @@ async function start(repo, o) {
   if (unknown.length) { console.error(`lpk: --proves names ${unknown.join(', ')}, and the run's requirements are ${known.join(', ') || 'none (--req "<text>" numbers them)'}`); return 2; }
   let scenarios = o.scenarios;
   try { if (!scenarios.length) scenarios = briefScenarios(repo); } catch (e) { console.error(`lpk: ${e.message}`); return 2; }
-  const r = startRun(repo, { target, base, lane, laneWhy: o.why ?? open?.laneWhy ?? '', scenarios, requirements: o.requirements, verify: o.verify, take: o.flags.has('--take'), draftPush: o.flags.has('--draft-push') });
+  const r = startRun(repo, { target, base, lane, laneWhy: o.why ?? open?.laneWhy ?? '', scenarios, requirements: o.requirements, verify: o.verify, take: o.flags.has('--take'), draftPush: o.flags.has('--draft-push'), bar: o.bar });
   if (r.error) { console.error(`lpk: ${r.error}`); return 2; }
   const run = r.run;
   if (o.lane === 'quick' && !r.took) appendDecision(repo, { what: 'quick lane', why: o.why || 'no reason given' });
   if (o.flags.has('--draft-push')) appendDecision(repo, { what: 'draft pushes granted', why: o.why || 'granted at run start' });
-  console.log(`lpk run ${run.id} ${r.took ? 'taken over by this session' : r.amended ? 'amended (ledger and verify kept)' : 'started'} in ${repo} against ${target} (${base.slice(0, 12)}), ${run.lane} lane${run.branch ? `, branch ${run.branch}` : ''}.`);
+  console.log(`lpk run ${run.id} ${r.took ? 'taken over by this session' : r.amended ? 'amended (ledger and verify kept)' : 'started'} in ${repo} against ${target} (${base.slice(0, 12)}), ${run.lane} lane${run.branch ? `, branch ${run.branch}` : ''}. Bar: ${run.bar || 'production'}.`);
   console.log(`Checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}. Scenarios: ${run.scenarios.length ? run.scenarios.map((s) => `${s.id} ${s.cmd ? `\`${s.cmd}\`${s.expect !== undefined ? ` expecting "${s.expect}"` : ''}` : `(agent-judged) ${s.agentJudged}`}${s.proves ? ` proves ${s.proves.join(', ')}` : ''}`).join('; ') : 'none yet'}.`);
   if (run.requirements?.length) console.log(`Requirements: ${run.requirements.map((q) => `${q.id} ${q.text}`).join('; ')}.`);
   const on = currentBranch(repo);
@@ -187,7 +120,7 @@ export async function main(argv) {
     const st = runState(repo);
     if (st.error) { console.error(`lpk: ${st.error}`); return 1; }
     const r = st.run;
-    console.log(r ? JSON.stringify({ id: r.id, session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
+    console.log(r ? JSON.stringify({ id: r.id, bar: r.bar || 'production', session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
     return 0;
   }
   if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {

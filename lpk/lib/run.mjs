@@ -5,6 +5,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { barFor } from './bar.mjs';
 import { archiveLedger } from './findings.mjs';
 import { git, top } from './git.mjs';
 import { sessionId } from './host.mjs';
@@ -69,6 +70,8 @@ export function runHere(repo) {
   return st.run || runForBranch(repo, currentBranch(repo));
 }
 
+export const sessionRuns = (session) => registered().map((x) => x.run).filter((r) => r?.session && r.session === session).sort((a, b) => b.started - a.started);
+
 // Runs that ended, newest first, each as its runs/<id>/run.json left it.
 export function endedRuns(repo) {
   const dir = join(runDir(repo), 'runs');
@@ -108,7 +111,7 @@ export function noteBranch(repo, run) {
 
 // Starts a run, or with an open one: amends it when it is this session's (same id, ledger and
 // verify kept), takes it with `take` when its session's process is gone, else refuses.
-export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false }) {
+export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false, bar }) {
   const marker = startDir(repo) && join(startDir(repo), 'run.json');
   if (!marker) return { error: 'not inside a git repository' };
   const st = parse(marker), me = sessionId();
@@ -123,7 +126,7 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   if (take && !open) return { error: 'no open run to take' };
   if (!verify.length && !open) return { error: 'name at least one check with --verify "<command>": the commands CI runs for this change' };
   const run = open || { v: 2, id: `${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`, repo, started: Date.now(), branches: [], seen: [], reviewRange: '', previous: [], granted: { draftPush: false } };
-  Object.assign(run, { marker, target, base, lane, laneWhy, ...(me ? { session: me } : {}) });
+  Object.assign(run, { marker, target, base, lane, laneWhy, bar: barFor(open, bar), ...(me ? { session: me } : {}) });
   if (scenarios.length || !open) {
     // A Prover that started before the scenarios changed proved other ones (proof.mjs proverResults).
     if (open && JSON.stringify(scenarios) !== JSON.stringify(open.scenarios || [])) run.scenariosAt = Date.now();
