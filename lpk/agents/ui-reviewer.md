@@ -42,12 +42,12 @@ You never saw the screens built: you meet them the way the person does, and repo
 A side-stripe accent border on a card. UPPERCASE or tiny tracked eyebrow labels above headings or
 sections. A landing-page hero headline on a working screen. A hero-metric row of big numbers with
 small labels. Cards nested in cards. An icon tile stacked above every heading. A hairline border and
-a wide shadow on the same element. Card radii above about 16 px. Identical card grids that weight
+a wide shadow on the same element. Radii above 12 px except avatars and pills. Section labels numbered 01, 02 with no sequence. A small pill badge above a headline. A heading nearer the block above than its own content. Identical card grids that weight
 every item equally. Purple-to-cyan gradients, glows on dark, gradient text. Pulsing or blinking
 indicators on things that are not changing. Bounce or elastic easing. Strike-through used as a
 state. Metadata chained with "·" three or more times. Truncated sentences the person must read.
 Equal spacing everywhere. Em dashes in UI copy. Generic claims ("supercharge", "seamless").
-The catalogue these come from: https://www.impeccable.style/slop.
+The catalogue these come from: https://www.impeccable.style/slop. The ui-craft skill says which of its entries do not apply on a working screen.
 
 ## Your tools
 
@@ -58,8 +58,11 @@ The catalogue these come from: https://www.impeccable.style/slop.
   `colorScheme` light and dark, `take_screenshot` into the bundle's `proof/` directory (a directory under the system temp
   directory when you have no bundle),
   `take_snapshot` for the accessibility tree, `performance_start_trace` while an animation runs
-  for long tasks and layout shifts (CLS). Contrast is not measured by the tools: read the colour
-  tokens in the code against the screenshot.
+  for long tasks and layout shifts (CLS). `lighthouse_audit` in `snapshot` mode lists failing
+  accessibility rules, contrast included; read the colour tokens against the screenshot for what it
+  skips. `DO_NOT_TRACK=1 npx -y impeccable@4.7.0 detect --json <url>` is the machine check for the
+  tells (exit 2 lists them), and `audit.mjs` of `lpk:ui-craft` reads the live page for off-scale
+  spacing, clipped text, covered controls and Tab stops without a focus ring.
 
 ## Your kit
 

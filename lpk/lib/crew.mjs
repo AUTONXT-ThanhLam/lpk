@@ -5,9 +5,9 @@
 // Job titles by agent type. A type not listed reads as its own name, spaced and capitalised.
 const TITLES = {
   architect: 'Architect', builder: 'Builder', techlead: 'Tech lead', verifier: 'Verifier', prover: 'Prover', 'design-critic': 'Design critic',
-  'plan-sim': 'Plan simulator', 'plan-trace': 'Plan tracer', 'bug-hunter': 'Bug hunter', security: 'Security reviewer',
+  'bug-hunter': 'Bug hunter', security: 'Security reviewer',
   regression: 'Regression reviewer', claims: 'Claims checker', ocr: 'OpenCodeReview', mutant: 'Mutation tester',
-  'test-author': 'Test author', designer: 'Designer', 'ui-reviewer': 'UI reviewer', a11y: 'Accessibility reviewer', perf: 'Performance reviewer',
+  designer: 'Designer', 'ui-reviewer': 'UI reviewer', a11y: 'Accessibility reviewer', perf: 'Performance reviewer',
   env: 'Environment', Explore: 'Explorer', Plan: 'Planner', 'general-purpose': 'Helper', 'claude-code-guide': 'Guide',
 };
 // A workflow agent started without a type is a relay that runs one lens through the CLI; its label names it.
@@ -29,7 +29,7 @@ const FINDING = /(?<![\w-])(F\d+)(?![\w-])/;
 // workflow's label).
 export function whatOf({ type, label, prompt }, slices = []) {
   const key = String(type || '').split(':').pop();
-  if (key === 'builder' || key === 'designer' || key === 'test-author') {
+  if (key === 'builder' || key === 'designer') {
     // The label (the Agent tool's description) names one slice; a prompt may name several.
     for (const text of [label, prompt]) {
       const hits = slices.map((s) => ({ s, at: String(text || '').search(new RegExp(`(?<![\\w-])${escape(s)}(?![\\w-])`)) })).filter((h) => h.at >= 0).sort((a, b) => a.at - b.at);

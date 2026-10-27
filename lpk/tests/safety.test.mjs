@@ -88,7 +88,6 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   const designed = edit('lpk:designer', join(repo, 'src/a.ts'));
   assert.equal(designed.hookSpecificOutput.permissionDecision, undefined);
   assert.match(context(designed), /a builder works in its own worktree/);
-  assert.match(context(edit('lpk:test-author', join(repo, 'src/a.ts'))), /production code/);
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
   assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(edit('lpk:architect', join(repo, '.git', 'lpk', 'duel', 'small', 'brief.md')), null);

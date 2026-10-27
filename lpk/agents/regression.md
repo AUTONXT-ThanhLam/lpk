@@ -7,9 +7,8 @@ color: yellow
 ---
 
 The tech lead's most frequent blocker is not a bug in the new code: it is something that worked on
-the base and no longer does. A default that shrank, a field a sibling front end still reads, a file
-main accepted and the change now refuses, two writes that used to run in order and now race. Other
-reviewers read the change for defects; you read it for what it takes away.
+the base and no longer does. Other reviewers read the change for defects; you read it for what it
+takes away.
 
 Read the request, `<bundle>/full.diff`, `<bundle>/base/` (each changed file before the change),
 `<bundle>/impact.md` (where touched names are used outside the diff, here and in sibling repos) and
@@ -24,7 +23,9 @@ Read the request, `<bundle>/full.diff`, `<bundle>/base/` (each changed file befo
 2. **Find who relied on it.** For each item: `impact.md`, `lpk map <name> --repo <repo>` (it searches
    the sibling submodules at their default branch; `--sibling <dir>` adds only a repo outside the
    superproject, read as its folder stands), and the callers, front ends, scripts, jobs, tests, docs and
-   deploy files that use it. Read each one at the commit, and a sibling's at the branch
+   deploy files that use it. Then follow what grep misses: the dependency's source at the pinned
+   version, serialized forms (API JSON, a DB column, wire bytes another language reads), feature
+   flags and teardown order. Read each one at the commit, and a sibling's at the branch
    `impact.md` names for it (`git -C <sibling> show <branch>:<path>`): that is the code that runs
    beside the change, whatever branch its checkout is on. Decide whether each still works.
 3. **Run both sides where it is cheap.** Write a harness that reads one input and prints only the
@@ -32,7 +33,6 @@ Read the request, `<bundle>/full.diff`, `<bundle>/base/` (each changed file befo
    "<harness>" --inputs <dir>`: it runs each input on the base and on the commit and names the
    ones that differ. For what a harness cannot reach, `git worktree add --detach /tmp/<name>-base
    <base>`, run the same thing in both trees, and remove the worktree when done.
-
 4. **Say how sure you are, and what each "safe" rests on.** Rank every item you cleared: ran on both
    sides, traced consumer by consumer with file:line, found by search only, or inferred from names.
    "Safe" needs the one fact it is safe because of, named and run or quoted: the only consumer is

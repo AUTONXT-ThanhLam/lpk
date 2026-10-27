@@ -2,10 +2,12 @@
 // scenario, a failure row or a test that names it, or the owner's waiver; the Quick lane numbers
 // them at `lpk run start`, the Full lane in brief.json.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { lens, lpk, repoWith, sh, write } from './gates-env.mjs';
+import { appendRecord } from '../lib/records.mjs';
+import { runDir } from '../lib/where.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const row = (repo, session) => JSON.parse(lpk(repo, session, 'gates', '--json').stdout).find((r) => r.gate === 'requirements');
@@ -94,4 +96,16 @@ test('a full run is denied without numbered requirements, reads them from brief.
   r = row(repo, S);
   assert.equal(r.holds, true);
   assert.match(r.why, /^waived by the owner \(R3 unproved/);
+});
+
+test('lpk report counts a run that has not ended up to its last record, not up to now', () => {
+  const S = 'wall-open';
+  const repo = repoWith('wall-open', { 'src/a.mjs': 'export const a = 1;\n' });
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true', '--scenario', 'true'));
+  const marker = join(runDir(repo, S), 'run.json');
+  const file = JSON.parse(readFileSync(marker, 'utf8'));
+  const t0 = Date.now() - 3 * 3600 * 1000;
+  writeFileSync(marker, JSON.stringify({ ...file, started: t0 }));
+  appendRecord(repo, { kind: 'verify', run: file.id, at: new Date(t0 + 10 * 60000).toISOString() });
+  assert.match(lpk(repo, S, 'report').stdout, /, wall 10 min\n/);
 });

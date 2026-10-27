@@ -1,13 +1,15 @@
 # Step 3: Build
 
-**Goal.** Code that makes the acceptance tests pass and holds for every caller, with each defect
+**Goal.** Code that meets the brief's scenarios, proved by tests that name their requirement ids, and holds for every caller, with each defect
 caught on the line where it is written: a defect review finds costs a round; one the build finds
 costs a minute.
 
 ## Start the run before the first production line
 
 Continuing a run from an earlier session: run `lpk run status` first, and when `heldBy` says the
-session has exited, `lpk run take`, or every finding call is refused. Each PR runs in its own
+session has exited, `lpk run take`, or every finding call is refused. Check each branch and PR the
+notes remember against `git` and `gh`, and read a reverted fix on the files you touch as a design
+constraint. Each PR runs in its own
 worktree, with its own `lpk run start` there, so PRs of one repo run side by side.
 
 `lpk run start --base <base> --verify "<command>"`, once for each check CI runs on the touched code
@@ -19,11 +21,23 @@ requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover j
 memory); fix it before you build. Its hooks then show a hint after each edit: fix each one at
 once, or know the one line that says why it is right.
 
-## Build test-first
+## Build with its tests
 
-1. The acceptance tests exist and fail; make them pass. While you work, run only the tests related
-   to the files you touched (`vitest related`, `jest --findRelatedTests`, the tests `lpk map`
-   names); the full checks run in `lpk verify`.
+1. Build one scenario at a time, red first. For each scenario or failure row of your slice: write
+   its test at the real entry point, named with the requirement ids it proves (`R1`…), and run it.
+   Read the failure: it must show the symptom the requirement names, not an import, fixture or typo
+   error, and a bug fix's regression test must fail on the base. Then write the code that turns it
+   green, and move to the next row. One test per row, plus one for each plausible way your lines go
+   wrong that no row covers, named in the report; no test per function. Two inputs that run the
+   same line and fail the same way are one test (a table of cases), never two. Mock only what crosses the
+   system's edge (network, clock, another service). A test that still passes when every function it
+   imports returns `undefined` proves nothing (a weak assertion, a mock asserting its own mock, an
+   expected value computed by the code under test, a pinned constant, a fixture asserting itself):
+   rewrite or delete it. While you work run only the tests related to the files you touched
+   (`vitest related`, `jest --findRelatedTests`, the tests `lpk map` names); the full checks run in
+   `lpk verify`.
+   A refactor, rename or move starts with a characterization test (or an `lpk compare` harness)
+   green on the base and green after; a rename also greps strings and prose for the old name.
 2. Read the whole function you change. A defect in it that your users will meet is fixed too, or
    named in the report.
 3. Build for the system, not the diff: before you change a function, field, status, output shape or
@@ -38,29 +52,20 @@ once, or know the one line that says why it is right.
    `contested: <why>`, never edited to pass.
 
 In the Full lane you lead the build and never write it: every slice, a single one included, goes to
-an `lpk:builder` as `slices.md` in this skill's directory says. Every later turn of the run pays
-for your context, and a lead that builds the change itself carries that context through every
-turn of the build; a builder's context ends with its slice. The Quick lane
+an `lpk:builder` as `slices.md` in this skill's directory says. A lead that builds carries the
+build's context through every later turn; a builder's context ends with its slice. The Quick lane
 builds here, except the screens: `lpk:designer` runs in design mode on the requirements and
 returns its UI section, then in build mode with that section in its prompt (`SKILL.md`, Screens).
-
-## Review your own slice before you call it done
-
-Once the acceptance tests pass, and before you commit, dispatch `lpk:bug-hunter` once on the slice,
-giving it the commit the slice started from and the range `<base>..the working tree` (uncommitted and
-untracked code files included). Run it again only after a fix that changes what the first run read.
-Reproduce each finding it raises, fix the ones that hold, and name the ones that
-do not, each with its reason.
-Its findings go into the ledger as any other lens's do, which is what makes the self-review a fact a
-gate can read rather than a thing the builder says it did.
 
 ## When a fix draws a new problem
 
 A fix that draws a new problem on its own lines, or a second fix on the same idea that fails, means
-the design is wrong. Stop patching: go back to the cause, choose again and rebuild that part.
+the design is wrong. Stop patching: write the one sentence both fixes assumed, count it with a
+command (`lpk map`), choose again from the cause and rebuild that part. Stop and report `contract`
+when two independent workarounds of one shape appear, a cast or escape hatch is needed to compile, or
+a lock appears where the brief said state is unshared.
 
 Commit messages follow `writing.md` in this skill's directory: what changed and why, a subject of
 at most 72 characters.
 
-**Done when** the acceptance tests pass, `lpk check` shows nothing you cannot defend in one line,
-and each slice's self-review is fixed or answered.
+**Done when** the slice's tests pass, `lpk check` shows nothing you cannot defend in one line.

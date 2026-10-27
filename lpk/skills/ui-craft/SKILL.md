@@ -12,13 +12,14 @@ leave out. This file says what to put in. Each section ends in something a scree
 
 ## 0. Study the best before you decide
 
-The bar is the best SaaS products (Linear, Vercel, Raycast, Stripe, Mercury, Notion, Figma, Arc,
-Attio, Clerk, Resend), and the owner may have no words for it: you carry the judgement. Read
-`benchmarks.md` and `ux.md` in this skill's directory. Then open two live pages from
+The bar is the products of large, well-run companies: the best SaaS products (Linear, Vercel,
+Stripe, Notion, Figma, Attio, Clerk) and the design systems of enterprise software (GitHub Primer,
+Atlassian, IBM Carbon, Microsoft Fluent). The owner may have no words for it: you carry the
+judgement. Calm, precise, dense where the work needs it, one restrained accent; never luxury,
+editorial or showy. Read `benchmarks.md` and `ux.md` in this skill's directory. Then open two live pages from
 `benchmarks.md` that sit closest to the screen's kind in the lpk Chrome, screenshot each product
 screen into the proof directory, and write three moves you take from them (a type setting, a row
-anatomy, a motion, a keyboard behaviour), each with the measured value. A screen designed without
-having looked at the references is the average of every screen.
+anatomy, a motion, a keyboard behaviour), each with the measured value.
 
 ## 1. Decide the face before any code
 
@@ -53,25 +54,38 @@ first rows, and the right half is never blank because nothing was selected.
 
 - Three layers, named: `ground`, `raised` (cards, rows on hover), `overlay` (menus, dialogs). Each is
   one tone step apart; dark mode steps go lighter as they rise.
-- One shadow token per layer, soft and low (`0 1px 2px rgb(0 0 0 / .06), 0 8px 24px rgb(0 0 0 / .06)`
-  on `raised`), never together with a border on the same element: choose the line or the shadow.
-- A 1px inner highlight (`inset 0 1px 0 rgb(255 255 255 / .06)`) on dark `raised` surfaces; a ring
-  at 8-10% ink on light.
-- Radius from a scale of three (6, 10, 14), the smaller one on anything nested inside the larger.
-- Spacing on a 4 px base, using 8, 12, 16, 24, 40: related things 8-12 apart, groups 24-40.
-- Selected means two things at once (surface step and ink), never a coloured side stripe.
+- A static card is a surface step or a hairline ring (ink at 8-10% on light, white at 6-12% on
+  dark) and carries no shadow. Shadows belong to layers that float: menus, dialogs, popovers and
+  what is being dragged (`0 8px 24px rgb(0 0 0 / .08)`). Never a ring and a shadow on one element.
+- A control (input, select, checkbox, segmented control) whose edge is its only cue has a border at
+  3:1 against its surface (about ink at 50%) or a filled background that contrasts with it. The
+  card hairline above is too faint for it (WCAG 1.4.11).
+- Radius from a scale: controls 4-6 px, cards and menus 8, dialogs and tables up to 12; nothing
+  larger except avatars and status pills. The smaller one sits inside the larger.
+- Spacing steps of 2, 4, 8, 12, 16, 24, 32, 40, 48, 64: every padding and gap is one of them.
+  Related things 8-12 apart, groups 24-40, sections of an app screen 24-48.
+- Controls that share a row share a height from 24, 28, 32, 40, 48 px (32 is the default).
+- Selected means two things at once (surface step and ink), never a coloured side stripe. Hover,
+  pressed and selected are each one tone step from the resting state.
 
 ## 4. Type that carries the hierarchy
 
-- Three sizes (13, 15, 22 or 28), two weights (450 and 600). Titles get `letter-spacing: -0.01em` and
-  `text-wrap: balance`; body `text-wrap: pretty`.
+- Three sizes and two weights (450 and 600) on a screen. Body and controls 13-14 px with a line
+  height near 1.4 (Carbon, Atlassian, Fluent and Primer all set 14/20); the smallest text 12 px;
+  section headings 14-16 px at 600; a page title 20-28 px. Display sizes above 32 px are for brand
+  and marketing pages. Titles get `letter-spacing: -0.01em` and `text-wrap: balance`; body
+  `text-wrap: pretty`.
+- Sentence case everywhere, buttons and column headers included; no uppercase outside a `kbd` or a
+  status pill.
 - `font-variant-numeric: tabular-nums` on every figure, times and costs right-aligned.
 - Muted text is a step of the ink ramp (at least 4.5:1), never an opacity.
 
 ## 5. Motion that explains
 
-Use the `motion` package (`import { motion, AnimatePresence, MotionConfig } from "motion/react"`).
-Wrap the app once in `<MotionConfig reducedMotion="user">` so every transform respects the setting.
+Use the `motion` package (`import { motion, AnimatePresence, MotionConfig } from "motion/react"`)
+on app screens; GSAP is for public pages. Wrap the app once in `<MotionConfig reducedMotion="user">`
+so every transform respects the setting, and under reduced motion keep opacity and spinners and
+drop translation and scale.
 One entrance per view, none on rows of a long list. These are the recipes; use the ones the screen's
 real changes need and no others.
 
@@ -86,7 +100,6 @@ const ease = [0.22, 1, 0.36, 1] as const
   <motion.section key={run.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease }} />
 </AnimatePresence>
 
-<motion.button whileTap={{ scale: 0.97 }} transition={{ duration: 0.12 }} />
 ```
 
 - **List change** (an item arrives, resolves, is removed): `layout` on the items inside
@@ -95,20 +108,32 @@ const ease = [0.22, 1, 0.36, 1] as const
   highlight glides only between rows of the same height; when a row can expand (a question, a
   form) the sheet resizes over the text of its neighbours.
 - **Panel swap**: crossfade with an 8 px shift in the direction of travel, 180 ms.
-- **Press**: `scale(0.97)` in 120 ms. Hover is `transition-colors` at 150 ms behind
-  `@media (hover: hover)`, one small response for every control.
+- **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover)`, one
+  small response for every control. How often it happens sets the duration: motion a person
+  triggers dozens of times a day (row hover, menu open, tab switch, selection) stays at 150 ms or
+  less; the 180-240 ms recipes are for occasional changes.
 - **Status change**: the dot or label crossfades colour in 200 ms; a running item has a spinner
   that turns, nothing pulses.
 - **Figures that change after load**: roll or crossfade the digit, 300 ms, never on first paint.
 - **Loading to content**: skeleton blocks of the final shape, then a 200 ms opacity swap with no
   layout shift.
 - **Where**: transform and opacity only, 120-240 ms, `ease` above or a spring with damping that
-  settles without overshoot. No bounce, no stagger above eight items, no looping decoration.
+  settles without overshoot. An exit is faster than its entrance. One focal motion at a time. No
+  bounce, no stagger above eight items, no looping decoration, and error text is never animated.
 
 ## 6. The look-and-fix loop
 
-Screenshots only, never the code. After the first build, capture 1440x900 and 390x844 in light and
-dark, and the selected, empty and loading states. Score each 1-5 and write the scores down. The last three come from doing the job in the browser, not from looking:
+Screenshots only, never the code. Before you score, run the three machine checks and fix what they
+print: `lighthouse_audit` in `snapshot` mode on the page (every failing accessibility rule);
+`DO_NOT_TRACK=1 npx -y impeccable@4.7.0 detect --json <url>` (exit 2 lists generated-UI tells such
+as side stripes, gradient text, nested cards and low contrast: fix each, or write why it does not
+apply; its entries about body text near 16 px, line height 1.5 and Inter or Geist as the face do not
+apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which
+reads the live page and prints spacing, radii and control heights off the scale, the font sizes in
+use, and every Tab stop (exit 2 on clipped text, a control covered by another element, overlapping
+text, page overflow, a face that did not load, or a Tab stop with no focus ring). Short uppercase labels and the rest of the tells list in the agent file
+still run by eye. After the first build, capture 1440x900 and 390x844 in light and
+dark, and the selected, empty and loading states. Score each 1-5 and write the scores down. The last three come from doing the job in the browser, with the count of `ux.md` section 1, not from looking:
 
 | Dimension | A 5 looks like |
 |---|---|

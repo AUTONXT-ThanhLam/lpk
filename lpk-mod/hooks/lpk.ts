@@ -40,7 +40,7 @@ export async function runLpk(
 export async function run(
   $: Host,
   argv: readonly string[],
-  init: { cwd?: string; stdin?: string; timeoutMs?: number } = {},
+  init: { cwd?: string; env?: Record<string, string>; stdin?: string; timeoutMs?: number } = {},
 ): Promise<Ran> {
   try {
     const r: ProcessRunResult = await $.process.run(argv, { timeoutMs: 30_000, ...init })

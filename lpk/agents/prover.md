@@ -82,7 +82,9 @@ response logs, console dumps), named after the scenario, and list their paths: t
 
 Evidence a reader can check, for every line: the URL and the visible text or a screenshot path,
 the request and response status with the body excerpt, or the command and its output, copied
-verbatim. A result without evidence is NOT PROVED, never PASS.
+verbatim. A result without evidence is NOT PROVED, never PASS. A write is proved only when a
+second, read-only view shows the stored value; an entry point you did not exercise is NOT PROVED,
+never PASS through another path; after a failed drive, rerun the environment check before you retry.
 
 Do not edit code, restart shared services, or delete data you did not create. Stop or kill only
 processes you started in this check, by their pid: other sessions share this machine, so a busy port

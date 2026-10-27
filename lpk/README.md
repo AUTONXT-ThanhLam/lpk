@@ -4,13 +4,14 @@ A plugin for Claude Code and Qoder that carries one coding request to a delivere
 where its user meets it and reaches the tech lead with nothing they would block. Defects are caught
 in three layers, cheapest first:
 
-- **the design**: three fresh reviewers (a critic running what the design relies on, a simulation of
-  the run, a trace back to the owner's words) check the Design Brief in at most three rounds, before
-  anything is built;
+- **the design**: the lead checks the Design Brief against the owner's words and the running code before
+  anything is built; a risky change (who may do what, state that cannot be undone, several repos) gets
+  rival designs and a design critic that runs what the design relies on, in at most three rounds;
 - **the build**: each builder starts with the rules for its files, gets a hint after each edit, and
-  has a bug hunter read its slice before it reports done;
-- **the review net**: every lens runs at once on the frozen commit (the tech lead, two reviews of
-  the diff itself, the bug hunter, the security reviewer, regression, claims, OpenCodeReview
+  writes the tests that prove its slice with the code;
+- **the review net**: every lens runs at once on the frozen commit (the tech lead, a review of
+  the diff itself, the bug hunter, regression, claims, the security reviewer when the change touches
+  credentials, auth, a migration or a sensitive path, OpenCodeReview
   on a change of more than ten files, mutants, and the screen
   lenses when screens change), a verifier reproduces each finding, and the Prover uses the change
   on its real surface.

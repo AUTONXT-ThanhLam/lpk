@@ -15,7 +15,7 @@ handles the case the rule did not name.
 5. Use one word for one thing, and use its real name: the symbol, the file, the command. Two names
    make a reader look for two things. Name agents by job title: the Tech lead, the Verifier, the
    Prover. To the owner, say what a name means for the user the first time it
-   appears: "F100" or "D4" alone made the owner ask what it was and blocked the run.
+   appears: an id such as "F100" or "D4" alone tells the owner nothing.
 6. Keep the articles, the subjects and the verbs. Fragments and arrows save words and cost the
    reader a guess.
 7. Give the reason with each rule, choice and decision, in one clause.

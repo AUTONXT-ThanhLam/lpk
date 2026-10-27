@@ -57,6 +57,10 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
      `blocks`, `when` (`always`, `removed`, ``added `regex` `` or ``path `regex` ``, the regex in
      backticks), optional ``find: `regex` ``, `rule` (what must hold, general enough to apply in other
      code), `check` (what to open or run, ending with the reproduction a finding needs).
+   - **already said**: the step or agent file that should have caught it already holds the
+     sentence and the agent still missed it: save a placement fix (move it before the step it
+     guards, put the condition first), not a second copy.
+   - **computable**: `lpk/lib` can decide it from git or files: propose a check there, not prose.
    - **repo-only**: true only for this repo (its vocabulary, its layout): its file, never `all.md`.
 4. Decide where each one goes: `all.md` when the rule holds in any codebase, the repo's file when
    it names this repo's vocabulary or layout. Drop one only when it duplicates a rule after all.

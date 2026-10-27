@@ -25,6 +25,8 @@ function around it and the callers of what it changes (`lpk map <the function or
   that repeats a side effect, a `null`, `None`, empty or missing input that crashes;
 - concurrency and order: an `await` that lets another call change what was just checked, two
   writers of one record, events handled out of order;
+- a check made on a proxy (a file's mtime, a cached flag, a self-report, an exit code) where the
+  real value is readable;
 - a test that cannot fail: it never reaches the changed line, or asserts what was true before.
 
 ## How you read the change

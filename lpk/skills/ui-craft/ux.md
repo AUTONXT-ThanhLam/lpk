@@ -19,15 +19,20 @@ keystrokes from opening the app to done.
 ## 2. Say what is happening, fast
 
 - Every control answers within 100 ms: a pressed state, or the result at once (optimistic) with the
-  true result following.
+  true result following. Under a second shows nothing extra.
 - Work over a second shows progress where the person is looking (in the button, in the row), never
-  a screen-wide blocker. Work over ten seconds says what it is doing and lets the person leave.
+  a screen-wide blocker: a skeleton of the final shape for a page or region, an inline indicator
+  for one control. Work over ten seconds shows percent done, says what it is doing, can be
+  cancelled and lets the person leave.
 - Never fake progress. A figure that is stale says when it was last updated.
 
 ## 3. Make mistakes cheap
 
-- A reversible action does it and offers Undo in a toast for 6-8 seconds. Asking "are you sure?"
-  is for what cannot be undone, and its button names the consequence ("Delete 3 runs").
+- A reversible action does it and offers Undo in a toast that stays long enough to read and
+  reach, pauses on hover and focus, is reachable by keyboard and is announced (`role="status"`).
+  Asking "are you sure?" is for what cannot be undone, and its button names the consequence
+  ("Delete 3 runs"). A modal is for lost work, an irreversible action, missing required
+  information or a wizard; a field error fixable in place or a piece of news never opens one.
 - Typed input survives an error, a reload of the panel and a failed save.
 - An error says what happened, what the person can do next and keeps their data; the retry is
   one click. "Something went wrong" is a defect.
@@ -42,8 +47,13 @@ keystrokes from opening the app to done.
 ## 5. Forms
 
 - Labels sit above the field and never inside it. Placeholders show an example, never the label.
-- Validate on blur with a specific message beside the field ("Use 8 or more characters"), never a
-  disabled submit button that gives no reason. Enter submits. The first field has focus.
+- Validate on blur with a specific message and an icon beside the field ("Use 8 or more
+  characters"), never in a tooltip alone, never a disabled submit button that gives no reason.
+  Enter submits. The first field has focus. Something entered earlier in the flow is shown, not
+  asked again.
+- One Save per form, labelled with a verb. Toggles and single selects save at once; text fields
+  and checkbox groups save on the button; one form never mixes the two. In a dialog the buttons
+  sit bottom-right, Cancel left of the action.
 - Defaults are chosen so the common case needs no typing. Related fields are grouped, optional ones
   folded. Saving shows saved, saving or failed in one fixed place.
 
@@ -73,7 +83,23 @@ sheet, popover, dropdown menu, select and combobox, tabs, tooltip, toast (`sonne
 palette (`cmdk`), data table (TanStack Table), calendar (`react-day-picker`). Style them with the
 app's tokens; do not rewrite their behaviour.
 
-## 9. How it is scored
+## 9. Tables, dashboards and messages
 
-The last three rows of the loop table in section 6 of `SKILL.md` (task flow, feedback and
-recovery, clarity) are scored from doing the job in the browser with the count of section 1.
+- A table: rows hover even when they are not clickable; the sort arrow shows on the sorted column
+  and on hover elsewhere; the header stays when it scrolls and a sticky header never covers the
+  focused row; a column title is one or two words; empty cells stay empty; rows select with a
+  checkbox, which shows a batch bar and disables row actions; more than five toolbar actions go in
+  an overflow menu; a row menu with fewer than three items is inline buttons. The loading skeleton
+  has the real column widths and row height.
+- A dashboard answers one question per page. Show the few figures that matter and put logs and
+  detail one click away. Bars, lines and scatter carry quantity; pie and donut only when one slice
+  dominates; bars sorted by value; colour never encodes magnitude alone. One status vocabulary,
+  defined once and reused. Live data can be paused (WCAG 2.2.2).
+- A message sits at the scope it concerns: a banner for a page or section, an inline message by
+  the action or field. At most two lines, and an error always says the next step. A success that
+  is visible in place needs no message.
+- A tooltip never repeats its label, never holds what the task needs, and opens on keyboard focus.
+  Navigation labels are keywords, an icon always comes with its label, and the main navigation and
+  the primary action are always visible, never behind hover. Disclosure goes two levels deep at
+  most, and the trigger says what is behind it.
+- Targets are at least 24x24 px (WCAG 2.5.8).

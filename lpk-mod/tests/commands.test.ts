@@ -80,6 +80,33 @@ test('lpk-switch writes the state card, moves cc-switch and tells the owner to /
   expect(r.context?.[0]).toContain(card.trim())
 })
 
+const UNDER_LAUNCHER = { CC_SWAP_LAUNCHER: '4242', CC_SWAP_REQUEST: '/run/user/1000/cc-swap.x' }
+const swapReply = (a: readonly string[]) => git(a) ?? (a[0] === 'cc-switch' && a[1] === 'status' ? { stdout: STATUS } : undefined) ?? flippedAny(a)
+const flippedAny = (a: readonly string[]) => (a[0] === 'cc-switch' ? { stdout: `Now on ${a[1]} (x).\n` } : undefined)
+
+test('lpk-switch under the claude launcher writes the card and restarts the same conversation on the other account', async ($, on) => {
+  const w = world(on, { env: UNDER_LAUNCHER, files: installedLpk(), reply: swapReply })
+  const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
+  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', 'cc2'])
+  expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
+  expect(w.written[`${CWD}/.git/lpk/state-card.md`]).toContain('lpk state card')
+  expect(r.text).toContain('restarts on the same conversation')
+  expect(r.text).not.toContain('claude -c')
+  expect(r.context?.[0]).toContain('lpk state card')
+})
+
+test('lpk-switch with agents still at work leaves the restart to the owner even under the launcher', async ($, on) => {
+  const w = world(on, {
+    env: UNDER_LAUNCHER,
+    agents: [{ id: 'a1', description: 'review the slice', type: 'lpk:techlead', status: 'running' }],
+    reply: swapReply,
+  })
+  const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
+  expect(w.ran.some((a) => a[0] === 'setsid')).toBe(false)
+  expect(w.ran).toContainEqual(['cc-switch', 'cc2'])
+  expect(r.text).toContain('1 agent(s) still at work')
+})
+
 test('lpk-switch with no account moves to the next one after the active', async ($, on) => {
   const w = world(on, {
     reply: (a) =>
@@ -89,6 +116,39 @@ test('lpk-switch with no account moves to the next one after the active', async 
   const r = await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
   expect(w.ran).toContainEqual(['cc-switch', 'cc2'])
   expect(r.text).toContain('Now on cc2')
+})
+
+test('lpk-switch leaves the session\'s own account when cc-switch\'s pointer was moved by another terminal', async ($, on) => {
+  const w = world(on, {
+    env: { LPK_ACCOUNT: 'cc2' },
+    reply: (a) =>
+      (a[0] === 'cc-switch' && a[1] === 'status' ? { stdout: STATUS } : undefined) ??
+      (a[0] === 'cc-switch' ? { stdout: 'Now on cc1 (work).\n' } : undefined),
+  })
+  const r = await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
+  expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
+  expect(r.text).toContain('This session runs on cc2 (home)')
+  expect(r.text).toContain('cc-switch already points at cc1')
+  const again = await $.command.run({ command: 'lpk-switch', args: 'cc2', origin: OWNER, presentation: PRESENT })
+  expect(again.text).toContain('already runs on cc2')
+})
+
+const LIMITED = '  cc2 full     5-hour   0% (resets 16:00)  weekly 100%  LIMITED\n'
+const ON_CC1 = '* cc1 work     5-hour  97% (resets 14:00)  weekly  60%\n'
+const flipped = (a: readonly string[]) => (a[0] === 'cc-switch' ? { stdout: `Now on ${a[1]} (x).\n` } : undefined)
+
+test('lpk-switch with no account skips an account at its limit', async ($, on) => {
+  const status = `${ON_CC1}${LIMITED}  cc3 third    5-hour   0% (resets 16:00)  weekly   5%\n`
+  const w = world(on, { env: { LPK_ACCOUNT: 'cc1' }, reply: (a) => (a[1] === 'status' ? { stdout: status } : flipped(a)) })
+  await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
+  expect(w.ran).toContainEqual(['cc-switch', 'cc3'])
+})
+
+test('lpk-switch with no account stops when every other account is at its limit', async ($, on) => {
+  const w = world(on, { env: { LPK_ACCOUNT: 'cc1' }, reply: (a) => (a[1] === 'status' ? { stdout: `${ON_CC1}${LIMITED}` } : flipped(a)) })
+  const r = await $.command.run({ command: 'lpk-switch', args: '', origin: OWNER, presentation: PRESENT })
+  expect(w.ran).toEqual([['cc-switch', 'status']])
+  expect(r.text).toContain('Every other account is at its limit')
 })
 
 test('lpk-switch to an unknown account switches nothing', async ($, on) => {
