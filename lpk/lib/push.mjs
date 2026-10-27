@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs';
 import { commits, defaultBranch, git, runsGit, top } from './git.mjs';
 import { failing, gates } from './gates.mjs';
 import { handover, pushedBranches, readyBranch } from './handover.mjs';
-import { appendRecord, readRecords, waived } from './records.mjs';
+import { appendRecord, readRecords, WAIVE_SOURCE, waived } from './records.mjs';
 import { endedRuns, markerOf, readRun, runForBranch } from './run.mjs';
 import { codeOfCommit } from './tree.mjs';
 import { gitleaks } from './tools.mjs';
@@ -66,7 +66,7 @@ async function gated(repo, run, what, { ci }) {
   const rows = await gates(repo, run, { ci });
   const bad = failing(rows);
   if (!bad.length) return null;
-  return deny(`lpk: ${what} on ${run.branch || 'this branch'} is refused: the delivery gates of run ${run.id} do not hold.\n${bad.map((r) => `- ${r.gate}: ${r.why}${r.wayOut ? ` → ${r.wayOut}` : ''}`).join('\n')}\n\`lpk gates\` shows what each read.`);
+  return deny(`lpk: ${what} on ${run.branch || 'this branch'} is refused: the delivery gates of run ${run.id} do not hold.\n${bad.map((r) => `- ${r.gate}: ${r.why}${r.wayOut ? ` → ${r.wayOut}` : ''}`).join('\n')}\n\`lpk gates\` shows what each read.\nOnly the owner releases a gate: ask them once with AskUserQuestion (multiSelect, \`metadata: { source: "${WAIVE_SOURCE}" }\`), one option per gate labelled exactly ${bad.map((r) => `\`gate:${r.gate}\``).join(', ')}, each saying what that gate holds and what stays unproved. Their picks are recorded and the gates then hold. Do not ask them to type a command.`);
 }
 
 // Whether this repo has a run, open, damaged or ended: only then do the gates act in it.

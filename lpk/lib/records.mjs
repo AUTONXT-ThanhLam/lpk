@@ -50,6 +50,7 @@ export function readDecisions(repo, { run } = {}) {
 // Whether the owner released `what` (a gate as `gate:<name>`, a finding by its id) in this run,
 // through one of the owner's channels: /lpk-waive, or the waiver question (recorded with the
 // question it answered). `lpk waive` run by an agent records `via: cli` and counts for nothing.
+export const WAIVE_SOURCE = 'lpk:waive';
 const OWNER = new Set(['/lpk-waive', 'ask']);
 export const waived = (repo, runId, what) => readRecords(repo, { run: runId })
   .some((r) => r.kind === 'waiver' && r.what === what && (OWNER.has(r.via) || (r.via === undefined && r.question)));
