@@ -7,24 +7,27 @@ Anything you rely on and did not read here, open the live page and measure it wi
 
 ## Defaults the best share (four sites or more)
 
-- **Neutral primary button.** Near-white or near-black fill, label in the opposite ink. The accent
-  hue is kept for focus rings, status dots, chips, links and the one main data element (Linear,
-  Vercel, Raycast, Figma, Clerk, Attio, Resend). Stripe, Mercury and Notion are the exceptions
-  that colour the primary button.
-- **Tight, light display type.** Hero sizes 48-64 px with negative tracking (-0.02em to -0.06em),
-  weight 300-600, rarely 700. Titles inside the app are 13-22 px, weight 500-600.
+- **A quiet primary button.** On their marketing pages most of these use a near-white or
+  near-black fill with the accent kept for focus rings, status dots, links and the main data
+  element (Linear, Vercel, Raycast, Figma, Clerk, Attio, Resend); Stripe, Mercury, Notion and
+  Atlassian colour the primary button. What holds everywhere: one primary button per page or
+  region.
+- **Tight, light display type on marketing pages.** Hero sizes 48-64 px with negative tracking
+  (-0.02em to -0.06em), weight 300-600. Titles inside the app are 13-28 px, weight 500-600.
 - **Hover is a colour change.** Background or text colour only, no lift, no shadow change,
   0.15-0.2 s on most (Linear 0.16 s, Vercel 0.15 s, Raycast 0.2 s, Notion 0.2 s, Figma 0.18 s),
   0.3 s at the slow end (Stripe, Mercury, Attio). Easing is an ease-out curve.
 - **Hairlines, not shadows.** Cards separate by a 1 px ring (dark: white at 6-12%, light: ink at
-  8-16%). Real shadows appear only on layers that float (menu, dialog, panel).
+  8-16%). Real shadows appear only on layers that float (menu, dialog, panel). The ring is too
+  faint to be a control's only edge: an input needs a 3:1 border or a filled background.
 - **Compact rows.** In-product lists are 35-45 px tall with 13-14 px text: identity on the left,
   meta and time right-aligned (Linear 40 px, Raycast 40, Attio 35, Mercury 44, Stripe 45).
 - **Status is a mark plus a word.** A ring or dot icon, or a pale pill with a leading dot (Linear
   status rings, Notion dot pills with counts, Attio pills, Stripe icon and label).
 - **Keyboard hints live in the UI.** Small `kbd` badges (11 px, weight 600, radius 4) beside actions
   and search: "Cmd K", "/", "Enter" (Raycast, Attio, Stripe, Arc).
-- **Generous space between sections.** 96 px or more between page sections; app headers 64-78 px.
+- **Generous space between marketing sections.** 96 px or more; app headers 64-78 px. Inside an
+  app, sections are 24-48 px apart.
 - **Real data in the picture.** Every site shows the real product with believable content, never
   abstract art.
 - **Plain copy.** Statements in sentence case, no exclamation marks.
@@ -40,6 +43,7 @@ Anything you rely on and did not read here, open the live page and measure it wi
 | Docs, changelog, text-heavy | stripe.com changelog (docs.stripe.com/changelog), clerk.com/changelog | 45 px rows on hairlines, a date rail with a dot, tag pills |
 | Auth, onboarding, forms | clerk.com (the sign-up widget), resend.com | 34-48 px inputs, provider buttons with a "last used" hint, code with a copy icon |
 | Friendly workspace, databases | notion.com, figma.com | pastel status pills with counts, view tabs, property panels, live cursors |
+| Forms, settings, tables, dialogs, messages in an enterprise app | primer.style/product, atlassian.design/components, carbondesignsystem.com/components, fluent2.microsoft.design | the component page of the part you build: anatomy, states, when to use, copy |
 | Marketing and brand pages | vercel.com, linear.app, arc.net | large light type, one product shot, 128 px or more between sections |
 
 ## Where they differ: choose one on purpose
@@ -56,3 +60,21 @@ Anything you rely on and did not read here, open the live page and measure it wi
   the same ramp (Linear: page rgb(8,9,10), raised rgb(16,17,18), ring white at 8%).
 - **Type.** An Inter-family face for tools (Linear, Raycast, Attio); a brand sans for products that
   sell trust or craft (Stripe, Mercury, Figma). Never the system stack.
+
+## What the enterprise design systems agree on
+
+Read from the public documentation of GitHub Primer, Atlassian, IBM Carbon and Microsoft Fluent
+(October 2026). Use them for working screens when the app's own system is silent.
+
+- **Type.** Body and controls 14 px on a 20 px line; labels 12-13; app page titles 24-28 px.
+  Sentence case in every label.
+- **Radius.** 2-4 px small parts, 6 px buttons and inputs, 8 px cards and menus, 12 px dialogs and
+  tables. Nothing round except avatars and pills.
+- **Spacing steps.** 2, 4, 8, 12, 16, 24, 32, 40, 48, 64, 80 (Carbon, Atlassian).
+- **Control height.** 32 px default, with 24, 28, 40 and 48 as the other steps (Primer, Carbon).
+  Table rows 24, 32, 40, 48, 64 with 40 as default; the toolbar and pagination match the row.
+- **Elevation.** A static card is a border or a surface step; shadow is for what floats or is
+  dragged (Atlassian).
+- **Motion.** Interactions 50-150 ms, transitions 150-400 ms (Atlassian); 70 and 110 ms for
+  micro-interactions, 150-240 ms for expansion (Carbon). Frequent motion is the shortest.
+- **One primary button** per page or region; the label is a verb and a noun in sentence case.

@@ -128,7 +128,7 @@ const prover = (lens) => (label) => (a.surface
   ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.bundle}/proof\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
   : Promise.resolve({ error: 'no running surface given in args.surface' }))
-  .then((o) => o && { findings: o.results.filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: x.evidence })), results: o.results, error: o.error })
+  .then((o) => o && { findings: (o.results || []).filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: x.evidence })), results: o.results || [], error: o.error })
 const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterProver && owed.includes('prover')) await proverDone; return run(lens)(label) }
 
 const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))

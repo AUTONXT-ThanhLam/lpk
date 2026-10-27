@@ -4,9 +4,8 @@
 // the call.
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { git } from './git.mjs';
-import { CODE, TEST } from './rules.mjs';
 
 export const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: ${reason}` } });
 export const hint = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: `lpk: ${text}` } });
@@ -77,7 +76,7 @@ export function gitTrip(input) {
 
 // The roles that review and never edit a checkout. The verifier writes its repro tests in the
 // shared repro worktrees under ~/.cache/lpk/repro/ and nowhere else inside a checkout.
-export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|plan-sim|plan-trace|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|ui-reviewer)$/;
+export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|ui-reviewer)$/;
 export const REPRO = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'repro');
 const WRITES = /^(Edit|Write|MultiEdit|NotebookEdit)$/;
 
@@ -89,8 +88,8 @@ function checkoutOf(file) {
   return repo ? { repo, gitDir, common } : null;
 }
 
-// A read-only role writing inside a checkout is denied. A builder outside its own worktree and the
-// test author writing production code are told so and go on: the review reads what they did.
+// A read-only role writing inside a checkout is denied. A builder outside its own worktree is told so
+// and goes on: the review reads what it did.
 export function writeGuard(input) {
   const type = input.agent_type || '';
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
@@ -101,13 +100,11 @@ export function writeGuard(input) {
     return deny(`${type} writes only in its own directory under the run's git directory, and ${file} is in ${at.repo}.`);
   }
   const ro = READ_ONLY.test(type);
-  if (!ro && !/^(lpk:)?(builder|designer|test-author)$/.test(type)) return null;
+  if (!ro && !/^(lpk:)?(builder|designer)$/.test(type)) return null;
   if (ro && /verifier$/.test(type) && `${file}/`.startsWith(`${REPRO}/`)) return null;
   const at = checkoutOf(file);
   if (!at) return null;
   if (ro) return deny(`${type} never edits a checkout, and ${file} is in ${at.repo}.${/verifier$/.test(type) ? ` Write repro tests in the repro worktree under ${REPRO}/ (\`lpk repro\` makes it).` : ''} Write scratch files under /tmp.`);
-  const rel = relative(at.repo, file);
-  if (/test-author$/.test(type)) return CODE.test(rel) && !TEST.test(rel) ? hint(`the test author writes tests, fixtures and e2e scripts, and ${rel} is production code. If the test needs it, say in the report what the code must provide; the review sees this edit.`) : null;
   return at.gitDir === at.common ? hint(`a builder works in its own worktree, and ${file} is in the main checkout. Unless the brief says otherwise, create one from the branch head (\`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD\`) and write there.`) : null;
 }
 

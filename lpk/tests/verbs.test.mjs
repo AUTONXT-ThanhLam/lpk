@@ -27,6 +27,7 @@ test('lpk floor says a one-file change owes nothing more, and names each fact th
   assert.equal(quick.status, 0, quick.stderr);
   assert.match(quick.stdout, /floor: none of the full-lane facts/);
   assert.match(quick.stdout, /lens regression: export at src\/sum\.js:1/);
+  assert.doesNotMatch(quick.stdout, /lens security/);
   write(repo, 'db/migrations/002_add.sql', 'ALTER TABLE t ADD c int;\n');
   write(repo, 'billing/plan.go', 'package billing\n');
   write(repo, 'src/Cart.tsx', 'export function Cart({ items }) { return items.map((i) => <li>{i}</li>); }\n');
@@ -36,7 +37,8 @@ test('lpk floor says a one-file change owes nothing more, and names each fact th
   assert.equal(full.full, true);
   for (const why of ['6 files changed (more than 3)', 'migration db/migrations/002_add.sql', 'billing/plan.go matches SENSITIVE.md `billing/**`', 'auth marker `login` in the path src/login.js', 'auth marker `Session` at src/login.js:1'])
     assert.ok(full.why.includes(why), `${why} in ${JSON.stringify(full.why)}`);
-  assert.deepEqual(full.lenses, ['mutant', 'regression', 'ui-reviewer', 'a11y', 'perf']);
+  assert.deepEqual(full.lenses, ['security', 'mutant', 'regression', 'ui-reviewer', 'a11y', 'perf']);
+  assert.equal(full.lensWhy.security, 'billing/plan.go matches SENSITIVE.md');
   assert.equal(full.lensWhy.perf, 'render at src/Cart.tsx:1');
 });
 

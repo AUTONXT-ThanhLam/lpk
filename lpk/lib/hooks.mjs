@@ -168,7 +168,7 @@ export function beforeCommit(input) {
   if (staged.length && staged.every((p) => TEST.test(p) || !CODE.test(p))) return null;
   const why = unverified(repo, run, 'tree');
   if (!why) return null;
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, the tree is not verified (${why}). Run \`lpk verify\`, fix what it reports, then commit. To commit test files alone (acceptance tests before the code), stage only them, then run exactly \`git commit -m <message>\` with nothing before or after it.` } };
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, the tree is not verified (${why}). Run \`lpk verify\`, fix what it reports, then commit. To commit staged test files alone, run exactly \`git commit -m <message>\` with nothing before or after it.` } };
 }
 
 function commitRepo(input) {

@@ -13,7 +13,7 @@ import { CODE, TEST } from './rules.mjs';
 import { readRun, runDir } from './run.mjs';
 import { findingCount, lensRuns } from './transcripts.mjs';
 
-export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer', need: 2 }, { key: 'bug-hunter' }, { key: 'security' }, { key: 'regression' }, { key: 'claims' }, { key: 'prover' }];
+export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer' }, { key: 'bug-hunter' }, { key: 'regression' }, { key: 'claims' }, { key: 'prover' }];
 export const DOCS = [{ key: 'techlead' }, { key: 'claims' }];
 export const QUICK = [{ key: 'code-reviewer' }, { key: 'bug-hunter' }];
 // A lens by the name the lpk:review workflow takes in args.lenses (`techlead`, `code-reviewer`).
@@ -60,7 +60,7 @@ async function laneSet(repo, run, base, list) {
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
   if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };
-  if (isIncrement(run)) return { set: [...QUICK, ...(floor?.sensitive ? [{ key: 'security' }] : [])], why: 'increment bar' };
+  if (isIncrement(run)) return { set: [...QUICK, ...(extra.includes('security') ? [{ key: 'security' }] : [])], why: 'increment bar' };
   if (run.lane === 'quick' && floor && !floor.full) return { set: QUICK, why: '' };
   const why = run.lane !== 'quick' ? '' : floor ? `quick lane, but lpk floor: ${floor.why.join('; ')}` : 'quick lane, and lpk floor is not installed to clear it';
   return { set: [...FULL, ...[...new Set(extra)].filter((k) => !FULL.some((q) => q.key === k)).map((key) => ({ key }))], why };

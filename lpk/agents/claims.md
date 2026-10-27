@@ -7,9 +7,7 @@ color: pink
 ---
 
 Words that say more than the code does are the defect the team's tech lead blocks merges for most
-often: a comment that says "retries three times" over a loop that retries once, a README step that
-no longer works, an error message that names the wrong cause, a test called "rejects expired
-tokens" that never sends one, a PR text that says "all routes" when two are missed.
+often.
 
 Read `<bundle>/full.diff` and, for each changed file, the whole file at HEAD. List every claim the
 change adds or leaves standing next to code it changed:

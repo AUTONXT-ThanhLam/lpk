@@ -286,3 +286,9 @@ test('a change that touches only documentation owes the tech lead and the claims
   const rows = JSON.parse(lpk(repo, 'S', 'reviews', 'owed', '--json').stdout);
   assert.deepEqual([...new Set(rows.map((r) => r.lens))].sort(), ['claims', 'techlead']);
 });
+
+test('a Prover that is given no running surface is ungraded with that reason and the other lenses still grade', async () => {
+  const { out } = await run({ ...ARGS, surface: undefined, lenses: ['techlead', 'prover'] }, (prompt, o) => (o.agentType === 'lpk:techlead' ? found('F1') : o.agentType === 'lpk:verifier' ? confirm : { results: [] }));
+  assert.deepEqual(out.confirmed.map((v) => v.id), ['F1']);
+  assert.deepEqual(out.ungraded, ['prover: no running surface given in args.surface']);
+});

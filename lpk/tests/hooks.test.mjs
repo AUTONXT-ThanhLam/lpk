@@ -134,7 +134,6 @@ test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no gen
   assert.equal(spawn(full), null, 'a run with no Design Brief, as a Quick run moved to Full');
   writeFileSync(join(dir, 'brief.json'), '{}');
   assert.match(reason(spawn(full)), /no `lpk go`/);
-  assert.equal(spawn(full, 'lpk:test-author'), null);
   assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');
   assert.equal(spawn(quick), null);
   assert.equal(lpk(full, 'go', 'go').status, 0);

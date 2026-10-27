@@ -21,6 +21,8 @@ const ruling = (f) => (f.state === 'fixed'
   : `- ${f.id} ${f.state === 'duplicate' ? `duplicate of ${f.primary}` : f.state}${f.state === 'unsettled' && asked(f) ? ` (${asked(f)})` : ''}${f.by ? ` by ${f.by}` : ''}: ${f.claim} — ${f.evidence}`);
 const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
 
+const wallEnd = (repo, run) => run.endedAt || Math.max(0, ...readRecords(repo, { run: run.id }).map((r) => Date.parse(r.at) || 0)) || Date.now();
+
 export async function main(argv) {
   const a = parseArgs(argv, ['--repo']);
   if (a.error || a.words.length) { console.error(`lpk: ${a.error || 'unexpected arguments'}\nusage: lpk report [--repo <dir>]`); return 2; }
@@ -34,7 +36,7 @@ export async function main(argv) {
   const head = git(['rev-parse', '--short=12', 'HEAD'], repo).trim();
   const out = [
     bad.length ? `NOT deliverable at ${head}: ${bad.map((r) => r.gate).join(', ')} do not hold` : `deliverable at ${head}: every delivery gate holds`,
-    `run ${run.id}, ${run.lane} lane${run.laneWhy ? ` (${run.laneWhy})` : ''}, branch ${run.branch || 'none'}, wall ${Math.round(((run.endedAt || Date.now()) - run.started) / 60000)} min`,
+    `run ${run.id}, ${run.lane} lane${run.laneWhy ? ` (${run.laneWhy})` : ''}, branch ${run.branch || 'none'}, wall ${Math.round((wallEnd(repo, run) - run.started) / 60000)} min`,
     '', 'Gates:', gatesText(rows),
   ];
   const facts = [];

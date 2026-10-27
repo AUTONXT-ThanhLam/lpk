@@ -71,7 +71,7 @@ export function phaseDetail(phase, f, net) {
   if (phase === 'design') {
     const r = f.round;
     return { round: r?.round ?? 0, verdict: r?.verdict ?? '', high: r?.high ?? 0, medium: r?.medium ?? 0, low: r?.low ?? 0,
-      running: running((x) => ['architect', 'design-critic', 'plan-sim', 'plan-trace'].includes(keyOf(x.type))).map((x) => x.title) };
+      running: running((x) => ['architect', 'design-critic'].includes(keyOf(x.type))).map((x) => x.title) };
   }
   if (phase === 'build') return { slices: f.slices.map(({ name, state }) => ({ name, state })) };
   const ids = (xs) => xs.map((x) => x.id);

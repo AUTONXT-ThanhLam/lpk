@@ -18,7 +18,9 @@ it. A suggested patch is a claim too; apply it only after the claim it rests on 
    does not hold. Never fix a point you have not reproduced, and never dismiss one you have not
    checked. Reply in the comment's own thread, so the author reads the answer where they asked;
    each reply names the point's cause (why the code was wrong) and its fix, or the command and
-   output that show it holds, and follows `writing.md` in this skill's directory. Answer in PR
+   output that show it holds, and follows `writing.md` in this skill's directory. Write each
+   reply body to a file and send it with `gh api --input` or `--body-file`; never put comment text
+   into a shell command. Batch every known fix into one push, and push before you reply. Answer in PR
    comments, not by rewriting the PR body.
 4. The scope is the comments. The triage comment (`deliver.md` in this skill's directory) is
    updated after each push, and `lpk:claims` checks the PR body against the new diff: fix each

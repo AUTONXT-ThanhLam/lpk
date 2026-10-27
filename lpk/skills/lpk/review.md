@@ -8,11 +8,14 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
 
 1. Read the whole diff once as the tech lead will (`git diff <base>`) and cut every line the
    request does not need: drive-by edits, debug output, options nobody asked for, exports nothing
-   imports, comments that narrate. Each line is one more place to block the merge.
-2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background) until it is green, then
-   commit. The commit hook refuses code that no green `lpk verify` ran on.
-3. Run `git fetch`, then `lpk facts`, in the background while `lpk verify` runs (neither needs the
-   other) (it diffs against the run's target; `--base <ref>` names
+   imports, comments that narrate, a wrapper with one caller, a layer repeating its callee's
+   arguments, a parameter threaded through three layers, a flag that must stay in step with another.
+2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background), then commit; the commit
+   hook refuses code that no green `lpk verify` ran on. It runs the cheapest check first and stops
+   at the first red one. Rerun only a red check with `lpk verify --only <number or exact command>`
+   (it counts for nothing at the commit gate), then run the full `lpk verify` once on the tree you
+   commit. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
+3. Run `git fetch`, then `lpk facts` beside `lpk verify` (it diffs against the run's target; `--base <ref>` names
    another): it prints the bundle directory (`impact.md`,
    `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
    branch, so check the target yourself with `git rev-list --count HEAD..<target>`. When the branch
@@ -29,24 +32,22 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
 ## Run the net
 
 Run `lpk slot --count`: it prints the lanes this machine and this model backend carry at once.
-Take that number as the workflow's `args.maxParallel`, so a backend that answers two streams is not
-handed sixteen lenses at once.
+Take that number as the workflow's `args.maxParallel`.
 Run `lpk review start <base>..<commit>`: it records the range under review, and every finding is
 stamped with it. Start `lpk repro prepare` in the background right after it: it creates and installs
 the repro trees of the commit and the base while the net runs, so the first verifier does not wait
 on an install. Then run the `lpk:review` workflow with the Workflow tool, in the background, on
 the frozen tree. Its `args` are listed at the top of `${CLAUDE_PLUGIN_ROOT}/workflows/review.js`:
 the repo, base, commit, bundle, request, scenarios (each with the request sentence it serves), the
-failure table, the surface (URL, start command and each login with its role), the main instance,
-the related-test command and the test author's e2e scripts; `range` exactly as `lpk review start`
+failure table (each row with its `provedBy`), the surface (URL, start command and each login with its role; for a CLI, its command), the main instance,
+the related-test command and the e2e scripts the builders wrote; `range` exactly as `lpk review start`
 printed it, and `lenses` the `lens` of every row `lpk reviews owed --json` lists, in its order and
 with each repeat (a lens owed twice runs twice). The mutant runs beside the prover unless
 `mutantAfterProver` is true: set it when the env agent's `db` line shows the test command and the
 app share a database or a port, because then each breaks the other's runs. When the scenarios and
 failure rows run on two or more surfaces or screens, set `proverGroups`, one group per surface or
 screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
-Prover per group finishes sooner and, with a shorter context, reads more carefully than one Prover
-proving them all. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
+Prover per group finishes sooner and reads a shorter context. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
 lines the workflow hunts in up to four bug hunters, each on its share of the group diffs, so each
 reads a shorter context; the tech lead and the code reviews still read the whole diff. Without the Workflow tool, start the agents it starts yourself, all in one
 message.
@@ -128,16 +129,21 @@ other.
 Then one delta review: rerun the self-check on the files the fixes touched,
 `lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background,
 and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
-`lpk:bug-hunter` run on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed
+`lpk:code-reviewer` run on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed
 findings, in parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
-no bug hunt: the lens that raised it re-checks it. Never re-run the whole net: a full re-run
-spends more time there than the build, and each pass finds something new on new lines.
+no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds
+something new on new lines.
 
 The delta review is the last review. A finding it confirms that a user meets or that blocks the merge
-gets one fix commit, closed with its own test or repro, and is checked by the lens that raised it
-alone: no second delta, no new round. One that no user reaches is deferred into the PR body as a
-known limit. Whatever is still open after that goes to the owner in the report with its evidence;
-the loop of review, fix and review never runs a third time.
+gets one fix commit, closed with its own test or repro, and `lpk reviews owed` lists what that commit
+owes (a code review of it, and the lens that raised the finding): run those, and start no further
+fix round on what they raise. One that no user reaches is deferred into the PR body as a known
+limit. Whatever is still open after that goes to the owner in the report with its evidence; the loop
+of review, fix and review never runs a third time.
+
+A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
+naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens
+that raised it re-checks the body. It never waits for a waiver.
 
 **Done when** `lpk reviews owed` is empty and the ledger holds no open finding and no confirmed
 finding that is not fixed or pre-existing.

@@ -6,7 +6,6 @@ disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, m
 color: orange
 ---
 
-General reviewers cut corners on larger changes: they read some files closely and skim the rest.
 You get a short list of files, and every one of them gets its own pass.
 
 1. Run `npx -y -p @alibaba-group/open-code-review@1.13.0 ocr delegate rule --format json --repo <repo> --from <base> --to <commit> <paths...>`.

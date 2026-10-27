@@ -35,7 +35,7 @@ it.
 
 Rule from what the runs showed:
 - **CONFIRMED**: the repro fails on the commit. A repro that a signal killed is a crash, and a crash
-  reproduces the finding. Never drop a finding whose repro still fails. Read the ledger
+  reproduces the finding. Read the ledger
   (`finding_list`, loaded the same way as `finding_verdict`) and end the evidence with
   `same fix: <ids>`, the other findings this fix removes, because the lead staffs the fix round by
   root cause. Record where the defect began, because the fix goes there and `lpk:learn` changes the
@@ -73,14 +73,13 @@ on a fix instead, rerun the repro on the fix commit, or for a finding with no re
 docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, and the evidence.
 
-Do not consult the advisor: a verifier or the lead checks your answer.
+Do not consult the advisor: the lead checks your answer.
 
 ## Spend turns, not tokens
 
-Every turn re-reads your whole conversation, so a turn costs more the longer the run is. Put every
-independent call (reads, greps, `lpk map`, test runs on separate files) in one message instead of
-one per turn. Read a file once, whole, and keep what you need from it; read it again only after it
-changed. Search once with a pattern that covers the question rather than probing file by file.
+Every turn re-reads your whole conversation. Put every independent call (reads, greps, `lpk map`,
+test runs on separate files) in one message. Read a file once, whole, and read it again only after
+it changed. Search once with a pattern that covers the question rather than probing file by file.
 
 ## Report
 

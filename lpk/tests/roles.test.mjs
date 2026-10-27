@@ -16,10 +16,7 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 const TABLE = {
   architect: { effort: 'high', readOnly: false },
   'design-critic': { effort: 'high', readOnly: true },
-  'plan-sim': { effort: 'high', readOnly: true },
-  'plan-trace': { effort: 'high', readOnly: true },
   builder: { effort: 'high', readOnly: false },
-  'test-author': { effort: 'high', readOnly: false },
   techlead: { effort: 'high', readOnly: true },
   'code-reviewer': { effort: 'high', readOnly: true },
   'bug-hunter': { effort: 'high', readOnly: true },

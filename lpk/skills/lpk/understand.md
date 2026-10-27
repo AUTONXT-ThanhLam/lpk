@@ -20,6 +20,9 @@ nothing waits for an install, a database or a login later.
    asks), the code involved and what `main` does today. Run `git fetch`, then `lpk facts --about <file>...`:
    it prints the open PRs and the target commits HEAD lacks that touch the files you name. A fix that is
    already there ends the run as "already fixed in `<sha>`", with the evidence.
+   Before you remove or loosen a guard, retry, timeout or flag, run `git log -S` on it and read
+   the pull request that added it: the code is never proof of its intent, and the owner's own
+   hypothesis about it is a candidate, not a premise.
 4. **A bug follows `diagnose.md` in this skill's directory** before any design: a fix built on a
    guessed cause ships a second bug.
 5. **Ask what only the owner knows**: what users should get where the sources leave it open, the

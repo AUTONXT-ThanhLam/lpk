@@ -33,7 +33,7 @@ database or a login. Work fast; report as soon as the surface answers.
    from its own worktree (`git worktree add --detach /tmp/<repo>-main <base>`, dependencies linked
    or installed there) on other ports, with its own database seeded exactly as the branch app's
    (the same seed script and fixtures), so the two differ only by the code. Otherwise say it was not started
-   and why; two heavy apps have run this machine out of memory before.
+   and why.
 5. Run the repo's fast test command once, so the session knows its baseline: which tests are red
    before any change.
 

@@ -28,5 +28,7 @@ A fix built on a guessed cause ships a second bug and leaves the first.
 7. **Fix at the cause** with the shrunk loop as the regression test, at the seam where the bug
    happens. A guard that only "might help" does not ship: each line of the fix is tied to the cause
    the loop showed. When no seam exists, the missing seam is a finding: name it in the report.
+   A slow request's red loop is a measurement: one frozen command, the median of N runs; the fix
+   ships only when the number moves past the spread.
 8. **Close**: the original loop is green, the debug output is gone, and the commit message names
    the cause that held, following `writing.md` in this skill's directory.

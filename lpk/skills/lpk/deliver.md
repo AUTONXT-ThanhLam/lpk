@@ -8,7 +8,10 @@ unless `lpk gates` holds on the HEAD it names.
 
 After each push wait for CI with Monitor on `gh pr checks <pr> --watch`, never a foreground `sleep`, then run `lpk ci <pr>`: for each failing job it prints whether it is also red on main's
 latest run, red only here, or flipped on one rerun, and each new test file's pass count in CI. A
-job red only here is a finding: reproduce it here, fix it at its cause, `lpk verify`, commit and
+job red only here in code the PR did not touch may be a stale base: check
+`git merge-base --is-ancestor <target> HEAD` and rebase before any rerun. After a rebase compare
+`git patch-id`: when equal, keep the review verdicts and rerun only verify and CI (check first that
+the gate is not keyed to HEAD). Any other job red only here is a finding: reproduce it here, fix it at its cause, `lpk verify`, commit and
 push, and add its command to the run's checks and the repo profile. A new test file with no passes
 in CI is not run by CI: wire it into the CI command now.
 
@@ -88,7 +91,8 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
    owner to read (unsettled, or ruled by you rather than a verifier), each with its evidence.
 4. The weakest point.
 5. The wall time (against the owner's bound, when they gave one), and per lens the findings raised and confirmed.
-6. The PR link and what the owner does next. On a big PR, suggest ultrareview.
+6. The PR link and what the owner does next; never list a check for the owner to run that you
+   could run yourself. On a big PR, suggest ultrareview.
 
 Then run the `lpk:learn` skill on this run's evidence: the ledger's confirmed findings, each CI
 failure, and the owner's messages file. Close with one line: the rules it saved and the process
