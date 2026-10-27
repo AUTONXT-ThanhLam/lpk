@@ -4,7 +4,7 @@ Read this in the Full lane (step 3), however many slices the brief has. **Goal:*
 built at the same time without colliding, and each arrives tested by its own builder.
 
 For each slice create a worktree from the branch head
-(`lpk run worktree ../<repo>-<slice> HEAD --branch <branch>-<slice>`, which binds it to your run) and start one `lpk:builder` per
+(`lpk run worktree <slice> HEAD --branch <branch>-<slice>`, which binds it to your run) and start one `lpk:builder` per
 slice in the background, all in one message, each with its worktree, the base, its slice name, the test command, the brief's path,
 `notes.md` beside it and the profile path. The builder reads its files, contract and proofs from
 `lpk handoff <slice>` and opens `brief.md` only at a section, so it never carries the whole brief. You are notified as each one finishes.
@@ -45,5 +45,5 @@ A mechanical edit repeated across many files is one codemod run by one builder, 
 builders. Before each cherry-pick compare `git diff --name-only <base> <commit>` with the slice's
 files; a file outside them sends the slice back.
 Bring each slice in with `git cherry-pick`. A conflict means the slice left its files: abort the
-pick and send it back to that slice's builder (message it where the host has one; else start that builder again with the conflict and the contract) to fix at the contract. Then remove
-the worktrees and their branches.
+pick and send it back to that slice's builder (message it where the host has one; else start that builder again with the conflict and the contract) to fix at the contract. Then delete
+the slice branches; `lpk run end` removes the worktrees.

@@ -116,3 +116,23 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
   assert.match(h.stdout, /line 3: ## Contract/);
   assert.match(h.stdout, /files to read first \(2\):\n {2}a\.js \(2 lines\)\n {2}b\.js \(2 lines\)/);
 });
+
+test('a worktree named for its slice lives in the git directory and `lpk run end` removes it unless it holds uncommitted work', () => {
+  const repo = repoWith('wt-inside', { 'a.js': 'a\n' });
+  sh(repo, 'switch', '-q', 'main');
+  const started = lpk(repo, 'run', 'start', '--verify', 'true', '--lane', 'quick', '--why', 'three files', '--req', 'a works', '--scenario', 'true', '--proves', 'R1');
+  assert.equal(started.status, 0, started.stderr);
+  const made = lpk(repo, 'run', 'worktree', 'api', 'HEAD', '--branch', 'slice-api');
+  assert.equal(made.status, 0, made.stderr);
+  const dir = made.stdout.match(/^worktree (\S+)/)[1];
+  assert.match(dir, /\.git\/lpk\/wt\/[^/]+\/api$/);
+  assert.equal(sh(repo, 'status', '--short').trim(), '', 'the main checkout sees nothing of it');
+  const kept = lpk(repo, 'run', 'worktree', 'wip', 'HEAD', '--branch', 'slice-wip').stdout.match(/^worktree (\S+)/)[1];
+  write(kept, 'a.js', 'unsaved\n');
+  const ended = lpk(repo, 'run', 'end');
+  assert.equal(ended.status, 0, ended.stderr);
+  assert.match(ended.stdout, /kept because they hold uncommitted work: .*wip/);
+  const listed = sh(repo, 'worktree', 'list');
+  assert.doesNotMatch(listed, /\/api\b/);
+  assert.match(listed, /\/wip\b/);
+});

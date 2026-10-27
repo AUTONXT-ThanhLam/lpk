@@ -105,7 +105,7 @@ export function writeGuard(input) {
   const at = checkoutOf(file);
   if (!at) return null;
   if (ro) return deny(`${type} never edits a checkout, and ${file} is in ${at.repo}.${/verifier$/.test(type) ? ` Write repro tests in the repro worktree under ${REPRO}/ (\`lpk repro\` makes it).` : ''} Write scratch files under /tmp.`);
-  return at.gitDir === at.common ? hint(`a builder works in its own worktree, and ${file} is in the main checkout. Unless the brief says otherwise, create one from the branch head (\`git worktree add -b <branch>-<slice> ../<repo>-<slice> HEAD\`) and write there.`) : null;
+  return at.gitDir === at.common ? hint(`a builder works in its own worktree, and ${file} is in the main checkout. Unless the brief says otherwise, create one from the branch head (\`lpk run worktree <slice> HEAD --branch <branch>-<slice>\`) and write there.`) : null;
 }
 
 // An `lpk:*` agent runs on the model its role sets; a model named on the spawn is dropped so the role

@@ -2,7 +2,7 @@
 // scenarios and the checks; a second start in the same session amends the open run and keeps its
 // ledger; `take` takes over a run whose session has exited; `end` never refuses.
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
@@ -14,6 +14,7 @@ import { recordRun } from '../runs.mjs';
 import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
+import { cleanTrees, treeOf } from '../slicetree.mjs';
 import { linkWorktree } from '../where.mjs';
 import { BARS } from '../bar.mjs';
 import { briefScenarios, ciLines, parse, pinned, USAGE } from './run-args.mjs';
@@ -74,7 +75,8 @@ function worktree(repo, o) {
   if (!path || o.words.length > 3) { console.error(USAGE); return 2; }
   const run = readRun(repo);
   if (!run) { console.error(`lpk: no lpk run in ${repo} for the worktree to work in`); return 2; }
-  const at = resolve(path);
+  const at = path.includes('/') ? resolve(path) : treeOf(repo, run, path);
+  if (!path.includes('/')) mkdirSync(dirname(at), { recursive: true });
   const r = spawnSync('git', ['worktree', 'add', ...(o.branch ? ['-b', o.branch] : ['--detach']), at, commit], { cwd: repo, encoding: 'utf8' });
   if (r.status !== 0) { console.error(`lpk: git worktree add failed: ${(r.stderr || '').trim()}`); return 1; }
   linkWorktree(at, dirname(run.marker));
@@ -105,6 +107,12 @@ export async function main(argv) {
     // repro worktrees. Neither failing keeps the run open.
     const stopped = [];
     try { stopped.push(...(await reap(repo)).filter((x) => x.was === 'stopped' || x.was === 'STILL RUNNING').map((x) => `${x.name || x.pid} ${x.was}`)); } catch (e) { console.error(`lpk: lpk reap failed: ${e.message}`); }
+    if (open) {
+      try {
+        const t = cleanTrees(repo, open);
+        if (t.kept.length) console.log(`Worktrees kept because they hold uncommitted work: ${t.kept.join(', ')}.`);
+      } catch (e) { console.error(`lpk: the run's worktrees were not removed: ${e.message}`); }
+    }
     try { if (open) cleanRepro(repo, open.id); } catch (e) { console.error(`lpk: the repro worktrees were not removed: ${e.message}`); }
     if (stopped.length) console.log(`Apps lpk spawn started: ${stopped.join(', ')}.`);
     const r = endRun(repo, { abandon: why });

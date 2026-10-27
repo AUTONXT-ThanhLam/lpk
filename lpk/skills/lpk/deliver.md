@@ -70,9 +70,9 @@ newest review is on the head and no row is open.
    the gates that do not hold for a reason no agent can fix (a service that is down, a lens that
    stalled twice). Fix every other gate instead. The owner's answer is recorded as the waiver.
    While the owner is away, the PR stays a draft and the report lists what waits.
-3. Run `lpk run end` (it names the file of the owner's messages), then `lpk reap`, stop what the env
-   agent started (its report lists the commands), and remove the frozen tree
-   (`git worktree remove ../<repo>-review`).
+3. Run `lpk run end` (it names the file of the owner's messages and removes the frozen tree and the
+   slice worktrees that hold no uncommitted work), then `lpk reap`, and stop what the env agent
+   started (its report lists the commands).
 4. Update `~/.local/share/lpk/profiles/<repo>.md` with what you had to discover this time: start
    command, logins by variable name and their roles, test command, the tech lead's login,
    known-red checks, test data prefix, conventions, and the screens a real drive reached. For each
