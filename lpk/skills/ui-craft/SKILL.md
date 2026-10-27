@@ -91,6 +91,7 @@ so every transform respects the setting, and under reduced motion keep opacity a
 drop translation and scale.
 One entrance per view, none on rows of a long list. These are the recipes; use the ones the screen's
 real changes need and no others.
+The overlay recipes (popover, menu, dialog, toast, tooltip) with their values, in `motion` and in CSS, are in `motion.md` in this skill's directory.
 
 ```tsx
 const ease = [0.22, 1, 0.36, 1] as const

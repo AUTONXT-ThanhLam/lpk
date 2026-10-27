@@ -78,3 +78,20 @@ Read from the public documentation of GitHub Primer, Atlassian, IBM Carbon and M
 - **Motion.** Interactions 50-150 ms, transitions 150-400 ms (Atlassian); 70 and 110 ms for
   micro-interactions, 150-240 ms for expansion (Carbon). Frequent motion is the shortest.
 - **One primary button** per page or region; the label is a verb and a noun in sentence case.
+
+## Second opinion: design systems as DESIGN.md
+
+When a screen's kind matches one of these products, fetch its file and compare your tokens and
+rules against it: colour roles, type scale, spacing, radius, component rules. It is a read-only
+second opinion beside the live pages above. Read it from the URL; never copy it, or text from it,
+into the repo or the app.
+
+| Product | File |
+|---|---|
+| Linear | https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/linear.app/DESIGN.md |
+| Vercel | https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/vercel/DESIGN.md |
+| Stripe | https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/stripe/DESIGN.md |
+| Sentry | https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/sentry/DESIGN.md |
+
+Where it disagrees with what you measured on the live page, the live page wins; write the
+difference in your notes.
