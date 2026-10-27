@@ -12,6 +12,7 @@ import { appendDecision } from '../records.mjs';
 import { cleanRepro } from '../repro.mjs';
 import { recordRun } from '../runs.mjs';
 import { reap } from '../spawn.mjs';
+import { reopenRun } from '../reopen.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
 import { linkWorktree } from '../where.mjs';
 
@@ -19,7 +20,7 @@ const USAGE = `usage:
   lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
                  (--req numbers R1, R2... in order; --proves names the ones the scenario before it proves.
                   With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
-  lpk run take [--repo <dir>]             (take over a run whose session has exited)
+  lpk run take [--repo <dir>]             (take over a run whose session has exited, or reopen the one that delivered this branch)
   lpk run worktree <path> [<commit>] [--branch <name>] [--repo <dir>]
                                           (git worktree add, -b <name> or --detach, at <commit> or HEAD;
                                            lpk calls from the new worktree work in this run)
@@ -128,6 +129,13 @@ function heldBy(r) {
   return pid ? `session ${r.session}, which still runs (pid ${pid})` : `session ${r.session}, which has exited: \`lpk run take\` continues the run in this session`;
 }
 
+function reopen(repo) {
+  const r = reopenRun(repo);
+  if (r.error) { console.error(`lpk: ${r.error}`); return 2; }
+  console.log(`lpk run ${r.run.id} reopened by this session in ${repo}${r.run.branch ? `, branch ${r.run.branch}` : ''}: its scenarios, requirements, findings and the owner's waivers are as it left them. \`lpk gates\` shows where it stands on the current HEAD.`);
+  return 0;
+}
+
 function worktree(repo, o) {
   const [, path, commit = 'HEAD'] = o.words;
   if (!path || o.words.length > 3) { console.error(USAGE); return 2; }
@@ -148,6 +156,7 @@ export async function main(argv) {
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
   const [sub, arg] = o.words;
   if (sub === 'start') return start(repo, o);
+  if (sub === 'take' && !readRun(repo)) return reopen(repo);
   if (sub === 'take') return start(repo, { ...o, flags: new Set(['--take']) });
   if (sub === 'worktree') return worktree(repo, o);
   if (sub === 'end') {

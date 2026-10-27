@@ -8,7 +8,10 @@ import { hostName, pluginRoot } from './host.mjs';
 import { baseOf, runOf } from './hooks.mjs';
 import { changeOf, loadRules, triggered } from './rules.mjs';
 import { CREDENTIALS, GIT_TRIPS, READ_ONLY, REPRO } from './safety.mjs';
-import { treeOf } from './run.mjs';
+import { top } from './git.mjs';
+import { endedHere } from './reopen.mjs';
+import { currentBranch, treeOf } from './run.mjs';
+import { heirs } from './sessions.mjs';
 
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
@@ -78,9 +81,21 @@ async function liveApps(repo) {
 const said = async (what, fn) => { try { return await fn(); } catch (e) { return `${what} could not be read: ${String(e.message || e).split('\n')[0]}`; } };
 
 // The resume card, or null outside a run.
+function idleCard(input) {
+  const repo = top(input.cwd || '.');
+  if (!repo) return null;
+  const left = heirs(input.session_id, repo);
+  const ended = endedHere(repo);
+  const lines = [
+    ...(left.length ? [`lpk: ${left.length} open run${left.length > 1 ? 's' : ''} here lost the session that held ${left.length > 1 ? 'them' : 'it'}: ${left.map((r) => `${r.id} (${r.lane} lane, branch ${r.branch || 'none noted'}, in ${r.repo})`).join('; ')}. If the owner's request continues one, ask them once which (AskUserQuestion, one option per run), then run \`lpk run take --repo <dir>\` yourself; do not ask them to type it.`] : []),
+    ...(ended ? [`lpk: ${currentBranch(repo)} was delivered by run ${ended.id} (${ended.lane} lane, ended ${ended.ended}${ended.abandon ? `, abandoned: ${ended.abandon}` : ''}). Its gates still act when this branch is pushed or handed over. If the owner's request continues the work on this branch, run \`lpk run take\` yourself: the run reopens with its scenarios, findings and the owner's waivers, and \`lpk gates\` shows where it stands. For a different change, \`lpk run start\`.`] : []),
+  ];
+  return lines.length ? { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: lines.join('\n') } } : null;
+}
+
 export async function resumeCard(input) {
   const { repo, run } = runOf(input, false);
-  if (!run) return null;
+  if (!run) return idleCard(input);
   const v = run.verified;
   const now = treeOf(repo).tree;
   const base = baseOf(repo, run);

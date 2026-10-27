@@ -46,7 +46,8 @@ const HOOKS = {
   prompt: { run: async (i) => (await lib('hooks')).onPrompt(i) },
   waive: {
     run: async (i) => {
-      const { run } = (await lib('hooks')).runOf(i, false);
+      const repo = (await lib('git')).top(i.cwd || '.');
+      const run = (await lib('hooks')).runOf(i, false).run || (repo ? (await lib('run')).runHere(repo) : null);
       const got = (await lib('waiver')).picks(i.tool_input, i.tool_response);
       const n = await (await lib('waiver')).recordWaiver(i, run);
       return n ? { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `lpk: recorded the owner's waiver of ${got.map((p) => `\`${p.what}\``).join(', ')} for this run.` } } : null;
