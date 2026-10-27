@@ -124,7 +124,7 @@ test('the stop note comes back only when the tree changed since it was last said
   assert.match(context(stop()), /not verified on the current tree/);
 });
 
-test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no general agent', () => {
+test('a Full-lane run spawns no builder before `lpk go`, and no session spawns a general agent', () => {
   const full = repoWith('go-full', { 'src/a.mjs': 'export const a = 1;\n' });
   const quick = repoWith('go-quick', { 'src/a.mjs': 'export const a = 1;\n' });
   const spawn = (cwd, subagent_type = 'lpk:builder', session_id = 'go') => hook('PreToolUse', 'pre', { tool_name: 'Agent', session_id, cwd, tool_input: { subagent_type, description: 'slice 1', prompt: 'build slice 1' } });
@@ -142,7 +142,7 @@ test('a Full-lane run spawns no builder before `lpk go`, and a run spawns no gen
   assert.match(reason(spawn(full, '')), /lpk:staff/);
   assert.match(reason(spawn(full, 'claude')), /lpk:staff/);
   assert.equal(spawn(full, 'lpk:staff'), null);
-  assert.equal(spawn(full, 'general-purpose', 'another-session'), null, 'outside a run, any agent');
+  assert.match(reason(spawn(full, 'general-purpose', 'another-session')), /lpk:staff/, 'a session with no run is refused too');
 });
 
 test('a deleted test file, removed test lines and an added skip marker come back as hints after the edit', () => {
