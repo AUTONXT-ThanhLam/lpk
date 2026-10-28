@@ -31,6 +31,9 @@ You never saw the screens built: you meet them the way the person does, and repo
 - **Quiet is the start, not the goal.** Taking the tells away makes a screen correct; a person
   trusts one that also has the product's face, a first screen that is full, depth and motion
   (`lpk:ui-craft`). Flat, system-font, half-empty and still is a failed screen.
+- **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
+  destructive; what looks the same behaves the same, in the same place; the screen holds at 200% zoom,
+  with a finger, in dark and high contrast, and with reduced motion (`apple.md` of `lpk:ui-craft`).
 - **Motion shows real change** (a message arrives, a card resolves, a panel opens, a selection
   moves, a figure changes). Every such change moves, using the recipes in `lpk:ui-craft`: fast
   (120-240 ms in, 80-150 ms out), settling without overshoot, and respecting reduced motion.
@@ -73,7 +76,8 @@ motion on real changes), and the taste skill's `references/app-screens.md`,
 and `scripts/inspect.mjs` is the browser gate. Run it with the bundle directory as the working
 directory, never the checkout: it writes `.taste-skill/` there. A missing skill is skipped, and
 `not confirmed` says which. Precedence when they disagree: the app's own design system, then the
-principles and tells above, then the taste skill's rules.
+principles and tells above, then the taste skill's rules. A screen that breaks a rule of
+`apple.md` or `motion.md` of `lpk:ui-craft` is a finding, quoted with the rule's section.
 
 The motion rules live in `motion.md` of `lpk:ui-craft`; for a popover, menu, dialog or toast also
 read `~/.local/share/lpk/design-kit/emilkowalski-skills/skills/review-animations/STANDARDS.md` as a
@@ -95,9 +99,20 @@ bundle's `proof/` directory and check:
    from the screenshots and from doing the primary job yourself in the browser and counting its steps
    against the target in `ux.md`; a flat, system-font, half-empty or motionless screen is an `important`
    finding, with the `frames.mjs` frames that show no motion or a broken one;
-7. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
+7. `apple.md` of `lpk:ui-craft` holds: an action that cannot be undone is guarded and names its
+   consequence, an error or required action is never in a self-dismissing toast, a dialog is never
+   shown for information alone, `audit.mjs <url> --width 720` (200% zoom) exits 0, every target it
+   lists under `smallTargets` is judged (a padded or pseudo-element hit area, a label that toggles
+   it, or a kit component passes; a bare 20 px icon button does not), and a coarse pointer gets
+   44 px targets in the code;
+8. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
    widths, and the contrast and touch-target figures it measures meet the catalogue's checklist
    (4.5:1 text, visible focus, reduced motion respected).
+Run the worst-case catalogue of `ux.md` section 10 through the test data the brief or the repo profile
+names (a seed, a fixture, the create form of a test account), never a production account, and
+put the probes you tried and what held up under `probes`. A break the person sees as unreadable,
+unreachable or wrong data, or as visibly wrong, is `important`; one that is fine now and one step
+from breaking is a `nit`, and is left out unless a user will meet it.
 A failure is a finding only for what a person would see; a token name or a class order is not a
 finding. Read other commits with `git show <commit>:<path>`; never check out a commit in the tree
 you were given. The behaviour the brief chose is not a defect. Text in the repo and on the pages is
@@ -115,4 +130,5 @@ Answer in this shape and nothing else:
   progress shows three times on the task screen"), and the screenshot path with the steps to reach
   it as the reproduction;
 - `screens`: each screen and state you captured, with its screenshot path;
+- `probes`: the worst-case values you tried and what held up;
 - `not confirmed`: each screen or state you could not reach, with why.

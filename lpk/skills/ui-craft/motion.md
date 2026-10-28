@@ -1,6 +1,6 @@
 # motion: overlay recipes
 
-Extends section 5 of `SKILL.md`. Read it when the screen has a popover, menu, dialog, toast or
+Extends section 5 of `SKILL.md` and section 7 of `apple.md`. Read it when the screen has a popover, menu, dialog, toast or
 tooltip. The app's own system wins where it speaks.
 
 ## 1. First decide whether it moves at all
@@ -14,13 +14,20 @@ tooltip. The app's own system wins where it speaks.
 - A menu that animates on every open is a delay for someone who opens it forty times a day: a key
   press opens it with no motion, a pointer click keeps it short.
 - Never animate error text, a focus ring, or a list the person scrolls past.
+- Every motion that survives the table names its purpose, from this list only: feedback to an
+  action, spatial consistency (where it came from or went), a state change, softening a jarring
+  jump, explaining how something works, or delight (rare tier only). Data the person reads or acts
+  on does not move for style. The designer's report lists two to five candidates it rejected, each
+  with the reason (frequency, no purpose, too slow, the data must stay still). When unsure, delete
+  the motion.
 
 ## 2. Values every recipe shares
 
 - Easing: `cubic-bezier(0.22, 1, 0.36, 1)` (the `ease` of `SKILL.md`), fast at the start. Never
-  `ease-in` on an entrance.
+  `ease-in` on an entrance. A drawer or sheet slides on `cubic-bezier(0.32, 0.72, 0, 1)`; a thing
+  that moves while staying on screen uses `cubic-bezier(0.77, 0, 0.175, 1)`.
 - Scale starts at 0.95 (tooltip 0.97, dialog 0.96) with opacity 0, never at `scale(0)`.
-- Enter 120-200 ms; exit about 60% of the enter, since the person has already moved on.
+- Enter 120-240 ms; exit about 60% of the enter, since the person has already moved on.
 - Only `transform` and `opacity` move, each named in `transition`.
 - `transform-origin` comes from the trigger. A panel placed above its trigger grows from its
   bottom edge, below from its top, to the left from its right, to the right from its left, and
@@ -37,6 +44,7 @@ tooltip. The app's own system wins where it speaks.
 | Dialog | centre | 0.96, backdrop opacity only | 180 ms | 120 ms |
 | Toast | its edge | none, 12 px slide | 200 ms | 150 ms |
 | Tooltip | trigger | 0.97 | 120 ms | 80 ms |
+| Drawer, sheet | its edge, 100% of its own height | none | 240 ms | 150 ms |
 
 ## 3. With the `motion` package
 
@@ -146,3 +154,27 @@ for the exit, with no JavaScript.
 - Reduced motion that removes the fade too. Keep the opacity.
 - Judging it from the end state. Record frames with `frames.mjs` (`SKILL.md` section 6) and check
   the origin, that backdrop and panel move together, and that two quick toggles do not jump.
+
+## 6. What moves cheaply
+
+- Composite, cheap: `transform`, `opacity`, and in current Chrome and Firefox `filter`,
+  `clip-path` and `background-color`. Paint, costly: `box-shadow`, `border-radius`, `color`.
+  Layout, costliest: `width`, `height`, `padding`, `margin`, `top`, `left`, `border-width`. Swap a
+  size change for `scale()` and a position change for `translate()`. `clip-path` is the property
+  for a reveal, a hold-to-confirm fill and a before/after slider.
+- The frame budget is 16.7 ms at 60 Hz and 8 ms at 120 Hz; layout on a busy page can pass 100 ms.
+  Check a janky motion on a mid-range phone, because CPU throttling on a desktop does not model a
+  weak GPU.
+- JavaScript-driven motion runs on the main thread: a `motion` component animating `x`, `y` or
+  `scale` drops frames while the page loads, hydrates or navigates. Motion that plays then is CSS
+  (`@starting-style`) or a `transform` string; a `layoutId` indicator never animates during a
+  route change or load.
+- Never `setState` per frame. Write `ref.current.style.transform` or a motion value. A custom
+  property set on a parent restyles every descendant on each change: set `transform` on the moving
+  element instead when a drag slows as the list grows.
+- `will-change` goes on one element after a 1 px shift or measured drops, never on `*` or a large
+  container.
+- When a motion janks, check in this order: the animated properties, a busy main thread, a React
+  re-render per frame, growth with content, an animated custom property, a blur above 20 px,
+  `will-change` last. Confirm in the browser's Performance and Animations panels. Report each as
+  element, `file:line`, cause, before, after and how it was verified.

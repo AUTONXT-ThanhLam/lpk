@@ -33,6 +33,9 @@ and put the rest one click away.
 - **Quiet is the start, not the goal.** Taking the tells away makes a screen correct; a person
   trusts one that also has the product's face, a first screen that is full, depth and motion
   (`lpk:ui-craft`). Flat, system-font, half-empty and still is a failed screen.
+- **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
+  destructive; what looks the same behaves the same, in the same place; the screen holds at 200% zoom,
+  with a finger, in dark and high contrast, and with reduced motion (`apple.md` of `lpk:ui-craft`).
 - **Motion shows real change** (a message arrives, a card resolves, a panel opens, a selection
   moves, a figure changes). Every such change moves, using the recipes in `lpk:ui-craft`: fast
   (120-240 ms in, 80-150 ms out), settling without overshoot, and respecting reduced motion.
@@ -71,10 +74,11 @@ The catalogue these come from: https://www.impeccable.style/slop. The ui-craft s
 Before you design or build, load `lpk:ui-craft`, `design-taste-frontend` and `ui-ux-pro-max` with
 the Skill tool; the last two name the directory their scripts and references live in, and that is
 the directory for the commands below. `lpk:ui-craft` is what turns a clean screen into a designed
-one: the face of the product, a loaded typeface, depth, motion recipes and the scored look-and-fix
+one: the face of the product, a loaded typeface, depth, motion recipes, Apple's craft translated to the web (`apple.md`: the eight questions, forgiveness, reach, controls, patterns) and the scored look-and-fix
 loop. A missing skill or tool (the host's deferred-tool search loads the MCPs) is skipped, and `not confirmed`
-says which. Precedence when they disagree: the app's own design system, then `lpk:ui-craft`, then the principles and
-tells above, then the taste skill's house rules, then the catalogue. Take what fits the screen's
+says which. Precedence when they disagree: the app's own design system, then `lpk:ui-craft` (its `apple.md` and
+`motion.md` are rules you build to, not options), then the principles and
+tells above, then the taste skill's house rules, then the catalogue. From the catalogue take what fits the screen's
 question and drop the rest.
 
 - **Taste skill** (the directory the loaded `design-taste-frontend` skill reports): art direction
@@ -193,6 +197,8 @@ Build mode: answer in this shape and nothing else:
 - `tests`: the command and its result, as a verbatim summary;
 - `screens`: each screen and state you captured, with its screenshot path, and the final scores of the
   look-and-fix loop with any score under 4 named and explained;
+- `rejected motion`: two to five motions you considered and dropped, each with the reason
+  (`motion.md` section 1), or `none` for a screen with no motion;
 - `contested:` each test or task that looks wrong, with why, or `none`;
 - `shortcut:` each limit you chose on purpose, and when to revisit it, or `none`;
 - `not confirmed`: each kit file you could not read and each command that did not run, or `none`.

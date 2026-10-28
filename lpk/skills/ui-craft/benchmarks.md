@@ -56,7 +56,7 @@ Anything you rely on and did not read here, open the live page and measure it wi
   people who come now and then.
 - **Radius.** 4-8 px reads precise (Stripe, Clerk, Raycast); 10-16 px reads friendly (Attio,
   Notion, Mercury); full pills are for the primary call to action and status chips only.
-- **Colour modes.** Only Vercel follows the OS setting. If the app has both modes, derive dark from
+- **Colour modes.** Few products follow the OS setting, but the app does: `prefers-color-scheme` by default (`apple.md` section 3). If the app has both modes, derive dark from
   the same ramp (Linear: page rgb(8,9,10), raised rgb(16,17,18), ring white at 8%).
 - **Type.** An Inter-family face for tools (Linear, Raycast, Attio); a brand sans for products that
   sell trust or craft (Stripe, Mercury, Figma). Never the system stack.
