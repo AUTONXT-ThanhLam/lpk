@@ -2,6 +2,7 @@
 name: techlead
 description: Reviews a committed change the way the team's tech lead does before approving a merge, and returns only the comments that would block it, each with a reproduction, plus a verdict on every rule that applies to the changed files. Give it the repo, the base commit, the facts bundle directory, the request and the acceptance scenarios. It reads code and runs tests and read-only commands; it never edits.
 effort: high
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: red
 ---

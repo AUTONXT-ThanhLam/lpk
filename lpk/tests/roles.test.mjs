@@ -82,6 +82,20 @@ test('only the roles that drive a browser carry its tools, and no role carries t
   }
 });
 
+const DEFERS_TOOLS = new Set(['designer', 'ui-reviewer']);
+test('each agent names the tools it carries, because every unused tool is paid for in each of its turns', () => {
+  for (const [name, row] of Object.entries(TABLE)) {
+    if (DEFERS_TOOLS.has(name)) { assert.ok(!('tools' in agents[name].fm), `${name} loads the Skill tool and the browser: a list would load all 26 browser tools into every turn, while no list defers them behind ToolSearch`); continue; }
+    const tools = (agents[name].fm.tools || '').split(',').map((t) => t.trim()).filter(Boolean);
+    assert.ok(tools.length > 0, `${name} lists its tools`);
+    for (const need of ['Bash', 'Read', 'Grep', 'Glob']) assert.ok(tools.includes(need), `${name} carries ${need}`);
+    assert.equal(tools.includes('Edit'), !row.readOnly && !['env'].includes(name), `${name} ${row.readOnly ? 'cannot' : 'can'} edit`);
+    assert.equal(tools.some((t) => t.startsWith('mcp__plugin_lpk_chrome-devtools__')), BROWSER.has(name), `${name} browser tools`);
+    assert.ok(tools.includes('mcp__plugin_lpk_lpk__*') || !/finding_(add|verdict|list|get|fixed)/.test(agents[name].body), `${name} reaches the ledger tools its body names`);
+    assert.ok(tools.every((t) => /^(Bash|Read|Grep|Glob|Write|Edit|Skill|SendMessage|WebFetch|WebSearch|Monitor|mcp__[a-z_-]+__([a-z_]+|\*))$/.test(t)), `${name} names only known tools`);
+  }
+});
+
 test('every agent ends with a short report section, so its reply has a fixed shape', () => {
   for (const [name, { body }] of Object.entries(agents)) {
     const at = body.lastIndexOf('\n## Report\n');
