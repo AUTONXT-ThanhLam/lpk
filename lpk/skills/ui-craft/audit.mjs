@@ -28,7 +28,7 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
     if (e.matches('button,input:not([type=checkbox]):not([type=radio]),select,[role=button]')) { const h = Math.round(e.getBoundingClientRect().height); if (!heights.includes(h)) note('height', h + 'px', e); }
     if ([...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) {
       sizes[s.fontSize] = (sizes[s.fontSize] || 0) + 1; weights[s.fontWeight] = (weights[s.fontWeight] || 0) + 1;
-      families[s.fontFamily.split(',')[0].replace(/["']/g, '').trim()] = 1;
+      families[s.fontFamily] = 1;
     }
   }
   const clipped = [], truncated = [], covered = [], overlapText = [];
@@ -87,8 +87,12 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
     const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
     if (w > 2 && h > 2 && !leaves[i].contains(leaves[j]) && !leaves[j].contains(leaves[i])) overlapText.push(sel(leaves[i]) + ' x ' + sel(leaves[j]));
   }
-  const primary = Object.keys(families);
-  const loaded = primary.map((f) => [f, /^(system-ui|-apple-system|sans-serif|serif|monospace|ui-sans-serif|ui-monospace|Segoe UI|Roboto|Helvetica|Arial)$/i.test(f) ? 'system' : [...document.fonts].some((x) => x.family.replace(/["']/g, '') === f && x.status === 'loaded') ? 'loaded' : 'NOT LOADED']);
+  const generic = /^(system-ui|-apple-system|BlinkMacSystemFont|sans-serif|serif|monospace|ui-[a-z-]+|cursive|fantasy|Segoe UI|Roboto|Helvetica|Arial|Menlo|Consolas|SF Mono|SF Pro[A-Za-z ]*)$/i;
+  const webLoaded = (n) => [...document.fonts].some((x) => x.family.replace(/["']/g, '') === n && x.status === 'loaded');
+  const loaded = Object.keys(families).map((stack) => {
+    const web = stack.split(',').map((n) => n.replace(/["']/g, '').trim()).filter((n) => n && !generic.test(n));
+    return [stack, web.length === 0 ? 'system' : web.every(webLoaded) ? 'loaded' : 'NOT LOADED'];
+  });
   return {
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,
     offScaleSpace: bad.space, offScaleRadius: bad.radius, offScaleControlHeight: bad.height,
@@ -116,6 +120,6 @@ console.log(JSON.stringify(res, null, 1));
 const fails = ['clipped', 'coveredControls', 'overlappingText', 'tabWithoutVisibleFocus', 'transitionAll', 'easeIn'].filter((k) => !empty(res[k]));
 if (res.pageOverflowX > 0) fails.push('pageOverflowX');
 if (res.zoomLocked) fails.push('zoomLocked');
-if (res.fonts.some(([, s]) => s !== 'loaded')) fails.push('fonts');
+if (res.fonts.some(([, s]) => s === 'NOT LOADED')) fails.push('fonts');
 console.error(fails.length ? 'FAIL: ' + fails.join(', ') : 'ok');
 process.exit(fails.length ? 2 : 0);
