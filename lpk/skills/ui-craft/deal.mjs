@@ -76,7 +76,7 @@ function deal(entries, { count, recent, lastDealt }) {
     }
     for (let i = from; i < pool.length; i++) {
       const e = pool[i];
-      if (picked.some((p) => p.hue === e.hue || p.type.body.family === e.type.body.family)) continue;
+      if (picked.some((p) => p.hue === e.hue || p.type.body.family === e.type.body.family || differences(p, e) === 0)) continue;
       picked.push(e);
       visit(i + 1, reused + recent.has(e.id), age + (lastDealt.get(e.id) ?? -1), Math.min(spread, ...picked.slice(0, -1).map((p) => differences(p, e))));
       picked.pop();
@@ -127,7 +127,7 @@ const history = readHistory();
 const recent = new Set(history.slice(-RECENT_DEALS).flatMap((h) => h.ids));
 const lastDealt = new Map(history.flatMap((h, i) => h.ids.map((id) => [id, i])));
 const picked = deal(LIBRARY.directions, { count, recent, lastDealt });
-if (!picked) fail(`the library holds no ${count} directions with distinct accents and distinct body faces`, 1);
+if (!picked) fail(`the library holds no ${count} directions with distinct accents, body faces and looks`, 1);
 const lastArranged = new Map(history.flatMap((h, i) => (h.compositions ?? []).map((id) => [id, i])));
 const lastUsed = (c) => lastArranged.get(c.id) ?? -1;
 const arrangements = options.kind ? shuffle(COMPOSITIONS.filter((c) => c.kinds.includes(options.kind))).sort((a, b) => lastUsed(a) - lastUsed(b)) : [];

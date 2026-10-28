@@ -29,7 +29,7 @@ and the text on that accent. Every sketch uses the light ramp, a dark-born direc
 when the brief or the app fixes dark does every sketch use the dark one. A move names its colours
 in the scheme its direction was born in (the first word of its second line); in the other scheme
 each colour takes the same role from that scheme's ramp. The three always differ in accent, in body
-face and in composition.
+face and in composition, and no two share all of density, depth and shell.
 Directions dealt in the last four deals on this machine are avoided;
 when the rest cannot fill a deal, the first line of the output names the ones it reused. Among the
 rest, the ones dealt longest ago come first, then the set with the most different shells, then the

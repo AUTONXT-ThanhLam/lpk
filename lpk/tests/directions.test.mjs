@@ -101,9 +101,19 @@ const allIdsBut = (...kept) => LIBRARY.directions.map((e) => e.id).filter((id) =
 test('a deal finds the one set of fresh directions with distinct accents and faces, where a first-fit pick fails', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  const history = writeHistory(dir, allIdsBut('mintlify', 'posthog', 'sentry', 'taste-framed-sheet'));
+  const history = writeHistory(dir, allIdsBut('linear', 'vercel', 'stripe', 'posthog'));
   const ids = run(history, '--seed', '1').map((e) => e.id);
-  assert.deepEqual(ids.sort(), ['mintlify', 'posthog', 'sentry']);
+  assert.deepEqual(ids.sort(), ['posthog', 'stripe', 'vercel']);
+});
+
+test('a deal never holds two directions alike in density, depth and shell, even the two dealt longest ago', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-deal-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const rest = allIdsBut('mintlify', 'sentry', 'posthog', 'airtable');
+  const history = writeHistory(dir, ['mintlify', 'sentry', 'posthog'], ['airtable'], ...[0, 1, 2, 3].map((i) => rest.filter((_, j) => j % 4 === i)));
+  const ids = run(history, '--seed', '1').map((e) => e.id);
+  assert.equal(ids.length, 3);
+  assert.ok(!(ids.includes('mintlify') && ids.includes('sentry')), `mintlify and sentry share density, depth and shell: ${ids}`);
 });
 
 test('when the fresh directions cannot fill a deal, the banner names each direction it reused from recent deals', (t) => {
