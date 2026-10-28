@@ -40,7 +40,10 @@ function problems(e) {
   }
   const a = e.accent ?? {};
   need(hex(a.value) && hex(a.on) && hex(a.dark) && contrast(a.on, a.value) >= 4.5, 'text on the accent');
-  need(hex(a.dark) && hex(e.dark?.ground) && contrast(a.dark, e.dark.ground) >= 3, 'accent in the other scheme');
+  for (const [scheme, mark] of [['ramp', a.mark ?? a.value], ['dark', a.mark_dark ?? a.dark]]) {
+    const r = e[scheme] ?? {};
+    need(hex(mark) && hex(r.ground) && hex(r.raised) && contrast(mark, r.ground) >= 3 && contrast(mark, r.raised) >= 3, `${scheme} mark on ground and raised`);
+  }
   need(hex(a.on_dark) && hex(a.dark) && contrast(a.on_dark, a.dark) >= 4.5, 'text on the accent in the other scheme');
   const t = e.type ?? {};
   const face = (f) =>
@@ -56,7 +59,7 @@ function problems(e) {
 const run = (history, ...args) =>
   JSON.parse(execFileSync('node', [join(DIR, 'deal.mjs'), '--json', ...args], { env: { ...process.env, LPK_DEAL_HISTORY: history }, encoding: 'utf8' }));
 
-test('every direction in the library can be built as written: readable text in both schemes, a free face', () => {
+test('every direction in the library can be built as written: readable text and marks in both schemes, a free face', () => {
   const ids = LIBRARY.directions.map((e) => e.id);
   assert.equal(new Set(ids).size, ids.length, 'an id is used twice');
   assert.match(LIBRARY.commit, /^[0-9a-f]{40}$/);

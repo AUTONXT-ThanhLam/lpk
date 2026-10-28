@@ -95,8 +95,8 @@ const arrange = (c) => [
   `above the fold at 1440x900: ${c.fold}`,
 ].join('\n');
 const schemes = (e) => {
-  const born = { ramp: e.ramp, accent: e.accent.value, on: e.accent.on };
-  const other = { ramp: e.dark, accent: e.accent.dark, on: e.accent.on_dark };
+  const born = { ramp: e.ramp, accent: e.accent.value, on: e.accent.on, mark: e.accent.mark ?? e.accent.value };
+  const other = { ramp: e.dark, accent: e.accent.dark, on: e.accent.on_dark, mark: e.accent.mark_dark ?? e.accent.dark };
   return e.theme === 'light' ? { light: born, dark: other } : { light: other, dark: born };
 };
 const ramp = (r) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(', ');
@@ -111,7 +111,8 @@ const describe = (e) => {
     `keep out: ${e.keep_out}`,
     `ramp (light): ${ramp(light.ramp)}`,
     `ramp (dark): ${ramp(dark.ramp)}`,
-    `accent: ${e.accent.name} ${light.accent} in light (text on it ${light.on}), ${dark.accent} in dark (text on it ${dark.on}); ${e.accent.use}`,
+    `accent: ${e.accent.name} ${light.accent} in light (text on it ${light.on}, mark ${light.mark}), ${dark.accent} in dark (text on it ${dark.on}, mark ${dark.mark}); ${e.accent.use}`,
+    `mark: a marker, ring or active cue standing on the ground or a panel takes the mark, not the accent`,
     `type: ${face(e.type.body)}${e.type.display ? `, display ${face(e.type.display)}` : ''}; weights ${e.type.weights.join(' and ')}; body ${e.type.body_px} px, title ${e.type.title_px} px${e.type.stands_in_for ? `; stands in for ${e.type.stands_in_for}` : ''}`,
     `radius: control ${e.radius.control} px, card ${e.radius.card} px`,
     `look at: ${e.live.join(' ')}`,
