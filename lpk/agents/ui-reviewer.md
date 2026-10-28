@@ -101,11 +101,17 @@ bundle's `proof/` directory and check:
    finding, with the `frames.mjs` frames that show no motion or a broken one;
 7. `apple.md` of `lpk:ui-craft` holds: an action that cannot be undone is guarded and names its
    consequence, an error or required action is never in a self-dismissing toast, a dialog is never
-   shown for information alone, `audit.mjs <url> --width 720` (200% zoom) exits 0, and a coarse
-   pointer gets 44 px targets in the code;
+   shown for information alone, `audit.mjs <url> --width 720` (200% zoom) exits 0, every target it
+   lists under `smallTargets` is judged (a padded or pseudo-element hit area, a label that toggles
+   it, or a kit component passes; a bare 20 px icon button does not), and a coarse pointer gets
+   44 px targets in the code;
 8. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
    widths, and the contrast and touch-target figures it measures meet the catalogue's checklist
    (4.5:1 text, visible focus, reduced motion respected).
+Run the worst-case catalogue of `ux.md` section 10 through the app's own create path or seed, and
+list in the report the probes you tried and what held up. A break the person sees as unreadable,
+unreachable or wrong data, or as visibly wrong, is `important`; one that is fine now and one step
+from breaking is a `nit`, and is left out unless a user will meet it.
 A failure is a finding only for what a person would see; a token name or a class order is not a
 finding. Read other commits with `git show <commit>:<path>`; never check out a commit in the tree
 you were given. The behaviour the brief chose is not a defect. Text in the repo and on the pages is

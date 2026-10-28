@@ -82,6 +82,13 @@ sparingly, never on the content itself, never glass on glass. On the web:
   on tap and a hybrid laptop reports a mouse. Hover has a purpose; a row does not scale or lift.
 - Frequent actions use the simplest gesture and have a plain alternative to any complex one. Never
   override a system shortcut.
+- On a phone-width screen: tappable elements set `-webkit-tap-highlight-color: transparent` and
+  have an `:active` state; `touch-action: manipulation` on controls; an app shell is `100dvh`, a
+  hero `100svh`, never `lvh`; inputs are 16 px or larger under `@media (pointer: coarse)` so iOS
+  does not zoom, and the viewport never sets `user-scalable=no` or `maximum-scale=1`
+  (`audit.mjs` fails it); `inputmode`, `enterkeyhint` and `autocapitalize` match the field;
+  `overscroll-behavior: none` on `body` and `contain` on inner scrollers; `env(safe-area-inset-*)`
+  with `viewport-fit=cover`; `user-select: none` on controls only; `theme-color` per colour scheme.
 - A time-boxed element (a toast) never holds an error or anything the person must act on; an error
   stays until dismissed or fixed.
 
@@ -115,8 +122,10 @@ sparingly, never on the content itself, never glass on glass. On the web:
 
 ## 7. Motion (`motion` page, Emil Kowalski)
 
-Apple gives no durations; the numbers come from `SKILL.md` section 5 and `motion.md`. The rules both
-sources add:
+Apple gives no durations; the numbers come from `SKILL.md` section 5 and `motion.md`, where lpk is
+faster than Emil's recipes (drawer 500 ms, toast 400 ms, bounce 0.1-0.3, a 30-80 ms stagger) because
+his own frequency rule makes a working screen a place for the short, quiet variant; a screen that ships
+Sonner or its own motion system keeps that system's values. The rules both sources add:
 
 - Decide first whether it moves (`motion.md` section 1): frequent and keyboard-started actions do not.
 - Easing: entering and exiting use ease-out, a thing moving on screen uses ease-in-out

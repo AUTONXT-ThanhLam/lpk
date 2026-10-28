@@ -43,21 +43,38 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
   const smallTargets = ints.filter((e) => !(e.matches('a') && getComputedStyle(e).display === 'inline')).filter((e) => {
     const box = e.matches('input') ? (e.labels && e.labels[0]) || e.closest('label') || e : e;
     const r = box.getBoundingClientRect();
-    if (r.width >= 24 && r.height >= 24) return false;
-    box.scrollIntoView({ block: 'center', inline: 'center' });
-    const c = box.getBoundingClientRect();
-    const cx = c.left + c.width / 2, cy = c.top + c.height / 2;
-    const reaches = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && box.contains(t); };
-    return ![[-11, -11], [11, -11], [-11, 11], [11, 11]].every(([dx, dy]) => reaches(cx + dx, cy + dy));
+    return r.width < 24 || r.height < 24;
   }).map(sel);
-  scrollTo(0, 0);
+  const ungatedHover = [], longTransitions = [], layoutTransitions = [], scaleZero = [];
+  let easeInKeyframes = 0;
+  const walk = (rules, gated) => {
+    for (const rule of rules) {
+      if (rule.type === CSSRule.MEDIA_RULE) walk(rule.cssRules, gated || /hover:\s*hover/.test(rule.conditionText));
+      else if (rule.type === CSSRule.SUPPORTS_RULE) walk(rule.cssRules, gated);
+      else if (rule.type === CSSRule.KEYFRAMES_RULE) {
+        for (const k of rule.cssRules) if (k.style.animationTimingFunction === 'ease-in') easeInKeyframes++;
+        const first = rule.cssRules[0];
+        if (first && /scale\(0\)/.test(first.style.transform || '')) scaleZero.push(rule.name);
+      } else if (rule.selectorText && !gated && /:hover/.test(rule.selectorText) && /transform|translate|scale/.test(rule.style.cssText)) ungatedHover.push(rule.selectorText);
+    }
+  };
+  for (const sheet of document.styleSheets) { try { walk(sheet.cssRules, false); } catch (err) { continue; } }
+  const meta = document.querySelector('meta[name=viewport]');
+  const zoomLocked = !!meta && /user-scalable\s*=\s*(no|0)|maximum-scale\s*=\s*1(\.0)?\b/.test(meta.content);
   const motion = { transitionAll: [], easeIn: [] };
   for (const e of all) {
     const s = getComputedStyle(e);
     if (!s.transitionDuration.split(',').some((d) => parseFloat(d) > 0)) continue;
     if (s.transitionProperty.split(',').some((p) => p.trim() === 'all')) motion.transitionAll.push(sel(e));
     if (s.transitionTimingFunction.split(/,(?![^(]*\))/).some((t) => t.trim() === 'ease-in')) motion.easeIn.push(sel(e));
+    if (s.transitionDuration.split(',').some((d) => parseFloat(d) > 0.3)) longTransitions.push(sel(e));
+    if (s.transitionProperty.split(',').some((p) => /^(width|height|top|left|right|bottom|margin|padding)/.test(p.trim()))) layoutTransitions.push(sel(e));
   }
+  for (const e of all) {
+    const s = getComputedStyle(e);
+    if (s.animationName !== 'none' && s.animationTimingFunction.split(/,(?![^(]*\))/).some((t) => t.trim() === 'ease-in')) motion.easeIn.push(sel(e));
+  }
+  if (easeInKeyframes) motion.easeIn.push('@keyframes x' + easeInKeyframes);
   for (const e of ints) {
     const r = e.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
     const t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1));
@@ -75,7 +92,7 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
   return {
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,
     offScaleSpace: bad.space, offScaleRadius: bad.radius, offScaleControlHeight: bad.height,
-    fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10), smallTargets, transitionAll: motion.transitionAll, easeIn: motion.easeIn,
+    fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10), smallTargets, transitionAll: motion.transitionAll, easeIn: motion.easeIn, zoomLocked, scaleZero, ungatedHoverMoves: ungatedHover, longTransitions, layoutTransitions,
     interactive: ints.length,
   };
 }})(${JSON.stringify(spaceScale)},${JSON.stringify(radiusScale)},${JSON.stringify(heights)})`;
@@ -96,8 +113,9 @@ const res = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt
 });
 const empty = (v) => (Array.isArray(v) ? v.length === 0 : Object.keys(v).length === 0);
 console.log(JSON.stringify(res, null, 1));
-const fails = ['clipped', 'coveredControls', 'overlappingText', 'tabWithoutVisibleFocus', 'smallTargets', 'transitionAll', 'easeIn'].filter((k) => !empty(res[k]));
+const fails = ['clipped', 'coveredControls', 'overlappingText', 'tabWithoutVisibleFocus', 'transitionAll', 'easeIn'].filter((k) => !empty(res[k]));
 if (res.pageOverflowX > 0) fails.push('pageOverflowX');
+if (res.zoomLocked) fails.push('zoomLocked');
 if (res.fonts.some(([, s]) => s !== 'loaded')) fails.push('fonts');
 console.error(fails.length ? 'FAIL: ' + fails.join(', ') : 'ok');
 process.exit(fails.length ? 2 : 0);

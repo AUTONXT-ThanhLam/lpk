@@ -119,6 +119,41 @@ that shifts the layout, a control pushed out of reach).
   person inside their own list; partial data, some fields in and some out.
 - The page itself: 320 px wide, 2560 px wide, zoom at 200%, right to left, and an action that
   exists only on hover when the screen is touched.
+- Take the longest ordinary value from the schema, the migration or the validator (`maxLength`,
+  Zod, API types), and write "unbounded" when none exists; a mismatch between the form's limit and
+  the server's is a finding. The extreme enters through the app's own fixture, seed or create path,
+  never through edited markup, and the fixture stays as the regression test.
+- Also: an empty list, exactly one item, exactly a page and a page plus one, identical names, one
+  item ten times larger than its neighbours, a missing and a broken image, a 4000 by 200 and a
+  200 by 4000 image, a dark logo in dark mode, no permission (the layout keeps its place), a name
+  with leading spaces or a ZWJ emoji, a newline in a one-line field, a 2,000-character paste,
+  `<script>`, `&amp;` and `**bold**` as literal text, a negative and a currency amount, 142%,
+  `1970-01-01`, "0 seconds ago" (it reads "just now"), 11 months, 3 years, a time near midnight
+  in another time zone, and the container's real width (a 280 px sidebar), not only the viewport's.
+- Truncation is chosen per field. Names and titles wrap (two lines fine, four means the column is
+  too narrow); secondary text cuts at the end; what differs at the end (file names, paths, hashes,
+  emails) cuts in the middle; a preview clamps to two lines; a number, an amount and a date never
+  truncate.
+- What a break looks like, and the cause to fix:
+
+| Seen | Cause | Fix |
+|---|---|---|
+| Avatar squeezed | flex shrink | `flex-shrink: 0` |
+| Text runs out of its box | `min-width: auto` | `min-width: 0` or `minmax(0, 1fr)` |
+| Email or URL past the edge | no break point | `overflow-wrap: anywhere`, not `word-break: break-all` |
+| Trailing action pushed off | the middle takes the space | `min-width: 0` on the middle |
+| Badge wraps | it shrinks | `white-space: nowrap`, `flex-shrink: 0` |
+| Avatar adrift beside a 3-line name | `align-items: center` | top-align |
+| Last row cut mid-glyph | fixed height, no fade | fade mask or a scrollbar |
+| Wrong initials | `.split(' ')[0][0]` | `Intl.Segmenter`, first plus last word |
+| Orphan dash for a missing field | placeholder | omit the line or keep its height |
+| "1 members", `NaN`, raw floats | hardcoded plural, raw render | `Intl.PluralRules`, `Intl.NumberFormat` |
+| Figures shift | proportional digits | `tabular-nums` |
+| Translated button overflows | fixed `width` | `min-width` |
+| Vietnamese or Thai marks clipped | tight `line-height` with `overflow: hidden` | looser line height |
+| Ellipsis nobody can read | no other way to the value | `title` or the full value in the detail |
+| 1,000 rows stutter | all rendered | virtualise or paginate |
+| Raw `<b>` or `&amp;` shown | wrong escaping layer | escape once at render |
 
 ## 11. Composition
 

@@ -63,7 +63,8 @@ needs, not the repos:
   and `~/.local/share/lpk/design-kit/emilkowalski-skills/skills/animate/RECIPES.md` when you build
   or review the motion of an overlay (popover, menu, dialog, toast), next to `motion.md` of
   `lpk:ui-craft`; `~/.local/share/lpk/design-kit/emilkowalski-skills/performance-cheatsheet.md` when
-  an animation janks.
+  an animation janks, with `skills/animation-performance/SKILL.md`; `skills/mobile-native/SKILL.md` for
+  a screen used on a phone.
 - Emil Kowalski, breaking a UI: `~/.local/share/lpk/design-kit/emilkowalski-skills/skills/break-ui/CATALOG.md`
   with `ux.md` section 10 when you hunt worst-case data.
 - Hallmark, auditing or redesigning a screen that exists:

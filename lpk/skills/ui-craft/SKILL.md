@@ -155,7 +155,7 @@ apply; its entries about body text near 16 px, line height 1.5 and Inter or Geis
 apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which
 reads the live page (run it again with `--width 720` for 200% zoom of a 1440 design) and prints spacing, radii and control heights off the scale, the font sizes in
 use, and every Tab stop (exit 2 on clipped text, a control covered by another element, overlapping
-text, page overflow, a face that did not load, a Tab stop with no focus ring, a target under 24 px, `transition: all`, or `ease-in`). Short uppercase labels and the rest of the tells list in the agent file
+text, page overflow, a face that did not load, a Tab stop with no focus ring, `transition: all`, `ease-in` or a viewport that blocks zoom; it also prints targets under 24 px, hover rules that move things outside `(hover: hover)`, transitions over 300 ms, layout properties in `transition`, and `scale(0)` keyframes, for the designer to judge). Short uppercase labels and the rest of the tells list in the agent file
 still run by eye. After the first build, capture 1440x900 and 390x844 in light and
 dark, and the selected, empty and loading states. Score each 1-5 and write the scores down. The last three come from doing the job in the browser, with the count of `ux.md` section 1, not from looking:
 

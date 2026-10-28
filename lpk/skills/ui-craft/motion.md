@@ -14,6 +14,12 @@ tooltip. The app's own system wins where it speaks.
 - A menu that animates on every open is a delay for someone who opens it forty times a day: a key
   press opens it with no motion, a pointer click keeps it short.
 - Never animate error text, a focus ring, or a list the person scrolls past.
+- Every motion that survives the table names its purpose, from this list only: feedback to an
+  action, spatial consistency (where it came from or went), a state change, softening a jarring
+  jump, explaining how something works, or delight (rare tier only). Data the person reads or acts
+  on does not move for style. The designer's report lists two to five candidates it rejected, each
+  with the reason (frequency, no purpose, too slow, the data must stay still). When unsure, delete
+  the motion.
 
 ## 2. Values every recipe shares
 
@@ -148,3 +154,27 @@ for the exit, with no JavaScript.
 - Reduced motion that removes the fade too. Keep the opacity.
 - Judging it from the end state. Record frames with `frames.mjs` (`SKILL.md` section 6) and check
   the origin, that backdrop and panel move together, and that two quick toggles do not jump.
+
+## 6. What moves cheaply
+
+- Composite, cheap: `transform`, `opacity`, and in current Chrome and Firefox `filter`,
+  `clip-path` and `background-color`. Paint, costly: `box-shadow`, `border-radius`, `color`.
+  Layout, costliest: `width`, `height`, `padding`, `margin`, `top`, `left`, `border-width`. Swap a
+  size change for `scale()` and a position change for `translate()`. `clip-path` is the property
+  for a reveal, a hold-to-confirm fill and a before/after slider.
+- The frame budget is 16.7 ms at 60 Hz and 8 ms at 120 Hz; layout on a busy page can pass 100 ms.
+  Check a janky motion on a mid-range phone, because CPU throttling on a desktop does not model a
+  weak GPU.
+- JavaScript-driven motion runs on the main thread: a `motion` component animating `x`, `y` or
+  `scale` drops frames while the page loads, hydrates or navigates. Motion that plays then is CSS
+  (`@starting-style`) or a `transform` string; a `layoutId` indicator never animates during a
+  route change or load.
+- Never `setState` per frame. Write `ref.current.style.transform` or a motion value. A custom
+  property set on a parent restyles every descendant on each change: set `transform` on the moving
+  element instead when a drag slows as the list grows.
+- `will-change` goes on one element after a 1 px shift or measured drops, never on `*` or a large
+  container.
+- When a motion janks, check in this order: the animated properties, a busy main thread, a React
+  re-render per frame, growth with content, an animated custom property, a blur above 20 px,
+  `will-change` last. Confirm in the browser's Performance and Animations panels. Report each as
+  element, `file:line`, cause, before, after and how it was verified.
