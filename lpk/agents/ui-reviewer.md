@@ -108,8 +108,9 @@ bundle's `proof/` directory and check:
 8. the taste skill's `inspect.mjs <url> --app --out <bundle>/proof/inspect` shows no FAIL at its
    widths, and the contrast and touch-target figures it measures meet the catalogue's checklist
    (4.5:1 text, visible focus, reduced motion respected).
-Run the worst-case catalogue of `ux.md` section 10 through the app's own create path or seed, and
-list in the report the probes you tried and what held up. A break the person sees as unreadable,
+Run the worst-case catalogue of `ux.md` section 10 through the test data the brief or the repo profile
+names (a seed, a fixture, the create form of a test account), never a production account, and
+put the probes you tried and what held up under `probes`. A break the person sees as unreadable,
 unreachable or wrong data, or as visibly wrong, is `important`; one that is fine now and one step
 from breaking is a `nit`, and is left out unless a user will meet it.
 A failure is a finding only for what a person would see; a token name or a class order is not a
@@ -129,4 +130,5 @@ Answer in this shape and nothing else:
   progress shows three times on the task screen"), and the screenshot path with the steps to reach
   it as the reproduction;
 - `screens`: each screen and state you captured, with its screenshot path;
+- `probes`: the worst-case values you tried and what held up;
 - `not confirmed`: each screen or state you could not reach, with why.

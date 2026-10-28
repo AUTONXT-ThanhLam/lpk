@@ -197,6 +197,8 @@ Build mode: answer in this shape and nothing else:
 - `tests`: the command and its result, as a verbatim summary;
 - `screens`: each screen and state you captured, with its screenshot path, and the final scores of the
   look-and-fix loop with any score under 4 named and explained;
+- `rejected motion`: two to five motions you considered and dropped, each with the reason
+  (`motion.md` section 1), or `none` for a screen with no motion;
 - `contested:` each test or task that looks wrong, with why, or `none`;
 - `shortcut:` each limit you chose on purpose, and when to revisit it, or `none`;
 - `not confirmed`: each kit file you could not read and each command that did not run, or `none`.
