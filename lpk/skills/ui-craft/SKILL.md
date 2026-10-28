@@ -12,18 +12,25 @@ leave out. This file says what to put in. Each section ends in something a scree
 
 ## 0. Study the best before you decide
 
-The bar is the products of large, well-run companies: the best SaaS products (Linear, Vercel,
-Stripe, Notion, Figma, Attio, Clerk) and the design systems of enterprise software (GitHub Primer,
-Atlassian, IBM Carbon, Microsoft Fluent). The owner may have no words for it: you carry the
-judgement. Calm, precise, dense where the work needs it, one restrained accent; never luxury,
-editorial or showy. Read `benchmarks.md` and `ux.md` in this skill's directory. Then open two live pages from
-`benchmarks.md` that sit closest to the screen's kind in the lpk Chrome, screenshot each product
-screen into the proof directory, and write three moves you take from them (a type setting, a row
-anatomy, a motion, a keyboard behaviour), each with the measured value.
+The bar is the products of large, well-run companies, the high-end SaaS a person pays for because it
+is a pleasure to use. The owner may have no words for it: you carry the judgement. Calm, precise,
+dense where the work needs it; never luxury, editorial or showy. Read `ux.md` in this skill's
+directory. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
+references are its own screens. An app with none, or a screen whose owner asked for a new look, takes
+its look from a dealt direction (`directions.md`), and the references are that direction's `look
+at` pages. Either way open two of them (one when a direction names only one) in the lpk Chrome, screenshot each product screen into the
+proof directory, and write three moves you take from them (a type setting, a row anatomy, a motion,
+a keyboard behaviour), each with the measured value. `benchmarks.md` lists more products by kind of
+screen, for a part of the screen the references do not show.
 
 ## 1. Decide the face before any code
 
 Write these five lines into your notes (the proof directory) and check each against the first screenshot.
+In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
+picked direction (`directions.md` step 4) and only lines 1 and 5 are yours; its dealt composition
+lays out the first screen within section 2. Every value the design
+system or the direction sets wins over a default in sections 1-4, such as a size, a weight, a
+radius, a shadow or never `#fff` on `#000`. The tells never give way.
 
 1. **The question** the screen answers, in the words of the trade.
 2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
@@ -67,6 +74,9 @@ first rows, and the right half is never blank because nothing was selected.
 - Controls that share a row share a height from 24, 28, 32, 40, 48 px (32 is the default).
 - Selected means two things at once (surface step and ink), never a coloured side stripe. Hover,
   pressed and selected are each one tone step from the resting state.
+- A disabled control sets its reduced contrast, `cursor: not-allowed` and the native `disabled`
+  attribute together, and says why on hover or beside it. A state change never changes
+  `border-width`, padding or height, so nothing around the control shifts.
 
 ## 4. Type that carries the hierarchy
 
@@ -88,6 +98,7 @@ so every transform respects the setting, and under reduced motion keep opacity a
 drop translation and scale.
 One entrance per view, none on rows of a long list. These are the recipes; use the ones the screen's
 real changes need and no others.
+The overlay recipes (popover, menu, dialog, toast, tooltip) with their values, in `motion` and in CSS, are in `motion.md` in this skill's directory.
 
 ```tsx
 const ease = [0.22, 1, 0.36, 1] as const
@@ -109,23 +120,31 @@ const ease = [0.22, 1, 0.36, 1] as const
   form) the sheet resizes over the text of its neighbours.
 - **Panel swap**: crossfade with an 8 px shift in the direction of travel, 180 ms.
 - **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover)`, one
-  small response for every control. How often it happens sets the duration: motion a person
-  triggers dozens of times a day (row hover, menu open, tab switch, selection) stays at 150 ms or
-  less; the 180-240 ms recipes are for occasional changes.
+  small response for every control; a press also takes `scale(0.97)` in 100-160 ms. How often it
+  happens sets the duration: motion a person triggers dozens of times a day (row hover, menu open,
+  tab switch, selection) stays at 150 ms or less; an action started from the keyboard, or repeated
+  a hundred times a day, does not animate at all; the 180-240 ms recipes are for occasional changes.
+- **Popover and menu**: it opens from the point of its trigger (`transform-origin` set there) with
+  opacity and `scale(0.95)` to 1, never from `scale(0)`; a modal stays centred. A toast and a
+  tooltip take the values of the table in `motion.md`. Use a transition, not a keyframe, for
+  anything that can be re-triggered mid-flight, and `@starting-style` for the entrance of an
+  element that mounts.
 - **Status change**: the dot or label crossfades colour in 200 ms; a running item has a spinner
   that turns, nothing pulses.
 - **Figures that change after load**: roll or crossfade the digit, 300 ms, never on first paint.
 - **Loading to content**: skeleton blocks of the final shape, then a 200 ms opacity swap with no
   layout shift.
-- **Where**: transform and opacity only, 120-240 ms, `ease` above or a spring with damping that
-  settles without overshoot. An exit is faster than its entrance. One focal motion at a time. No
-  bounce, no stagger above eight items, no looping decoration, and error text is never animated.
+- **Where**: transform and opacity only (a list item's collapsing `height` is the one exception),
+  120-240 ms for an entrance and 80-150 ms for an exit (the table in `motion.md`), `ease` above or
+  a spring with damping that settles without overshoot, and never `transition: all`. An exit is
+  faster than its entrance. One focal motion at a time. No bounce, no stagger above eight items
+  (30-80 ms apart), no looping decoration, and error text is never animated.
 
 ## 6. The look-and-fix loop
 
 Screenshots only, never the code. Before you score, run the three machine checks and fix what they
 print: `lighthouse_audit` in `snapshot` mode on the page (every failing accessibility rule);
-`DO_NOT_TRACK=1 npx -y impeccable@4.7.0 detect --json <url>` (exit 2 lists generated-UI tells such
+`DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>`, and again with `--viewport 390x844` (exit 2 lists generated-UI tells such
 as side stripes, gradient text, nested cards and low contrast: fix each, or write why it does not
 apply; its entries about body text near 16 px, line height 1.5 and Inter or Geist as the face do not
 apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which
