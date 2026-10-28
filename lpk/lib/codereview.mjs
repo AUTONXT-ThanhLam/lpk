@@ -39,16 +39,17 @@ export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE
 
 const run = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' });
 
-async function inScratch(repo, at, fn) {
+async function inScratch(repo, a, b, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'lpk-cr-'));
   try {
     const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], repo).trim();
-    const clone = run(['clone', '--shared', '--no-checkout', '--quiet', common, dir]);
+    const clone = run(['clone', '--shared', '--no-checkout', '--quiet', '--origin', 'lpk-source', common, dir]);
     if (clone.status !== 0) return { error: `git clone failed: ${clone.stderr.trim().slice(0, 300)}` };
     const branch = run(['symbolic-ref', '--short', 'HEAD'], dir).stdout.trim() || 'main';
-    run(['remote', 'remove', 'origin'], dir);
-    const co = run(['checkout', '--quiet', '-B', branch, at], dir);
-    if (co.status !== 0) return { error: `git checkout failed: ${co.stderr.trim().slice(0, 300)}` };
+    for (const step of [['remote', 'remove', 'lpk-source'], ['checkout', '--quiet', '-B', branch, a], ['read-tree', '--reset', '-u', b]]) {
+      const r = run(step, dir);
+      if (r.status !== 0) return { error: `git ${step[0]} failed in the scratch clone: ${r.stderr.trim().slice(0, 300)}` };
+    }
     return await fn(dir);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -71,10 +72,7 @@ const meta = (c) => ({
 });
 
 export function codeReview({ repo, a, b, level, ...child }) {
-  return inScratch(repo, a, async (wt) => {
-    const patch = git(['diff', '--binary', a, b], repo);
-    const ap = spawnSync('git', ['apply', '--index', '--whitespace=nowarn'], { cwd: wt, input: patch, encoding: 'utf8' });
-    if (ap.status !== 0) return { error: `git apply failed: ${ap.stderr.trim().slice(0, 300)}` };
+  return inScratch(repo, a, b, async (wt) => {
     const c = await runChild({ cwd: wt, prompt: `/code-review ${level} --max-findings all`, ...child });
     const why = failure(c);
     if (why) return { error: why, ...meta(c) };

@@ -13,7 +13,7 @@ const owed = (repo, S, env = ENV) => JSON.parse(spawnSync('node', [join(ROOT, 'b
 
 function fakeClaude(name, lines) {
   const bin = join(tmp, `${name}.mjs`);
-  const seen = `{ argv: process.argv.slice(2), refs: git('for-each-ref', '--format=%(objectname)', 'refs/heads', 'refs/remotes').split('\\n').filter(Boolean), head: git('rev-parse', 'HEAD').trim(), staged: git('diff', '--cached', '--name-only').split('\\n').filter(Boolean) }`;
+  const seen = `{ argv: process.argv.slice(2), refs: git('for-each-ref', '--format=%(objectname)', 'refs/heads', 'refs/remotes').split('\\n').filter(Boolean), head: git('rev-parse', 'HEAD').trim(), remotes: git('remote').trim(), index: git('write-tree').trim(), staged: git('diff', '--cached', '--name-only').split('\\n').filter(Boolean) }`;
   write(tmp, `${name}.mjs`, `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nimport { execFileSync } from 'node:child_process';\nconst git = (...a) => execFileSync('git', a, { encoding: 'utf8' });\nwriteFileSync(${JSON.stringify(`${bin}.seen`)}, JSON.stringify(${seen}));\n${lines.map((l) => `console.log(${JSON.stringify(JSON.stringify(l))});`).join('\n')}\n`);
   chmodSync(bin, 0o755);
   return bin;
@@ -26,6 +26,8 @@ const result = { type: 'result', subtype: 'success', is_error: false, result: 'd
 
 function changedRepo(name, S) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
+  sh(repo, 'config', 'diff.od.textconv', 'od -c');
+  write(repo, '.git/info/attributes', '*.mjs diff=od\n');
   ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true'));
   write(repo, 'src/a.mjs', 'export const a = "2";\n');
   sh(repo, 'commit', '-qam', 'Make a a string');
@@ -59,8 +61,8 @@ test('a fix delta is reviewed alone: the child finds no branch or upstream holdi
   sh(repo, 'commit', '-qm', 'Add b');
   const bin = fakeClaude('claude-delta', [report, result]);
   ok(codeReview(repo, S, bin, '--range', `${reviewed}..HEAD`));
-  const { refs, head, staged } = seen(bin);
-  assert.deepEqual([head, [...new Set(refs)], staged], [reviewed, [reviewed], ['src/b.mjs']]);
+  const { refs, head, staged, remotes, index } = seen(bin);
+  assert.deepEqual([head, [...new Set(refs)], remotes, staged, index], [reviewed, [reviewed], '', ['src/b.mjs'], sh(repo, 'rev-parse', 'HEAD^{tree}').trim()]);
 });
 
 test('a code review child that ends without a result fails and leaves the code review owed', () => {

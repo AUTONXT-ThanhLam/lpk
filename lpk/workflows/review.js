@@ -164,7 +164,7 @@ const LENSES = {
 }
 
 // A fix round owes one code review on the delta (none for a docs-only delta) and the lenses that
-// raised the fixed findings. The Workflow tool is Claude Code's, so the code review is its own.
+// raised the fixed findings.
 const lensOf = (from) => (String(from || '').startsWith('code-review:') ? 'code-review' : String(from || '').replace(/^lpk:/, ''))
 const owed = a.delta
   ? [...new Set([...(a.delta.docsOnly ? [] : ['code-review']), ...(a.delta.raisedBy || []).filter((f) => f !== 'main').map(lensOf)])]
