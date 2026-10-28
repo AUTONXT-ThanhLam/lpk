@@ -142,3 +142,12 @@ test('deals run at the same time each keep their entry in the history', async (t
   const seeds = readFileSync(history, 'utf8').trim().split('\n').map((line) => JSON.parse(line).seed);
   assert.deepEqual(seeds.sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8]);
 });
+
+test('a dark-born direction is shown light first, with how its move carries over to light', () => {
+  const out = execFileSync('node', [join(DIR, 'deal.mjs'), '--show', 'linear'], { encoding: 'utf8' });
+  const lines = out.split('\n');
+  const at = (prefix) => lines.findIndex((line) => line.startsWith(prefix));
+  assert.ok(at('ramp (light): ground #fcfcfd') > 0 && at('ramp (light):') < at('ramp (dark):'), out);
+  assert.match(lines[at('scheme:')], /build on ramp \(light\).*names dark colours, and on light each takes the same role from ramp \(light\)/);
+  assert.match(lines[at('accent:')], /in light .* in dark/);
+});

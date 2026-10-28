@@ -94,21 +94,31 @@ const arrange = (c) => [
   `layout: ${c.layout}`,
   `above the fold at 1440x900: ${c.fold}`,
 ].join('\n');
-const other = (e) => (e.theme === 'light' ? 'dark' : 'light');
-const describe = (e) => [
-  `## ${e.name} (${e.id})`,
-  `${e.theme}, ${e.hue} accent, ${e.density}, depth ${e.depth}, shell ${e.shell}`,
-  `move: ${e.move}`,
-  `keep out: ${e.keep_out}`,
-  `ramp (${e.theme}): ${Object.entries(e.ramp).map(([k, v]) => `${k} ${v}`).join(', ')}`,
-  `ramp (${other(e)}): ${Object.entries(e.dark).map(([k, v]) => `${k} ${v}`).join(', ')}`,
-  `accent: ${e.accent.name} ${e.accent.value} in ${e.theme} (text on it ${e.accent.on}), ${e.accent.dark} in ${other(e)} (text on it ${e.accent.on_dark}); ${e.accent.use}`,
-  `type: ${face(e.type.body)}${e.type.display ? `, display ${face(e.type.display)}` : ''}; weights ${e.type.weights.join(' and ')}; body ${e.type.body_px} px, title ${e.type.title_px} px${e.type.stands_in_for ? `; stands in for ${e.type.stands_in_for}` : ''}`,
-  `radius: control ${e.radius.control} px, card ${e.radius.card} px`,
-  `look at: ${e.live.join(' ')}`,
-  `source: ${e.source.startsWith('taste-skill:') ? `node <design-taste-frontend>/scripts/draw.mjs --app --kind <the product's kind, from draw.mjs --app --list kinds> --style ${e.source.slice(12)}` : SOURCE + e.source}`,
-  ...(e.composition ? ['', arrange(e.composition)] : []),
-].join('\n');
+const schemes = (e) => {
+  const born = { ramp: e.ramp, accent: e.accent.value, on: e.accent.on };
+  const other = { ramp: e.dark, accent: e.accent.dark, on: e.accent.on_dark };
+  return e.theme === 'light' ? { light: born, dark: other } : { light: other, dark: born };
+};
+const ramp = (r) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(', ');
+const describe = (e) => {
+  const { light, dark } = schemes(e);
+  const other = e.theme === 'light' ? 'dark' : 'light';
+  return [
+    `## ${e.name} (${e.id})`,
+    `born ${e.theme}, ${e.hue} accent, ${e.density}, depth ${e.depth}, shell ${e.shell}`,
+    `move: ${e.move}`,
+    `scheme: sketch and build on ramp (light) unless the brief or the app fixes dark; the move names ${e.theme} colours, and on ${other} each takes the same role from ramp (${other})`,
+    `keep out: ${e.keep_out}`,
+    `ramp (light): ${ramp(light.ramp)}`,
+    `ramp (dark): ${ramp(dark.ramp)}`,
+    `accent: ${e.accent.name} ${light.accent} in light (text on it ${light.on}), ${dark.accent} in dark (text on it ${dark.on}); ${e.accent.use}`,
+    `type: ${face(e.type.body)}${e.type.display ? `, display ${face(e.type.display)}` : ''}; weights ${e.type.weights.join(' and ')}; body ${e.type.body_px} px, title ${e.type.title_px} px${e.type.stands_in_for ? `; stands in for ${e.type.stands_in_for}` : ''}`,
+    `radius: control ${e.radius.control} px, card ${e.radius.card} px`,
+    `look at: ${e.live.join(' ')}`,
+    `source: ${e.source.startsWith('taste-skill:') ? `node <design-taste-frontend>/scripts/draw.mjs --app --kind <the product's kind, from draw.mjs --app --list kinds> --style ${e.source.slice(12)}` : SOURCE + e.source}`,
+    ...(e.composition ? ['', arrange(e.composition)] : []),
+  ].join('\n');
+};
 
 const print = (list) => console.log(options.json ? JSON.stringify(list, null, 2) : list.map((e) => (e.kinds ? arrange(e) : describe(e))).join('\n\n'));
 if (options.list) {

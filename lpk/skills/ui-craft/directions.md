@@ -24,12 +24,9 @@ records, some waiting on the person), `overview` (the state of something at a gl
 (one object). For any other screen leave it out: no composition is dealt, and each sketch still
 takes a skeleton of its own, written in the notes before it is drawn.
 
-Every direction carries both schemes, its `ramp (light)` and `ramp (dark)`, each with its accent
-and the text on that accent. Every sketch uses the light ramp, a dark-born direction included; only
-when the brief or the app fixes dark does every sketch use the dark one. A move names its colours
-in the scheme its direction was born in (the first word of its second line); in the other scheme
-each colour takes the same role from that scheme's ramp. The three always differ in accent, in body
-face and in composition, and no two share all of density, depth and shell.
+Every direction carries both schemes, and its `scheme:` line says which one to sketch in and how
+its move's colours carry over to it. The three always differ in accent, in body face and in
+composition, and no two share all of density, depth and shell.
 Directions dealt in the last four deals on this machine are avoided;
 when the rest cannot fill a deal, the first line of the output names the ones it reused. Among the
 rest, the ones dealt longest ago come first, then the set with the most different shells, then the
@@ -75,8 +72,8 @@ highest on Focal point, Hierarchy and Identity (`SKILL.md` section 6) and logs w
 its composition, which lays out the first screen. The direction fills the five lines of `SKILL.md`
 section 1:
 
-- the ground is its ramp, in both schemes, and the app opens in the scheme its sketch used: light,
-  a dark-born direction included, unless the brief or the app fixes dark;
+- the ground is its ramp in both schemes, and the app opens in the one its `scheme:` line names,
+  the one its sketch used;
 - the hue is its accent, used where its `use` says; when the product has a colour of its own world
   (the green of a forest, the orange of a kiln), that hue may take the accent's place at the same
   lightness and role, written in the notes;
@@ -95,8 +92,8 @@ The slice that builds the app's shell writes `DESIGN.md` at the app's root from 
 direction; every other slice reads it and never writes it. Its format is a YAML front matter between
 `---` lines (`name`, then `colors`, `typography`, `rounded` and `spacing` maps whose values are hex
 colours, `{fontFamily, fontSize}` pairs and px sizes), followed by `## Overview` and `## Colors`
-sections in two or three plain sentences; the overview names the direction id and the scheme the
-app opens in. Run
+sections in two or three plain sentences. The overview names the direction id and the scheme the
+app opens in, and `colors` are that scheme's ramp and accent. Run
 `npx -y @google/design.md@0.4.0 lint DESIGN.md` until it exits 0. That proves the file is well
 formed and nothing more. The app's tokens and `DESIGN.md` say the same thing, and the next screen
 of this app is built from them, never dealt again.
