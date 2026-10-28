@@ -93,7 +93,8 @@ direction; every other slice reads it and never writes it. Its format is a YAML 
 `---` lines (`name`, then `colors`, `typography`, `rounded` and `spacing` maps whose values are hex
 colours, `{fontFamily, fontSize}` pairs and px sizes), followed by `## Overview` and `## Colors`
 sections in two or three plain sentences. The overview names the direction id and the scheme the
-app opens in, and `colors` are that scheme's ramp and accent. Run
+app opens in, `colors` are that scheme's ramp, accent and mark, and `## Colors` says what the accent
+and the mark are each for, as the direction's `accent:` line names them. Run
 `npx -y @google/design.md@0.4.0 lint DESIGN.md` until it exits 0. That proves the file is well
 formed and nothing more. The app's tokens and `DESIGN.md` say the same thing, and the next screen
 of this app is built from them, never dealt again.
