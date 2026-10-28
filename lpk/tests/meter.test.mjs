@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { addFinding, ruleOn } from '../lib/findings.mjs';
+import { appendDecision, appendRecord } from '../lib/records.mjs';
 import { ENV, lpk, repoWith, sh, tmp, write } from './verbs-env.mjs';
 
 process.env.CLAUDE_CONFIG_DIR = ENV.CLAUDE_CONFIG_DIR;
@@ -57,4 +58,17 @@ test('the run\'s row in runs.jsonl holds its lane, each lens\'s yield, the files
   assert.equal(row.yield['lpk:bug-hunter'].open, 1);
   assert.equal(row.agents['main session'].fresh, 1365);
   assert.ok(row.wallMs >= 60000);
+});
+
+test('the run\'s row counts a fix round only when the reviewed tree changed, and holds each design review round', () => {
+  session('sess-3');
+  const repo = repoWith('rounds', { 'a.js': 'a\n' });
+  write(join(repo, '.git', 'lpk'), 'run.json', JSON.stringify({ v: 2, id: 'run3', repo, session: 'sess-3', target: 'main', lane: 'full', laneWhy: 'x', branches: ['feat'], reviewRange: '', started: Date.now() - 60000 }));
+  for (const tree of ['t1', 't1', 't2']) appendRecord(repo, { kind: 'review-start', range: 'a..b', tree, exit: 0 });
+  appendDecision(repo, { what: 'design review round 1: revise, 2/1/0', why: 'two Highs' });
+  appendDecision(repo, { what: 'chose the plain helper', why: 'less code' });
+  appendDecision(repo, { what: 'design review round 2: pass, 0/1/1', why: 'closed' });
+  const row = recordRun(repo);
+  assert.deepEqual([row.reviewStarts, row.fixRounds], [3, 1]);
+  assert.deepEqual(row.designRounds, [{ round: 1, verdict: 'revise', high: 2, medium: 1, low: 0 }, { round: 2, verdict: 'pass', high: 0, medium: 1, low: 1 }]);
 });
