@@ -12,7 +12,7 @@ const docs = [['agents/designer.md'], ['agents/ui-reviewer.md'], ['skills/ui-cra
 
 const FILE = /`((?:assets\/)?[A-Za-z0-9_-]+\.(?:md|mjs|css|json))`/g;
 const inKit = (name) => name.startsWith('assets/') || existsSync(join(KIT, name)) || KIT_FILES.includes(name);
-const KIT_FILES = ['SKILL.md', 'apple.md', 'motion.md', 'parts.md', 'ux.md', 'benchmarks.md', 'frames.mjs', 'audit.mjs', 'page.mjs', 'deal.mjs', 'directions.md', 'directions.json', 'compositions.json'];
+const KIT_FILES = ['SKILL.md', 'apple.md', 'motion.md', 'parts.md', 'ux.md', 'benchmarks.md', 'frames.mjs', 'audit.mjs', 'page.mjs'];
 
 test('every ui-craft file the designer, the reviewer and SKILL.md name exists in the kit', () => {
   assert.ok(existsSync(join(KIT, 'assets', 'apple.css')), 'SKILL.md and motion.md send the designer to assets/apple.css');
