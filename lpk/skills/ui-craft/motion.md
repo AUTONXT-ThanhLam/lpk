@@ -21,7 +21,7 @@ tooltip. The app's own system wins where it speaks.
   `ease-in` on an entrance. A drawer or sheet slides on `cubic-bezier(0.32, 0.72, 0, 1)`; a thing
   that moves while staying on screen uses `cubic-bezier(0.77, 0, 0.175, 1)`.
 - Scale starts at 0.95 (tooltip 0.97, dialog 0.96) with opacity 0, never at `scale(0)`.
-- Enter 120-200 ms; exit about 60% of the enter, since the person has already moved on.
+- Enter 120-240 ms; exit about 60% of the enter, since the person has already moved on.
 - Only `transform` and `opacity` move, each named in `transition`.
 - `transform-origin` comes from the trigger. A panel placed above its trigger grows from its
   bottom edge, below from its top, to the left from its right, to the right from its left, and

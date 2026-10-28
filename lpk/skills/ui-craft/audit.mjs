@@ -43,8 +43,14 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
   const smallTargets = ints.filter((e) => !(e.matches('a') && getComputedStyle(e).display === 'inline')).filter((e) => {
     const box = e.matches('input') ? (e.labels && e.labels[0]) || e.closest('label') || e : e;
     const r = box.getBoundingClientRect();
-    return r.width < 24 || r.height < 24;
+    if (r.width >= 24 && r.height >= 24) return false;
+    box.scrollIntoView({ block: 'center', inline: 'center' });
+    const c = box.getBoundingClientRect();
+    const cx = c.left + c.width / 2, cy = c.top + c.height / 2;
+    const reaches = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && box.contains(t); };
+    return ![[-11, -11], [11, -11], [-11, 11], [11, 11]].every(([dx, dy]) => reaches(cx + dx, cy + dy));
   }).map(sel);
+  scrollTo(0, 0);
   const motion = { transitionAll: [], easeIn: [] };
   for (const e of all) {
     const s = getComputedStyle(e);

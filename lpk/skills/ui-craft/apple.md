@@ -120,7 +120,7 @@ sources add:
 
 - Decide first whether it moves (`motion.md` section 1): frequent and keyboard-started actions do not.
 - Easing: entering and exiting use ease-out, a thing moving on screen uses ease-in-out
-  (`cubic-bezier(0.77, 0, 0.175, 1)`), hover and colour use `ease`, constant motion is linear, and
+  (`cubic-bezier(0.77, 0, 0.175, 1)`), hover and colour use `ease` (the token of `motion.md`), constant motion is linear, and
   ease-in is never used on UI. A drawer or sheet uses 240 ms in and 150 ms out on
   `cubic-bezier(0.32, 0.72, 0, 1)`.
 - Press is `scale(0.97)` in 100-160 ms; entry never starts at `scale(0)`. Asymmetric time is a
@@ -135,7 +135,7 @@ sources add:
   `@starting-style`, because JS animation drops frames then; `motion` is for layout and gesture.
 - Under `prefers-reduced-motion: reduce` motion becomes fewer and gentler, not none: opacity and
   colour stay; translation, scale, zoom, depth and parallax become a fade; springs lose their
-  bounce; auto-playing and repeating motion stops. Avoid animating into or out of a blur; if a
+  bounce; auto-playing and repeating motion stops, except a spinner. Avoid animating into or out of a blur; if a
   crossfade needs one after easing and time are tuned, it is `blur(2px)` at most and absent here.
 - Review in slow motion: `frames.mjs`, then the same run at 2-5x slower in the browser's animation
   panel, then again the next day with fresh eyes.
