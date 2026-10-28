@@ -6,21 +6,32 @@
 
 Emil Kowalski's skills sit on this machine at one pinned commit, `a81dbca`, under
 `~/.local/share/lpk/design-kit/emilkowalski-skills`. This block makes the clone, or moves a clone
-left at another commit to the pin; it does nothing when HEAD already is the pin:
+left at another commit to the pin; it does nothing when HEAD already is the pin, and parallel runs wait for
+each other on one lock file:
 
 ```sh
 K="$HOME/.local/share/lpk/design-kit"
 E="$K/emilkowalski-skills"
 PIN=a81dbca07f2217b7103e510c0f13f8d5b017afc9
-test "$(git -C "$E" rev-parse HEAD 2>/dev/null)" = "$PIN" || {
-  mkdir -p "$E"
-  git -C "$E" init -q
-  git -C "$E" remote add origin https://github.com/emilkowalski/skills.git ||
-    git -C "$E" remote set-url origin https://github.com/emilkowalski/skills.git
-  git -C "$E" fetch -q --depth 1 origin "$PIN" && git -C "$E" checkout -q -f FETCH_HEAD
+at_pin() { test "$(git -C "$E" rev-parse HEAD 2>/dev/null)" = "$PIN"; }
+at_pin || {
+  mkdir -p "$K"
+  n=0
+  until (set -C; : > "$K/.pin.lock") 2>/dev/null; do
+    n=$((n + 1))
+    test "$n" -gt 90 && { rm -f "$K/.pin.lock"; n=0; }
+    sleep 1
+  done
+  at_pin || {
+    mkdir -p "$E"
+    git -C "$E" init -q
+    git -C "$E" remote add origin https://github.com/emilkowalski/skills.git 2>/dev/null ||
+      git -C "$E" remote set-url origin https://github.com/emilkowalski/skills.git
+    git -C "$E" fetch -q --depth 1 origin "$PIN" && git -C "$E" checkout -q -f FETCH_HEAD
+  }
+  rm -f "$K/.pin.lock"
 }
-test "$(git -C "$E" rev-parse HEAD 2>/dev/null)" = "$PIN" &&
-  test -f "$E/skills/apple-design/SKILL.md" && echo "pinned $PIN" || echo "not confirmed"
+at_pin && test -f "$E/skills/apple-design/SKILL.md" && echo "pinned $PIN" || echo "not confirmed"
 ```
 
 Run it first, every time; never fetch a branch or any other commit. When it prints `not confirmed`
