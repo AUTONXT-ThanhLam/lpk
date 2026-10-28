@@ -2,6 +2,7 @@
 name: prover
 description: Proves a change the way its user meets it. Give it the acceptance scenarios, the failure-mode table, the commit, and how to reach the running surface (URL, start command, login, CLI), plus a main instance if one runs. It exercises each scenario, its failure cases and its neighbours, and reports every scenario PASS, FAIL or NOT PROVED with evidence; it never edits code.
 effort: high
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*, Write, mcp__plugin_lpk_chrome-devtools__*, mcp__chrome-devtools__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData
 color: green
 ---

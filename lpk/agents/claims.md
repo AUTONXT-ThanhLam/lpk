@@ -2,6 +2,7 @@
 name: claims
 description: Checks every claim a change makes in words against what its code does: comments, docstrings, README and docs, error, log and UI messages, CLI help, test names and the PR text. Give it the repo, the base commit and the facts bundle directory. Returns only the claims the code does not back, each with the line that says it and the code that contradicts it. It never edits.
 effort: medium
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: pink
 ---

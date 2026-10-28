@@ -2,6 +2,7 @@
 name: ocr
 description: Reviews one batch of a change's files the way OpenCodeReview does, file by file against the rules `ocr delegate rule` resolves for each, and accounts for every file it was given. Give it the repo, the base, the commit and the file paths of its batch. Returns the defects it found and, for each path, reviewed or skipped with the reason. It never edits.
 effort: low
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: orange
 ---

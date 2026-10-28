@@ -2,6 +2,7 @@
 name: mutant
 description: Proves the tests of a change can catch the mistakes a developer would plausibly make in it. Writes small mutants of the changed lines (a wrong boundary, a dropped guard, a swallowed error, a swapped argument), runs them with `lpk mutate --patch`, and reports each one no test catches as a test gap, with the test that would. Give it the repo, the base commit and the command that runs the tests related to the changed files. It never edits the repo.
 effort: medium
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*, Write
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: purple
 ---
