@@ -102,9 +102,7 @@ function measureInjections(ctx, files) {
 }
 
 // The CLI children, from the run records: what each headless lens ran, what it returned, how long it
-// took, what it cost. Those three kinds can no longer be written (`lpk code-review` and the `claude`
-// CLI are gone), so this table only ever reads runs made before that — it is history, not a lane a
-// future run can owe.
+// took, what it cost. Only `code-review` is still written; the other two kinds are history.
 function cliLensRuns(repos) {
   const rows = [];
   for (const { repo, run } of repos) {

@@ -49,12 +49,13 @@ failure rows run on two or more surfaces or screens, set `proverGroups`, one gro
 screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
 Prover per group finishes sooner and reads a shorter context. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
 lines the workflow hunts in up to four bug hunters, each on its share of the group diffs, so each
-reads a shorter context; the tech lead and the code reviews still read the whole diff. Without the Workflow tool, start the agents it starts yourself, all in one
-message.
+reads a shorter context; the tech lead and the code reviews still read the whole diff. Without the Workflow tool, start the agents it starts yourself, all in one message.
 
 The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per finding as each
-arrives. `lpk reviews owed` names any lens still owed and why. A lens that stalled or errored is
-re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
+arrives. On Claude Code the code review is `lpk code-review` (`/code-review` with the code-reviewer
+role, a headless Sonnet child that adds its findings to the ledger; a Bash timeout of 600000 ms when
+you run it yourself); elsewhere the `lpk:code-reviewer` agent. `lpk reviews owed` names any lens
+still owed and why. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
 
 ## Check yourself while it runs
 
@@ -129,10 +130,9 @@ other.
 Then one delta review: rerun the self-check on the files the fixes touched,
 `lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background,
 and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
-`lpk:code-reviewer` run on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed
-findings, in parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
-no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds
-something new on new lines.
+code review on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed findings, in
+parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
+no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines.
 
 The delta review is the last review. A finding it confirms that a user meets or that blocks the merge
 gets one fix commit, closed with its own test or repro, and `lpk reviews owed` lists what that commit

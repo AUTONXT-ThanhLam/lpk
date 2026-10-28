@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { FULL, QUICK, label } from '../lib/owed.mjs';
+import { CODE_REVIEW, FULL, QUICK, forHost, label } from '../lib/owed.mjs';
 import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
 import { lpk, repoWith, sh, write } from './gates-env.mjs';
 
@@ -53,7 +53,7 @@ const FLOOR = (() => {
   return [...new Set(m[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, '')))];
 })();
 // Every name the net can ever owe: one of the lane's fixed sets, plus a conditional lens.
-const oweable = () => [...new Set([...FULL, ...QUICK].map(label).concat(FLOOR))].sort();
+const oweable = () => [...new Set([...FULL, ...QUICK, CODE_REVIEW].map(label).concat(FLOOR))].sort();
 
 test('every owed lens starts at once as its own agent, and each finding gets its own verifier', async () => {
   const lenses = ['techlead', 'bug-hunter', 'bug-hunter', 'code-reviewer', 'claims', 'regression', 'prover', 'mutant'];
@@ -172,11 +172,13 @@ test('a lens whose findings partly reached the ledger is not run again, and thos
 
 test('a fix round reviews only the delta: one code review and the lenses that raised the fixed findings', async () => {
   const delta = { range: 'b'.repeat(40) + '..' + 'c'.repeat(40), raisedBy: ['lpk:techlead', 'lpk:security', 'main'] };
-  const { calls } = await run({ ...ARGS, delta }, (p, o) => found());
+  const { calls } = await run({ ...ARGS, delta }, (p, o) => (o.bashCommandClamp ? { record: '/out/cr.json', ids: [] } : found()));
   const review = calls.filter((c) => c.opts.phase === 'Review');
-  assert.deepEqual(review.map((c) => c.opts.label), ['code-reviewer', 'techlead', 'security']);
+  assert.deepEqual(review.map((c) => c.opts.label), ['code-review', 'techlead', 'security']);
   assert.ok(review.every((c) => c.prompt.startsWith(`Review range ${delta.range}.`)), 'every lens reviews the delta, not the change');
-  assert.match(review[0].prompt, /This is the fix delta of the change .*: review only what the delta changes/);
+  assert.match(review[1].prompt, /This is the fix delta of the change .*: review only what the delta changes/);
+  assert.ok(review[0].prompt.includes(`lpk code-review --repo /r --model sonnet --effort high --range ${delta.range}\n`), 'the delta code review runs the CLI on the delta');
+  assert.deepEqual([review[0].opts.model, review[0].opts.bashCommandClamp], ['haiku', ['Bash(lpk code-review *)']]);
   // A docs-only delta starts no code review: only the lens whose finding the words fixed.
   const docs = await run({ ...ARGS, delta: { ...delta, raisedBy: ['lpk:claims'], docsOnly: true } }, () => found());
   assert.deepEqual(docs.calls.map((c) => c.opts.label), ['claims']);
@@ -212,10 +214,12 @@ test('the lenses `lpk reviews owed` lists are the workflow\'s own names, a lens 
     ['has not run on it', 'fix delta; has not run on it'], 'the bug hunter is owed once on the patch and once on the delta');
   assert.equal(new Set(rows.filter((r) => r.lens === 'bug-hunter').map((r) => r.range)).size, 2, 'the two rows name the two ranges');
   // The names the net prints are owed.mjs's own exported set: a full lane with nothing conditional in
-  // it owes exactly FULL, one row per run it owes. code-reviewer needs two, so it is listed twice.
-  assert.deepEqual([...new Set(lenses)].sort(), FULL.map(label).sort());
-  const need = FULL.find((q) => q.key === 'code-reviewer')?.need || 1;
-  assert.deepEqual(rows.filter((r) => r.lens === 'code-reviewer').map((r) => r.why),
+  // it owes exactly FULL as this host runs it, one row per run; Claude Code's code review is owed twice.
+  const full = forHost(FULL, 2);
+  assert.deepEqual([...new Set(lenses)].sort(), full.map(label).sort());
+  const need = full.find((q) => q.key === 'code-review')?.need || 1;
+  assert.equal(need, 2);
+  assert.deepEqual(rows.filter((r) => r.lens === 'code-review').map((r) => r.why),
     [...Array(need).fill('has not run on it'), 'fix delta; has not run on it'], 'the lens the lane needs twice is owed twice on the one patch');
   // and the workflow runs every name it prints, and knows nothing the net can never owe: the lane's
   // fixed sets plus the conditional lenses the floor adds.
@@ -226,13 +230,15 @@ test('the lenses `lpk reviews owed` lists are the workflow\'s own names, a lens 
     if (o.label === 'ocr:preview') return { paths: [] };
     if (o.agentType === 'lpk:prover') return { results: [] };
     if (o.agentType === 'lpk:regression') return { findings: [], groups: [] };
+    if (o.bashCommandClamp) return { record: '/out/code-review.json', ids: [] };
     return found();
   });
   assert.equal(out.error, undefined);
   const started = calls.filter((c) => c.opts.phase === 'Review').map((c) => c.opts.label);
   assert.equal(started.filter((l) => l.startsWith('bug-hunter')).length, 2, 'a lens owed twice runs twice');
-  assert.equal(started.filter((l) => l.startsWith('code-reviewer')).length, need + 1);
-  assert.ok(started.includes('code-reviewer#2') && started.includes('bug-hunter#2'), 'the second run of a lens gets its own label');
+  assert.equal(started.filter((l) => /^code-review(#|$)/.test(l)).length, need + 1);
+  assert.ok(started.includes('code-review#2') && started.includes('bug-hunter#2'), 'the second run of a lens gets its own label');
+  assert.ok(out.lenses.filter((l) => /^code-review(#|$)/.test(l.lens)).every((l) => l.record === '/out/code-review.json'), 'each code review names its record');
 });
 
 test('the workflow refuses a lens it does not know instead of skipping it', async () => {

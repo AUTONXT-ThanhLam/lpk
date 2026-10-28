@@ -38,6 +38,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk verify  |  lpk go  |  lpk decide "<what>" --why "<why>"  |  lpk handoff <slice>
  review and proof
   lpk review start <from>..<to>  |  lpk reviews owed  |  lpk reviews fetch --reviewer <login>
+  lpk code-review [--range <from>..<to> | --base <ref>] [--model sonnet] [--timeout <s>]
   lpk finding list|get|verdict|fixed|counts
   lpk repro <finding id> | --cmd "<command>" --at commit|base  |  lpk repeat -- <command>
   lpk mutate --test "<command>" --patch <mutant.diff>...  |  lpk compare --run "<command>" --inputs <dir>

@@ -1,14 +1,17 @@
 // The reviews a run still owes: for each of its patches, each lens of the lane's fixed set that has
-// not run on a range covering it. A lens ran when a transcript shows an agent of that type, given a
-// range naming the patch, that ended with structured output or end_turn and whose findings all
-// reached the ledger. A fix commit owes only the delta: one code review of it (none when it touches
-// no code) and the lenses whose findings it fixed. After a rebase an unchanged patch keeps its
-// reviews; a changed one owes a delta review.
+// not run on a range covering it. A lens ran when `lpk code-review` recorded a clean run on a range
+// covering the patch, or when a transcript shows an agent of that type, given a range naming the
+// patch, that ended with structured output or end_turn and whose findings all reached the ledger.
+// A fix commit owes only the delta: one code review of it (none when it touches no code) and the
+// lenses whose findings it fixed. After a rebase an unchanged patch keeps its reviews; a changed
+// one owes a delta review.
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { isIncrement } from './bar.mjs';
 import { ledgerFile, readLedger } from './findings.mjs';
+import { hostName } from './host.mjs';
 import { commitsOf, pairs, patchesOf, rangesOf, touches } from './patches.mjs';
+import { readRecords } from './records.mjs';
 import { CODE, TEST } from './rules.mjs';
 import { readRun, runDir } from './run.mjs';
 import { findingCount, lensRuns } from './transcripts.mjs';
@@ -18,12 +21,12 @@ export const DOCS = [{ key: 'techlead' }, { key: 'claims' }];
 export const QUICK = [{ key: 'code-reviewer' }, { key: 'bug-hunter' }];
 // A lens by the name the lpk:review workflow takes in args.lenses (`techlead`, `code-reviewer`).
 export const label = (q) => q.key;
-// An agent type (`lpk:techlead`) as a lens key.
-const keyOf = (type) => String(type || '').split(':').pop();
+const keyOf = (type) => { const t = String(type || ''); return t.startsWith('code-review:') ? 'code-review' : t.split(':').pop(); };
 
-// The lens a fix delta owes: the narrow diff review, the one lens measured to fix the most defects
-// per token spent.
-const DELTA = { key: 'code-reviewer' };
+const onClaude = () => hostName() === 'claude';
+export const CODE_REVIEW = { key: 'code-review' };
+export const forHost = (set, need) => (onClaude() ? set.map((q) => (q.key === 'code-reviewer' ? { ...CODE_REVIEW, need } : q)) : set);
+const delta = () => (onClaude() ? CODE_REVIEW : { key: 'code-reviewer' });
 
 // The run's findings: those its ledger left under runs/<id>/ when a later run started (findings.jsonl,
 // then findings.<n>.jsonl, in the order archiveLedger wrote them), and those in the live ledger.
@@ -38,6 +41,11 @@ export function ledgerFor(repo, run) {
 export function evidence(repo, run, ledger) {
   const items = [], notes = [];
   const counted = (agentId, n) => n === null || ledger.filter((f) => f.agentId === agentId).length === n;
+  for (const r of readRecords(repo, { run: run.id })) {
+    if (r.kind !== 'code-review' || !r.range) continue;
+    if (r.exit !== 0) notes.push({ key: r.kind, range: r.range, why: `lpk code-review exited ${r.exit}: ${r.error || 'no error kept'}` });
+    else items.push({ key: r.kind, range: r.range });
+  }
   for (const s of [...new Set([run.session, ...(run.previous || [])].filter(Boolean))]) {
     for (const l of lensRuns(repo, s)) {
       const key = keyOf(l.agentType);
@@ -60,10 +68,11 @@ async function laneSet(repo, run, base, list) {
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
   if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };
-  if (isIncrement(run)) return { set: [...QUICK, ...(extra.includes('security') ? [{ key: 'security' }] : [])], why: 'increment bar' };
-  if (run.lane === 'quick' && floor && !floor.full) return { set: QUICK, why: '' };
+  if (isIncrement(run)) return { set: [...forHost(QUICK, 1), ...(extra.includes('security') ? [{ key: 'security' }] : [])], why: 'increment bar' };
+  if (run.lane === 'quick' && floor && !floor.full) return { set: forHost(QUICK, 1), why: '' };
   const why = run.lane !== 'quick' ? '' : floor ? `quick lane, but lpk floor: ${floor.why.join('; ')}` : 'quick lane, and lpk floor is not installed to clear it';
-  return { set: [...FULL, ...[...new Set(extra)].filter((k) => !FULL.some((q) => q.key === k)).map((key) => ({ key }))], why };
+  const full = forHost(FULL, 2);
+  return { set: [...full, ...[...new Set(extra)].filter((k) => !full.some((q) => q.key === k)).map((key) => ({ key }))], why };
 }
 
 const covers = (repo, item, sha) => commitsOf(repo, item.range).includes(sha);
@@ -86,8 +95,8 @@ export async function owed(repo, run = readRun(repo)) {
     const direct = (q) => items.filter((i) => fits(i, q) && covers(repo, i, sha)).length;
     const inherited = (q) => (pair ? items.filter((i) => fits(i, q) && covers(repo, i, pair.old)).length : 0);
     const reqs = fixed.length
-      ? [...(touches(repo, sha, CODE) ? [{ ...DELTA, delta: true }] : []), ...[...new Set(fixed.map((f) => keyOf(f.from)))].filter((k) => k && k !== 'main').map((key) => ({ key, delta: true }))]
-      : [...set, ...(pair && !pair.same ? [{ ...DELTA, delta: true }] : [])];
+      ? [...(touches(repo, sha, CODE) ? [{ ...delta(), delta: true }] : []), ...[...new Set(fixed.map((f) => keyOf(f.from)))].filter((k) => k && k !== 'main').map((key) => ({ key, delta: true }))]
+      : [...set, ...(pair && !pair.same ? [{ ...delta(), delta: true }] : [])];
     for (const q of reqs) {
       const have = q.delta ? direct(q) : direct(q) + inherited(q);
       if (have >= (q.need || 1)) continue;
