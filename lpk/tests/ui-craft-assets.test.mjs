@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { fontVerdict } from '../skills/ui-craft/fontverdict.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT = join(ROOT, 'skills', 'ui-craft');
@@ -33,4 +34,16 @@ test('frames.mjs states the key action and the second action in its usage line, 
   assert.match(late.stderr, /--then/);
   const empty = run('http://127.0.0.1:1/', 'key:');
   assert.equal(empty.status, 2, empty.stderr);
+});
+
+test('the audit passes the mandated type stack when its web face is defined and fails it when it is not', () => {
+  const stack = '-apple-system, BlinkMacSystemFont, "Inter Variable", system-ui, sans-serif';
+  const face = (status) => [{ family: '"Inter Variable"', status }];
+  assert.equal(fontVerdict(stack, face('unloaded')), 'loaded');
+  assert.equal(fontVerdict(stack, face('loaded')), 'loaded');
+  assert.equal(fontVerdict(stack, []), 'NOT LOADED');
+  assert.equal(fontVerdict(stack, face('error')), 'NOT LOADED');
+  assert.equal(fontVerdict('Arial, "Inter Variable"', face('unloaded')), 'loaded');
+  assert.equal(fontVerdict('Arial, "Inter Variable"', []), 'NOT LOADED');
+  assert.equal(fontVerdict('system-ui, sans-serif', []), 'system');
 });

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { withPage } from './page.mjs';
+import { fontVerdict } from './fontverdict.mjs';
 const [url, ...rest] = process.argv.slice(2);
 if (!url) {
   console.error('usage: audit.mjs <url> [--width 1440 (720 is 200% zoom of 1440)] [--scheme light|dark] [--tabs 60] [--space 0,4,8,...] [--radius 0,4,6,...] [--heights 24,28,32,...]');
@@ -9,7 +10,7 @@ const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : res
 const spaceScale = (opt('space', '0,2,4,8,12,16,24,32,40,48,64')).split(',').map(Number);
 const radiusScale = (opt('radius', '0,4,5,6,8,10,12,9999')).split(',').map(Number);
 const heights = (opt('heights', '24,28,32,40,48')).split(',').map(Number);
-const probe = `(${function (spaceScale, radiusScale, heights) {
+const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${function (spaceScale, radiusScale, heights) {
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   const sel = (e) => { let p = e.tagName.toLowerCase(); if (e.id) p += '#' + e.id; else if (e.classList[0]) p += '.' + [...e.classList].slice(0, 2).join('.'); return p + (e.textContent.trim() ? ` "${e.textContent.trim().slice(0, 24)}"` : ''); };
   const all = [...document.body.querySelectorAll('*')].filter((e) => vis(e) && e.getBoundingClientRect().width > 1 && e.getBoundingClientRect().height > 1);
@@ -87,19 +88,15 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
     const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
     if (w > 2 && h > 2 && !leaves[i].contains(leaves[j]) && !leaves[j].contains(leaves[i])) overlapText.push(sel(leaves[i]) + ' x ' + sel(leaves[j]));
   }
-  const generic = /^(system-ui|-apple-system|BlinkMacSystemFont|sans-serif|serif|monospace|ui-[a-z-]+|cursive|fantasy|Segoe UI|Roboto|Helvetica|Arial|Menlo|Consolas|SF Mono|SF Pro[A-Za-z ]*)$/i;
-  const webLoaded = (n) => [...document.fonts].some((x) => x.family.replace(/["']/g, '') === n && x.status === 'loaded');
-  const loaded = Object.keys(families).map((stack) => {
-    const web = stack.split(',').map((n) => n.replace(/["']/g, '').trim()).filter((n) => n && !generic.test(n));
-    return [stack, web.length === 0 ? 'system' : web.every(webLoaded) ? 'loaded' : 'NOT LOADED'];
-  });
+  const faces = [...document.fonts].map((x) => ({ family: x.family, status: x.status }));
+  const loaded = Object.keys(families).map((stack) => [stack, fontVerdict(stack, faces)]);
   return {
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,
     offScaleSpace: bad.space, offScaleRadius: bad.radius, offScaleControlHeight: bad.height,
     fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10), smallTargets, transitionAll: motion.transitionAll, easeIn: motion.easeIn, zoomLocked, scaleZero, ungatedHoverMoves: ungatedHover, longTransitions, layoutTransitions,
     interactive: ints.length,
   };
-}})(${JSON.stringify(spaceScale)},${JSON.stringify(radiusScale)},${JSON.stringify(heights)})`;
+}})(${JSON.stringify(spaceScale)},${JSON.stringify(radiusScale)},${JSON.stringify(heights)}); })()`;
 const key = (s) => ({ type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, ...s });
 const res = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light') }, async ({ send, evaluate }) => {
   const r = await evaluate(probe);
