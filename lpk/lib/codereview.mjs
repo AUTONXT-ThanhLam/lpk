@@ -37,15 +37,21 @@ export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE
   });
 }
 
-async function inWorktree(repo, at, fn) {
-  const wt = mkdtempSync(join(tmpdir(), 'lpk-cr-'));
+const run = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+
+async function inScratch(repo, at, fn) {
+  const dir = mkdtempSync(join(tmpdir(), 'lpk-cr-'));
   try {
-    const add = spawnSync('git', ['worktree', 'add', '--detach', '--quiet', wt, at], { cwd: repo, encoding: 'utf8' });
-    if (add.status !== 0) return { error: `git worktree add failed: ${add.stderr.trim().slice(0, 300)}` };
-    return await fn(wt);
+    const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], repo).trim();
+    const clone = run(['clone', '--shared', '--no-checkout', '--quiet', common, dir]);
+    if (clone.status !== 0) return { error: `git clone failed: ${clone.stderr.trim().slice(0, 300)}` };
+    const branch = run(['symbolic-ref', '--short', 'HEAD'], dir).stdout.trim() || 'main';
+    run(['remote', 'remove', 'origin'], dir);
+    const co = run(['checkout', '--quiet', '-B', branch, at], dir);
+    if (co.status !== 0) return { error: `git checkout failed: ${co.stderr.trim().slice(0, 300)}` };
+    return await fn(dir);
   } finally {
-    spawnSync('git', ['worktree', 'remove', '--force', wt], { cwd: repo, stdio: 'ignore' });
-    rmSync(wt, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 
@@ -65,7 +71,7 @@ const meta = (c) => ({
 });
 
 export function codeReview({ repo, a, b, level, ...child }) {
-  return inWorktree(repo, a, async (wt) => {
+  return inScratch(repo, a, async (wt) => {
     const patch = git(['diff', '--binary', a, b], repo);
     const ap = spawnSync('git', ['apply', '--index', '--whitespace=nowarn'], { cwd: wt, input: patch, encoding: 'utf8' });
     if (ap.status !== 0) return { error: `git apply failed: ${ap.stderr.trim().slice(0, 300)}` };

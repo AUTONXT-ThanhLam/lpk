@@ -13,7 +13,8 @@ const owed = (repo, S, env = ENV) => JSON.parse(spawnSync('node', [join(ROOT, 'b
 
 function fakeClaude(name, lines) {
   const bin = join(tmp, `${name}.mjs`);
-  write(tmp, `${name}.mjs`, `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(`${bin}.args`)}, JSON.stringify(process.argv.slice(2)));\n${lines.map((l) => `console.log(${JSON.stringify(JSON.stringify(l))});`).join('\n')}\n`);
+  const seen = `{ argv: process.argv.slice(2), refs: git('for-each-ref', '--format=%(objectname)', 'refs/heads', 'refs/remotes').split('\\n').filter(Boolean), head: git('rev-parse', 'HEAD').trim(), staged: git('diff', '--cached', '--name-only').split('\\n').filter(Boolean) }`;
+  write(tmp, `${name}.mjs`, `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nimport { execFileSync } from 'node:child_process';\nconst git = (...a) => execFileSync('git', a, { encoding: 'utf8' });\nwriteFileSync(${JSON.stringify(`${bin}.seen`)}, JSON.stringify(${seen}));\n${lines.map((l) => `console.log(${JSON.stringify(JSON.stringify(l))});`).join('\n')}\n`);
   chmodSync(bin, 0o755);
   return bin;
 }
@@ -31,7 +32,8 @@ function changedRepo(name, S) {
   return repo;
 }
 
-const codeReview = (repo, S, bin) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'code-review'], { cwd: repo, env: { ...ENV, CLAUDE_CODE_SESSION_ID: S, LPK_CLAUDE_BIN: bin }, encoding: 'utf8' });
+const seen = (bin) => JSON.parse(readFileSync(`${bin}.seen`, 'utf8'));
+const codeReview = (repo, S, bin, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'code-review', ...args], { cwd: repo, env: { ...ENV, CLAUDE_CODE_SESSION_ID: S, LPK_CLAUDE_BIN: bin }, encoding: 'utf8' });
 
 test('a code review adds its findings to the ledger and pays the code review the lane owes', () => {
   const S = 'cr';
@@ -43,9 +45,22 @@ test('a code review adds its findings to the ledger and pays the code review the
   const [f] = readLedger(repo).findings;
   assert.deepEqual([f.from, f.file, f.line, f.claim], ['code-review:sonnet', 'src/a.mjs', 1, 'a is now a string, so a + 1 concatenates']);
   assert.ok(!owed(repo, S).includes('code-review'), 'the record pays the owed code review');
-  const args = JSON.parse(readFileSync(`${bin}.args`, 'utf8'));
+  const args = seen(bin).argv;
   assert.deepEqual(args.slice(0, 4), ['-p', '/code-review high --max-findings all', '--model', 'sonnet']);
   assert.match(args[args.indexOf('--append-system-prompt') + 1], /^You review a diff\./);
+});
+
+test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
+  const S = 'crdelta';
+  const repo = changedRepo('crdelta', S);
+  const reviewed = sh(repo, 'rev-parse', 'HEAD').trim();
+  write(repo, 'src/b.mjs', 'export const b = 1;\n');
+  sh(repo, 'add', '.');
+  sh(repo, 'commit', '-qm', 'Add b');
+  const bin = fakeClaude('claude-delta', [report, result]);
+  ok(codeReview(repo, S, bin, '--range', `${reviewed}..HEAD`));
+  const { refs, head, staged } = seen(bin);
+  assert.deepEqual([head, [...new Set(refs)], staged], [reviewed, [reviewed], ['src/b.mjs']]);
 });
 
 test('a code review child that ends without a result fails and leaves the code review owed', () => {

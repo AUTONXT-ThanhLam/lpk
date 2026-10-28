@@ -22,7 +22,7 @@ const CLEANUP = ['simplification', 'efficiency', 'reuse', 'altitude'];
 
 function alreadyRaised(repo) {
   const rows = readLedger(repo).findings.map((f) => `- ${f.id} ${f.file || ''}${f.line ? `:${f.line}` : ''} (${f.state}): ${f.claim}`);
-  return rows.length ? `These findings were already raised on this change; review the fix delta, and report one of them again only if the delta did not fix it:\n${rows.join('\n')}` : '';
+  return rows.length ? `These findings are already in the ledger for this change, and a verifier rules whether the delta fixed them; review only what the delta changes and report none of them again:\n${rows.join('\n')}` : '';
 }
 
 function intended(repo) {
