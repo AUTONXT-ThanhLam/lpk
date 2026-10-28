@@ -1,9 +1,11 @@
 # motion: tokens, recipes and the cost of moving
 
-Extends section 6 of `SKILL.md`; `apple.md` section 4 holds the gesture-surface table. The values are
-Emil Kowalski's, from `skills/animate/RECIPES.md`, `skills/review-animations/STANDARDS.md` and
-`skills/emil-design-eng` in the pinned clone; read them there and quote nothing from here as a replacement for them. The
-app's own system wins where it speaks: extend its tokens, never add a parallel scale.
+Extends section 6 of `SKILL.md`; `apple.md` section 4 holds the gesture-surface table. The overlay
+values here are Emil Kowalski's, quoted by section from `skills/animate/RECIPES.md`,
+`skills/review-animations/STANDARDS.md` and `skills/emil-design-eng` in the pinned clone. Where this
+file differs from the clone the clone wins, except for what the override list in section 1 of
+`SKILL.md` names. The app's own system wins where it speaks: extend its tokens, never add a parallel
+scale.
 
 ## 1. First decide whether it moves at all
 
@@ -15,7 +17,7 @@ app's own system wins where it speaks: extend its tokens, never add a parallel s
 | Rare or first time (onboarding, success, celebration) | The delight budget lives here |
 
 - Tab switches and in-app route changes are hundreds a day: they do not animate. A panel swap on a
-  frequent surface is an opacity change at 150 ms, or nothing.
+  frequent surface is an opacity change at 150 ms, or nothing (a kit rule, override 7 of `SKILL.md`).
 - A screen with no motion on a gated change is correct, not a finding. Zero lines of code is a
   result: animating what should not animate is the worse failure.
 - Every motion that survives names its purpose from this list only: feedback to an action, spatial
@@ -186,8 +188,8 @@ with `allow-discrete` so `display` waits for the exit.
 - A glass surface arriving animates its blur radius and its scale together, so it reads as a material
   arriving, not an opacity fade. Keep the radius under 20 px.
 - Stagger a group entrance only for a list or grid seen occasionally, never one scrolled past all
-  day, and never as a block on interaction. At most 30 ms between items, or 300 ms for the whole
-  group: past that, fade the group as one. A one-shot keyframe is right here, since the group cannot
+  day, and never as a block on interaction. 30 to 80 ms between items (Emil's range) and at most
+  300 ms for the whole group (the kit's cap, override 3 of `SKILL.md`): past that, fade the group as one. A one-shot keyframe is right here, since the group cannot
   be re-triggered mid-flight.
 
 ```css

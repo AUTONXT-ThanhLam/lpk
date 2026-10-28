@@ -33,15 +33,15 @@ this is what makes it feel made by someone, and different from the last product 
 
 Where this list and Emil's files differ, this list wins. Anything not on it follows Emil.
 
-1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins. lpk's "faster than Emil" is dropped.
+1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins, except where overrides 3 and 7 say they are the kit's own. lpk's "faster than Emil" is dropped.
 2. "Every change moves" is dropped. Frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
-3. Stagger: 30 ms per item or 300 ms total at most. Skeleton or spinner only for loads over 300 ms. Count-up only on a real value change after a user action, not on mount.
+3. Kit rules beyond Emil: his 30-80 ms stagger between items is capped at 300 ms for the whole group; a skeleton or spinner only for loads over 300 ms; a count-up only on a real value change after a user action, never on mount.
 4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
 5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
-6. Type: the R7 stack, tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
-8. Tab switches and in-app route changes are 100+/day: no animation; a panel swap on a frequent surface is opacity at 150 ms or nothing.
-9. No numbers in `designer.md` or `ui-reviewer.md`: they point to `SKILL.md` section 6 and Emil's files; `SKILL.md` section 1 holds this list verbatim.
-7. The app's own design system wins over this kit. Machine tells check (impeccable `detect`) stays as a check, never as taste authority.
+6. Type: the stack of section 2 item 6, tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
+7. Tab switches and in-app route changes are 100+/day: no animation. The kit's own rule, not Emil's: a panel swap on a frequent surface is opacity at 150 ms or nothing.
+8. `designer.md` and `ui-reviewer.md` carry no numbers: they point to section 6 and to Emil's files.
+9. The app's own design system wins over this kit. Machine tells check (impeccable `detect`) stays as a check, never as taste authority.
 
 ## 2. The face
 
@@ -86,7 +86,7 @@ first rows with real content, and the canvas is never half blank because nothing
   Let the canvas end in a margin or a rail, never in an empty half.
 - A header line carrying real numbers (waiting, running, failed), in tabular figures and ink, one
   step above the labels. It is type, not a tile.
-- Reading text sets `max-width: 65ch`. The panel swap of master and detail follows override 8.
+- Reading text sets `max-width: 65ch`. The panel swap of master and detail follows override 7.
 - Simple is not bare: if a block can be removed without losing the answer, remove it; if the screen
   would lose its answer without a block, it shows it.
 
@@ -117,8 +117,8 @@ first rows with real content, and the canvas is never half blank because nothing
 
 ## 5. Type
 
-- The stack of section 2 (the "R7 stack" of override 6), sizes in `rem`, and the app's own scale when it has one; extend it,
-  never add a second scale beside it.
+- The stack of section 2 item 6 (override 6), sizes in `rem`, and the app's own scale when it has
+  one; extend it, never add a second scale beside it.
 - Tracking follows size: `-0.02em` from 24 px up, near 0 for body, `+0.01em` at 12 px and under;
   leading tight on titles (about 1.15) and 1.4 on body. Titles `text-wrap: balance`, body `pretty`.
 - Three sizes and two weights (450 and 600) on a screen: body and controls 13-14 px (16 under
@@ -151,10 +151,10 @@ Order of work, from `emil-design-eng` "The Animation Decision Framework" and `an
    `--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1)` for a drawer or sheet, built-in `ease` for hover
    and colour, `linear` for constant motion, `ease-in` never.
 5. **The numbers** (durations per surface, scale starts, toast, drawer, tooltip, stagger, spring
-   `duration` and `bounce`) are quoted from `emil-design-eng` ("How fast should it be?", "Spring
-   Configuration"), `animate/RECIPES.md` and, for overlays on those values, `motion.md` of this
-   directory. Nothing in this file or in an agent file restates one; a screen that ships Sonner or
-   its own motion system keeps that system's values.
+   `duration` and `bounce`) are Emil's, from `emil-design-eng` ("How fast should it be?", "Spring
+   Configuration") and `animate/RECIPES.md`. `motion.md` of this directory and the override list of
+   section 1 quote them by section, and where the kit overrides him section 1 says so; the agent
+   files carry none. A screen that ships Sonner or its own motion system keeps that system's values.
 6. **Interruption and gesture.** Anything the person can grab, drag or re-trigger takes a transition
    or a spring that retargets from the live value, never a keyframe; a drag tracks 1:1 and hands its
    velocity to the spring (`apple-design` sections 3-6, 9; `apple.md` section 4 for the touch
