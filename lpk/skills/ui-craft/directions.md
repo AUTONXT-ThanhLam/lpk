@@ -24,10 +24,13 @@ records, some waiting on the person), `overview` (the state of something at a gl
 (one object). For any other screen leave it out: no composition is dealt, and each sketch still
 takes a skeleton of its own, written in the notes before it is drawn.
 
-Every direction carries both schemes: its `ramp` and the other scheme printed after it, each with
-its accent and the text on that accent. When the brief or the app fixes a scheme, every sketch uses
-that scheme's ramp. The three always differ in accent, in body face and in composition, and hold a
-light and a dark direction. Directions dealt in the last four deals on this machine are avoided;
+Every direction carries both schemes, its `ramp (light)` and `ramp (dark)`, each with its accent
+and the text on that accent. Every sketch uses the light ramp, a dark-born direction included; only
+when the brief or the app fixes dark does every sketch use the dark one. A move names its colours
+in the scheme its direction was born in (the first word of its second line); in the other scheme
+each colour takes the same role from that scheme's ramp. The three always differ in accent, in body
+face and in composition.
+Directions dealt in the last four deals on this machine are avoided;
 when the rest cannot fill a deal, the first line of the output names the ones it reused. Among the
 rest, the ones dealt longest ago come first, then the set with the most different shells, then the
 most different density and depth. Compositions rotate the same way, the ones dealt longest ago

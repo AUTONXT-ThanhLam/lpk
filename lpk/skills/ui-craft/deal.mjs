@@ -70,7 +70,6 @@ function deal(entries, { count, recent, lastDealt }) {
   const picked = [];
   const visit = (from, reused, age, spread) => {
     if (picked.length === count) {
-      if (count > 1 && new Set(picked.map((p) => p.theme)).size < 2) return;
       const shells = new Set(picked.map((p) => p.shell)).size;
       if (!best || [best.reused - reused, best.age - age, shells - best.shells, spread - best.spread].find((d) => d !== 0) > 0) best = { picked: [...picked], reused, age, shells, spread };
       return;
@@ -95,14 +94,15 @@ const arrange = (c) => [
   `layout: ${c.layout}`,
   `above the fold at 1440x900: ${c.fold}`,
 ].join('\n');
+const other = (e) => (e.theme === 'light' ? 'dark' : 'light');
 const describe = (e) => [
   `## ${e.name} (${e.id})`,
   `${e.theme}, ${e.hue} accent, ${e.density}, depth ${e.depth}, shell ${e.shell}`,
   `move: ${e.move}`,
   `keep out: ${e.keep_out}`,
   `ramp (${e.theme}): ${Object.entries(e.ramp).map(([k, v]) => `${k} ${v}`).join(', ')}`,
-  `ramp (other scheme): ${Object.entries(e.dark).map(([k, v]) => `${k} ${v}`).join(', ')}`,
-  `accent: ${e.accent.name} ${e.accent.value} (text on it ${e.accent.on}; other scheme ${e.accent.dark}, text on it ${e.accent.on_dark}); ${e.accent.use}`,
+  `ramp (${other(e)}): ${Object.entries(e.dark).map(([k, v]) => `${k} ${v}`).join(', ')}`,
+  `accent: ${e.accent.name} ${e.accent.value} in ${e.theme} (text on it ${e.accent.on}), ${e.accent.dark} in ${other(e)} (text on it ${e.accent.on_dark}); ${e.accent.use}`,
   `type: ${face(e.type.body)}${e.type.display ? `, display ${face(e.type.display)}` : ''}; weights ${e.type.weights.join(' and ')}; body ${e.type.body_px} px, title ${e.type.title_px} px${e.type.stands_in_for ? `; stands in for ${e.type.stands_in_for}` : ''}`,
   `radius: control ${e.radius.control} px, card ${e.radius.card} px`,
   `look at: ${e.live.join(' ')}`,
@@ -127,7 +127,7 @@ const history = readHistory();
 const recent = new Set(history.slice(-RECENT_DEALS).flatMap((h) => h.ids));
 const lastDealt = new Map(history.flatMap((h, i) => h.ids.map((id) => [id, i])));
 const picked = deal(LIBRARY.directions, { count, recent, lastDealt });
-if (!picked) fail(`the library holds no ${count} directions with distinct accents and distinct body faces in both schemes`, 1);
+if (!picked) fail(`the library holds no ${count} directions with distinct accents and distinct body faces`, 1);
 const lastArranged = new Map(history.flatMap((h, i) => (h.compositions ?? []).map((id) => [id, i])));
 const lastUsed = (c) => lastArranged.get(c.id) ?? -1;
 const arrangements = options.kind ? shuffle(COMPOSITIONS.filter((c) => c.kinds.includes(options.kind))).sort((a, b) => lastUsed(a) - lastUsed(b)) : [];
