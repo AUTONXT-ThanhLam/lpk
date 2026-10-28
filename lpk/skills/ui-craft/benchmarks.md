@@ -14,9 +14,8 @@ Anything you rely on and did not read here, open the live page and measure it wi
   region.
 - **Tight, light display type on marketing pages.** Hero sizes 48-64 px with negative tracking
   (-0.02em to -0.06em), weight 300-600. Titles inside the app are 13-28 px, weight 500-600.
-- **Hover is a colour change.** Background or text colour only, no lift, no shadow change,
-  0.15-0.2 s on most (Linear 0.16 s, Vercel 0.15 s, Raycast 0.2 s, Notion 0.2 s, Figma 0.18 s),
-  0.3 s at the slow end (Stripe, Mercury, Attio). Easing is an ease-out curve.
+- **Hover is a colour change.** Background or text colour only, no lift, no shadow change; its
+  time and curve are Emil's (`SKILL.md` section 6), not what these sites measure.
 - **Hairlines, not shadows.** Cards separate by a 1 px ring (dark: white at 6-12%, light: ink at
   8-16%). Real shadows appear only on layers that float (menu, dialog, panel). The ring is too
   faint to be a control's only edge: an input needs a 3:1 border or a filled background.
@@ -56,10 +55,11 @@ Anything you rely on and did not read here, open the live page and measure it wi
   people who come now and then.
 - **Radius.** 4-8 px reads precise (Stripe, Clerk, Raycast); 10-16 px reads friendly (Attio,
   Notion, Mercury); full pills are for the primary call to action and status chips only.
-- **Colour modes.** Few products follow the OS setting, but the app does: `prefers-color-scheme` by default (`apple.md` section 3). If the app has both modes, derive dark from
+- **Colour modes.** Few products follow the OS setting, but the app does: `prefers-color-scheme` by default (`SKILL.md` section 5). If the app has both modes, derive dark from
   the same ramp (Linear: page rgb(8,9,10), raised rgb(16,17,18), ring white at 8%).
 - **Type.** An Inter-family face for tools (Linear, Raycast, Attio); a brand sans for products that
-  sell trust or craft (Stripe, Mercury, Figma). Never the system stack.
+  sell trust or craft (Stripe, Mercury, Figma). The stack of `SKILL.md` section 2 starts with the
+  system face and loads Inter Variable behind it.
 
 ## What the enterprise design systems agree on
 
@@ -75,6 +75,4 @@ Read from the public documentation of GitHub Primer, Atlassian, IBM Carbon and M
   Table rows 24, 32, 40, 48, 64 with 40 as default; the toolbar and pagination match the row.
 - **Elevation.** A static card is a border or a surface step; shadow is for what floats or is
   dragged (Atlassian).
-- **Motion.** Interactions 50-150 ms, transitions 150-400 ms (Atlassian); 70 and 110 ms for
-  micro-interactions, 150-240 ms for expansion (Carbon). Frequent motion is the shortest.
 - **One primary button** per page or region; the label is a verb and a noun in sentence case.
