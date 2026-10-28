@@ -1,25 +1,31 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { fontVerdict } from '../skills/ui-craft/fontverdict.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT = join(ROOT, 'skills', 'ui-craft');
-const docs = [['agents/designer.md'], ['agents/ui-reviewer.md'], ['skills/ui-craft/SKILL.md']]
-  .map(([p]) => [p, readFileSync(join(ROOT, p), 'utf8')]);
+const docs = ['agents/designer.md', 'agents/ui-reviewer.md', 'skills/ui-craft/SKILL.md', 'skills/ui-craft/motion.md']
+  .map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]);
+const basenames = new Set(readdirSync(ROOT, { recursive: true }).map((p) => basename(p)));
 
-const FILE = /`((?:assets\/)?[A-Za-z0-9_-]+\.(?:md|mjs|css|json))`/g;
-const inKit = (name) => name.startsWith('assets/') || existsSync(join(KIT, name)) || KIT_FILES.includes(name);
-const KIT_FILES = ['SKILL.md', 'apple.md', 'motion.md', 'parts.md', 'ux.md', 'benchmarks.md', 'frames.mjs', 'audit.mjs', 'page.mjs'];
+const FILE = /`((?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:md|mjs|css|json))`/g;
+const missing = (name) => {
+  if (name.includes('/')) {
+    const own = [KIT, ROOT].filter((r) => existsSync(dirname(join(r, name))));
+    return own.length > 0 && !own.some((r) => existsSync(join(r, name)));
+  }
+  const stem = name.replace(/\.[a-z]+$/, '');
+  return !basenames.has(name) && stem !== stem.toUpperCase();
+};
 
-test('every ui-craft file the designer, the reviewer and SKILL.md name exists in the kit', () => {
-  assert.ok(existsSync(join(KIT, 'assets', 'apple.css')), 'SKILL.md and motion.md send the designer to assets/apple.css');
+test('every file the designer, the reviewer, SKILL.md and motion.md name exists in the plugin', () => {
   for (const [file, text] of docs) {
-    const named = [...new Set([...text.matchAll(FILE)].map((m) => m[1]))].filter(inKit);
-    for (const name of named) assert.ok(existsSync(join(KIT, name)), `${file} names ${name}, which is not in skills/ui-craft`);
+    const named = [...new Set([...text.matchAll(FILE)].map((m) => m[1]))];
+    for (const name of named) assert.ok(!missing(name), `${file} names ${name}, which is not in the plugin`);
   }
 });
 
