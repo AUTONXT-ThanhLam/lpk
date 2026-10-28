@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { ENV, lens, lpk, repoWith, sh, write } from './gates-env.mjs';
 import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
 import { meter, total } from '../lib/meter.mjs';
+import { appendRecord } from '../lib/records.mjs';
 import { status } from '../lib/status.mjs';
 
 const MIN = 60_000;
@@ -182,11 +183,10 @@ test('the step follows the run\'s records from understanding to delivery, and th
   // The quick lane owes its whole fixed set on the one commit: lib/owed.mjs QUICK is the code
   // reviewer and the bug hunter, each once, so two runs, none of them started yet.
   assert.deepEqual(step(), ['review', { lensesDone: 0, lenses: 0, owed: 2, raised: 0, confirmed: 0, dropped: 0, verifiersRunning: 0 }]);
-  // The net ran: each lens of the set is a planted agent transcript on the range, the bug hunter
-  // with the finding it raised. (The headless `code-review`/`security-review` children went with the
-  // `claude` dependency, so no record of theirs is valid any more.)
-  const net = (r, cr, bh, findings) => { lens(S, cr, 'lpk:code-reviewer', r, { findings: [] }); lens(S, bh, 'lpk:bug-hunter', r, { findings }); };
-  net(range, 'cr1', 'bh1', [{ claim: 'a must stay odd' }]);
+  // The net ran: `lpk code-review` recorded its run on the range, and the bug hunter is a planted
+  // agent transcript with the finding it raised.
+  const net = (r, bh, findings) => { appendRecord(repo, { kind: 'code-review', range: r, exit: 0, findings: 0, ids: [] }); lens(S, bh, 'lpk:bug-hunter', r, { findings }); };
+  net(range, 'bh1', [{ claim: 'a must stay odd' }]);
   addFinding(repo, { from: 'lpk:bug-hunter', agentId: 'bh1', at: range, claim: 'a must stay odd', repro: 'r', kind: 'defect', severity: 'important' });
   ruleOn(repo, { id: 'F1', verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'repro fails', by: 'lpk:verifier' });
   assert.deepEqual(step(), ['fix', { left: ['F1'], fixed: 0, delta: 'not yet' }]);
@@ -197,7 +197,7 @@ test('the step follows the run\'s records from understanding to delivery, and th
   assert.deepEqual(step(), ['fix', { left: [], fixed: 1, delta: 'owed' }]);
   // The fix delta gets its own review, as `lpk review start` says it does, and both lenses run on it.
   const delta = `${range.split('..')[1]}..${fix}`;
-  net(delta, 'cr2', 'bh2', []);
+  net(delta, 'bh2', []);
   ok(lpk(repo, S, 'review', 'start', delta));
   assert.deepEqual(step(), ['prove', { scenarios: { passed: 0, total: 1 }, requirements: { proved: 0, total: 0 } }]);
   ok(lpk(repo, S, 'verify'));
@@ -218,9 +218,9 @@ test('a quick run that needed no fix leaves Design and Fix off its track', () =>
   sh(repo, 'commit', '-qam', 'Set a to 2');
   const range = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
   ok(lpk(repo, S, 'review', 'start', range));
-  // Both lenses of the quick lane's set ran clean on the range: planted transcripts, as the band
-  // reads them; the headless CLI children this fixture used to record are gone with `claude`.
-  lens(S, 'crq', 'lpk:code-reviewer', range, { findings: [] });
+  // Both lenses of the quick lane's set ran clean on the range: a code-review record and a planted
+  // bug-hunter transcript, as the band reads them.
+  appendRecord(repo, { kind: 'code-review', range, exit: 0, findings: 0, ids: [] });
   lens(S, 'bhq', 'lpk:bug-hunter', range, { findings: [] });
   addFinding(repo, { from: 'main', at: range, claim: 'a may be odd', repro: 'r', kind: 'defect', severity: 'nit' });
   ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'disproved', evidence: 'no caller reads a', by: 'main' });

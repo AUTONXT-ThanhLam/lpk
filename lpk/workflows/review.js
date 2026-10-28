@@ -1,12 +1,12 @@
 export const meta = {
   name: 'review',
-  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, bug hunter, security, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
+  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, bug hunter, security, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
   whenToUse: 'Step 4 of the lpk skill, on the committed and verified change after `lpk review start`; with args.delta, the one review of a fix round',
   phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per finding, as each lens returns' }],
 }
 
 // args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
-//   testCmd, e2e, proverGroups, bugGroups, mutantAfterProver, maxParallel, stallMs, delta }
+//   testCmd, e2e, proverGroups, bugGroups, mutantAfterProver, maxParallel, stallMs, lpk, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
 //   twice runs twice.
@@ -17,12 +17,15 @@ export const meta = {
 //   share a database or a port. The mutant reruns the tests over and over and must never share
 //   either with the prover, so it then starts once the prover has answered; without it, at once.
 // - maxParallel: how many agents run at once (`lpk slot`); stallMs: { <lens>|verifier: ms }.
-// - delta: { range, raisedBy, docsOnly } for a fix round: one bug hunt on the delta (none when
+// - lpk: how to call the lpk CLI (default 'lpk'); the code-review relays may run only its
+//   `code-review` command.
+// - delta: { range, raisedBy, docsOnly } for a fix round: one code review on the delta (none when
 //   docsOnly) plus the lenses that raised the fixed findings (their ledger `from`).
-// Every finding lands in the run's ledger, each lens adding its own with finding_add. The ledger is
-// the record; what this returns is a summary of it. Nothing here reads
+// Every finding lands in the run's ledger: lpk agents add theirs with finding_add, `lpk code-review`
+// adds its child's. The ledger is the record; what this returns is a summary of it. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every lens and verifier that already finished.
 const a = args || {}
+const LPK = a.lpk || 'lpk'
 const missing = ['repo', 'base', 'commit', 'range', 'bundle', 'request', 'scenarios'].filter((k) => !a[k])
 if (!a.delta && !(a.lenses || []).length) missing.push('lenses')
 if (a.delta && !a.delta.range) missing.push('delta.range')
@@ -38,6 +41,7 @@ const BATCH = covered('files', { type: 'object', properties: { path: S, status: 
 const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, changes: S }, required: ['id', 'status'] })
 // The prover's findings are its FAIL and NOT PROVED results, each carrying its ledger id: no second list.
 const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: S, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
+const RECORD = { type: 'object', properties: { record: { type: 'string' }, ids: { type: 'array', items: { type: 'string' } }, error: { type: 'string' } }, required: ['record', 'ids'] }
 const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
   evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S, reach: { type: 'string', enum: ['user', 'merge', 'neither'] } }, required: ['verdict', 'evidence'] }
@@ -69,6 +73,12 @@ const stall = (name) => (a.stallMs && a.stallMs[name]) || undefined
 const call = (prompt, opts) => gate(() => agent(prompt, opts))
 
 const typed = (type, schema, ask) => (lens) => (label) => call(`${change}\n${ask}`, { label, phase: 'Review', agentType: `lpk:${type}`, schema, stallMs: stall(lens) })
+const codeReview = (lens) => (label) => {
+  const cmd = `${LPK} code-review --repo ${a.repo} --model sonnet --effort high${a.delta ? ` --range ${at}` : ''}`
+  return call(`${change}\nRun exactly this command, with a Bash timeout of 600000 ms, and wait for it:\n${cmd}\nIts last line names the record file and the ledger ids it added. Return that record path and those ids exactly as printed. If it exits non-zero, also return its error line as error.`,
+    { label, phase: 'Review', schema: RECORD, model: 'haiku', effort: 'low', bashCommandClamp: [`Bash(${LPK} code-review *)`], stallMs: stall(lens) || 660000 })
+    .then((o) => o && { findings: o.ids.map((id) => ({ id })), record: o.record, error: o.error })
+}
 const skippedOf = (rows, key, why) => rows.filter((r) => r.status === 'skipped').map((r) => `did not review ${r[key]}${r[why] ? `: ${r[why]}` : ''}`)
 
 // Split an array into groups of at most size items. Returns [] when input is empty.
@@ -134,6 +144,7 @@ const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterPr
 const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))
 const LENSES = {
   techlead: typed('techlead', FINDINGS, 'Review this commit as the team\'s tech lead would before approving the merge: return each finding that would block it, with a verdict for every rule whose glob matches a changed file.'),
+  'code-review': codeReview,
   'code-reviewer': typed('code-reviewer', FINDINGS, 'Review only this commit\'s diff, against the base\'s REVIEW.md and the request above: name the rule broken, the intent contradicted, the case no test in the diff covers, and the leftover the diff creates.'),
   security: typed('security', FINDINGS, 'Find the security holes an attacker can exploit through this commit.'),
   'bug-hunter': (lens) => (label) => {
@@ -154,9 +165,9 @@ const LENSES = {
 
 // A fix round owes one code review on the delta (none for a docs-only delta) and the lenses that
 // raised the fixed findings.
-const lensOf = (from) => String(from || '').replace(/^lpk:/, '')
+const lensOf = (from) => (String(from || '').startsWith('code-review:') ? 'code-review' : String(from || '').replace(/^lpk:/, ''))
 const owed = a.delta
-  ? [...new Set([...(a.delta.docsOnly ? [] : ['code-reviewer']), ...(a.delta.raisedBy || []).filter((f) => f !== 'main').map(lensOf)])]
+  ? [...new Set([...(a.delta.docsOnly ? [] : ['code-review']), ...(a.delta.raisedBy || []).filter((f) => f !== 'main').map(lensOf)])]
   : a.lenses
 const unknown = owed.filter((l) => !LENSES[l])
 if (unknown.length) return { error: `unknown lens ${unknown.join(', ')}; lenses are ${Object.keys(LENSES).join(', ')}` }
@@ -206,7 +217,7 @@ const results = await pipeline(runs, (r) => graded(r).then((out) => { if (r.lens
   const toVerify = fs.filter((f) => f.id && !gap(f))
   return parallel(toVerify.map((f) => () => verify(r.label)(f))).then((verdicts) => ({
     lens: r.label, ids, verdicts: verdicts.filter(Boolean), unrecorded, missed: out.missed || [],
-    ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: fs.filter((f) => f.id && gap(f)).map((f) => f.id) } : {}),
+    ...(out.record ? { record: out.record } : {}), ...(out.results ? { scenarios: out.results } : {}), ...(r.lens === 'mutant' ? { testGaps: fs.filter((f) => f.id && gap(f)).map((f) => f.id) } : {}),
   }))
 })
 proved()
@@ -225,5 +236,5 @@ return {
   scenarios: done.flatMap((x) => x.scenarios || []),
   ungraded: done.filter((x) => x.ungraded).map((x) => `${x.lens}: ${x.ungraded}`),
   notCovered: done.flatMap((x) => [...(x.missed || []).map((m) => `${x.lens}: ${m}`), ...(x.unrecorded || []).map((u) => `${x.lens} returned a finding it never added to the ledger: ${u}`)]),
-  lenses: done.map((x) => ({ lens: x.lens, ...(x.ungraded ? { ungraded: x.ungraded } : { ids: x.ids }) })),
+  lenses: done.map((x) => ({ lens: x.lens, ...(x.ungraded ? { ungraded: x.ungraded } : { ids: x.ids }), ...(x.record ? { record: x.record } : {}) })),
 }

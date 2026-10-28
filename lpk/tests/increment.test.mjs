@@ -27,7 +27,7 @@ test('a new run is at the increment bar: it owes two lenses, lists a confirmed f
   const S = 'inc';
   const repo = incrementRun('inc', S);
   assert.equal(status(repo, S).bar, 'increment');
-  assert.deepEqual(owedLenses(repo, S).sort(), ['bug-hunter', 'code-reviewer']);
+  assert.deepEqual(owedLenses(repo, S).sort(), ['bug-hunter', 'code-review']);
   confirm(repo, 'a long name is cut off in the tooltip');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds[\s\S]*known limits of the increment bar[^\n]*F1/m);
   assert.match(lpk(repo, S, 'report').stdout, /Known limits, not fixed[^\n]*\n- F1 /);
