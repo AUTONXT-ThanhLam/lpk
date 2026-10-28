@@ -8,7 +8,8 @@ import { readLedger, ledgerFile } from './findings.mjs';
 import { defaultBranch, git, repoName } from './git.mjs';
 import { pluginManifest } from './host.mjs';
 import { meter } from './meter.mjs';
-import { readRecords } from './records.mjs';
+import { designRounds } from './phase.mjs';
+import { readDecisions, readRecords } from './records.mjs';
 import { readRun, runDir } from './run.mjs';
 import { lensRuns } from './transcripts.mjs';
 
@@ -68,7 +69,8 @@ export function runRow(repo, extra = {}) {
   }
   let version = '';
   try { version = JSON.parse(readFileSync(pluginManifest(), 'utf8')).version; } catch { /* no manifest */ }
-  const reviewStarts = records.filter((r) => r.kind === 'review-start').length;
+  const reviewStarts = records.filter((r) => r.kind === 'review-start');
+  const designReviews = designRounds(readDecisions(repo, { run: run.id })).map(({ at: _at, ...round }) => round);
   // Where the run's own files sit, named in the row: the ledger this run wrote its findings into, and
   // the repo's `.git/lpk` record directory that holds it (and, once a later run archives it, the
   // ledger under `runs/<id>/`). Without them a row says nothing about where to read the run again.
@@ -80,7 +82,7 @@ export function runRow(repo, extra = {}) {
     files: base ? git(['diff', '--name-only', base, head], repo).split('\n').filter(Boolean) : [],
     findingFiles: [...new Set(findings.map((f) => f.file).filter(Boolean))],
     yield: yieldOf(findings.filter((f) => f.kind !== 'test-gap')), testGaps: findings.filter((f) => f.kind === 'test-gap').length,
-    fixRounds: Math.max(0, reviewStarts - 1), verifies: records.filter((r) => r.kind === 'verify').length,
+    reviewStarts: reviewStarts.length, fixRounds: Math.max(0, new Set(reviewStarts.map((r) => r.tree)).size - 1), designRounds: designReviews, verifies: records.filter((r) => r.kind === 'verify').length,
     lenses, agents, ...extra,
   };
 }

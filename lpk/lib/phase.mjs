@@ -24,14 +24,16 @@ const keyOf = (type) => String(type || '').split(':').pop();
 const isNet = (r) => r.id !== 'main' && (['Review', 'Verify'].includes(r.workflowPhase) || LENSES.has(keyOf(r.type)) || /^(Code|Security) reviewer$/.test(r.title));
 const ROUND = /^design review round (\d+): (\w+), (\d+)\/(\d+)\/(\d+)/i;
 
-// The newest design review round recorded with `lpk decide "design review round <n>: <verdict>,
-// <High>/<Medium>/<Low>"`, as design.md tells the Captain to record it.
-export function designRound(decisions) {
-  const d = [...decisions].reverse().find((x) => ROUND.test(x.what || ''));
-  if (!d) return null;
-  const m = ROUND.exec(d.what);
-  return { round: Number(m[1]), verdict: m[2], high: Number(m[3]), medium: Number(m[4]), low: Number(m[5]), at: d.at };
+// Every design review round recorded with `lpk decide "design review round <n>: <verdict>,
+// <High>/<Medium>/<Low>"`, as design.md tells the Captain to record it, oldest first.
+export function designRounds(decisions) {
+  return decisions.flatMap((d) => {
+    const m = ROUND.exec(d.what || '');
+    return m ? [{ round: Number(m[1]), verdict: m[2], high: Number(m[3]), medium: Number(m[4]), low: Number(m[5]), at: d.at }] : [];
+  });
 }
+
+export const designRound = (decisions) => designRounds(decisions).at(-1) ?? null;
 
 const gate = (rows, name) => rows?.find((r) => r.gate === name);
 const holds = (rows, name) => Boolean(gate(rows, name)?.holds);
