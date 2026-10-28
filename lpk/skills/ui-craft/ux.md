@@ -29,7 +29,7 @@ keystrokes from opening the app to done.
 ## 3. Make mistakes cheap
 
 - A reversible action does it and offers Undo in a toast that stays long enough to read and
-  reach, pauses on hover and focus, is reachable by keyboard and is announced (`role="status"`).
+  reach, pauses on hover and focus, is reachable by keyboard and is announced (`role="status"`). An error or anything the person must act on never lives in a toast that dismisses itself.
   Asking "are you sure?" is for what cannot be undone, and its button names the consequence
   ("Delete 3 runs"). A modal is for lost work, an irreversible action, missing required
   information or a wizard; a field error fixable in place or a piece of news never opens one.
@@ -42,7 +42,7 @@ keystrokes from opening the app to done.
 - An empty state holds one sentence about what will live here and the one action that fills it
   (or a way to see sample data). No illustration is needed; a clear sentence and a button is enough.
 - Onboarding is a short checklist of at most five real steps with progress, shown where the work
-  happens, dismissible, and gone when done.
+  happens, dismissible, reachable again from help or settings, and gone when done.
 
 ## 5. Forms
 
@@ -102,7 +102,7 @@ app's tokens; do not rewrite their behaviour.
   Navigation labels are keywords, an icon always comes with its label, and the main navigation and
   the primary action are always visible, never behind hover. Disclosure goes two levels deep at
   most, and the trigger says what is behind it.
-- Targets are at least 24x24 px (WCAG 2.5.8).
+- Targets are at least 24x24 px (WCAG 2.5.8), and 44 px under `@media (pointer: coarse)` (`apple.md` section 5).
 
 ## 10. Worst-case data
 

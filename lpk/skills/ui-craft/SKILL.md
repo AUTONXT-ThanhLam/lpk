@@ -1,6 +1,6 @@
 ---
 name: ui-craft
-description: What makes a working screen look designed and easy to use instead of merely clean - benchmarks from high-end SaaS, the face of the product, depth, a loaded typeface, motion recipes, the UX of the job, and a scored look-and-fix loop. Load it before you design or build a screen, or review one, next to design-taste-frontend. The designer and ui-reviewer agents load it.
+description: What makes a working screen look designed and easy to use instead of merely clean - benchmarks from high-end SaaS, Apple's craft translated to the web, the face of the product, depth, a loaded typeface, motion recipes, the UX of the job, and a scored look-and-fix loop. Load it before you design or build a screen, or review one, next to design-taste-frontend. The designer and ui-reviewer agents load it.
 ---
 
 # ui-craft: from clean to designed
@@ -14,8 +14,9 @@ leave out. This file says what to put in. Each section ends in something a scree
 
 The bar is the products of large, well-run companies, the high-end SaaS a person pays for because it
 is a pleasure to use. The owner may have no words for it: you carry the judgement. Calm, precise,
-dense where the work needs it; never luxury, editorial or showy. Read `ux.md` in this skill's
-directory. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
+dense where the work needs it; never luxury, editorial or showy. Read `ux.md` and `apple.md` in this skill's
+directory: `apple.md` holds Apple's eight questions and the rules for forgiveness, reach, controls, patterns and motion that every
+screen answers to, translated to the web. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
 references are its own screens. An app with none, or a screen whose owner asked for a new look, takes
 its look from a dealt direction (`directions.md`), and the references are that direction's `look
 at` pages. Either way open two of them (one when a direction names only one) in the lpk Chrome, screenshot each product screen into the
@@ -39,7 +40,8 @@ radius, a shadow or never `#fff` on `#000`. The tells never give way.
 3. **The one hue**, used on the main data and on what needs the person, at 5% of the pixels or less.
    Pick it from the product, not from the default blue: write its name and its value.
 4. **The typeface, really loaded**: install it (`@fontsource-variable/<name>` or the app's own) and
-   import it. A system stack or an unloaded name is a failed build. Choose a body face and, when the
+   import it. A system stack or an unloaded name is a failed build; `system-ui` is only the last
+   fallback after the loaded face. Choose a body face and, when the
    screen has display-size figures or titles, a second one; the taste skill's `type.md` lists pairs.
 5. **The thing only this product has**: a mark and name in the shell, and one element built from its
    own objects (a run's step trail, a deploy's commit, a queue's age), drawn rather than listed.
@@ -64,6 +66,8 @@ first rows, and the right half is never blank because nothing was selected.
 - A static card is a surface step or a hairline ring (ink at 8-10% on light, white at 6-12% on
   dark) and carries no shadow. Shadows belong to layers that float: menus, dialogs, popovers and
   what is being dragged (`0 8px 24px rgb(0 0 0 / .08)`). Never a ring and a shadow on one element.
+  Layers are opaque; the one translucent exception is a sticky header or floating toolbar over
+  scrolling content, with an opaque fallback (`apple.md` section 4).
 - A control (input, select, checkbox, segmented control) whose edge is its only cue has a border at
   3:1 against its surface (about ink at 50%) or a filled background that contrasts with it. The
   card hairline above is too faint for it (WCAG 1.4.11).
@@ -80,6 +84,7 @@ first rows, and the right half is never blank because nothing was selected.
 
 ## 4. Type that carries the hierarchy
 
+- Sizes are written in `rem`, so the browser's text size reaches them and the screen survives 200% zoom.
 - Three sizes and two weights (450 and 600) on a screen. Body and controls 13-14 px with a line
   height near 1.4 (Carbon, Atlassian, Fluent and Primer all set 14/20); the smallest text 12 px;
   section headings 14-16 px at 600; a page title 20-28 px. Display sizes above 32 px are for brand
@@ -119,7 +124,7 @@ const ease = [0.22, 1, 0.36, 1] as const
   highlight glides only between rows of the same height; when a row can expand (a question, a
   form) the sheet resizes over the text of its neighbours.
 - **Panel swap**: crossfade with an 8 px shift in the direction of travel, 180 ms.
-- **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover)`, one
+- **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover) and (pointer: fine)`, one
   small response for every control; a press also takes `scale(0.97)` in 100-160 ms. How often it
   happens sets the duration: motion a person triggers dozens of times a day (row hover, menu open,
   tab switch, selection) stays at 150 ms or less; an action started from the keyboard, or repeated
@@ -136,7 +141,7 @@ const ease = [0.22, 1, 0.36, 1] as const
   layout shift.
 - **Where**: transform and opacity only (a list item's collapsing `height` is the one exception),
   120-240 ms for an entrance and 80-150 ms for an exit (the table in `motion.md`), `ease` above or
-  a spring with damping that settles without overshoot, and never `transition: all`. An exit is
+  a spring with damping that settles without overshoot (`bounce: 0`, for the release of a drag), and never `transition: all`. An exit is
   faster than its entrance. One focal motion at a time. No bounce, no stagger above eight items
   (30-80 ms apart), no looping decoration, and error text is never animated.
 
@@ -148,7 +153,7 @@ print: `lighthouse_audit` in `snapshot` mode on the page (every failing accessib
 as side stripes, gradient text, nested cards and low contrast: fix each, or write why it does not
 apply; its entries about body text near 16 px, line height 1.5 and Inter or Geist as the face do not
 apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which
-reads the live page and prints spacing, radii and control heights off the scale, the font sizes in
+reads the live page (run it again with `--width 720` for 200% zoom of a 1440 design) and prints spacing, radii and control heights off the scale, the font sizes in
 use, and every Tab stop (exit 2 on clipped text, a control covered by another element, overlapping
 text, page overflow, a face that did not load, or a Tab stop with no focus ring). Short uppercase labels and the rest of the tells list in the agent file
 still run by eye. After the first build, capture 1440x900 and 390x844 in light and
@@ -165,6 +170,7 @@ dark, and the selected, empty and loading states. Score each 1-5 and write the s
 | Task flow | the primary job meets its step target, counted in the browser (`ux.md`) |
 | Feedback and recovery | each action answers at once, each mistake is undoable or guarded, each error says what to do |
 | Clarity | labels, buttons and messages need no explanation, and the keyboard reaches everything |
+| Reach | at 200% zoom nothing clips; a finger hits every control; dark, high contrast and reduced motion each hold (`apple.md`) |
 
 Any score under 4 is fixed first, worst first, then recaptured. Stop at three rounds or when every
 score is 4 or more, and report the final scores with the screenshot paths. A 3 you left is named in the

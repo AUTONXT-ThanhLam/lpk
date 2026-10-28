@@ -1,6 +1,6 @@
 # motion: overlay recipes
 
-Extends section 5 of `SKILL.md`. Read it when the screen has a popover, menu, dialog, toast or
+Extends section 5 of `SKILL.md` and section 7 of `apple.md`. Read it when the screen has a popover, menu, dialog, toast or
 tooltip. The app's own system wins where it speaks.
 
 ## 1. First decide whether it moves at all
@@ -18,7 +18,8 @@ tooltip. The app's own system wins where it speaks.
 ## 2. Values every recipe shares
 
 - Easing: `cubic-bezier(0.22, 1, 0.36, 1)` (the `ease` of `SKILL.md`), fast at the start. Never
-  `ease-in` on an entrance.
+  `ease-in` on an entrance. A drawer or sheet slides on `cubic-bezier(0.32, 0.72, 0, 1)`; a thing
+  that moves while staying on screen uses `cubic-bezier(0.77, 0, 0.175, 1)`.
 - Scale starts at 0.95 (tooltip 0.97, dialog 0.96) with opacity 0, never at `scale(0)`.
 - Enter 120-200 ms; exit about 60% of the enter, since the person has already moved on.
 - Only `transform` and `opacity` move, each named in `transition`.
@@ -37,6 +38,7 @@ tooltip. The app's own system wins where it speaks.
 | Dialog | centre | 0.96, backdrop opacity only | 180 ms | 120 ms |
 | Toast | its edge | none, 12 px slide | 200 ms | 150 ms |
 | Tooltip | trigger | 0.97 | 120 ms | 80 ms |
+| Drawer, sheet | its edge, 100% of its own height | none | 240 ms | 150 ms |
 
 ## 3. With the `motion` package
 
