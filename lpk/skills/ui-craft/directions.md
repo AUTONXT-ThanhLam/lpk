@@ -75,7 +75,8 @@ highest on Focal point, Hierarchy and Identity (`SKILL.md` section 6) and logs w
 its composition, which lays out the first screen. The direction fills the five lines of `SKILL.md`
 section 1:
 
-- the ground is its ramp, in both schemes;
+- the ground is its ramp, in both schemes, and the app opens in the scheme its sketch used: light,
+  a dark-born direction included, unless the brief or the app fixes dark;
 - the hue is its accent, used where its `use` says; when the product has a colour of its own world
   (the green of a forest, the orange of a kiln), that hue may take the accent's place at the same
   lightness and role, written in the notes;
@@ -94,7 +95,8 @@ The slice that builds the app's shell writes `DESIGN.md` at the app's root from 
 direction; every other slice reads it and never writes it. Its format is a YAML front matter between
 `---` lines (`name`, then `colors`, `typography`, `rounded` and `spacing` maps whose values are hex
 colours, `{fontFamily, fontSize}` pairs and px sizes), followed by `## Overview` and `## Colors`
-sections in two or three plain sentences; the overview names the direction id. Run
+sections in two or three plain sentences; the overview names the direction id and the scheme the
+app opens in. Run
 `npx -y @google/design.md@0.4.0 lint DESIGN.md` until it exits 0. That proves the file is well
 formed and nothing more. The app's tokens and `DESIGN.md` say the same thing, and the next screen
 of this app is built from them, never dealt again.
