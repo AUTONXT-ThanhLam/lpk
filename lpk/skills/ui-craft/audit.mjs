@@ -2,7 +2,7 @@
 import { withPage } from './page.mjs';
 const [url, ...rest] = process.argv.slice(2);
 if (!url) {
-  console.error('usage: audit.mjs <url> [--width 1440] [--scheme light|dark] [--tabs 60] [--space 0,4,8,...] [--radius 0,4,6,...] [--heights 24,28,32,...]');
+  console.error('usage: audit.mjs <url> [--width 1440 (720 is 200% zoom of 1440)] [--scheme light|dark] [--tabs 60] [--space 0,4,8,...] [--radius 0,4,6,...] [--heights 24,28,32,...]');
   process.exit(2);
 }
 const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
@@ -40,6 +40,18 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
     if (/hidden|clip/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 2 && e.textContent.trim() && s.display !== 'inline' && !/auto|scroll/.test(s.overflowY)) clipped.push(sel(e) + ' (height)');
   }
   const ints = all.filter((e) => e.matches(inter));
+  const smallTargets = ints.filter((e) => !(e.matches('a') && getComputedStyle(e).display === 'inline')).filter((e) => {
+    const box = e.matches('input') ? (e.labels && e.labels[0]) || e.closest('label') || e : e;
+    const r = box.getBoundingClientRect();
+    return r.width < 24 || r.height < 24;
+  }).map(sel);
+  const motion = { transitionAll: [], easeIn: [] };
+  for (const e of all) {
+    const s = getComputedStyle(e);
+    if (!s.transitionDuration.split(',').some((d) => parseFloat(d) > 0)) continue;
+    if (s.transitionProperty.split(',').some((p) => p.trim() === 'all')) motion.transitionAll.push(sel(e));
+    if (s.transitionTimingFunction.split(/,(?![^(]*\))/).some((t) => t.trim() === 'ease-in')) motion.easeIn.push(sel(e));
+  }
   for (const e of ints) {
     const r = e.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
     const t = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1));
@@ -57,7 +69,7 @@ const probe = `(${function (spaceScale, radiusScale, heights) {
   return {
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,
     offScaleSpace: bad.space, offScaleRadius: bad.radius, offScaleControlHeight: bad.height,
-    fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10),
+    fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10), smallTargets, transitionAll: motion.transitionAll, easeIn: motion.easeIn,
     interactive: ints.length,
   };
 }})(${JSON.stringify(spaceScale)},${JSON.stringify(radiusScale)},${JSON.stringify(heights)})`;
@@ -78,7 +90,7 @@ const res = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt
 });
 const empty = (v) => (Array.isArray(v) ? v.length === 0 : Object.keys(v).length === 0);
 console.log(JSON.stringify(res, null, 1));
-const fails = ['clipped', 'coveredControls', 'overlappingText', 'tabWithoutVisibleFocus'].filter((k) => !empty(res[k]));
+const fails = ['clipped', 'coveredControls', 'overlappingText', 'tabWithoutVisibleFocus', 'smallTargets', 'transitionAll', 'easeIn'].filter((k) => !empty(res[k]));
 if (res.pageOverflowX > 0) fails.push('pageOverflowX');
 if (res.fonts.some(([, s]) => s !== 'loaded')) fails.push('fonts');
 console.error(fails.length ? 'FAIL: ' + fails.join(', ') : 'ok');
