@@ -254,3 +254,13 @@ test('the owner\'s waiver lands in the run of the repo the question was asked in
   assert.match(context(ask(outside)), /NOT recorded/, 'asked outside both repos, it says so');
   assert.deepEqual([waivers(oneDir), waivers(twoDir)], [1, 0], 'and records nothing');
 });
+
+test('a permission prompt inside a subagent in bypass mode is denied with a way forward; the lead and other modes still see it', () => {
+  const repo = repoWith('unattended', { 'a.txt': 'a\n' });
+  const ask = (extra) => hook('PermissionRequest', 'ask', { session_id: 'unattended', cwd: repo, tool_name: 'Bash', tool_input: { command: 'rm -rf $W/$m' }, ...extra });
+  const denied = ask({ agent_id: 'a1', agent_type: 'lpk:builder', permission_mode: 'bypassPermissions' })?.hookSpecificOutput;
+  assert.equal(denied.decision.behavior, 'deny');
+  assert.match(denied.decision.message, /did NOT run.*\$\{VAR:\?\}/s);
+  assert.equal(ask({ permission_mode: 'bypassPermissions' }), null, 'the lead answers its own prompts');
+  assert.equal(ask({ agent_id: 'a1', agent_type: 'lpk:builder', permission_mode: 'default' }), null, 'outside bypass a person is asked');
+});

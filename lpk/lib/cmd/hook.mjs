@@ -33,6 +33,14 @@ async function pre(raw) {
   return now || s.stripModel(input);
 }
 
+const NOBODY_ANSWERS = 'lpk: nobody answers a permission prompt raised inside a subagent, so this call was denied and did NOT run. '
+  + 'Ask why the step needs it. If it is an rm on a shell variable, rewrite the target as "${VAR:?}" or a literal path and run it again. '
+  + 'If the step is not needed, go on without it. Otherwise finish the rest and report what you wanted to run and why, so the lead decides.';
+
+const unattended = (i) => (i.agent_id && i.permission_mode === 'bypassPermissions'
+  ? { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'deny', message: NOBODY_ANSWERS, interrupt: false } } }
+  : null);
+
 const HOOKS = {
   pre: { gate: true, run: pre },
   commit: { gate: true, run: async (i) => (await lib('hooks')).beforeCommit(i) },
@@ -44,6 +52,7 @@ const HOOKS = {
   start: { run: async (i) => (await lib('card')).resumeCard(i) },
   card: { run: async (i) => (await lib('card')).runCard(i) },
   prompt: { run: async (i) => (await lib('hooks')).onPrompt(i) },
+  ask: { run: async (i) => unattended(i) },
   waive: {
     run: async (i) => {
       const w = await lib('waiver');
