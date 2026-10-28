@@ -236,7 +236,7 @@ body {
   }
 }
 
-[class*="enter-"] {
+:is([class^="enter-"], [class*=" enter-"]) {
   --enter-from: scale(0.95);
   --enter-time: 200ms;
   --enter-ease: var(--ease-out);
@@ -254,7 +254,7 @@ body {
 .enter-panel { --enter-from: translateX(100%); --enter-time: 500ms; --enter-ease: var(--ease-drawer); }
 
 @starting-style {
-  [class*="enter-"] {
+  :is([class^="enter-"], [class*=" enter-"]) {
     opacity: 0;
     transform: var(--enter-from);
   }
@@ -277,7 +277,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [class*="enter-"] {
+  :is([class^="enter-"], [class*=" enter-"]) {
     --enter-from: none;
     --enter-time: 200ms;
     --enter-ease: ease;
