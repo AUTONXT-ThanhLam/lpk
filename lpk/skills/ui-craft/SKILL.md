@@ -1,191 +1,227 @@
 ---
 name: ui-craft
-description: What makes a working screen look designed and easy to use instead of merely clean - benchmarks from high-end SaaS, Apple's craft translated to the web, the face of the product, depth, a loaded typeface, motion recipes, the UX of the job, and a scored look-and-fix loop. Load it before you design or build a screen, or review one, next to design-taste-frontend. The designer and ui-reviewer agents load it.
+description: How to design and review a working screen so it feels like Apple's craft and does not look generated - the pinned Emil Kowalski skills as the one spine, the overrides this kit decides, the face of the product, depth and materials, type, motion, and a scored look-and-fix loop. Load it before you design or build a screen, or review one. The designer and ui-reviewer agents load it.
 ---
 
 # ui-craft: from clean to designed
 
-Removing the generated-UI tells makes a screen correct. It does not make it good: a screen built
-from restraint rules alone comes out quiet, flat, set in the system font, with half the canvas
-empty and nothing moving, and a person judging by feel calls it ugly. The tells list says what to
-leave out. This file says what to put in. Each section ends in something a screenshot shows.
+Emil Kowalski's `apple-design` and `emil-design-eng` are the spine: response, direct manipulation,
+interruptibility, springs, materials, tracking, restraint. This file holds only what they do not
+cover, and one list of the conflicts it decides. A screen that obeys the tells list is correct;
+this is what makes it feel made by someone, and different from the last product you built.
 
-## 0. Study the best before you decide
+## 0. Read first
 
-The bar is the products of large, well-run companies, the high-end SaaS a person pays for because it
-is a pleasure to use. The owner may have no words for it: you carry the judgement. Calm, precise,
-dense where the work needs it; never luxury, editorial or showy. Read `ux.md` and `apple.md` in this skill's
-directory: `apple.md` holds Apple's eight questions and the rules for forgiveness, reach, controls, patterns and motion that every
-screen answers to, translated to the web. An app with a design system (tokens, a `DESIGN.md`, a component library) keeps it: the
-references are its own screens. An app with none, or a screen whose owner asked for a new look, takes
-its look from a dealt direction (`directions.md`), and the references are that direction's `look
-at` pages. Either way open two of them (one when a direction names only one) in the lpk Chrome, screenshot each product screen into the
-proof directory, and write three moves you take from them (a type setting, a row anatomy, a motion,
-a keyboard behaviour), each with the measured value. `benchmarks.md` lists more products by kind of
-screen, for a part of the screen the references do not show.
+1. Run the pin block of `parts.md`. When it prints `not confirmed`, stop and report `not confirmed`
+   with the reason; never design or review from memory of Emil's files.
+2. Read `skills/apple-design/SKILL.md` and `skills/emil-design-eng/SKILL.md` of the clone in full,
+   then what the task needs from the list in `parts.md` (`remove-animations`, `animate`,
+   `review-animations/STANDARDS.md`). Their "Initial Response" and "Review Format (Required)" blocks
+   are the output format of the standalone skills: ignore them.
+3. Precedence: the app's own design system (tokens, a `DESIGN.md`, a component library it ships,
+   and any skill or server that library comes with) wins; then section 1 below; then Emil's files;
+   then `apple.md`, `ux.md`, `benchmarks.md` and `motion.md` of this directory. No other design skill
+   from the session's listing is used, however well its description matches.
+4. Write the job and count it (`ux.md` section 1). Open two products of the kind of screen from
+   `benchmarks.md` in the lpk Chrome, screenshot them into the proof directory and write three
+   moves you take, each with its measured value (a type setting, a row anatomy, a keyboard
+   behaviour). An app with a design system takes its references from its own screens.
+5. Without a design system, start from `assets/apple.css` of this directory (structure only, see
+   section 2); with one, extend its tokens and do not use `apple.css`.
 
-## 1. Decide the face before any code
+## 1. Overrides
 
-Write these five lines into your notes (the proof directory) and check each against the first screenshot.
-In an app with a design system they come from it; with a dealt direction, lines 2-4 come from the
-picked direction (`directions.md` step 4) and only lines 1 and 5 are yours; its dealt composition
-lays out the first screen within section 2. Every value the design
-system or the direction sets wins over a default in sections 1-4, such as a size, a weight, a
-radius, a shadow or never `#fff` on `#000`. The tells never give way.
+Where this list and Emil's files differ, this list wins. Anything not on it follows Emil.
+
+1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins. lpk's "faster than Emil" is dropped.
+2. "Every change moves" is dropped. Frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
+3. Stagger: 30 ms per item or 300 ms total at most. Skeleton or spinner only for loads over 300 ms. Count-up only on a real value change after a user action, not on mount.
+4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
+5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
+6. Type: the R7 stack, tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
+8. Tab switches and in-app route changes are 100+/day: no animation; a panel swap on a frequent surface is opacity at 150 ms or nothing.
+9. No numbers in `designer.md` or `ui-reviewer.md`: they point to `SKILL.md` section 6 and Emil's files; `SKILL.md` section 1 holds this list verbatim.
+7. The app's own design system wins over this kit. Machine tells check (impeccable `detect`) stays as a check, never as taste authority.
+
+## 2. The face
+
+`apple.css` carries structure: three layers, materials with their fallbacks, Emil's curves, press,
+a type scale with tracking, a focus ring, reduced motion, transparency and contrast. It carries no
+identity. Two products built from it must come out with different faces, so before any code derive
+these from the product's own objects (what the person handles, not what the industry looks like)
+and write them into the notes:
 
 1. **The question** the screen answers, in the words of the trade.
-2. **The ground**: one neutral ramp tinted toward the product's world (a warm paper, a cool slate, an
-   ink), never pure grey, never `#fff` on `#000`. Eight steps from ground to ink, named by job
-   (`ground`, `raised`, `line`, `muted`, `ink`).
-3. **The one hue**, used on the main data and on what needs the person, at 5% of the pixels or less.
-   Pick it from the product, not from the default blue: write its name and its value.
-4. **The typeface, really loaded**: install it (`@fontsource-variable/<name>` or the app's own) and
-   import it. A system stack or an unloaded name is a failed build; `system-ui` is only the last
-   fallback after the loaded face. Choose a body face and, when the
-   screen has display-size figures or titles, a second one; the taste skill's `type.md` lists pairs.
-5. **The thing only this product has**: a mark and name in the shell, and one element built from its
-   own objects (a run's step trail, a deploy's commit, a queue's age), drawn rather than listed.
+2. **The hue**: one, on the main data and on what needs the person, 5% of the pixels or less. Take
+   it from the object whose state matters most (a queue's age, a deploy's red, a ledger's
+   balance), name it and give its value. Apple blue or the default of the starter is a failed pick.
+3. **The ground**: a neutral ramp tinted toward the product's world (warm paper, cool slate, ink),
+   never pure grey, never `#fff` on `#000`; the same tint in `ground`, `raised`, `overlay`, `ring`
+   and the ink steps. Set them over the starter's tokens.
+4. **The mark**: a name and a small drawn mark in the shell, built from one of the product's
+   objects, not an icon-set glyph beside a word.
+5. **One signature element** only this product has, built from its own objects and drawn rather
+   than listed: a run's step trail, a deploy's commit line, a queue's age ruler. It sits on the
+   first screen, answers its question, and may carry the one rare-tier motion.
+6. **The typeface**: `font-family: -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui,
+   sans-serif` with `@fontsource-variable/inter` installed and imported (`import
+   "@fontsource-variable/inter"`). An unloaded name is a failed build. A design system's own face
+   replaces it.
 
-## 2. Fill the first screen
+Check against the first screenshot: cover the name and the mark; if the screen could be another
+product's, or the hue and ground are the starter's, redo 2 to 5. When the owner wants a choice of
+looks, build full-size working variants that differ on one named axis (layout, density,
+personality, motion, interaction), named by their direction, with real content; two that differ
+only in accent are one.
+
+## 3. The first screen
 
 Quiet is the start, not the goal. At 1440x900 every block the screen needs shows its header and its
-first rows, and the right half is never blank because nothing was selected.
+first rows with real content, and the canvas is never half blank because nothing was selected.
 
 - A master and detail screen opens with the first item that needs the person selected.
-- The detail answers the question with the object itself: the run's step trail, the diff summary,
-  the thread, a timeline, in that order of preference. Fields in a grid are the last resort.
+- The detail answers the question with the object itself: the step trail, the diff summary, the
+  thread, a timeline, in that order of preference. Fields in a grid are the last resort.
 - Content sets the width: a list column of 360-420 px, a detail of 640-760 px, one left edge each.
   Let the canvas end in a margin or a rail, never in an empty half.
-- A header line that carries real numbers (waiting, running, failed) with the number in tabular
-  figures and ink, sized one step above the labels. It is type, not a tile.
+- A header line carrying real numbers (waiting, running, failed), in tabular figures and ink, one
+  step above the labels. It is type, not a tile.
+- Reading text sets `max-width: 65ch`. The panel swap of master and detail follows override 8.
+- Simple is not bare: if a block can be removed without losing the answer, remove it; if the screen
+  would lose its answer without a block, it shows it.
 
-## 3. Depth without decoration
+## 4. Depth and materials
 
-- Three layers, named: `ground`, `raised` (cards, rows on hover), `overlay` (menus, dialogs). Each is
-  one tone step apart; dark mode steps go lighter as they rise.
+- Three layers, named `ground`, `raised` (cards, rows on hover) and `overlay` (menus, dialogs,
+  sheets), each one tone step apart; in dark mode they step lighter as they rise. All three are
+  visible in the first screenshot, or the screen reads flat.
+- Materials follow override 5. A sidebar or toolbar is the thicker, heavier material, a button or
+  chip the lighter one; a bigger surface gets stronger blur and a deeper shadow than a small one.
+  Every translucent surface has three fallbacks that turn it opaque with a contrasting edge: no
+  `backdrop-filter` support, `prefers-reduced-transparency: reduce`, `prefers-contrast: more`.
+  Content scrolls under floating chrome with a scroll edge (a blur or eased gradient mask), not a
+  divider. Prove it by emulating the three features, not by reading the CSS.
 - A static card is a surface step or a hairline ring (ink at 8-10% on light, white at 6-12% on
-  dark) and carries no shadow. Shadows belong to layers that float: menus, dialogs, popovers and
-  what is being dragged (`0 8px 24px rgb(0 0 0 / .08)`). Never a ring and a shadow on one element.
-  Layers are opaque; the one translucent exception is a sticky header or floating toolbar over
-  scrolling content, with an opaque fallback (`apple.md` section 4).
-- A control (input, select, checkbox, segmented control) whose edge is its only cue has a border at
-  3:1 against its surface (about ink at 50%) or a filled background that contrasts with it. The
-  card hairline above is too faint for it (WCAG 1.4.11).
-- Radius from a scale: controls 4-6 px, cards and menus 8, dialogs and tables up to 12; nothing
-  larger except avatars and status pills. The smaller one sits inside the larger.
-- Spacing steps of 2, 4, 8, 12, 16, 24, 32, 40, 48, 64: every padding and gap is one of them.
-  Related things 8-12 apart, groups 24-40, sections of an app screen 24-48.
-- Controls that share a row share a height from 24, 28, 32, 40, 48 px (32 is the default).
-- Selected means two things at once (surface step and ink), never a coloured side stripe. Hover,
-  pressed and selected are each one tone step from the resting state.
-- A disabled control sets its reduced contrast, `cursor: not-allowed` and the native `disabled`
-  attribute together, and says why on hover or beside it. A state change never changes
-  `border-width`, padding or height, so nothing around the control shifts.
+  dark) with no shadow; shadows belong to what floats or is dragged. Never a ring and a shadow on
+  one element. Animate a shadow as `filter: drop-shadow()`, not `box-shadow`.
+- A control whose edge is its only cue has a border at 3:1 against its surface or a filled
+  background that contrasts with it; the card hairline is too faint for it.
+- Radius from a scale: controls 4-6 px, cards and menus 8, dialogs and tables up to 12, nothing
+  larger except avatars and pills; an inner radius is the outer one minus the padding between.
+- Spacing steps 2, 4, 8, 12, 16, 24, 32, 40, 48, 64: related things 8-12 apart, groups 24-40.
+  Controls that share a row share a height from 24, 28, 32, 40, 48 (32 by default).
+- Selected is two cues together (surface step and ink), never a coloured side stripe. Hover,
+  pressed and selected are each one step from rest. A disabled control sets reduced contrast,
+  `cursor: not-allowed` and the native attribute together, and says why. A state change never
+  changes `border-width`, padding or height.
 
-## 4. Type that carries the hierarchy
+## 5. Type
 
-- Sizes are written in `rem`, so the browser's text size reaches them and the screen survives 200% zoom.
-- Three sizes and two weights (450 and 600) on a screen. Body and controls 13-14 px with a line
-  height near 1.4 (Carbon, Atlassian, Fluent and Primer all set 14/20); the smallest text 12 px;
-  section headings 14-16 px at 600; a page title 20-28 px. Display sizes above 32 px are for brand
-  and marketing pages. Titles get `letter-spacing: -0.01em` and `text-wrap: balance`; body
-  `text-wrap: pretty`.
-- Sentence case everywhere, buttons and column headers included; no uppercase outside a `kbd` or a
-  status pill.
-- `font-variant-numeric: tabular-nums` on every figure, times and costs right-aligned.
-- Muted text is a step of the ink ramp (at least 4.5:1), never an opacity.
+- The stack of section 2 (the "R7 stack" of override 6), sizes in `rem`, and the app's own scale when it has one; extend it,
+  never add a second scale beside it.
+- Tracking follows size: `-0.02em` from 24 px up, near 0 for body, `+0.01em` at 12 px and under;
+  leading tight on titles (about 1.15) and 1.4 on body. Titles `text-wrap: balance`, body `pretty`.
+- Three sizes and two weights (450 and 600) on a screen: body and controls 13-14 px (16 under
+  `pointer: coarse`), smallest 12, section headings 14-16 at 600, a page title 20-28. Display above
+  32 px is for brand pages.
+- Sentence case everywhere; no uppercase outside a `kbd` or a status pill. `tabular-nums` on every
+  figure, times and costs right-aligned. Muted text is a step of the ink ramp at 4.5:1 or more,
+  never an opacity. Text over a material is not flat grey: higher contrast, a little heavier.
+- Logical properties (`margin-inline-start`, `text-align: start`) so the screen mirrors under
+  `dir="rtl"`; back, next and progress icons mirror, logos, checkmarks, clocks and numerals do not.
+- Colour: `prefers-color-scheme` is the default and an in-app switch is System, Light, Dark;
+  ink on ground aims for 7:1; one colour carries one meaning and never alone.
 
-## 5. Motion that explains
+## 6. Motion
 
-Use the `motion` package (`import { motion, AnimatePresence, MotionConfig } from "motion/react"`)
-on app screens; GSAP is for public pages. Wrap the app once in `<MotionConfig reducedMotion="user">`
-so every transform respects the setting, and under reduced motion keep opacity and spinners and
-drop translation and scale.
-One entrance per view, none on rows of a long list. These are the recipes; use the ones the screen's
-real changes need and no others.
-The overlay recipes (popover, menu, dialog, toast, tooltip) with their values, in `motion` and in CSS, are in `motion.md` in this skill's directory.
+Order of work, from `emil-design-eng` "The Animation Decision Framework" and `animate/SKILL.md`:
 
-```tsx
-const ease = [0.22, 1, 0.36, 1] as const
+1. **The gate.** How often does the person meet it? Keyboard-started and 100+ a day: no motion,
+   identical frames, and zero lines of code is the right result. Tens a day: remove or reduce.
+   `remove-animations` holds the decision tree and the reduced forms. Press feedback on
+   pointer-down is not motion to gate: it is response (`apple-design` section 1).
+2. **The purpose**, from the closed list: feedback, spatial consistency, a state change, softening a
+   jarring jump, explaining, delight at the rare tier only. Data being read or acted on does not
+   move for style.
+3. **The tool**, cheapest first: override 4. Then the properties (`transform`, `opacity`; a
+   shadow moves as `drop-shadow`; no `setState` per frame; hazards of removal in
+   `remove-animations`), then the curve, then interruption, then the exit.
+4. **The curve**, never invented or approximated: `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)` for
+   enter and exit, `--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)` for something moving on screen,
+   `--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1)` for a drawer or sheet, built-in `ease` for hover
+   and colour, `linear` for constant motion, `ease-in` never.
+5. **The numbers** (durations per surface, scale starts, toast, drawer, tooltip, stagger, spring
+   `duration` and `bounce`) are quoted from `emil-design-eng` ("How fast should it be?", "Spring
+   Configuration"), `animate/RECIPES.md` and, for overlays on those values, `motion.md` of this
+   directory. Nothing in this file or in an agent file restates one; a screen that ships Sonner or
+   its own motion system keeps that system's values.
+6. **Interruption and gesture.** Anything the person can grab, drag or re-trigger takes a transition
+   or a spring that retargets from the live value, never a keyframe; a drag tracks 1:1 and hands its
+   velocity to the spring (`apple-design` sections 3-6, 9; `apple.md` section 4 for the touch
+   surface). Exit leaves by the edge it entered.
+7. **Reduced motion, transparency, contrast** as in `apple-design` section 14; wrap a `motion`
+   app once in `<MotionConfig reducedMotion="user">`.
 
-<motion.li layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease }} />
+Extend the app's tokens (its easing and duration variables) with Emil's curves where they are
+missing; never add a parallel scale. In design mode the report's UI section names at most five to
+seven motions, each with its purpose and frequency tier, then the two to five rejected with the
+reason (`find-animation-opportunities`). A motion that is not on that list is not built. A
+reviewer deletes first: remove, reduce, fix easing, fix origin, make interruptible, move to the
+GPU, then polish (`review-animations/STANDARDS.md`).
 
-<motion.span aria-hidden initial={false} animate={{ opacity: selected ? 1 : 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 rounded-[10px] bg-raised" />
+## 7. The look-and-fix loop
 
-<AnimatePresence mode="popLayout" initial={false}>
-  <motion.section key={run.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease }} />
-</AnimatePresence>
+Screenshots and frames, never the code. Before you score, run the three machine checks and fix what
+they print:
 
-```
+- `lighthouse_audit` in `snapshot` mode on the page: every failing accessibility rule.
+- `DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>`, and again with
+  `--viewport 390x844`. It is a tells check only, never a taste authority: fix each entry (side
+  stripes, gradient text, nested cards, low contrast) or write why it does not apply. Its entries
+  about body near 16 px, line height 1.5 and Inter as the face do not apply here.
+- `node audit.mjs <url> [--width 1440] [--scheme dark]` in this directory, and again with
+  `--width 720` for 200% zoom: spacing, radii and control heights off the scale, font sizes, every
+  Tab stop. Exit 2 means clipped or overlapping text, a covered control, page overflow, an unloaded
+  face, a Tab stop without a focus ring, `transition: all`, `ease-in` or a viewport that blocks
+  zoom; its other lines are for you to judge.
 
-- **List change** (an item arrives, resolves, is removed): `layout` on the items inside
-  `AnimatePresence`, the resolved item fading and collapsing its height, the ones below sliding up.
-- **Selection**: each row owns its highlight and crossfades it in 150 ms. A shared `layoutId`
-  highlight glides only between rows of the same height; when a row can expand (a question, a
-  form) the sheet resizes over the text of its neighbours.
-- **Panel swap**: crossfade with an 8 px shift in the direction of travel, 180 ms.
-- **Hover and press**: `transition-colors` at 150 ms or less behind `@media (hover: hover) and (pointer: fine)`, one
-  small response for every control; a press also takes `scale(0.97)` in 100-160 ms. How often it
-  happens sets the duration: motion a person triggers dozens of times a day (row hover, menu open,
-  tab switch, selection) stays at 150 ms or less; an action started from the keyboard, or repeated
-  a hundred times a day, does not animate at all; the 180-240 ms recipes are for occasional changes.
-- **Popover and menu**: it opens from the point of its trigger (`transform-origin` set there) with
-  opacity and `scale(0.95)` to 1, never from `scale(0)`; a modal stays centred. A toast and a
-  tooltip take the values of the table in `motion.md`. Use a transition, not a keyframe, for
-  anything that can be re-triggered mid-flight, and `@starting-style` for the entrance of an
-  element that mounts.
-- **Status change**: the dot or label crossfades colour in 200 ms; a running item has a spinner
-  that turns, nothing pulses.
-- **Figures that change after load**: roll or crossfade the digit, 300 ms, never on first paint.
-- **Loading to content**: skeleton blocks of the final shape, then a 200 ms opacity swap with no
-  layout shift.
-- **Where**: transform and opacity only (a list item's collapsing `height` is the one exception),
-  120-240 ms for an entrance and 80-150 ms for an exit (the table in `motion.md`), `ease` above or
-  a spring with damping that settles without overshoot (`bounce: 0`, for the release of a drag), and never `transition: all`. An exit is
-  faster than its entrance. One focal motion at a time. No bounce, no stagger above eight items
-  (30-80 ms apart), no looping decoration, and error text is never animated.
+Then capture 1440x900 and 390x844 in light and dark, the selected, empty and loading states, and
+the three media features emulated (`prefers-reduced-transparency`, `prefers-contrast`,
+`prefers-reduced-motion`). Score each row 1-5 and write the scores down. Task flow, feedback and
+recovery come from doing the job in the browser, not from looking.
 
-## 6. The look-and-fix loop
-
-Screenshots only, never the code. Before you score, run the three machine checks and fix what they
-print: `lighthouse_audit` in `snapshot` mode on the page (every failing accessibility rule);
-`DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>`, and again with `--viewport 390x844` (exit 2 lists generated-UI tells such
-as side stripes, gradient text, nested cards and low contrast: fix each, or write why it does not
-apply; its entries about body text near 16 px, line height 1.5 and Inter or Geist as the face do not
-apply on a working screen, where enterprise systems set 14 px on 20 px and a tool may use Inter); and `node audit.mjs <url> [--width 1440] [--scheme dark]` in this skill's directory, which
-reads the live page (run it again with `--width 720` for 200% zoom of a 1440 design) and prints spacing, radii and control heights off the scale, the font sizes in
-use, and every Tab stop (exit 2 on clipped text, a control covered by another element, overlapping
-text, page overflow, a face that did not load, a Tab stop with no focus ring, `transition: all`, `ease-in` or a viewport that blocks zoom; it also prints targets under 24 px, hover rules that move things outside `(hover: hover)`, transitions over 300 ms, layout properties in `transition`, and `scale(0)` keyframes, for the designer to judge). Short uppercase labels and the rest of the tells list in the agent file
-still run by eye. After the first build, capture 1440x900 and 390x844 in light and
-dark, and the selected, empty and loading states. Score each 1-5 and write the scores down. The last three come from doing the job in the browser, with the count of `ux.md` section 1, not from looking:
-
-| Dimension | A 5 looks like |
+| Row | A 5 looks like |
 |---|---|
-| Focal point | one answer to "what do I look at first" within a second |
-| Hierarchy | squinting leaves two or three masses of different weight |
-| Identity | covering the name, nobody mistakes it for another product |
-| Fullness | no empty half, no hole; every block starts above the fold |
-| Depth and finish | layers read, spacing has rhythm, edges are crisp, type is the loaded face |
-| Motion | each real change moves; nothing moves that did not change |
-| Task flow | the primary job meets its step target, counted in the browser (`ux.md`) |
+| Response | every control answers on pointer-down or at once (optimistic); no input is locked during a transition; nothing moves that the gate removed |
+| Interruptibility | a panel, sheet or menu reversed mid-flight continues from where it is, with no jump and no restart (`--then` frames) |
+| Materials | three layers read; translucency only on floating or structural chrome, none on content; opaque with an edge under the three emulated features |
+| Type | the loaded face, tracking by size, tabular figures; squinting leaves two or three masses of different weight |
+| Craft | one answer to "what do I look at first" in a second; spacing from the scale, concentric radii, crisp edges, no jitter or layout shift in the frames |
+| Fullness | no empty half, no hole; every block starts above the fold with real content |
+| Identity | covering the name and mark, nobody mistakes it for another product; the signature element is drawn from its objects |
+| Task flow | the primary job meets its step target, counted in the browser (`ux.md` section 1) |
 | Feedback and recovery | each action answers at once, each mistake is undoable or guarded, each error says what to do |
-| Clarity | labels, buttons and messages need no explanation, and the keyboard reaches everything |
 | Reach | at 200% zoom nothing clips; a finger hits every control; dark, high contrast and reduced motion each hold (`apple.md`) |
 
-Any score under 4 is fixed first, worst first, then recaptured. Stop at three rounds or when every
-score is 4 or more, and report the final scores with the screenshot paths. A 3 you left is named in the
-report with why.
+Fix any score under 4 first, worst first, then recapture. Stop at three rounds or when every score
+is 4 or more; report the final scores with the screenshot paths, and name any 3 you left, with why.
 
-Motion is scored from frames, never from the code or the end state. `frames.mjs` in this skill's
-directory clicks one control in the lpk Chrome and saves the frames the browser paints in the next
-600 ms (at most 10, named by the milliseconds since the click; the first is the screen before it):
+`frames.mjs` in this directory acts in the lpk Chrome and saves the frames the browser paints
+afterwards (at most `--max`, named by the milliseconds since the first action; the first is the
+screen before it). The action is a CSS selector, `text:` and the control's visible text, or
+`key:<name>` for a key press; `--then <ms>:<action>` runs a second action that many milliseconds
+into the first:
 
 ```
 node frames.mjs http://localhost:5173/ 'text:Approve' --out <proof>/frames/approve --ms 600 --max 10
+node frames.mjs http://localhost:5173/ 'text:Settings' --then 80:'text:Settings' --out <proof>/frames/interrupt
+node frames.mjs http://localhost:5173/ 'key:j' --out <proof>/frames/next
 ```
 
-The selector is CSS, or `text:` and the control's visible text. Read the frames in order and look
-for what the end state hides: text over text, a row jumping instead of gliding, a flash of unstyled
-content, a layout shift, a change that happens in one frame. Run it for each change the screen
-animates (select, approve, remove, open a panel, switch tabs), fix what it shows, and run it again.
-A change whose frames after the click are all identical, or whose only new frame is the last, does not move.
+Read the frames in order for what the end state hides: text over text, a row jumping, a flash of
+unstyled content, a layout shift, a reversal that jumps or restarts. Run it for each change the
+screen animates and for each one the gate removed. Identical frames for a keyboard-started or
+100+ a day change are the correct result; a change the gate allows whose frames are identical, or
+whose only new frame is the last, does not move and is fixed. Emulation cannot show sticky hover,
+the tap delay, the address-bar viewport, safe areas or the software keyboard: report them as
+`not confirmed: real device`.
