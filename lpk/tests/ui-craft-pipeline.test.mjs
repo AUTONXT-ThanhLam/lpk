@@ -6,8 +6,8 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { copyFacts } from '../skills/ui-craft/copyfacts.mjs';
-import { diff, planColours } from '../skills/ui-craft/designdiff.mjs';
-import { parseHex } from '../skills/ui-craft/palette.mjs';
+import { colourCounts, diff, planColours } from '../skills/ui-craft/designdiff.mjs';
+import { parseHex, wcag } from '../skills/ui-craft/palette.mjs';
 import { buckets } from '../skills/ui-craft/sample.mjs';
 
 const KIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'ui-craft');
@@ -35,8 +35,17 @@ test('palette make gives each scheme a neutral ramp and an accent whose text col
   assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5);
 });
 
+test('palette make keeps the accent colour it is given and every accent text colour passes AA on its tints', () => {
+  const out = JSON.parse(run('palette.mjs', 'make', '--accent', '#8a6a5a').stdout);
+  for (const mode of ['light', 'dark']) {
+    const { solid, text, tints } = out[mode].accent;
+    assert.equal(solid, '#8a6a5a');
+    for (const tint of tints) assert.ok(wcag(parseHex(text), parseHex(tint)) >= 4.5, `${mode} ${text} on ${tint}`);
+  }
+});
+
 test('palette refuses a malformed colour and a make without a hue with usage and exit 2', () => {
-  for (const args of [['facts', '#zz'], ['facts'], ['make'], ['make', '--hue', 'x']]) {
+  for (const args of [['facts', '#zz'], ['facts'], ['make'], ['make', '--hue', 'x'], ['make', '--hue', ''], ['make', '--accent', '#a94700', '--neutral-hue', '']]) {
     const r = run('palette.mjs', ...args);
     assert.equal(r.status, 2, args.join(' '));
     assert.match(r.stderr, /usage: palette\.mjs/);
@@ -58,6 +67,24 @@ test('a built colour that is in no plan colour and covers enough of the screen i
   assert.deepEqual(diff(plan, [built('#f4f6fa', 100)]).unused, ['accent #a94700']);
 });
 
+test('the pixels of a screenshot give each colour its share of the screen, the page ground included', () => {
+  const px = (rgb, n) => Array.from({ length: n }, () => [...rgb, 255]).flat();
+  const { total, colours } = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 80), ...px([169, 71, 0], 15), ...px([42, 157, 60], 5)]));
+  assert.equal(total, 100);
+  const r = diff(planColours(PLAN), colours, { total });
+  assert.equal(r.neutrals[0].share, 80);
+  assert.equal(r.chromaticShare, 20);
+  assert.deepEqual(r.unplanned.map((u) => [u.hex, u.share]), [['#2a9d3c', 5]]);
+});
+
+test('a plan colour written in a form the diff cannot read is refused with a usage error', () => {
+  const file = join(mkdtempSync(join(tmpdir(), 'plan-')), 'DESIGN.md');
+  writeFileSync(file, '---\nname: Brew\ncolors:\n  ground: "#f4f6fa80"\n---\n');
+  const r = run('designdiff.mjs', 'http://127.0.0.1:1/', file);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /not #rgb or #rrggbb/);
+});
+
 test('designdiff and copyfacts without a url print usage and exit 2', () => {
   for (const script of ['designdiff.mjs', 'copyfacts.mjs']) {
     const r = run(script);
@@ -75,7 +102,7 @@ test('copyfacts counts em dashes, exclamations, title case, long and generic but
   const facts = copyFacts({
     headings: ['Start Your Brew Today', 'Today'],
     buttons: ['Submit', 'Start brew', 'Save this recipe for later'],
-    paragraphs: ['Unlock a seamless brew — every time!'],
+    texts: ['Unlock a seamless brew — every time!'],
   });
   assert.equal(facts.headings.titleCase, 1);
   assert.equal(facts.buttons.over3Words, 1);
@@ -83,6 +110,14 @@ test('copyfacts counts em dashes, exclamations, title case, long and generic but
   assert.equal(facts.emDashes, 1);
   assert.equal(facts.exclamations, 1);
   assert.deepEqual(facts.hypeWords, { seamless: 1, unlock: 1 });
+});
+
+test('sample reports the mean colour of a bucket and refuses a --top it cannot read', () => {
+  const white = buckets([255, 255, 255, 255, 255, 255, 255, 255], 1);
+  assert.equal(white[0].hex, '#ffffff');
+  const bad = run('sample.mjs', 'shot.png', '--top');
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /--top/);
 });
 
 test('sample ranks the colours of an image by share, ignores transparent pixels, and refuses a file that is not an image', () => {

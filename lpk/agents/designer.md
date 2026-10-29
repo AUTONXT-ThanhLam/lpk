@@ -122,7 +122,7 @@ and nothing else.
 Build mode, in this shape and nothing else:
 - `commit`: the SHA, and the files changed;
 - `tests`: the command and its result, as a verbatim summary;
-- `screens`: each screen and state with its screenshot path, and the output of `designdiff.mjs`
+- `screens`: the proof directory (`DESIGN.md`, `refs/`, `shots/`), then each screen and state with its screenshot path, and the output of `designdiff.mjs`
   and `copyfacts.mjs` (the counts, and what you changed because of them);
 - `rejected motion`: the motions you dropped, each with the reason, or `none`;
 - `contested:` each test or task that looks wrong, with why, or `none`;

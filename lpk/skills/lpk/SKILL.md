@@ -105,7 +105,7 @@ A confirmed finding outside the protected areas and the scenarios is a known lim
 
 A request whose deliverable is a screen goes to `lpk:designer` in every lane, with or without git:
 it designs the screens, then builds them with its design kit (`build.md`, `slices.md`), and the
-lead never builds a screen. `lpk:ui-reviewer` reviews them.
+lead never builds a screen. `lpk:ui-reviewer` reviews them. `build.md` says when the critic starts.
 
 `lpk floor` prints the exact facts that make a change Full. When a Quick change crosses them, run
 `lpk run lane full` and continue in the Full lane; the gates read the same facts at handover.

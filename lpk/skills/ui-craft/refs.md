@@ -29,8 +29,8 @@ of these sources. A reference of the right job in an ugly or dated style still t
 A source that does not answer is `refs not confirmed: <source>`: name it and use another; with fewer
 than two sources working, stop and report it. Never write a reference you did not open.
 
-For each reference save its screenshots as `<proof>/refs/<n>-<name>.png` (a store image is fetched
-by `sample.mjs` itself), run `node sample.mjs <image> --top 12` in this directory, and write four
+For each reference save its screenshots as `<proof>/refs/<n>-<name>.png` (download a store image
+with `curl -sL -o`, so the critic can be given the file), run `node sample.mjs <image> --top 12` in this directory, and write four
 lines: the colours the measurement shows (ground, ink, the one accent and its share), the type size
 and weight of the key figure, how the first screen shows the job's result, and the one thing you
 will not copy. What is taken is a measurement or a structure, never "the vibe".
@@ -46,7 +46,9 @@ node palette.mjs facts '<ground>' '<ink>' '<muted ink>' '<accent text>'
 ```
 
 `make` prints a 12-step neutral ramp per scheme (one tinted family, so the ground, raised, overlay,
-ring and ink steps agree) and an accent set whose text colour passes AA; `facts` prints each
+ring and ink steps agree, tinted with the accent's hue unless `--neutral-hue` says otherwise) and
+an accent set: the solid is exactly the colour given (`--hue` alone generates one), and its text
+colour passes AA on the page and on its own tints; `facts` prints each
 colour's OKLCH and the WCAG and APCA contrast of each later colour on the first. Contrast under AA
 for body text, or a neutral ramp of two hues, is fixed here.
 
@@ -108,11 +110,12 @@ and the seed data and every string follow `## Voice`.
 
 Run, on the built page, each at 1440 and 390 wide and in both schemes where the app has both:
 
-- `node designdiff.mjs <url> <proof>/DESIGN.md`: exit 2 names a colour that covers 1% or more of the
-  screen and is within no plan colour; it also prints the share of chromatic pixels (a screen
-  that is mostly colour is rarely the result of a plan), the neutral hues in use (two families means
-  the ramp is not shared) and the planned colours that never appear. Fix the code or the plan,
-  whichever was wrong, and say which.
+- `node designdiff.mjs <url> <proof>/DESIGN.md [--scheme dark]`: counts the pixels of the first
+  screen as rendered; exit 2 names a colour that covers 1% or more of them and is within no plan
+  colour. It also prints the share of chromatic pixels (a screen that is mostly colour is rarely the
+  result of a plan), the six most used neutrals with their hue (two families means the ramp is not
+  shared) and the planned colours that do not appear (the other scheme's are expected to be absent).
+  Fix the code or the plan, whichever was wrong, and say which.
 - `node copyfacts.mjs <url>`: prints counts of em dashes, exclamation marks, title case, long and
   generic button labels and hype words. It never fails: read the count and the samples against
   `## Voice` and fix what you would not have written.

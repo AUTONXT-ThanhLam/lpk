@@ -58,18 +58,22 @@ const LADDER = {
 const NEUTRAL_C = [0.002, 0.003, 0.005, 0.006, 0.008, 0.01, 0.012, 0.016, 0.017, 0.016, 0.014, 0.011];
 export const neutralRamp = (hue, mode) => LADDER[mode].map((L, i) => toHex(L, NEUTRAL_C[i], hue));
 
-export function accentSet(hue, mode) {
+export function accentSet(hue, mode, accentHex) {
   let L = 0.66;
   while (L > 0.5 && maxChroma(L, hue) < 0.19) L -= 0.005;
-  const solid = toHex(L, 0.19, hue);
+  const solid = accentHex ? accentHex.toLowerCase() : toHex(L, 0.19, hue);
+  const o = oklch(parseHex(solid));
   const white = wcag([255, 255, 255], parseHex(solid)) >= 4.5 && Math.abs(apca([255, 255, 255], parseHex(solid))) >= 60;
-  const tints = mode === 'light'
+  const tints = (mode === 'light'
     ? [[0.982, 0.008], [0.961, 0.017], [0.935, 0.031], [0.902, 0.047]]
-    : [[0.209, 0.03], [0.272, 0.07], [0.318, 0.095], [0.362, 0.104]];
-  const textL = mode === 'light' ? 0.52 : 0.775;
+    : [[0.209, 0.03], [0.272, 0.07], [0.318, 0.095], [0.362, 0.104]]).map(([l, c]) => toHex(l, c, hue));
+  const textC = mode === 'light' ? 0.17 : 0.12;
+  let textL = mode === 'light' ? 0.52 : 0.775;
+  const step = mode === 'light' ? -0.005 : 0.005;
+  while (textL > 0.2 && textL < 0.98 && wcag(parseHex(toHex(textL, textC, hue)), parseHex(tints[3])) < 4.5) textL += step;
   return {
-    solid, solidHover: toHex(L - 0.025, 0.19, hue), onSolid: white ? '#ffffff' : '#111111',
-    tints: tints.map(([l, c]) => toHex(l, c, hue)), text: toHex(textL, mode === 'light' ? 0.17 : 0.12, hue),
+    solid, solidHover: accentHex ? toHex(o.L - 0.025, o.C, o.h) : toHex(L - 0.025, 0.19, hue), onSolid: white ? '#ffffff' : '#111111',
+    tints, text: toHex(textL, textC, hue),
   };
 }
 
@@ -89,13 +93,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     if (cmd === 'facts' && rest.length) console.log(JSON.stringify(facts(rest), null, 1));
     else if (cmd === 'make') {
+      const num = (name) => {
+        const v = opt(name);
+        if (v === undefined) return undefined;
+        if (v === '' || v.startsWith('--') || !Number.isFinite(Number(v))) fail(`--${name} must be a number`);
+        return Number(v);
+      };
       const accentHex = opt('accent');
-      const hue = accentHex ? oklch(parseHex(accentHex)).h : Number(opt('hue'));
-      if (!Number.isFinite(hue) || opt('hue') === '') fail('make needs --hue <deg> or --accent <#rrggbb>');
-      const nh = opt('neutral-hue') === undefined ? hue : Number(opt('neutral-hue'));
-      if (!Number.isFinite(nh)) fail('--neutral-hue must be a number');
+      if (accentHex !== undefined) parseHex(accentHex);
+      const hue = accentHex === undefined ? num('hue') : oklch(parseHex(accentHex)).h;
+      if (hue === undefined) fail('make needs --hue <deg> or --accent <#rrggbb>');
+      const nh = num('neutral-hue') ?? hue;
       const out = {};
-      for (const mode of ['light', 'dark']) out[mode] = { neutral: neutralRamp(nh, mode), accent: accentSet(hue, mode) };
+      for (const mode of ['light', 'dark']) out[mode] = { neutral: neutralRamp(nh, mode), accent: accentSet(hue, mode, accentHex) };
       console.log(JSON.stringify(out, null, 1));
     } else fail();
   } catch (e) { fail(e.message); }

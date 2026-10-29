@@ -16,8 +16,8 @@ const spread = (list) => {
   return n.length ? { n: n.length, min: n[0], median: n[n.length >> 1], max: n[n.length - 1] } : { n: 0 };
 };
 
-export function copyFacts({ headings = [], buttons = [], paragraphs = [], errors = [] }) {
-  const all = [...headings, ...buttons, ...paragraphs, ...errors].join(' ');
+export function copyFacts({ headings = [], buttons = [], texts = [], errors = [] }) {
+  const all = [...headings, ...buttons, ...texts, ...errors].join(' ');
   const count = (re) => (all.match(re) || []).length;
   const hype = {};
   for (const h of HYPE) { const n = all.toLowerCase().split(h).length - 1; if (n) hype[h] = n; }
@@ -32,18 +32,21 @@ export function copyFacts({ headings = [], buttons = [], paragraphs = [], errors
 
 const probe = `(() => {
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 4 && r.height > 4 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
-  const take = (sel) => [...document.querySelectorAll(sel)].filter(vis).map((e) => (e.innerText || '').replace(/\\s+/g, ' ').trim()).filter((t) => t && t.length < 200);
+  const clean = (e) => (e.innerText || '').replace(/\\s+/g, ' ').trim();
+  const outer = (list) => list.filter((e) => !list.some((o) => o !== e && o.contains(e)));
+  const take = (sel) => outer([...document.querySelectorAll(sel)].filter(vis)).map(clean).filter((t) => t && t.length < 200);
+  const leaves = [...document.body.querySelectorAll('*')].filter((e) => vis(e) && !['SCRIPT', 'STYLE', 'SVG', 'NOSCRIPT'].includes(e.tagName.toUpperCase()) && ![...e.children].some(vis) && clean(e));
   return {
     headings: take('h1,h2,h3'),
     buttons: take('button,[role=button]').filter((t) => t.length < 40),
-    paragraphs: take('p').filter((t) => t.length > 40),
+    texts: leaves.map(clean).filter((t) => t.length < 400),
     errors: take('[role=alert],[aria-live=assertive],.error'),
   };
 })()`;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [url, ...rest] = process.argv.slice(2);
-  if (!url) { console.error('usage: copyfacts.mjs <url> [--width 1440] [--scheme light|dark]\n  Prints counts of mechanical wording facts of the visible headings, buttons, paragraphs and error text. It never fails on wording: the agent decides.'); process.exit(2); }
+  if (!url) { console.error('usage: copyfacts.mjs <url> [--width 1440] [--scheme light|dark]\n  Prints counts of mechanical wording facts of the visible headings, buttons, error text and every other visible text. It never fails on wording: the agent decides.'); process.exit(2); }
   const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
   const text = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light') }, ({ evaluate }) => evaluate(probe));
   console.log(JSON.stringify(copyFacts(text), null, 1));
