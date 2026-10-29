@@ -45,6 +45,7 @@ const HOOKS = {
   commit: { gate: true, run: async (i) => (await lib('hooks')).beforeCommit(i) },
   stamp: { gate: true, run: async (i) => (await lib('stamp')).stampHookOutput(i) },
   post: { run: async (i) => (await lib('hooks')).afterTool(i) },
+  typecheck: { run: async (i) => (await lib('typecheck')).afterTsEdit(i) },
   trim: { run: async (i) => (await lib('trim')).trimBash(i) },
   subject: { run: async (i) => (await lib('hooks')).afterCommit(i) },
   stop: { run: async (i) => (await lib('hooks')).beforeStop(i) },

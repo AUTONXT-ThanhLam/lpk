@@ -205,7 +205,7 @@ test('SessionStart matchers name sources and the SubagentStart matcher names lpk
 
 test('every hook that reads a live run stays inert when there is none, exiting 0', () => {
   const GUARD = '[ -n "$(ls -A "${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active" 2>/dev/null)" ] || exit 0';
-  const exempt = ['pre', 'stamp', 'trim', 'subject', 'ask', 'push-check', 'setup', 'start', 'waive'];
+  const exempt = ['pre', 'stamp', 'trim', 'typecheck', 'subject', 'ask', 'push-check', 'setup', 'start', 'waive'];
   for (const { event, hook } of allEntries(json(HOOKS)).flatMap(({ event, hooks }) => hooks.map((h) => ({ event, hook: h })))) {
     const verb = verbOf(hook.command);
     if (exempt.includes(verb)) { assert.ok(!hook.command.includes(GUARD), `${event}: ${verb} guards and reads the run dir twice`); continue; }
