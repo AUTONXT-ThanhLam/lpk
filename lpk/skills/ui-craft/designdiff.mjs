@@ -21,38 +21,53 @@ export function planColours(text) {
   return out;
 }
 
-export function colourCounts(pixels, keepShare = 0.02) {
-  const n = new Map();
+const MAX_COLOURS = 30000;
+
+export function colourCounts(pixels, width) {
+  const bins = new Map();
   let total = 0;
   for (let i = 0; i < pixels.length; i += 4) {
-    const k = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
-    n.set(k, (n.get(k) || 0) + 1);
+    const key = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
+    const px = i / 4;
+    const x = px % width, y = (px / width) | 0;
+    let b = bins.get(key);
+    if (!b) bins.set(key, b = { n: 0, rgb: [pixels[i], pixels[i + 1], pixels[i + 2]], box: [x, y, x, y] });
+    b.n++;
+    if (x < b.box[0]) b.box[0] = x;
+    if (x > b.box[2]) b.box[2] = x;
+    if (y > b.box[3]) b.box[3] = y;
     total++;
   }
-  const colours = [];
-  for (const [k, c] of n) if ((100 * c) / total >= keepShare) colours.push({ rgb: [k >> 16, (k >> 8) & 255, k & 255], weight: c });
-  return { total, colours };
+  const all = [...bins.values()].sort((a, b) => b.n - a.n);
+  return { total, colours: all.slice(0, MAX_COLOURS).map((b) => ({ rgb: b.rgb, weight: b.n, box: b.box })) };
 }
 
-export function diff(plan, built, { tolerance = 0.03, minShare = 1, total = built.reduce((n, b) => n + b.weight, 0) || 1 } = {}) {
+export function diff(plan, built, { tolerance = 0.03, minShare = 1, cluster = 0.05, total = built.reduce((n, b) => n + b.weight, 0) || 1 } = {}) {
   const pct = (w) => +((100 * w) / total).toFixed(1);
-  const near = (rgb, p) => deltaE(rgb, parseHex(p.hex)) <= tolerance;
   const lch = built.map((b) => ({ ...b, o: oklch(b.rgb) }));
-  const unplanned = lch
-    .filter((b) => !plan.some((p) => near(b.rgb, p)))
-    .map((b) => ({ hex: hexOf(b.rgb), share: pct(b.weight), chroma: +b.o.C.toFixed(3) }))
-    .filter((b) => b.share >= minShare)
-    .sort((a, b) => b.share - a.share);
-  const unused = plan.filter((p) => !built.some((b) => near(b.rgb, p))).map((p) => `${p.name} ${p.hex}`);
+  const near = (rgb, p) => deltaE(rgb, parseHex(p.hex)) <= tolerance;
+  const rest = lch.filter((b) => !plan.some((p) => near(b.rgb, p)));
+  const unplanned = [];
+  for (const b of rest.sort((x, y) => y.weight - x.weight)) {
+    const group = unplanned.find((u) => deltaE(u.rgb, b.rgb) <= cluster);
+    if (group) { group.weight += b.weight; group.box = [Math.min(group.box[0], b.box[0]), Math.min(group.box[1], b.box[1]), Math.max(group.box[2], b.box[2]), Math.max(group.box[3], b.box[3])]; }
+    else unplanned.push({ rgb: b.rgb, weight: b.weight, box: b.box, chroma: b.o.C });
+  }
   const neutrals = lch
     .filter((b) => b.o.C < 0.03)
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 6)
     .map((b) => ({ hex: hexOf(b.rgb), share: pct(b.weight), chroma: +b.o.C.toFixed(3), hue: +b.o.h.toFixed(0) }));
-  return { chromaticShare: pct(lch.filter((b) => b.o.C >= 0.05).reduce((s, b) => s + b.weight, 0)), neutrals, unplanned, unused };
+  return {
+    chromaticShare: pct(lch.filter((b) => b.o.C >= 0.05).reduce((s, b) => s + b.weight, 0)),
+    neutrals,
+    unplanned: unplanned.filter((u) => pct(u.weight) >= minShare).map((u) => ({ hex: hexOf(u.rgb), share: pct(u.weight), chroma: +u.chroma.toFixed(3), box: u.box })),
+    unused: plan.filter((p) => !built.some((b) => near(b.rgb, p))).map((p) => `${p.name} ${p.hex}`),
+  };
 }
 
 const probe = (png) => `(async () => {
+  const MAX_COLOURS = ${MAX_COLOURS};
   const count = ${colourCounts};
   const img = new Image();
   img.src = 'data:image/png;base64,${png}';
@@ -60,10 +75,10 @@ const probe = (png) => `(async () => {
   const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
   const cx = cv.getContext('2d', { willReadFrequently: true });
   cx.drawImage(img, 0, 0);
-  return count(cx.getImageData(0, 0, cv.width, cv.height).data);
+  return count(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width);
 })()`;
 
-const usage = 'usage: designdiff.mjs <url> <DESIGN.md> [--width 1440] [--scheme light|dark] [--tolerance 0.03] [--min-share 1]\n  DESIGN.md keeps its colours in the YAML front matter, under "colors:", one "name: \\"#rrggbb\\"" per line.\n  Counts the pixels of the first screen as a person sees it. Exit 2 when a colour that covers min-share percent of the pixels is within no plan colour.';
+const usage = 'usage: designdiff.mjs <url> <DESIGN.md> [--width 1440] [--scheme light|dark] [--tolerance 0.03] [--min-share 1]\n  DESIGN.md keeps its colours in the YAML front matter, under "colors:", one "name: \\"#rrggbb\\"" per line.\n  Counts the pixels of the first screen as a person sees it. Near colours are grouped first; exit 2 when a group that covers min-share percent of the pixels is within no plan colour, and prints its box [x0,y0,x1,y1].';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [url, file, ...rest] = process.argv.slice(2);

@@ -58,11 +58,10 @@ const LADDER = {
 const NEUTRAL_C = [0.002, 0.003, 0.005, 0.006, 0.008, 0.01, 0.012, 0.016, 0.017, 0.016, 0.014, 0.011];
 export const neutralRamp = (hue, mode) => LADDER[mode].map((L, i) => toHex(L, NEUTRAL_C[i], hue));
 
-export function accentSet(hue, mode, accentHex) {
+export function accentSet(hue, mode) {
   let L = 0.66;
   while (L > 0.5 && maxChroma(L, hue) < 0.19) L -= 0.005;
-  const solid = accentHex ? accentHex.toLowerCase() : toHex(L, 0.19, hue);
-  const o = oklch(parseHex(solid));
+  const solid = toHex(L, 0.19, hue);
   const white = wcag([255, 255, 255], parseHex(solid)) >= 4.5 && Math.abs(apca([255, 255, 255], parseHex(solid))) >= 60;
   const tints = (mode === 'light'
     ? [[0.982, 0.008], [0.961, 0.017], [0.935, 0.031], [0.902, 0.047]]
@@ -72,7 +71,7 @@ export function accentSet(hue, mode, accentHex) {
   const step = mode === 'light' ? -0.005 : 0.005;
   while (textL > 0.2 && textL < 0.98 && wcag(parseHex(toHex(textL, textC, hue)), parseHex(tints[3])) < 4.5) textL += step;
   return {
-    solid, solidHover: accentHex ? toHex(o.L - 0.025, o.C, o.h) : toHex(L - 0.025, 0.19, hue), onSolid: white ? '#ffffff' : '#111111',
+    solid, solidHover: toHex(L - 0.025, 0.19, hue), onSolid: white ? '#ffffff' : '#111111',
     tints, text: toHex(textL, textC, hue),
   };
 }
@@ -84,7 +83,7 @@ export function facts(hexes) {
   return { colours, firstAgainstRest: against };
 }
 
-const usage = 'usage: palette.mjs facts <#rrggbb> [<#rrggbb>...]   (OKLCH of each; WCAG and APCA of each later colour as text on the first)\n       palette.mjs make --hue <deg> [--neutral-hue <deg>]  or  --accent <#rrggbb>   (light and dark neutral ramp and accent set)';
+const usage = 'usage: palette.mjs facts <#rrggbb> [<#rrggbb>...]   (OKLCH of each; WCAG and APCA of each later colour as text on the first)\n       palette.mjs make --hue <deg> [--neutral-hue <deg>]  or  --accent <#rrggbb>   (light and dark neutral ramp and accent set; --accent gives only the hue of that colour)';
 const fail = (msg) => { console.error(msg ? `${msg}\n${usage}` : usage); process.exit(2); };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -105,7 +104,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       if (hue === undefined) fail('make needs --hue <deg> or --accent <#rrggbb>');
       const nh = num('neutral-hue') ?? hue;
       const out = {};
-      for (const mode of ['light', 'dark']) out[mode] = { neutral: neutralRamp(nh, mode), accent: accentSet(hue, mode, accentHex) };
+      for (const mode of ['light', 'dark']) out[mode] = { neutral: neutralRamp(nh, mode), accent: accentSet(hue, mode) };
       console.log(JSON.stringify(out, null, 1));
     } else fail();
   } catch (e) { fail(e.message); }

@@ -47,8 +47,10 @@ node palette.mjs facts '<ground>' '<ink>' '<muted ink>' '<accent text>'
 
 `make` prints a 12-step neutral ramp per scheme (one tinted family, so the ground, raised, overlay,
 ring and ink steps agree, tinted with the accent's hue unless `--neutral-hue` says otherwise) and
-an accent set: the solid is exactly the colour given (`--hue` alone generates one), and its text
-colour passes AA on the page and on its own tints; `facts` prints each
+an accent set generated from the hue of `--accent` (or `--hue`) alone: its lightness and chroma
+are the kit's, not the reference's. To keep the reference's exact accent, write that colour in
+`DESIGN.md` yourself and check it with `facts`. The accent text colour passes AA on its own tints;
+`facts` prints each
 colour's OKLCH and the WCAG and APCA contrast of each later colour on the first. Contrast under AA
 for body text, or a neutral ramp of two hues, is fixed here.
 

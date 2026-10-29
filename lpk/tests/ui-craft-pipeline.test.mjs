@@ -35,11 +35,10 @@ test('palette make gives each scheme a neutral ramp and an accent whose text col
   assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5);
 });
 
-test('palette make keeps the accent colour it is given and every accent text colour passes AA on its tints', () => {
+test('every accent text colour passes AA on its tints, for any hue', () => {
   const out = JSON.parse(run('palette.mjs', 'make', '--accent', '#8a6a5a').stdout);
   for (const mode of ['light', 'dark']) {
-    const { solid, text, tints } = out[mode].accent;
-    assert.equal(solid, '#8a6a5a');
+    const { text, tints } = out[mode].accent;
     for (const tint of tints) assert.ok(wcag(parseHex(text), parseHex(tint)) >= 4.5, `${mode} ${text} on ${tint}`);
   }
 });
@@ -69,12 +68,21 @@ test('a built colour that is in no plan colour and covers enough of the screen i
 
 test('the pixels of a screenshot give each colour its share of the screen, the page ground included', () => {
   const px = (rgb, n) => Array.from({ length: n }, () => [...rgb, 255]).flat();
-  const { total, colours } = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 80), ...px([169, 71, 0], 15), ...px([42, 157, 60], 5)]));
+  const { total, colours } = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 80), ...px([169, 71, 0], 15), ...px([42, 157, 60], 5)]), 10);
   assert.equal(total, 100);
   const r = diff(planColours(PLAN), colours, { total });
   assert.equal(r.neutrals[0].share, 80);
   assert.equal(r.chromaticShare, 20);
   assert.deepEqual(r.unplanned.map((u) => [u.hex, u.share]), [['#2a9d3c', 5]]);
+});
+
+test('a gradient is grouped by near colour before the share cut, and a planned colour in a tiny element is not unused', () => {
+  const px = (rgb, n) => Array.from({ length: n }, () => [...rgb, 255]).flat();
+  const steps = Array.from({ length: 50 }, (_, i) => px([255 - i * 5, 0, i * 5], 4)).flat();
+  const gradient = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 100), ...steps]), 30);
+  assert.ok(diff(planColours(PLAN), gradient.colours, { total: gradient.total }).unplanned.length > 0);
+  const dot = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 99999), ...px([169, 71, 0], 1)]), 100);
+  assert.deepEqual(diff(planColours(PLAN), dot.colours, { total: dot.total }).unused, []);
 });
 
 test('a plan colour written in a form the diff cannot read is refused with a usage error', () => {
@@ -102,19 +110,19 @@ test('copyfacts counts em dashes, exclamations, title case, long and generic but
   const facts = copyFacts({
     headings: ['Start Your Brew Today', 'Today'],
     buttons: ['Submit', 'Start brew', 'Save this recipe for later'],
-    texts: ['Unlock a seamless brew — every time!'],
+    text: 'Start Your Brew Today! Unlock a seamless brew — every time! Start brew',
   });
   assert.equal(facts.headings.titleCase, 1);
   assert.equal(facts.buttons.over3Words, 1);
   assert.equal(facts.buttons.genericLabels, 1);
   assert.equal(facts.emDashes, 1);
-  assert.equal(facts.exclamations, 1);
+  assert.equal(facts.exclamations, 2);
   assert.deepEqual(facts.hypeWords, { seamless: 1, unlock: 1 });
 });
 
 test('sample reports the mean colour of a bucket and refuses a --top it cannot read', () => {
-  const white = buckets([255, 255, 255, 255, 255, 255, 255, 255], 1);
-  assert.equal(white[0].hex, '#ffffff');
+  const mixed = buckets([248, 248, 248, 255, 250, 250, 250, 255], 1);
+  assert.equal(mixed[0].hex, '#f9f9f9');
   const bad = run('sample.mjs', 'shot.png', '--top');
   assert.equal(bad.status, 2);
   assert.match(bad.stderr, /--top/);
