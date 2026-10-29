@@ -3,6 +3,7 @@
 // Yield per lens, fresh tokens per lens and per role, wall time on the critical path, and the bytes
 // lpk keeps resident in every session. Absence is said out loud: a host whose transcripts write
 // usage as zeros has no token figure (null, "unavailable"), never 0.
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from '../out.mjs';
 import { pluginRoot } from '../host.mjs';
@@ -11,7 +12,7 @@ import { context, measureInjections } from '../bench-context.mjs';
 import { cliLensRuns, ledgers, STATES, yieldOf } from '../bench-data.mjs';
 import { readStores } from '../bench-hosts.mjs';
 import { render } from '../bench-text.mjs';
-import { inWindow, sum, union } from '../bench-time.mjs';
+import { idle, inWindow, ownerTimes, sum, union } from '../bench-time.mjs';
 import { readRuns, runsFile } from '../runs.mjs';
 import { scanSession } from '../scan.mjs';
 
@@ -64,6 +65,7 @@ export async function main(argv) {
       // skill leave in a session are read from the file itself.
       if (x.where.main) injectFiles.push(x.where.main);
       const list = bySession.get(s);
+      const owner = x.where.main ? ownerTimes(readFileSync(x.where.main, 'utf8')) : new Set();
       // The lead's own transcript is a role too, and its tokens count; its spans do not enter the
       // critical path, which is the question of how the lenses overlapped.
       const files = (found.main ? [{ id: s, meta: { agentType: 'main session' }, st: found.main, lead: true }, ...found.agents] : found.agents);
@@ -72,6 +74,7 @@ export async function main(argv) {
         const from = Date.parse(r.started);
         const to = i + 1 < list.length ? Date.parse(list[i + 1].started) : Infinity;
         const spans = [];
+        const worked = [];
         const per = {};
         let fresh = 0, cacheRead = 0, leadMs = 0;
         for (const ag of files) {
@@ -83,17 +86,19 @@ export async function main(argv) {
           p.runs++; p.fresh += w.fresh; p.cacheRead += w.cacheRead; p.messages += w.messages;
           p.spanMs += union(sp, from, to);
           fresh += w.fresh; cacheRead += w.cacheRead;
+          worked.push(...sp);
           if (ag.lead) leadMs += union(sp, from, to); else spans.push(...sp);
           const t = (agentRows.get(k) || (() => { const x = { agent: k, host, runs: 0, fresh: 0, cacheRead: 0, messages: 0, spanMs: 0 }; agentRows.set(k, x); return x; })());
           t.runs++; t.fresh += w.fresh; t.cacheRead += w.cacheRead; t.messages += w.messages; t.spanMs += union(sp, from, to);
         }
+        const ownerIdleMs = idle(worked, owner, from, Number.isFinite(r.wallMs) ? Math.min(to, from + r.wallMs) : to);
         runRows.push({
           id: r.id, repo: r.repo, path: r.path, lane: r.lane, host, session: r.session,
           wallMs: r.wallMs ?? null, ledger: led.byRun.has(r.id) ? 'present' : 'absent',
           findings: (led.byRun.get(r.id) || []).length,
           fixed: (led.byRun.get(r.id) || []).filter((f) => f.state === 'fixed').length,
           fresh: fresh || null, cacheRead: cacheRead || null,
-          criticalPathMs: union(spans, from, to), lensMsSum: sum(spans, from, to), leadMs: leadMs || null,
+          criticalPathMs: union(spans, from, to), lensMsSum: sum(spans, from, to), leadMs: leadMs || null, ownerIdleMs, workingMs: r.wallMs == null ? null : Math.max(0, r.wallMs - ownerIdleMs),
           longPole: Object.values(per).filter((x) => x.agent !== 'main session').sort((x, y) => y.spanMs - x.spanMs)[0]?.agent || '',
           lenses: per,
         });
@@ -111,7 +116,7 @@ export async function main(argv) {
       id: r.id, repo: r.repo, path: r.path, lane: r.lane, host: h || (r.session ? 'none' : 'no session'), session: r.session || null,
       wallMs: r.wallMs ?? null, ledger: led.byRun.has(r.id) ? 'present' : 'absent',
       findings: (led.byRun.get(r.id) || []).length, fixed: (led.byRun.get(r.id) || []).filter((f) => f.state === 'fixed').length,
-      fresh: null, cacheRead: null, criticalPathMs: null, lensMsSum: null, leadMs: null, longPole: '', lenses: {},
+      fresh: null, cacheRead: null, criticalPathMs: null, lensMsSum: null, leadMs: null, ownerIdleMs: null, workingMs: null, longPole: '', lenses: {},
       note: quiet.has(h) ? `${h} transcripts write no token counts: its fresh tokens are unavailable, not 0`
         : r.session ? `no transcript of session ${r.session}` : 'run recorded without a session id',
     });
@@ -172,7 +177,7 @@ export async function main(argv) {
     cliLensRuns: cliTable.sort((x, y) => y.runs - x.runs),
     born: { counts: born, ruled: bornCount, note: bornNote },
     agents: [...agentRows.values()].sort((x, y) => y.fresh - x.fresh),
-    wall: { runs: runRows.map(({ lenses: _l, ...r }) => r), sessionsScanned: scanned, note: 'criticalPathMs is the union of the agents\' working spans inside the run window; lensMsSum is their sum. A lens running beside another is on neither critical path.' },
+    wall: { runs: runRows.map(({ lenses: _l, ...r }) => r), sessionsScanned: scanned, note: 'criticalPathMs is the union of the agents\' working spans inside the run window; lensMsSum is their sum. ownerIdleMs is the wall time the session waited for the owner (the gaps in all the transcripts work that an owner message closed); workingMs is wallMs without it. A lens running beside another is on neither critical path.' },
     context: ctx,
     missing: { ledger: led.absent, transcripts: runRows.filter((r) => r.fresh === null).map((r) => `${r.id}: ${r.note || 'host writes no token counts'}`), tokensUnavailableFor: hostsOut.filter((h) => !h.tokensAvailable).map((h) => h.host) },
   };
