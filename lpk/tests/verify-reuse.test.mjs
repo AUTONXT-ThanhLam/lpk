@@ -70,6 +70,21 @@ test('R2 R4: the next full verify runs only the checks not green on this tree an
   assert.deepEqual([runs('flow-a'), runs('flow-b')], [2, 3], 'a code edit reruns every check');
 });
 
+test('R2 R4: a later red of a check on the same tree cancels its earlier green', () => {
+  const repo = fresh('reuse-newest');
+  const flag = join(tmp, 'newest.flag');
+  const a = `${bump('newest-a')}; test ! -e ${flag}`;
+  assert.equal(begin(repo, 'nw', '--verify', a, '--verify', 'true').status, 0);
+  assert.equal(lpk(repo, 'nw', 'verify').status, 0);
+  write(tmp, 'newest.flag', 'x');
+  assert.equal(lpk(repo, 'nw', 'verify', '--only', '1').status, 1);
+  const full = lpk(repo, 'nw', 'verify');
+  assert.equal(full.status, 1, full.stdout);
+  assert.ok(!full.stdout.includes(`\`${a}\` green earlier`), full.stdout);
+  assert.equal(runs('newest-a'), 3);
+  assert.equal(lastVerify(repo).green, false);
+});
+
 test('R2: a green that ran while a code file changed is not reused', () => {
   const repo = fresh('reuse-moving');
   const a = bump('moving-a');

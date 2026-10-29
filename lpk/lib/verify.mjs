@@ -87,7 +87,10 @@ const reusedOn = (records, run, tree) => {
   const got = new Map();
   for (const rec of records) {
     if (rec.kind !== 'verify' || rec.run !== run || rec.final || rec.stable !== true || rec.tree !== tree) continue;
-    for (const x of rec.results || []) if (x.exit === 0) got.set(x.cmd, { cmd: x.cmd, exit: 0, ms: x.ms, limit: x.limit, reused: true, tail: '' });
+    for (const x of rec.results || []) {
+      if (x.exit === 0) got.set(x.cmd, { cmd: x.cmd, exit: 0, ms: x.ms, limit: x.limit, reused: true, tail: '' });
+      else if (x.exit !== 'not run' && x.exit !== 'stopped') got.delete(x.cmd);
+    }
   }
   return got;
 };
