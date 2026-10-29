@@ -26,7 +26,7 @@ graders:
   - name: dispatched
     type: tool_used
     tool: Agent
-    input_match: bug-hunter
+    input_match: '"subagent_type":\s*"lpk:bug-hunter"'
   - name: finds-the-off-by-one
     type: regex
     pattern: 'page\.mjs:?\s*(line\s*)?7\b|line\s*7\b'

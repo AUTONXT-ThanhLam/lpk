@@ -28,7 +28,7 @@ graders:
   - name: dispatched
     type: tool_used
     tool: Agent
-    input_match: security
+    input_match: '"subagent_type":\s*"lpk:security"'
   - name: names-the-missing-owner-check
     type: regex
     pattern: 'invoices\.mjs:?\s*(line\s*)?(6|7|8)\b|line\s*(6|7|8)\b'
