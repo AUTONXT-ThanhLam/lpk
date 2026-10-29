@@ -101,9 +101,14 @@ function keepLogs(repo, got) {
     const { out, ...rest } = v;
     got.set(i, rest);
     if (out === undefined || v.exit === 0 || v.exit === 'stopped') continue;
-    mkdirSync(dir, { recursive: true });
-    rest.log = join(dir, `${Date.now()}-${i + 1}.log`);
-    writeFileSync(rest.log, out);
+    const path = join(dir, `${Date.now()}-${i + 1}.log`);
+    try {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path, out);
+      rest.log = path;
+    } catch {
+      continue;
+    }
   }
 }
 

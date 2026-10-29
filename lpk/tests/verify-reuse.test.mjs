@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { hook, lpk, reason, repoWith, tmp, write } from './hooks-env.mjs';
@@ -42,6 +42,20 @@ test('R1: a failing check keeps its output in a log whose path is printed and re
   assert.equal(begin(slept, 'kl', '--verify', 'echo started; sleep 5').status, 0);
   assert.equal(lpk(slept, 'kl', 'verify', '--timeout', '1').status, 1);
   assert.match(readFileSync(lastVerify(slept).results[0].log, 'utf8'), /started/);
+});
+
+test('R1: a log that cannot be written leaves the result, the FAIL line and the record intact', () => {
+  const repo = fresh('reuse-nolog');
+  assert.equal(begin(repo, 'nl', '--verify', 'echo boom; exit 1').status, 0);
+  mkdirSync(runDir(repo), { recursive: true });
+  writeFileSync(logDir(repo), 'not a directory');
+  const red = lpk(repo, 'nl', 'verify');
+  assert.equal(red.status, 1, red.stdout + red.stderr);
+  assert.match(red.stdout, /FAIL `echo boom; exit 1` exit 1/);
+  assert.match(red.stdout, /boom/);
+  const [failed] = lastVerify(repo).results;
+  assert.equal(failed.exit, 1);
+  assert.equal(failed.log, undefined);
 });
 
 test('R2 R4: the next full verify runs only the checks not green on this tree and the record counts at the commit gate', () => {
