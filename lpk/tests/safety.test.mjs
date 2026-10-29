@@ -30,6 +30,23 @@ test('an agent cannot record the owner\'s waiver, even by naming the owner\'s ch
   ]) assert.match(reason(pre({ tool_name, tool_input })), /A waiver is the owner's act/, JSON.stringify(tool_input));
 });
 
+test('a command that only reads the run\'s records passes, and one that could write them is still denied', () => {
+  const bash = (command) => pre({ tool_name: 'Bash', tool_input: { command } });
+  for (const command of [
+    'cat .git/lpk/records.jsonl',
+    'cd /x && grep kind .git/lpk/records.jsonl | wc -l',
+    'git grep records.jsonl',
+  ]) assert.equal(bash(command), null, command);
+  for (const command of [
+    'cat a > .git/lpk/records.jsonl',
+    'grep x records.jsonl; echo y >> records.jsonl',
+    'cd /x && echo y >> .git/lpk/records.jsonl',
+    'cat $(echo > records.jsonl)',
+    'git grep -Osh x records.jsonl',
+    'cat records.jsonl && lpk waive F1 --why x',
+  ]) assert.match(reason(bash(command)), /A waiver is the owner's act/, command);
+});
+
 test('the lpk Chrome never opens a file: URL, and opens a local server', () => {
   const nav = (url, tool_name = 'mcp__plugin_lpk_chrome-devtools__navigate_page') => pre({ tool_name, tool_input: { url } });
   assert.match(reason(nav('file:///etc/passwd')), /never opens a `file:` URL/);

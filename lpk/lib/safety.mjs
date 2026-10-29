@@ -21,12 +21,22 @@ export function credentialTrip(input) {
 }
 
 // The owner's waiver is theirs alone: it comes from /lpk-waive or the waiver question, never from an
-// agent running `lpk waive` or writing the run's records. A tripwire on that literal text.
+// agent running `lpk waive` or writing the run's records. A tripwire on that literal text, except that
+// a command made only of `cd` and the fixed read-only commands below, with no redirect, `;`, `&`,
+// backtick or `$(`, may name the records to read them. `git grep -O` runs a program and stays refused.
 export const WAIVER_TEXT = ['lpk waive', 'cmd/waive.mjs', 'records.jsonl'];
+const READ_ONLY_WORDS = /^(cat|head|tail|wc|ls|grep|git grep)(\s|$)/;
+export function readsOnly(command) {
+  if (/[;<>`\n]|\$\(/.test(command)) return false;
+  const parts = command.split(/&&|\|\||\|/).map((p) => p.trim());
+  return parts.every((p) => !p.includes('&') && (/^cd\s+\S+$/.test(p) || (READ_ONLY_WORDS.test(p) && !/\s-O|--open-files-in-pager/.test(p))));
+}
 export function waiverTrip(input) {
   const t = input.tool_input ?? {};
-  const hit = input.tool_name === 'Bash' ? WAIVER_TEXT.find((c) => String(t.command || '').includes(c))
-    : /^(Write|Edit|MultiEdit)$/.test(input.tool_name || '') && String(t.file_path || '').endsWith('/lpk/records.jsonl') ? 'records.jsonl' : null;
+  const command = String(t.command || '');
+  const hits = input.tool_name === 'Bash' ? WAIVER_TEXT.filter((c) => command.includes(c))
+    : /^(Write|Edit|MultiEdit)$/.test(input.tool_name || '') && String(t.file_path || '').endsWith('/lpk/records.jsonl') ? ['records.jsonl'] : [];
+  const hit = hits.length === 1 && hits[0] === 'records.jsonl' && input.tool_name === 'Bash' && readsOnly(command) ? null : hits[0];
   return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.`) : null;
 }
 
