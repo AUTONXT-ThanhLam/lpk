@@ -112,12 +112,6 @@ and the seed data and every string follow `## Voice`.
 
 Run, on the built page, each at 1440 and 390 wide and in both schemes where the app has both:
 
-- `node designdiff.mjs <url> <proof>/DESIGN.md [--scheme dark]`: counts the pixels of the first
-  screen as rendered; exit 2 names a colour that covers 1% or more of them and is within no plan
-  colour. It also prints the share of chromatic pixels (a screen that is mostly colour is rarely the
-  result of a plan), the six most used neutrals with their hue (two families means the ramp is not
-  shared) and the planned colours that do not appear (the other scheme's are expected to be absent).
-  Fix the code or the plan, whichever was wrong, and say which.
 - `node copyfacts.mjs <url>`: prints counts of em dashes, exclamation marks, title case, long and
   generic button labels and hype words. It never fails: read the count and the samples against
   `## Voice` and fix what you would not have written.

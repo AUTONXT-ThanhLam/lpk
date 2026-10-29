@@ -59,15 +59,15 @@ says how, with the commands):
    `ring` and the ink steps (never pure grey, never `#fff` on `#000`), the type, the voice of the
    copy and the seed data, the signature element, the motions earned.
 4. **The build**, from sections 3 to 6 and the front matter of `DESIGN.md`.
-5. **The facts**: `designdiff.mjs`, `copyfacts.mjs`, `audit.mjs` and the checks of section 7.
+5. **The facts**: `copyfacts.mjs`, `audit.mjs` and the checks of section 7.
 6. **The critic**, a fresh agent that sees only screenshots, references and the job sentence, and
    one repair round.
 
 What the plan also holds, derived from the product's own objects rather than from the industry:
 
 - **The hue**: one, on the main data and on what needs the person; Apple blue or the starter's
-  default is a failed pick. The share of chromatic pixels is printed by `designdiff.mjs`: a screen
-  of mostly colour needs a reason, and more than one hue family in the neutrals is a defect.
+  default is a failed pick. A screen of
+  mostly colour needs a reason, and more than one hue family in the neutrals is a defect.
 - **The mark**: a name and a small drawn mark in the shell, built from one of the product's
   objects, not an icon-set glyph beside a word.
 - **One signature element** only this product has, built from its own objects and drawn rather
@@ -195,8 +195,7 @@ and fix what they print:
   Tab stop. Exit 2 means clipped or overlapping text, a covered control, page overflow, an unloaded
   face, a Tab stop without a focus ring, `transition: all`, `ease-in` or a viewport that blocks
   zoom; its other lines are for you to judge.
-- `node designdiff.mjs <url> <DESIGN.md>` (exit 2: a colour outside the plan) and `node
-  copyfacts.mjs <url>` (counts for you to read against the voice), as `refs.md` stage 5 says.
+- `node copyfacts.mjs <url>` (counts for you to read against the voice), as `refs.md` stage 5 says.
 
 Then capture 1440x900 and 390x844 in light and dark, the selected, empty and loading states, and
 the three media features emulated (`prefers-reduced-transparency`, `prefers-contrast`,

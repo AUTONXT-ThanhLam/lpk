@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { copyFacts } from '../skills/ui-craft/copyfacts.mjs';
-import { colourCounts, diff, planColours } from '../skills/ui-craft/designdiff.mjs';
 import { parseHex, wcag } from '../skills/ui-craft/palette.mjs';
 import { buckets } from '../skills/ui-craft/sample.mjs';
 
@@ -51,59 +48,10 @@ test('palette refuses a malformed colour and a make without a hue with usage and
   }
 });
 
-const PLAN = `---\nname: Brew\ncolors:\n  ground: "#f4f6fa"\n  accent: '#a94700' # reference 2\ntypography:\n  body:\n    color: "#123456"\nrounded:\n  md: 8px\n---\n\n# Brew\n\n- note: #654321\n`;
-const built = (hex, weight) => ({ rgb: parseHex(hex), weight, where: 'background div' });
-
-test('the plan reads only the colour lines under colors in the front matter', () => {
-  assert.deepEqual(planColours(PLAN), [{ name: 'ground', hex: '#f4f6fa' }, { name: 'accent', hex: '#a94700' }]);
-});
-
-test('a built colour that is in no plan colour and covers enough of the screen is reported, a planned or tiny one is not', () => {
-  const plan = planColours(PLAN);
-  const r = diff(plan, [built('#f4f6fa', 80), built('#a94800', 5), built('#2a9d3c', 14), built('#ff00ff', 0.5)]);
-  assert.deepEqual(r.unplanned.map((u) => u.hex), ['#2a9d3c']);
-  assert.deepEqual(r.unused, []);
-  assert.deepEqual(diff(plan, [built('#f4f6fa', 100)]).unused, ['accent #a94700']);
-});
-
-test('the pixels of a screenshot give each colour its share of the screen, the page ground included', () => {
-  const px = (rgb, n) => Array.from({ length: n }, () => [...rgb, 255]).flat();
-  const { total, colours } = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 80), ...px([169, 71, 0], 15), ...px([42, 157, 60], 5)]), 10);
-  assert.equal(total, 100);
-  const r = diff(planColours(PLAN), colours, { total });
-  assert.equal(r.neutrals[0].share, 80);
-  assert.equal(r.chromaticShare, 20);
-  assert.deepEqual(r.unplanned.map((u) => [u.hex, u.share]), [['#2a9d3c', 5]]);
-});
-
-test('a gradient is grouped by near colour before the share cut, and a planned colour in a tiny element is not unused', () => {
-  const px = (rgb, n) => Array.from({ length: n }, () => [...rgb, 255]).flat();
-  const steps = Array.from({ length: 50 }, (_, i) => px([255 - i * 5, 0, i * 5], 4)).flat();
-  const gradient = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 100), ...steps]), 30);
-  assert.ok(diff(planColours(PLAN), gradient.colours, { total: gradient.total }).unplanned.length > 0);
-  const dot = colourCounts(Uint8ClampedArray.from([...px([244, 246, 250], 99999), ...px([169, 71, 0], 1)]), 100);
-  assert.deepEqual(diff(planColours(PLAN), dot.colours, { total: dot.total }).unused, []);
-});
-
-test('a plan colour written in a form the diff cannot read is refused with a usage error', () => {
-  const file = join(mkdtempSync(join(tmpdir(), 'plan-')), 'DESIGN.md');
-  writeFileSync(file, '---\nname: Brew\ncolors:\n  ground: "#f4f6fa80"\n---\n');
-  const r = run('designdiff.mjs', 'http://127.0.0.1:1/', file);
+test('copyfacts without a url prints usage and exits 2', () => {
+  const r = run('copyfacts.mjs');
   assert.equal(r.status, 2);
-  assert.match(r.stderr, /not #rgb or #rrggbb/);
-});
-
-test('designdiff and copyfacts without a url print usage and exit 2', () => {
-  for (const script of ['designdiff.mjs', 'copyfacts.mjs']) {
-    const r = run(script);
-    assert.equal(r.status, 2, script);
-    assert.match(r.stderr, new RegExp(`usage: ${script}`));
-  }
-  const file = join(mkdtempSync(join(tmpdir(), 'plan-')), 'DESIGN.md');
-  writeFileSync(file, '---\nname: Brew\n---\n\n# Brew\n\n- ground: #f4f6fa\n');
-  const noPlan = run('designdiff.mjs', 'http://127.0.0.1:1/', file);
-  assert.equal(noPlan.status, 2);
-  assert.match(noPlan.stderr, /colors:/);
+  assert.match(r.stderr, /usage: copyfacts\.mjs/);
 });
 
 test('copyfacts counts em dashes, exclamations, title case, long and generic buttons and hype words, and decides nothing', () => {
