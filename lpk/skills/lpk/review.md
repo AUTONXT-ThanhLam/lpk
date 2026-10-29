@@ -41,7 +41,7 @@ the repo, base, commit, bundle, request, scenarios (each with the request senten
 failure table (each row with its `provedBy`), the surface (URL, start command and each login with its role; for a CLI, its command), the main instance,
 the related-test command and the e2e scripts the builders wrote; `range` exactly as `lpk review start`
 printed it, and `lenses` the `lens` of every row `lpk reviews owed --json` lists, in its order and
-with each repeat (a lens owed twice runs twice). Set `mutantAfterProver` from the env agent's `db` line. When the scenarios and
+with each repeat (a lens owed twice runs twice). Set `mutantAfterProver` to true when the env agent's `db` line shows the test command and the app share a database or a port. When the scenarios and
 failure rows run on two or more surfaces or screens, set `proverGroups`, one group per surface or
 screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
 Prover per group finishes sooner and reads a shorter context. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
