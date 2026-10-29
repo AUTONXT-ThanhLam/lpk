@@ -24,6 +24,16 @@ requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover j
 memory); fix it before you build. Its hooks then show a hint after each edit: fix each one at
 once, or know the one line that says why it is right.
 
+## Run the final tier
+
+1. Register each slow check that CI runs with `--verify-final`. `lpk verify` runs the fast tier only.
+2. In the review step, after you freeze the commit with `lpk run worktree review <commit>`, run
+   `lpk verify --final --repo <review worktree>` with Bash `run_in_background`. A foreground call
+   ends at 600000 ms, before a real suite does.
+3. Run it beside the review net, against its own database or port. Never run two final runs at once.
+4. After the fix round, run it again on the new frozen tree: a record belongs to one tree only.
+5. Delivery needs both tiers green on the tree of HEAD (`lpk gates` shows it).
+
 ## Build with its tests
 
 1. Build one scenario at a time, red first. For each scenario or failure row of your slice: write
