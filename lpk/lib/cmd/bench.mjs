@@ -16,7 +16,6 @@ const ms = (x) => (x === null || x === undefined ? 'n/a' : `${(x / 1000).toFixed
 // them only for resident text, at 4 bytes per token.
 const est = (bytes) => Math.round(bytes / 4);
 const read = (file) => { try { return readFileSync(file, 'utf8'); } catch { return ''; } };
-const jsonl = (text) => text.split('\n').flatMap((l) => { try { return l.trim() ? [JSON.parse(l)] : []; } catch { return []; } });
 
 // A lens name as the ledger and the transcripts both write it: `code-review:sonnet`, `lpk:ocr`.
 const lensOf = (from) => String(from || 'unknown');
@@ -212,7 +211,7 @@ export async function main(argv) {
   const stores = [];
   for (const c of configCandidates()) {
     const projects = join(c.dir, 'projects');
-    if (!existsSync(projects)) { hostsOut.push({ host: c.host, root: projects, sessions: [], transcripts: [], fresh: null, cacheRead: null, tokensAvailable: null, note: 'no transcript store of this host on this machine' }); continue; }
+    if (!existsSync(projects)) { hostsOut.push({ host: c.host, root: projects, sessions: [], transcripts: [], fresh: null, cacheRead: null, tokensAvailable: null, note: 'no transcript store on this machine' }); continue; }
     const mine = known.filter((x) => (x.where.host || '') === c.host);
     const others = [...new Set([...slugs].flatMap((slug) => { try { return readdirSync(join(projects, slug)); } catch { return []; } }))].filter((f) => f.endsWith('.jsonl')).map((f) => f.replace(/\.jsonl$/, ''));
     const extra = others.slice(0, 4).filter((s) => !mine.some((x) => x.session === s))
@@ -227,8 +226,7 @@ export async function main(argv) {
       transcripts: sample.flatMap((x) => x.rows.map((r) => ({ agent: r.agent, host: r.host, recorded: r.recorded, fresh: r.recorded ? r.fresh : null, cacheRead: r.recorded ? r.cacheRead : null }))),
       fresh: t.recorded ? t.fresh : null, cacheRead: t.recorded ? t.cacheRead : null,
       tokensAvailable: t.recorded,
-      note: t.recorded ? '' : `SKIPPED for cost: ${TOKENS_UNMEASURED} (${c.host} writes every usage count as 0, so a token figure for its runs is unavailable, not 0)${mine.length ? '' : '; no lpk run row names a session of this host'}`,
-      ...(t.recorded ? {} : { creditsSum: creditsOf(sample.map((x) => x.session)), creditsNote: 'the only cost figure this host writes is `credits`; summed once per message id, as meter.mjs counts tokens' }),
+      note: t.recorded ? '' : `SKIPPED for cost: ${TOKENS_UNMEASURED} (no usage count in the sampled transcripts is above 0, so a token figure for its runs is unavailable, not 0)${mine.length ? '' : '; no lpk run row names a session in this store'}`,
     });
     if (!t.recorded || a.flags.has('--no-transcripts')) continue;
     stores.push({ host: c.host, sessions: mine });
@@ -280,7 +278,7 @@ export async function main(argv) {
       }
     }
   }
-  // A run whose session no store of these holds, or whose host writes no counts: said so, not left
+  // A run whose session no transcript store holds, or whose transcripts carry no counts: said so, not left
   // out, and never answered with a 0.
   const withRows = new Set(runRows.map((r) => r.id));
   const hostOf_ = new Map(known.map((x) => [x.session, x.where.host || 'unknown']));
@@ -293,7 +291,7 @@ export async function main(argv) {
       findings: (led.byRun.get(r.id) || []).length, fixed: (led.byRun.get(r.id) || []).filter((f) => f.state === 'fixed').length,
       fresh: null, cacheRead: null, criticalPathMs: null, lensMsSum: null, leadMs: null, longPole: '', lenses: {},
       note: quiet.has(h) ? `${h} transcripts write no token counts: its fresh tokens are unavailable, not 0`
-        : r.session ? `no transcript of session ${r.session} on either host` : 'run recorded without a session id',
+        : r.session ? `no transcript of session ${r.session}` : 'run recorded without a session id',
     });
   }
 
@@ -361,7 +359,7 @@ export async function main(argv) {
   const head = [`bench: ${runs.length} distinct runs of ${all.length} rows in runs.jsonl (${dupRows} snapshot rows folded; ${Object.entries(out.runs.lanes).map(([k, v]) => `${k} ${v}`).join(', ')}); ledgers on disk for ${out.runs.withLedger} runs, absent for ${out.runs.withoutLedger}; transcripts of ${out.runs.withTranscripts} runs`];
   const lensRows = ['lens | raised | fixed | confirmed | dropped | dup | preexist | uniq | tokens fixed | fresh tokens | cache reads | wall'];
   for (const l of out.lenses) lensRows.push(`  ${l.lens} | ${l.raised} | ${l.fixed} | ${l.confirmed} | ${l.dropped} | ${l.duplicate} | ${l.preexisting} | ${l.unique} | ${n(l.tokensPerFixed)} | ${n(l.fresh)} | ${n(l.cacheRead)} | ${ms(l.ms)}`);
-  const hostRows = out.hosts.map((h) => `  host ${h.host}: ${h.ofTheseRuns ?? 0} of these runs' sessions, ${h.agents ?? 0} transcript(s) read; fresh tokens ${h.tokensAvailable ? n(h.fresh) : 'UNAVAILABLE (SKIPPED)'}, cache reads ${h.tokensAvailable ? n(h.cacheRead) : 'SKIPPED'}${h.creditsSum !== undefined ? `, credits ${h.creditsSum}` : ''}. ${h.note}`);
+  const hostRows = out.hosts.map((h) => `  host ${h.host}: ${h.ofTheseRuns ?? 0} of these runs' sessions, ${h.agents ?? 0} transcript(s) read; fresh tokens ${h.tokensAvailable ? n(h.fresh) : 'UNAVAILABLE (SKIPPED)'}, cache reads ${h.tokensAvailable ? n(h.cacheRead) : 'SKIPPED'}. ${h.note}`);
   const cliRows = ['  CLI lens runs (from the records, the only cost a headless child leaves):', ...out.cliLensRuns.map((c) => `  ${c.lens}: ${c.runs} runs, ${c.findingsReturned} findings returned, ${c.exitNonzero} nonzero exit, ${ms(c.ms)} wall, fresh ${n(c.fresh)}, cache reads ${n(c.cacheRead)}`)];
   const wallRows = ['  wall, longest runs first (critical path vs the sum of the lenses in it):', ...[...out.wall.runs].sort((x, y) => (y.criticalPathMs || 0) - (x.criticalPathMs || 0)).slice(0, 12).map((r) => `  ${r.id} ${r.repo} [${r.lane}] ledger:${r.ledger}: run wall ${ms(r.wallMs)}, critical path ${ms(r.criticalPathMs)}, lens sum ${ms(r.lensMsSum)}, long pole ${r.longPole || 'n/a'}, findings ${r.findings} fixed ${r.fixed}`)];
   const bornRows = [
@@ -381,24 +379,4 @@ export async function main(argv) {
     ...(out.runs.unrecordedLedgers.length ? ['', `ledgers with no run row (${out.runs.unrecordedLedgers.length}), so not counted above:`, ...out.runs.unrecordedLedgers.map((x) => `  ${x.run}: ${x.findings} findings, ${x.fixed} fixed`)] : []),
   ]));
   return 0;
-}
-
-// The one cost figure a host that writes no token counts does write: `credits` per API message,
-// summed once per message id, exactly as meter.mjs counts tokens. Null when the host writes neither.
-function creditsOf(sessions) {
-  const seen = new Set();
-  let sum = 0, any = false;
-  for (const s of sessions) {
-    const found = sessionFiles(s);
-    if (!found) continue;
-    for (const f of [found.main, ...found.agents].filter(Boolean)) {
-      for (const d of jsonl(read(f))) {
-        const m = d.type === 'assistant' ? d.message : null;
-        if (!m?.usage || !m.id || seen.has(m.id)) continue;
-        seen.add(m.id);
-        if (typeof m.usage.credits === 'number') { sum += m.usage.credits; any = true; }
-      }
-    }
-  }
-  return any ? Math.round(sum * 100) / 100 : null;
 }

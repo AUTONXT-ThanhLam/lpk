@@ -24,7 +24,7 @@ export function sessionFiles(session, root) {
   return null;
 }
 
-// The newest session transcript of the project folder for `dir`, in either store.
+// The newest session transcript of the project folder for `dir`.
 export function latestSession(dir, root) {
   let best = null;
   for (const projects of roots(root)) {

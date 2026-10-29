@@ -91,14 +91,14 @@ test('fresh tokens leave cache reads out, and say so per agent and per lens', ()
   assert.equal(j.cliLensRuns.find((c) => c.lens === 'security-review:sonnet').runs, 1);
 });
 
-test('a host that writes usage as zeros has no token figure: unavailable, never 0', () => {
+test('a store whose usage counts are all zeros has no token figure: unavailable, never 0', () => {
   plant('bench-zero');
   const measured = out(tmp).hosts.find((h) => h.host === 'claude');
   assert.equal(measured.tokensAvailable, true);
   assert.ok(measured.fresh > 0);
   const kept = ENV.CLAUDE_CONFIG_DIR;
   ENV.CLAUDE_CONFIG_DIR = join(tmp, 'claude-zero');
-  let j;
+  let j, text;
   try {
     write(join(ENV.CLAUDE_CONFIG_DIR, 'projects', '-work-repo'), 's-zero.jsonl', jsonl([
       { type: 'user', timestamp: '2026-10-21T09:59:00Z', message: { content: 'go' } },
@@ -106,6 +106,7 @@ test('a host that writes usage as zeros has no token figure: unavailable, never 
       msg('z2', [0, 0, 0, 0], '2026-10-21T10:01:00Z'),
     ]));
     j = out(tmp);
+    text = bench(tmp).stdout;
   } finally { ENV.CLAUDE_CONFIG_DIR = kept; }
   assert.equal(j.hosts.length, 1);
   const q = j.hosts[0];
@@ -116,6 +117,8 @@ test('a host that writes usage as zeros has no token figure: unavailable, never 
   assert.equal(j.missing.tokensUnavailableFor.join(), 'claude');
   assert.match(q.note, /SKIPPED/, 'the note says the row was skipped and why');
   assert.match(q.note, /unavailable, not 0/);
+  assert.ok(!('creditsSum' in q) && !('creditsNote' in q), 'the zero-usage row carries no credits figure');
+  assert.ok(!JSON.stringify(j).includes('credits'));
   assert.ok(!JSON.stringify(q).includes('"fresh":0'), 'no zero of a token figure stands in for the absent measurement, not even per transcript');
   // The run made on that host keeps its row, with the reason its cost is blank.
   const r2 = j.wall.runs.find((r) => r.id === RUN2);
@@ -123,6 +126,8 @@ test('a host that writes usage as zeros has no token figure: unavailable, never 
   assert.equal(r2.fresh, null);
   assert.match(r2.note, /unavailable, not 0/);
   assert.equal(r2.host, 'claude');
+  assert.match(text, /fresh tokens UNAVAILABLE \(SKIPPED\), cache reads SKIPPED\. SKIPPED for cost: tokens not recorded by this host/);
+  assert.ok(!/credits/.test(text), 'a store with no usage prints no credits fragment');
 });
 
 test('a finding only one lens raised counts once, and a shared file does not count as unique', () => {
