@@ -21,8 +21,6 @@ export function inWindow(st, from, to) {
 const NOT_THE_OWNER = /^\s*(<task-notification>|<local-command|\[Request interrupted by user)/;
 const textOf = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter((b) => b?.type === 'text').map((b) => b.text).join('\n') : '');
 
-// When the owner spoke in a main transcript, in ms: a prompt they typed, or the answer to an
-// AskUserQuestion. A background task's notice, a command's output and a tool result are not them.
 export function ownerTimes(text) {
   const times = new Set();
   const asked = new Set();
@@ -40,8 +38,6 @@ export function ownerTimes(text) {
   return times;
 }
 
-// The time the window sat waiting for the owner: each gap in the merged work of every transcript, the
-// lead's included, that closes at a moment the owner spoke. A gap a notice closes is no owner time.
 export function idle(spans, owner, from = -Infinity, to = Infinity) {
   const cut = spans.map(([a, b]) => [Math.max(a, from), Math.min(b, to)]).filter(([a, b]) => b > a).sort((x, y) => x[0] - y[0]);
   let total = 0, last = null;

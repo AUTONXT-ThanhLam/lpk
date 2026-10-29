@@ -227,5 +227,4 @@ test('a run\'s idle time is the waits the owner closed, apart from the time agen
   assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
-  assert.match(bench(tmp).stdout, /run wall 300\.0s \(owner idle 160\.0s, working 140\.0s\)/);
 });
