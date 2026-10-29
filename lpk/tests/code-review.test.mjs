@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, lpk, noHost, repoWith, sh, tmp, write } from './gates-env.mjs';
-import { readLedger } from '../lib/findings.mjs';
+import { readLedger, ruleOn } from '../lib/findings.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const owed = (repo, S, env = ENV) => JSON.parse(spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: { ...env, CLAUDE_CODE_SESSION_ID: S }, encoding: 'utf8' }).stdout).map((r) => r.lens);
@@ -50,6 +50,29 @@ test('a code review adds its findings to the ledger and pays the code review the
   const args = seen(bin).argv;
   assert.deepEqual(args.slice(0, 4), ['-p', '/code-review high --max-findings all', '--model', 'sonnet']);
   assert.match(args[args.indexOf('--append-system-prompt') + 1], /^You review a diff\./);
+});
+
+test('the child is given a fallback model only when --fallback-model is passed', () => {
+  const S = 'crfallback';
+  const repo = changedRepo('crfallback', S);
+  const bin = fakeClaude('claude-fallback', [report, result]);
+  ok(codeReview(repo, S, bin));
+  assert.ok(!seen(bin).argv.includes('--fallback-model'), 'no fallback model unless asked');
+  ok(codeReview(repo, S, bin, '--fallback-model', 'opus'));
+  const args = seen(bin).argv;
+  assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
+});
+
+test('a code review finding the verifier confirms carries reach and born into the ledger and the report', () => {
+  const S = 'crreach';
+  const repo = changedRepo('crreach', S);
+  ok(codeReview(repo, S, fakeClaude('claude-reach', [report, result])));
+  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
+  const [f] = readLedger(repo).findings;
+  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'build', 'user']);
+  const shown = lpk(repo, S, 'report').stdout;
+  assert.match(shown, /^Confirmed defects by the step they began in: build 1$/m);
+  assert.match(shown, /^Confirmed defects by who meets them: user 1$/m);
 });
 
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {

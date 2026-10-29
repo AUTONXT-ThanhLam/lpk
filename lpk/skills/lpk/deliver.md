@@ -2,8 +2,7 @@
 
 **Goal.** A PR the tech lead can merge, with CI green for the right reasons, a body that claims only
 what the code does, and a report the owner reads in ten seconds. The report never says "delivered"
-unless `lpk gates` holds on the HEAD it names. The verify gate holds when both tiers, fast and
-final, are green on the tree of that HEAD.
+unless `lpk gates` holds on the HEAD it names.
 
 ## CI
 
@@ -64,8 +63,7 @@ newest review is on the head and no row is open.
 
 ## Handover
 
-1. Run `lpk report`: it runs `lpk gates` and prints every number from the records. A gate that does
-   not hold names what it read and the way out.
+1. Run `lpk report`: it runs `lpk gates` and prints every number from the records.
 2. Ask the owner one question with `AskUserQuestion`, with `metadata.source: "lpk:waive"`: the PR
    question (draft, ready, merge, as this repo's CLAUDE files authorize), and, multi-select, only
    the gates that do not hold for a reason no agent can fix (a service that is down, a lens that

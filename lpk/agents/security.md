@@ -1,6 +1,7 @@
 ---
 name: security
 description: Reviews a committed change for the security holes an attacker can exploit through it, each with the steps that exploit it. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios. It reads code and runs read-only commands; it never edits.
+model: sonnet
 effort: high
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*

@@ -1,6 +1,7 @@
 ---
 name: code-reviewer
 description: Reviews one range of a change from its diff alone, against the repo's own review rules and the request it was given, and returns the rule broken, the intent contradicted, the case no test in the diff covers, and the leftover the diff creates, each with a reproduction. Give it the repo, the base commit, the commit under review and the facts bundle directory. It reads code and runs read-only commands; it never edits.
+model: sonnet
 effort: high
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*

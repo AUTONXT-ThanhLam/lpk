@@ -34,8 +34,8 @@ new versions.
 ## Needs
 
 Node 24, git, the GitHub CLI `gh` (signed in) and Google Chrome or Chromium — and Claude
-Code to run it in. lpk needs no model CLI of its own: every agent it dispatches runs on the
-model your session chose.
+Code to run it in. lpk needs no model CLI of its own: each agent runs on the model its file
+names (`model:` in `agents/`); your session's model is the captain's.
 The rest comes with the plugin: the first session fetches gitleaks (pinned, checked against its
 release checksums) into `~/.local/share/lpk/bin` for the push guard, and OpenCodeReview and the
 Chrome DevTools server run through `npx` at pinned versions. `node <plugin>/bin/lpk setup` does
@@ -52,8 +52,8 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 ## Roles
 
-Every agent runs on the model the session chose, so `/model` (or Claude Code's model setting) is the
-run's one cost-and-quality knob; `effort` is still set per role in its file under `agents/`. What an
+Each agent's file sets its `model` (Sonnet) and `effort`. Run the session itself on Sonnet with an Opus
+`advisorModel`; a plugin cannot set the session's model. What an
 agent may not do is set there too, not in prose: the reviewing roles cannot edit files, and the
 architects write only their own briefs.
 

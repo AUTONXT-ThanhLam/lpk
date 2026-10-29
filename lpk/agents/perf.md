@@ -1,6 +1,7 @@
 ---
 name: perf
 description: Looks for what a committed change makes slower or hungrier than the base, at the load its users actually bring, and returns each regression with a measurement on both. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios, and the URL of the running app when the change touches a screen. It reads code and runs read-only commands; it never edits.
+model: sonnet
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write, mcp__plugin_lpk_chrome-devtools__*, mcp__chrome-devtools__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData
@@ -30,10 +31,8 @@ Measure it where you can: run the code path on the base and on the commit with t
 outside the repo under the system temp directory (`git worktree add --detach <tmp>/<name>-base
 <base>`, removed when you are done). For a page, the lpk Chrome is
 `mcp__plugin_lpk_chrome-devtools__*` on a page you open with `new_page` (pages you open are yours
-and close when you stop): `performance_start_trace` reloads, records and reports LCP, CLS, total
-blocking time, long tasks and load timings, `performance_analyze_insight` explains one insight
-(`DocumentLatency`, `LCPBreakdown`), and `list_network_requests` shows what the page fetches and
-how many bytes. Run the same trace on the base's instance and compare the numbers. Heavy runs go
+and close when you stop): `performance_start_trace`, `performance_analyze_insight` and
+`list_network_requests` measure it. Run the same trace on the base's instance and compare the numbers. Heavy runs go
 through `lpk slot -- <command>`, so two benchmarks never share the machine's memory.
 
 A number needs a protocol before it is a finding: say whether the cache was cold or warm, use the

@@ -1,6 +1,7 @@
 ---
 name: design-critic
 description: Checks a Design Brief against the code before anything is built, running what the design relies on, and blocks a design that would ship a defect the team's tech lead blocks merges for. Give it the brief path, the repo path, the base branch, and the `lpk precedent` output. It reads code and runs read-only commands; it never edits.
+model: sonnet
 effort: high
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*

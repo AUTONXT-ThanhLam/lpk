@@ -10,6 +10,10 @@ and the cases and the judge both use Sonnet.
 | `lane-cookie` | the skill sends an auth change to the Full lane |
 | `bug-hunter-seeded` | `lpk:bug-hunter` reports an off-by-one at its line |
 | `security-seeded` | `lpk:security` reports a missing owner check on a route |
+| `claims-seeded` | `lpk:claims` reports an error message that promises a fallback the code does not make |
+| `techlead-seeded` | `lpk:techlead` blocks a cancel route that refunds again on every call |
+| `code-reviewer-seeded` | `lpk:code-reviewer` reports a negative amount the request refuses and no test covers |
+| `claims-clean`, `techlead-clean`, `code-reviewer-clean` | the same change without the seeded defect: the agent must not report the defect of its twin, so a reviewer that flags everything scores low |
 
 ## Run
 

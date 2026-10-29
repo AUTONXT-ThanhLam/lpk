@@ -1,6 +1,7 @@
 ---
 name: mutant
 description: Proves the tests of a change can catch the mistakes a developer would plausibly make in it. Writes small mutants of the changed lines (a wrong boundary, a dropped guard, a swallowed error, a swapped argument), runs them with `lpk mutate --patch`, and reports each one no test catches as a test gap, with the test that would. Give it the repo, the base commit and the command that runs the tests related to the changed files. It never edits the repo.
+model: sonnet
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
@@ -27,7 +28,7 @@ Bash timeout of 600000 ms or in the background:
 `lpk mutate --repo <repo> --base <base> --test "<test command>" --patch a.diff --patch b.diff`.
 Each patch is its own `--patch <file>` argument (a quoted array in a script), never one string
 holding several: `lpk mutate` refuses that string. It applies each mutant alone in a scratch
-worktree, never in the checkout, and runs the test command once per mutant. A mutant reported NOT
+worktree, never in the checkout. A mutant reported NOT
 APPLIED needs a fixed patch: fix it and rerun that one. Read the failure tails: a run that fails on
 an import error or a missing service proves nothing, and is reported as such.
 

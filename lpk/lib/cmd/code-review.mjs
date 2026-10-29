@@ -17,7 +17,6 @@ const USAGE = `usage: lpk code-review [--repo <dir>] [--range <from>..<to> | --b
   --range    a fix delta: only <from>..<to>, told which findings the ledger already holds`;
 
 const DECISIONS_SHOWN = 40;
-const OTHER = { sonnet: 'opus', opus: 'sonnet' };
 const CLEANUP = ['simplification', 'efficiency', 'reuse', 'altitude'];
 
 function alreadyRaised(repo) {
@@ -67,7 +66,7 @@ export async function main(argv) {
   const dir = outDir(repo);
   const recordFile = join(dir, `${name}.json`), rawFile = join(dir, `${name}.stream.jsonl`);
   const append = [roleBody(), intended(repo), delta ? alreadyRaised(repo) : ''].filter(Boolean).join('\n\n');
-  const res = await codeReview({ repo, a: r.a, b: r.b, level, model, fallbackModel: a.opt('--fallback-model') || OTHER[model], effort, appendSystemPrompt: append, timeoutMs, rawFile });
+  const res = await codeReview({ repo, a: r.a, b: r.b, level, model, fallbackModel: a.opt('--fallback-model'), effort, appendSystemPrompt: append, timeoutMs, rawFile });
 
   const from = `code-review:${model}`;
   const ids = [], refused = [];
