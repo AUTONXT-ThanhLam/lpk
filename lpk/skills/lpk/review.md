@@ -106,7 +106,7 @@ other.
 5. Note your branch head, then bring each builder's commit in with `git cherry-pick`. Run
    `lpk fixlines <commit>` for each: it prints the fix's lines that an earlier commit of this run
    wrote. A confirmed finding on those lines means revert or redesign, never another patch.
-6. When the last commit of the round is in, run `lpk verify` once, then the final tier on the new head ("Run the final tier" in `build.md`), beside the delta review.
+6. When the last commit of the round is in, run `lpk verify` once, then the final tier on the new head, frozen as `review-2` (step 4 of "Run the final tier" in `build.md`), beside the delta review.
    When a tier is red, the builder of the fix that broke it amends that commit, never a commit of its
    own, because a commit that closes no finding owes the whole net. Whenever a commit you picked
    is amended, drop your picks with `git reset --keep <the head you noted>` (they are yours and
