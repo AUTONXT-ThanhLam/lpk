@@ -1,0 +1,298 @@
+:root {
+  color-scheme: light dark;
+
+  --hue: 0;
+  --chroma: 0;
+  --accent-h: 0;
+  --accent-c: 0;
+
+  --ground: light-dark(oklch(0.965 var(--chroma) var(--hue)), oklch(0.16 var(--chroma) var(--hue)));
+  --raised: light-dark(oklch(0.992 var(--chroma) var(--hue)), oklch(0.205 var(--chroma) var(--hue)));
+  --overlay: light-dark(oklch(1 var(--chroma) var(--hue)), oklch(0.25 var(--chroma) var(--hue)));
+
+  --text: light-dark(oklch(0.2 var(--chroma) var(--hue)), oklch(0.96 var(--chroma) var(--hue)));
+  --text-2: light-dark(oklch(0.42 var(--chroma) var(--hue)), oklch(0.78 var(--chroma) var(--hue)));
+
+  --accent: light-dark(oklch(0.5 var(--accent-c) var(--accent-h)), oklch(0.72 var(--accent-c) var(--accent-h)));
+  --on-accent: light-dark(oklch(0.99 0 0), oklch(0.18 0 0));
+  --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
+
+  --ring-color: light-dark(oklch(0 0 0 / 0.08), oklch(1 0 0 / 0.1));
+  --ring: 0 0 0 1px var(--ring-color);
+  --edge-top: inset 0 1px 0 light-dark(oklch(1 0 0 / 0.7), oklch(1 0 0 / 0.14));
+  --edge-strong: var(--text);
+  --sh: light-dark(oklch(0.15 var(--chroma) var(--hue)), oklch(0 0 0));
+
+  --shadow-1: var(--ring), 0 1px 2px color-mix(in oklab, var(--sh) 7%, transparent), 0 1px 1px color-mix(in oklab, var(--sh) 4%, transparent);
+  --shadow-2:
+    var(--ring),
+    0 2px 4px color-mix(in oklab, var(--sh) 6%, transparent),
+    0 8px 16px color-mix(in oklab, var(--sh) 9%, transparent),
+    0 16px 32px color-mix(in oklab, var(--sh) 7%, transparent);
+  --shadow-3:
+    var(--ring),
+    0 4px 8px color-mix(in oklab, var(--sh) 7%, transparent),
+    0 16px 32px color-mix(in oklab, var(--sh) 11%, transparent),
+    0 32px 64px color-mix(in oklab, var(--sh) 13%, transparent);
+
+  --radius-m: 6px;
+  --radius-l: 8px;
+  --radius-xl: 12px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-2xl: 1.5rem;
+
+  --blur: 20px;
+  --saturate: 180%;
+}
+
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font: 450 var(--text-base) / 1.4 var(--font-sans);
+  letter-spacing: 0;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.t-title,
+.t-heading {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.t-title { font-size: var(--text-2xl); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.t-heading { font-size: var(--text-lg); font-weight: 600; line-height: 1.25; letter-spacing: -0.005em; }
+.t-small { font-size: var(--text-sm); line-height: 1.4; letter-spacing: 0.003em; }
+.t-caption { font-size: var(--text-xs); line-height: 1.35; letter-spacing: 0.01em; color: var(--text-2); }
+.t-prose { max-width: 65ch; }
+.t-num { font-variant-numeric: tabular-nums; }
+
+.raised { background: var(--raised); box-shadow: var(--shadow-1); border-radius: var(--radius-l); }
+.overlay { background: var(--overlay); box-shadow: var(--shadow-2); border-radius: var(--radius-l); }
+.overlay-lg { background: var(--overlay); box-shadow: var(--shadow-3); border-radius: var(--radius-xl); }
+
+.material {
+  background: color-mix(in oklab, var(--overlay) 68%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--saturate));
+  backdrop-filter: blur(var(--blur)) saturate(var(--saturate));
+  box-shadow: var(--ring), var(--edge-top), 0 8px 24px color-mix(in oklab, var(--sh) 10%, transparent);
+}
+
+.material-thick {
+  background: color-mix(in oklab, var(--ground) 80%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(var(--saturate));
+  backdrop-filter: blur(30px) saturate(var(--saturate));
+  box-shadow: var(--ring), var(--edge-top);
+}
+
+.material-bar { position: sticky; top: 0; z-index: 10; border-radius: 0; box-shadow: 0 1px 0 var(--ring-color), var(--edge-top); }
+
+.material .material,
+.material-thick .material,
+.material .material-thick {
+  background: var(--overlay);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .material,
+  .material-thick {
+    background: var(--overlay);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material,
+  .material-thick {
+    background: var(--overlay);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .material,
+  .material-thick {
+    background: var(--overlay);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 0 0 1px var(--edge-strong);
+  }
+
+  .material-bar {
+    box-shadow: 0 1px 0 var(--edge-strong);
+  }
+
+  .raised,
+  .overlay,
+  .overlay-lg {
+    box-shadow: 0 0 0 1px var(--edge-strong);
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+  font: 450 var(--text-sm) / 1 var(--font-sans);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 150ms ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--ring), var(--edge-top);
+}
+
+.btn-quiet { background: transparent; box-shadow: none; }
+
+.pressable { transition: transform 160ms var(--ease-out); }
+
+.btn:active,
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: color-mix(in oklab, var(--raised), var(--text) 5%); }
+  .btn-primary:hover { background: color-mix(in oklab, var(--accent), var(--text) 8%); }
+  .btn-quiet:hover { background: var(--accent-soft); }
+  .row:hover { background: color-mix(in oklab, var(--raised), var(--text) 4%); }
+}
+
+.field {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--sh) 8%, transparent), var(--ring);
+  font: 450 var(--text-base) / 1.4 var(--font-sans);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .field,
+  .hit {
+    min-height: 44px;
+  }
+
+  .field {
+    font-size: 16px;
+  }
+
+  .hit {
+    min-width: 44px;
+  }
+}
+
+[data-enter] {
+  --enter-from: scale(0.95);
+  --enter-time: 200ms;
+  --enter-ease: var(--ease-out);
+  transform-origin: var(--transform-origin, var(--origin, center));
+  transition:
+    opacity var(--enter-time) var(--enter-ease),
+    transform var(--enter-time) var(--enter-ease);
+}
+
+[data-enter="menu"] { --enter-time: 150ms; }
+[data-enter="tooltip"] { --enter-from: scale(0.97); --enter-time: 125ms; }
+[data-enter="dialog"] { --enter-from: scale(0.96); --enter-time: 250ms; transform-origin: center; }
+[data-enter="toast"] { --enter-from: translateY(100%); --enter-time: 400ms; --enter-ease: ease; }
+[data-enter="drawer"] { --enter-from: translateY(100%); --enter-time: 500ms; --enter-ease: var(--ease-drawer); }
+[data-enter="panel"] { --enter-from: translateX(100%); --enter-time: 500ms; --enter-ease: var(--ease-drawer); }
+
+@starting-style {
+  [data-enter] {
+    opacity: 0;
+    transform: var(--enter-from);
+  }
+
+  [data-enter="drawer"],
+  [data-enter="panel"] {
+    opacity: 1;
+  }
+}
+
+.backdrop {
+  background: light-dark(oklch(0 0 0 / 0.32), oklch(0 0 0 / 0.55));
+  transition: opacity 250ms var(--ease-out);
+}
+
+@starting-style {
+  .backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-enter] {
+    --enter-from: none;
+    --enter-time: 200ms;
+    --enter-ease: ease;
+  }
+
+  .btn:active,
+  .pressable:active {
+    transform: none;
+  }
+
+  @starting-style {
+    [data-enter="drawer"],
+    [data-enter="panel"] {
+      opacity: 0;
+    }
+  }
+}

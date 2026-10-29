@@ -19,8 +19,8 @@ keystrokes from opening the app to done.
 ## 2. Say what is happening, fast
 
 - Every control answers within 100 ms: a pressed state, or the result at once (optimistic) with the
-  true result following. Under a second shows nothing extra.
-- Work over a second shows progress where the person is looking (in the button, in the row), never
+  true result following. A load under 300 ms shows nothing extra: no spinner, no skeleton.
+- Work over 300 ms shows progress where the person is looking (in the button, in the row), never
   a screen-wide blocker: a skeleton of the final shape for a page or region, an inline indicator
   for one control. Work over ten seconds shows percent done, says what it is doing, can be
   cancelled and lets the person leave.
@@ -69,7 +69,7 @@ keystrokes from opening the app to done.
 ## 7. Scanning and copy
 
 - Lists show one primary line and one secondary fact; status is an icon or dot plus a word, never
-  colour alone. Times are relative with the exact time on hover. Figures are tabular and aligned.
+  colour alone. Times are relative ("3 hours ago") up to a week, then an absolute date; the exact time on hover. Figures are tabular and aligned.
 - Long text is truncated with the full text on hover or in the detail, never cut in the middle of a
   sentence the person must read.
 - Copy is specific and in the person's words: "3 runs failed" not "Some issues"; buttons are verbs
@@ -78,10 +78,13 @@ keystrokes from opening the app to done.
 ## 8. Use proven parts for the hard primitives
 
 Hand-built dialogs, menus, comboboxes and tables break on focus, keyboard and edge cases. Take
-them from the app's own kit, or the shadcn registry (`npx shadcn@latest add <name>`): dialog,
-sheet, popover, dropdown menu, select and combobox, tabs, tooltip, toast (`sonner`), command
-palette (`cmdk`), data table (TanStack Table), calendar (`react-day-picker`). Style them with the
-app's tokens; do not rewrite their behaviour.
+them from what the app already ships, then from Base UI or Radix (equal weight; match the one
+installed) or the shadcn registry (`npx shadcn@latest add <name>`): dialog, sheet, popover,
+dropdown menu, select and combobox, tabs, tooltip, toast (`sonner`), command palette (`cmdk`), data
+table (TanStack Table), calendar (`react-day-picker`). When the app has none, a figure that
+changes takes NumberFlow, a list of hundreds of rows Virtuoso, drag and drop dnd kit. Flag a
+competing library; do not churn the app to replace it. Style parts with the app's tokens; do not
+rewrite their behaviour.
 
 ## 9. Tables, dashboards and messages
 
@@ -102,7 +105,7 @@ app's tokens; do not rewrite their behaviour.
   Navigation labels are keywords, an icon always comes with its label, and the main navigation and
   the primary action are always visible, never behind hover. Disclosure goes two levels deep at
   most, and the trigger says what is behind it.
-- Targets are at least 24x24 px (WCAG 2.5.8), and 44 px under `@media (pointer: coarse)` (`apple.md` section 5).
+- Targets are at least 24x24 px (WCAG 2.5.8), and 44 px under `@media (pointer: coarse)` (`apple.md` section 2).
 
 ## 10. Worst-case data
 
@@ -110,7 +113,7 @@ Before the browser gate, render every field, list and figure of the screen with 
 1440 and 390 wide, and fix what breaks (text over text, a row growing past its neighbours, a figure
 that shifts the layout, a control pushed out of reach).
 
-- Names and labels: one character; 60 characters with no space; an unbroken email or URL; accents,
+- Names and labels: one character; the longest plausible value (`Aleksandra Wisniewska-Kowalczyk`, a 70-character email); an unbroken URL; accents,
   Vietnamese, CJK or emoji; the initials of a one-word name.
 - Counts: 0, 1, 2 (plural forms), twelve tags that need a "+8", a thousand rows, 999,999 and a
   figure in the billions.
@@ -119,8 +122,9 @@ that shifts the layout, a control pushed out of reach).
   person inside their own list; partial data, some fields in and some out.
 - The page itself: 320 px wide, 2560 px wide, zoom at 200%, right to left, and an action that
   exists only on hover when the screen is touched.
-- Take the longest ordinary value from the schema, the migration or the validator (`maxLength`,
-  Zod, API types), and write "unbounded" when none exists; a mismatch between the form's limit and
+- A worst case is plausible or backed by the schema, never random characters ("aaaa..."): take
+  the longest value from the schema, the migration or the validator (`maxLength`, Zod, API
+  types), and write "unbounded" when none exists; a mismatch between the form's limit and
   the server's is a finding. The extreme enters through the app's own fixture, seed or create path,
   never through edited markup, and the fixture stays as the regression test.
 - Also: an empty list, exactly one item, exactly a page and a page plus one, identical names, one
@@ -152,7 +156,7 @@ that shifts the layout, a control pushed out of reach).
 | Translated button overflows | fixed `width` | `min-width` |
 | Vietnamese or Thai marks clipped | tight `line-height` with `overflow: hidden` | looser line height |
 | Ellipsis nobody can read | no other way to the value | `title` or the full value in the detail |
-| 1,000 rows stutter | all rendered | virtualise or paginate |
+| 1,000 rows stutter | all rendered | Virtuoso, or paginate |
 | Raw `<b>` or `&amp;` shown | wrong escaping layer | escape once at render |
 
 ## 11. Composition
