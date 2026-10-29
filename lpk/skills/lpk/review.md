@@ -52,9 +52,9 @@ lines the workflow hunts in up to four bug hunters, each on its share of the gro
 reads a shorter context; the tech lead and the code reviews still read the whole diff. Without the Workflow tool, start the agents it starts yourself, all in one message.
 
 The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per finding as each
-arrives. On Claude Code the code review is `lpk code-review` (`/code-review` with the code-reviewer
+arrives. The code review is `lpk code-review` (`/code-review` with the code-reviewer
 role, a headless Sonnet child that adds its findings to the ledger; a Bash timeout of 600000 ms when
-you run it yourself); elsewhere the `lpk:code-reviewer` agent. `lpk reviews owed` names any lens
+you run it yourself). `lpk reviews owed` names any lens
 still owed and why. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
 
 ## Check yourself while it runs
@@ -114,7 +114,7 @@ other.
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
-   with `finding_fixed`, loaded with ToolSearch on Claude Code or `mcp_list` on Qoder if your tool
+   with `finding_fixed`, loaded with ToolSearch if your tool
    list does not hold it yet; give its id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or

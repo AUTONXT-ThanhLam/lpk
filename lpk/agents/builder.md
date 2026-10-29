@@ -3,7 +3,7 @@ name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
 effort: high
 maxTurns: 100
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*, Edit, Write, SendMessage
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Edit, Write, SendMessage
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: blue
 ---

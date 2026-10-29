@@ -2,7 +2,7 @@
 name: regression
 description: Finds what a committed change breaks for what already worked. Lists every behaviour the change alters against the base (defaults, limits, timeouts, output and error shapes, fields, statuses, routes, accepted input, ordering), follows each to every consumer here and in sibling repos, and runs base and commit side by side where that is cheap. Give it the repo, the base commit, the commit, the facts bundle directory and the request. It never edits.
 effort: medium
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*, Write
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: yellow
 ---
@@ -64,7 +64,7 @@ could not tie to a consumer. Never edit the repo; scratch files and worktrees go
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the findings you return against the ledger rows you added,
 and a mismatch counts your review as not run.

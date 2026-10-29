@@ -1,6 +1,6 @@
 # lpk
 
-A plugin for Claude Code and Qoder that carries one coding request to a delivered PR that works
+A plugin for Claude Code that carries one coding request to a delivered PR that works
 where its user meets it and reaches the tech lead with nothing they would block. Defects are caught
 in three layers, cheapest first:
 
@@ -31,19 +31,10 @@ Claude Code:
 Restart Claude Code. `/plugin` lists `lpk@lpk-dev`; `/plugin marketplace update lpk-dev` pulls
 new versions.
 
-Qoder, from a checkout of this repository:
-
-```
-qoder plugins install ./lpk        # or: qoder plugins validate ./lpk to check it first
-```
-
-In a running session `/plugins install lpk` does the same, and `/plugins reload` picks up a new
-build from the same directory. `--plugin-dir <path>` adds a plugin directory for one run.
-
 ## Needs
 
-Node 24, git, the GitHub CLI `gh` (signed in) and Google Chrome or Chromium — and either Claude
-Code or Qoder to run it in. lpk needs no model CLI of its own: every agent it dispatches runs on the
+Node 24, git, the GitHub CLI `gh` (signed in) and Google Chrome or Chromium — and Claude
+Code to run it in. lpk needs no model CLI of its own: every agent it dispatches runs on the
 model your session chose.
 The rest comes with the plugin: the first session fetches gitleaks (pinned, checked against its
 release checksums) into `~/.local/share/lpk/bin` for the push guard, and OpenCodeReview and the
@@ -53,8 +44,8 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 ## Use
 
-- `/lpk:lpk <request, ticket or PR>` (Claude Code) or `/lpk <request, ticket or PR>` (Qoder) runs the
-  whole flow; a PR with review comments runs the feedback flow.
+- `/lpk:lpk <request, ticket or PR>` runs the whole flow;
+  a PR with review comments runs the feedback flow.
 - `/lpk:learn` turns defects found late (review comments, a run's confirmed findings, CI failures)
   into rules, saved at once.
 - `node <plugin>/bin/lpk` with no arguments prints every command.
