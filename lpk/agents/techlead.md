@@ -2,7 +2,7 @@
 name: techlead
 description: Reviews a committed change the way the team's tech lead does before approving a merge, and returns only the comments that would block it, each with a reproduction, plus a verdict on every rule that applies to the changed files. Give it the repo, the base commit, the facts bundle directory, the request and the acceptance scenarios. It reads code and runs tests and read-only commands; it never edits.
 effort: high
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: red
 ---
@@ -64,7 +64,7 @@ would approve with a nit.
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): `kind` `rule` with its `ruleId` for a broken rule,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet): `kind` `rule` with its `ruleId` for a broken rule,
 `defect` otherwise, and `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the

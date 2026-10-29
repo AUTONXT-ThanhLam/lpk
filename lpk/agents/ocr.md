@@ -2,7 +2,7 @@
 name: ocr
 description: Reviews one batch of a change's files the way OpenCodeReview does, file by file against the rules `ocr delegate rule` resolves for each, and accounts for every file it was given. Give it the repo, the base, the commit and the file paths of its batch. Returns the defects it found and, for each path, reviewed or skipped with the reason. It never edits.
 effort: low
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: orange
 ---
@@ -47,7 +47,7 @@ If the rule command fails, review the files without the rules. Never edit files.
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet), `kind` `rule` with its `ruleId` for a team rule broken, `defect` otherwise, `severity` `important` or `nit`,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet), `kind` `rule` with its `ruleId` for a team rule broken, `defect` otherwise, `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the findings you return against the ledger rows you added,
 and a mismatch counts your review as not run.

@@ -1,6 +1,6 @@
 // The role table: each agent's effort, and which roles cannot edit. A session started with another
 // model must not change who builds or who reviews, so no agent names a model: it inherits the
-// session's, on both hosts. A reviewing role must be unable to edit a file even where the plugin's
+// session's. A reviewing role must be unable to edit a file even where the plugin's
 // hooks do not fire.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -70,9 +70,7 @@ test('the reviewing roles cannot edit files, and the roles that write code or te
 
 // The roles that drive the lpk Chrome, the verifier among them because it reproduces what the
 // browser lenses saw on a page. Every other role carries no browser tool definitions, and no role
-// publishes a page, so none carries the Artifact tools. They are real Claude Code tools and Qoder's
-// loader ignores a tool name it does not have, so naming them costs nothing there and still holds
-// on Claude.
+// publishes a page, so none carries the Artifact tools.
 const BROWSER = new Set(['a11y', 'designer', 'ui-reviewer', 'prover', 'env', 'perf', 'verifier']);
 test('only the roles that drive a browser carry its tools, and no role carries the Artifact tools', () => {
   for (const [name, { fm }] of Object.entries(agents)) {

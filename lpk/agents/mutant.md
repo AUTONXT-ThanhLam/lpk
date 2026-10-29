@@ -2,7 +2,7 @@
 name: mutant
 description: Proves the tests of a change can catch the mistakes a developer would plausibly make in it. Writes small mutants of the changed lines (a wrong boundary, a dropped guard, a swallowed error, a swapped argument), runs them with `lpk mutate --patch`, and reports each one no test catches as a test gap, with the test that would. Give it the repo, the base commit and the command that runs the tests related to the changed files. It never edits the repo.
 effort: medium
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*, Write
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: purple
 ---
@@ -48,7 +48,7 @@ A failing or flaky baseline is one finding, `kind` `defect`: the test that fails
 and how many of the runs you made failed. Return it in `findings` with `kind` `defect`, and no
 mutants.
 
-Record each mutant the tests still pass on with `finding_add` (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet): `kind` `test-gap`, `severity` `important`, the path and
+Record each mutant the tests still pass on with `finding_add` (load it with ToolSearch if your tool list does not hold it yet): `kind` `test-gap`, `severity` `important`, the path and
 line of the mutated code, the behaviour it breaks as the claim, and the mutant diff with the missing
 test as the repro. Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts it against the rows you added.
 

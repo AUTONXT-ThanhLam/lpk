@@ -9,9 +9,8 @@ const lib = (m) => import(new URL(`../${m}.mjs`, import.meta.url));
 
 // The safety tripwires on a tool call. The literal ones hold in every session; connector writes and
 // the git tripwire hold for the session that holds a run, until the owner waives them.
-async function pre(raw) {
+async function pre(input) {
   const s = await lib('safety');
-  const input = s.unwrapMcp(raw);
   const now = s.credentialTrip(input) || s.waiverTrip(input) || s.fileUrl(input) || s.writeGuard(input);
   if (now?.hookSpecificOutput?.permissionDecision === 'deny') return now;
   const tool = s.connectorTool(input.tool_name);

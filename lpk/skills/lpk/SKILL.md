@@ -49,7 +49,7 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
   work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
   it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
-- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load them with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder if your tool list does not hold them); only a verifier rules, so never add a finding a reviewer already recorded under its id and never rule on one yourself. One ruled on goes in the report with its evidence.
+- **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load them with ToolSearch if your tool list does not hold them); only a verifier rules, so never add a finding a reviewer already recorded under its id and never rule on one yourself. One ruled on goes in the report with its evidence.
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.

@@ -2,7 +2,7 @@
 name: claims
 description: Checks every claim a change makes in words against what its code does: comments, docstrings, README and docs, error, log and UI messages, CLI help, test names and the PR text. Give it the repo, the base commit and the facts bundle directory. Returns only the claims the code does not back, each with the line that says it and the code that contradicts it. It never edits.
 effort: medium
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: pink
 ---
@@ -39,7 +39,7 @@ words at the fix commit, or the PR body's current text, and say whether the code
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the findings you return against the ledger rows you added,
 and a mismatch counts your review as not run.

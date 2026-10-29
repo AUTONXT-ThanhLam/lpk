@@ -11,9 +11,8 @@ export const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreTool
 export const hint = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: `lpk: ${text}` } });
 
 // Where the owner's subscription tokens live, and the command that prints one. Matched as literal
-// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match. Both hosts'
-// stores are named: Claude Code's credential file and the folder Qoder keeps its login in.
-export const CREDENTIALS = ['.claude/.credentials.json', '.qoder/.auth', '.config/lpk/accounts', 'cc-switch token'];
+// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match.
+export const CREDENTIALS = ['.claude/.credentials.json', '.config/lpk/accounts', 'cc-switch token'];
 export function credentialTrip(input) {
   if (!/^(Bash|Read|Grep)$/.test(input.tool_name || '')) return null;
   const text = JSON.stringify(input.tool_input ?? {});
@@ -48,14 +47,6 @@ export const connectorTool = (name) => {
   const m = /^mcp__.+__([A-Za-z]+)$/.exec(name || '');
   return m && CONNECTOR_WRITES.includes(m[1]) ? m[1] : '';
 };
-
-// Qoder reaches a deferred MCP tool through one `mcp_call` whose input names the real tool, so every
-// tripwire reads the call a person is actually making, not the wrapper.
-export function unwrapMcp(input) {
-  if (input?.tool_name !== 'mcp_call') return input;
-  const name = String(input.tool_input?.toolName || '');
-  return name ? { ...input, tool_name: name, tool_input: input.tool_input?.arguments ?? {} } : input;
-}
 
 // Git commands that discard work or skip the repo's own checks. Quoted text and here-document
 // bodies are blanked first, so a commit message that mentions one does not trip it.

@@ -2,7 +2,7 @@
 name: bug-hunter
 description: Hunts correctness bugs in a committed change, reading it line by line, and returns the defect that makes the code do something other than what its author meant, each with a reproduction. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios. It reads code and runs read-only commands; it never edits.
 effort: high
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: orange
 ---
@@ -49,7 +49,7 @@ works as written. Scratch tests and scripts go under the system temp directory, 
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list` keyword `finding` on Qoder, if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet), `kind` `defect`, `severity` `important` or `nit`,
 and `area` when it touches security, auth, data, concurrency, migration or permissions (a
 verifier never drops one of those for want of a reproduction). Return the same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the findings you return against the ledger rows you added,
 and a mismatch counts your review as not run.

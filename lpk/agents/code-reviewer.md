@@ -2,7 +2,7 @@
 name: code-reviewer
 description: Reviews one range of a change from its diff alone, against the repo's own review rules and the request it was given, and returns the rule broken, the intent contradicted, the case no test in the diff covers, and the leftover the diff creates, each with a reproduction. Give it the repo, the base commit, the commit under review and the facts bundle directory. It reads code and runs read-only commands; it never edits.
 effort: high
-tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, mcp__lpk__*
+tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: yellow
 ---
@@ -47,8 +47,7 @@ files go under the system temp directory, never in the repo.
 
 ## Findings go in the ledger
 
-Add each finding with `finding_add` as you find it (load it with ToolSearch on Claude Code or `mcp_list`
-keyword `finding` on Qoder, if your tool list does not hold it yet), `kind` `defect`, or `test-gap` for the case no test covers,
+Add each finding with `finding_add` as you find it (load it with ToolSearch if your tool list does not hold it yet), `kind` `defect`, or `test-gap` for the case no test covers,
 `severity` `important` or `nit`, and `area` when it touches security, auth, data, concurrency,
 migration or permissions (a verifier never drops one of those for want of a reproduction). Return the
 same list with each finding's ledger id (`F1`, `F2`… — `finding_add` prints it): the gate counts the
