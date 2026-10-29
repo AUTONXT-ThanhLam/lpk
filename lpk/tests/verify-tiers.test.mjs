@@ -8,6 +8,7 @@ import { timeoutFor } from '../lib/verify.mjs';
 const commitHook = (repo, session) => hook('PreToolUse', 'commit', { tool_name: 'Bash', cwd: repo, session_id: session, tool_input: { command: 'git commit -am x' } });
 const begin = (repo, session, ...args) => lpk(repo, session, 'run', 'start', '--target', 'main', ...args);
 const verifyRow = (repo, session) => lpk(repo, session, 'gates').stdout.match(/^verify .*(?:\n {13}.*)*/m)?.[0] ?? '';
+const gateRow = (repo, session, gate) => JSON.parse(lpk(repo, session, 'gates', '--json').stdout).find((r) => r.gate === gate);
 const status = (repo, session) => JSON.parse(lpk(repo, session, 'run', 'status').stdout);
 
 test('R1: a check named in both tiers, or --final without a final tier, is refused with a usage error', () => {
@@ -119,4 +120,26 @@ test('R5: a check\'s timeout is the larger of its floor and 1.5 times its last g
   assert.equal(timeoutFor(records, 'never ran', {}), 1200);
   assert.equal(timeoutFor(records, 'slow', { explicit: 30 }), 30, '--timeout wins');
   assert.equal(timeoutFor(records, 'ignored', {}), 1200);
+});
+
+test('R4: the requirements gate holds a test-proved requirement only once the final tier is green on HEAD', () => {
+  const repo = repoWith('tiers-req', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 'q', '--lane', 'quick', '--why', 'small', '--req', 'a is 2', '--verify', 'true', '--verify-final', 'true; :').status, 0);
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  write(repo, 'tests/a.test.mjs', "test('R1: a is 2', () => {});\n");
+  assert.equal(lpk(repo, 'q', 'verify').status, 0);
+  sh(repo, 'add', '.');
+  sh(repo, 'commit', '-qm', 'change');
+  assert.equal(gateRow(repo, 'q', 'requirements').holds, false);
+  assert.equal(lpk(repo, 'q', 'verify', '--final').status, 0);
+  assert.equal(gateRow(repo, 'q', 'requirements').holds, true);
+});
+
+test('R4: the plan row names a final list that changed after go', () => {
+  const repo = repoWith('tiers-go', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 'g', '--verify', 'true', '--verify-final', 'echo one').status, 0);
+  assert.equal(lpk(repo, 'g', 'go').status, 0);
+  assert.equal(gateRow(repo, 'g', 'plan').why, '');
+  assert.equal(begin(repo, 'g', '--verify-final', 'echo two').status, 0);
+  assert.notEqual(gateRow(repo, 'g', 'plan').why, '');
 });
