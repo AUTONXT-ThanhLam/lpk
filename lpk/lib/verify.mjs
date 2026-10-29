@@ -97,7 +97,7 @@ export async function verify(repo, { only = [], parallel = false, final = false,
   const partial = only.length > 0 && picked.chosen.size < cmds.length;
   const indexes = cmds.map((_, i) => i).filter((i) => !only.length || picked.chosen.has(i));
   const records = readRecords(repo);
-  const seen = greenMs(records.filter((rec) => !rec.final));
+  const seen = greenMs(records.filter((rec) => Boolean(rec.final) === final));
   const order = [...indexes].sort((a, b) => (seen.get(cmds[a]) ?? -1) - (seen.get(cmds[b]) ?? -1));
   guard();
   const before = treeOf(repo);

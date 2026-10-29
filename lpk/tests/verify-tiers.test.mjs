@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, hook, lpk, reason, repoWith, sh, write } from './hooks-env.mjs';
@@ -97,6 +97,17 @@ test('R3: code that changes while the final tier runs makes it not green', () =>
   assert.match(final.stdout, /Files changed while the checks ran/);
   sh(repo, 'checkout', '--', 'src/a.mjs');
   assert.match(verifyRow(repo, 'm'), /^verify +DENY/);
+});
+
+test('R2: the final tier orders its checks by its own last green durations, so a cheap red check stops it before the slow one', () => {
+  const repo = repoWith('tiers-order', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 'o', '--verify', 'true', '--verify-final', 'sleep 2; echo run >> slow.log', '--verify-final', 'test ! -e red.flag').status, 0);
+  const first = lpk(repo, 'o', 'verify', '--final');
+  assert.equal(first.status, 0, first.stderr + first.stdout);
+  write(repo, 'red.flag', '');
+  const second = lpk(repo, 'o', 'verify', '--final');
+  assert.equal(second.status, 1);
+  assert.equal(readFileSync(join(repo, 'slow.log'), 'utf8'), 'run\n', 'the slow final check ran again before the cheap red one');
 });
 
 test('R5: a check\'s timeout is the larger of its floor and 1.5 times its last green duration in any run', () => {
