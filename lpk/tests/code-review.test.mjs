@@ -52,6 +52,17 @@ test('a code review adds its findings to the ledger and pays the code review the
   assert.match(args[args.indexOf('--append-system-prompt') + 1], /^You review a diff\./);
 });
 
+test('the child is given a fallback model only when --fallback-model is passed', () => {
+  const S = 'crfallback';
+  const repo = changedRepo('crfallback', S);
+  const bin = fakeClaude('claude-fallback', [report, result]);
+  ok(codeReview(repo, S, bin));
+  assert.ok(!seen(bin).argv.includes('--fallback-model'), 'no fallback model unless asked');
+  ok(codeReview(repo, S, bin, '--fallback-model', 'opus'));
+  const args = seen(bin).argv;
+  assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
+});
+
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
   const S = 'crdelta';
   const repo = changedRepo('crdelta', S);
