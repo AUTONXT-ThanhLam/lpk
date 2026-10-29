@@ -1,0 +1,98 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { copyFacts } from '../skills/ui-craft/copyfacts.mjs';
+import { diff, planColours } from '../skills/ui-craft/designdiff.mjs';
+import { parseHex } from '../skills/ui-craft/palette.mjs';
+import { buckets } from '../skills/ui-craft/sample.mjs';
+
+const KIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'ui-craft');
+const run = (script, ...args) => spawnSync(process.execPath, [join(KIT, script), ...args], { encoding: 'utf8', timeout: 20000 });
+
+test('palette facts prints the OKLCH of each colour and the contrast of the rest as text on the first', () => {
+  const r = run('palette.mjs', 'facts', '#a94700', '#ffffff');
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.colours[0].h, 46);
+  assert.equal(out.firstAgainstRest[0].wcag, 5.85);
+});
+
+test('palette make gives each scheme a neutral ramp and an accent whose text colour passes AA', () => {
+  const r = run('palette.mjs', 'make', '--accent', '#a94700');
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  for (const mode of ['light', 'dark']) {
+    assert.equal(out[mode].neutral.length, 12);
+    assert.match(out[mode].accent.solid, /^#[0-9a-f]{6}$/);
+  }
+  const lum = (h) => parseHex(h).map((c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const { solid, onSolid } = out.light.accent;
+  const [hi, lo] = [lum(solid), lum(onSolid)].sort((a, b) => b - a);
+  assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5);
+});
+
+test('palette refuses a malformed colour and a make without a hue with usage and exit 2', () => {
+  for (const args of [['facts', '#zz'], ['facts'], ['make'], ['make', '--hue', 'x']]) {
+    const r = run('palette.mjs', ...args);
+    assert.equal(r.status, 2, args.join(' '));
+    assert.match(r.stderr, /usage: palette\.mjs/);
+  }
+});
+
+const PLAN = `---\nname: Brew\ncolors:\n  ground: "#f4f6fa"\n  accent: '#a94700' # reference 2\ntypography:\n  body:\n    color: "#123456"\nrounded:\n  md: 8px\n---\n\n# Brew\n\n- note: #654321\n`;
+const built = (hex, weight) => ({ rgb: parseHex(hex), weight, where: 'background div' });
+
+test('the plan reads only the colour lines under colors in the front matter', () => {
+  assert.deepEqual(planColours(PLAN), [{ name: 'ground', hex: '#f4f6fa' }, { name: 'accent', hex: '#a94700' }]);
+});
+
+test('a built colour that is in no plan colour and covers enough of the screen is reported, a planned or tiny one is not', () => {
+  const plan = planColours(PLAN);
+  const r = diff(plan, [built('#f4f6fa', 80), built('#a94800', 5), built('#2a9d3c', 14), built('#ff00ff', 0.5)]);
+  assert.deepEqual(r.unplanned.map((u) => u.hex), ['#2a9d3c']);
+  assert.deepEqual(r.unused, []);
+  assert.deepEqual(diff(plan, [built('#f4f6fa', 100)]).unused, ['accent #a94700']);
+});
+
+test('designdiff and copyfacts without a url print usage and exit 2', () => {
+  for (const script of ['designdiff.mjs', 'copyfacts.mjs']) {
+    const r = run(script);
+    assert.equal(r.status, 2, script);
+    assert.match(r.stderr, new RegExp(`usage: ${script}`));
+  }
+  const file = join(mkdtempSync(join(tmpdir(), 'plan-')), 'DESIGN.md');
+  writeFileSync(file, '---\nname: Brew\n---\n\n# Brew\n\n- ground: #f4f6fa\n');
+  const noPlan = run('designdiff.mjs', 'http://127.0.0.1:1/', file);
+  assert.equal(noPlan.status, 2);
+  assert.match(noPlan.stderr, /colors:/);
+});
+
+test('copyfacts counts em dashes, exclamations, title case, long and generic buttons and hype words, and decides nothing', () => {
+  const facts = copyFacts({
+    headings: ['Start Your Brew Today', 'Today'],
+    buttons: ['Submit', 'Start brew', 'Save this recipe for later'],
+    paragraphs: ['Unlock a seamless brew — every time!'],
+  });
+  assert.equal(facts.headings.titleCase, 1);
+  assert.equal(facts.buttons.over3Words, 1);
+  assert.equal(facts.buttons.genericLabels, 1);
+  assert.equal(facts.emDashes, 1);
+  assert.equal(facts.exclamations, 1);
+  assert.deepEqual(facts.hypeWords, { seamless: 1, unlock: 1 });
+});
+
+test('sample ranks the colours of an image by share, ignores transparent pixels, and refuses a file that is not an image', () => {
+  const px = [252, 252, 252, 255, 252, 252, 252, 255, 252, 252, 252, 255, 169, 71, 0, 255, 0, 0, 0, 0];
+  const top = buckets(px, 5);
+  assert.equal(top[0].share, 75);
+  assert.equal(top[1].share, 25);
+  assert.ok(top[1].C > 0.1);
+  assert.equal(run('sample.mjs').status, 2);
+  const bad = run('sample.mjs', 'notes.txt');
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /not a png/);
+});

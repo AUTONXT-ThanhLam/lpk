@@ -9,7 +9,7 @@ import { fontVerdict } from '../skills/ui-craft/fontverdict.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT = join(ROOT, 'skills', 'ui-craft');
-const docs = ['agents/designer.md', 'agents/ui-reviewer.md', 'skills/ui-craft/SKILL.md', 'skills/ui-craft/motion.md']
+const docs = ['agents/designer.md', 'agents/ui-reviewer.md', 'skills/ui-craft/SKILL.md', 'skills/ui-craft/motion.md', 'skills/ui-craft/refs.md']
   .map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]);
 const basenames = new Set(readdirSync(ROOT, { recursive: true }).map((p) => basename(p)));
 
