@@ -9,8 +9,9 @@ import { fontVerdict } from '../skills/ui-craft/fontverdict.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT = join(ROOT, 'skills', 'ui-craft');
-const docs = ['agents/designer.md', 'agents/ui-reviewer.md', 'skills/ui-craft/SKILL.md', 'skills/ui-craft/motion.md', 'skills/ui-craft/refs.md']
+const docs = ['agents/designer.md', 'agents/ui-reviewer.md', 'skills/ui-craft/SKILL.md', 'skills/ui-craft/motion.md', 'skills/ui-craft/method.md', 'skills/ui-craft/knowledge.md']
   .map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]);
+const WRITTEN_BY_THE_DESIGNER = new Set(['concept.md', 'pick.md', 'rounds.md']);
 const basenames = new Set(readdirSync(ROOT, { recursive: true }).map((p) => basename(p)));
 
 const FILE = /`((?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:md|mjs|css|json))`/g;
@@ -19,6 +20,7 @@ const missing = (name) => {
     const own = [KIT, ROOT].filter((r) => existsSync(dirname(join(r, name))));
     return own.length > 0 && !own.some((r) => existsSync(join(r, name)));
   }
+  if (WRITTEN_BY_THE_DESIGNER.has(name)) return false;
   const stem = name.replace(/\.[a-z]+$/, '');
   return !basenames.has(name) && stem !== stem.toUpperCase();
 };

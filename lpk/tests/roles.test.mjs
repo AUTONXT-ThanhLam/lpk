@@ -1,7 +1,7 @@
 // The role table: each agent's effort, and which roles cannot edit. A session started with another
-// model must not change who builds or who reviews, so no agent names a model: it inherits the
-// session's, on both hosts. A reviewing role must be unable to edit a file even where the plugin's
-// hooks do not fire.
+// model must not change who builds or who reviews, so no agent but the designer names a model: the
+// rest inherit the session's, on both hosts. A reviewing role must be unable to edit a file even
+// where the plugin's hooks do not fire.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -13,6 +13,7 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 // The effort the plan settled for each role, by measured results, and whether the role ever edits.
 // The model is deliberately absent: an agent that names one runs the same model on a session started
 // on another, which is exactly what makes a review depend on who happened to start the session.
+const OWNER_CHOSEN_MODEL = { designer: 'opus' };
 const TABLE = {
   architect: { effort: 'high', readOnly: false },
   'design-critic': { effort: 'high', readOnly: true },
@@ -50,12 +51,13 @@ test('every agent the plugin ships has a row in the role table, and every row ha
   assert.deepEqual(Object.keys(agents).sort(), Object.keys(TABLE).sort());
 });
 
-test('no agent names a model, so each inherits the session model, and each names its role effort', () => {
+test('only the designer names a model, so every other agent inherits the session model, and each names its role effort', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;
     assert.ok(fm, `agents/${name}.md exists`);
     assert.equal(fm.name, name, `agents/${name}.md names itself ${name}`);
-    assert.ok(!('model' in fm), `agents/${name}.md declares no model: on a session started with another model a declared one would review on it`);
+    if (OWNER_CHOSEN_MODEL[name]) assert.equal(fm.model, OWNER_CHOSEN_MODEL[name], `${name} runs on ${OWNER_CHOSEN_MODEL[name]}`);
+    else assert.ok(!('model' in fm), `agents/${name}.md declares no model: on a session started with another model a declared one would review on it`);
     assert.equal(fm.effort, row.effort, `${name} runs at effort ${row.effort}`);
   }
 });

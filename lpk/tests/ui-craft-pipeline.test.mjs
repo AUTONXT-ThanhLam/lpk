@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { copyFacts } from '../skills/ui-craft/copyfacts.mjs';
-import { parseHex, wcag } from '../skills/ui-craft/palette.mjs';
 import { buckets } from '../skills/ui-craft/sample.mjs';
 
 const KIT = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'ui-craft');
@@ -18,30 +17,8 @@ test('palette facts prints the OKLCH of each colour and the contrast of the rest
   assert.equal(out.firstAgainstRest[0].wcag, 5.85);
 });
 
-test('palette make gives each scheme a neutral ramp and an accent whose text colour passes AA', () => {
-  const r = run('palette.mjs', 'make', '--accent', '#a94700');
-  assert.equal(r.status, 0, r.stderr);
-  const out = JSON.parse(r.stdout);
-  for (const mode of ['light', 'dark']) {
-    assert.equal(out[mode].neutral.length, 12);
-    assert.match(out[mode].accent.solid, /^#[0-9a-f]{6}$/);
-  }
-  const lum = (h) => parseHex(h).map((c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
-  const { solid, onSolid } = out.light.accent;
-  const [hi, lo] = [lum(solid), lum(onSolid)].sort((a, b) => b - a);
-  assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5);
-});
-
-test('every accent text colour passes AA on its tints, for any hue', () => {
-  const out = JSON.parse(run('palette.mjs', 'make', '--accent', '#8a6a5a').stdout);
-  for (const mode of ['light', 'dark']) {
-    const { text, tints } = out[mode].accent;
-    for (const tint of tints) assert.ok(wcag(parseHex(text), parseHex(tint)) >= 4.5, `${mode} ${text} on ${tint}`);
-  }
-});
-
-test('palette refuses a malformed colour and a make without a hue with usage and exit 2', () => {
-  for (const args of [['facts', '#zz'], ['facts'], ['make'], ['make', '--hue', 'x'], ['make', '--hue', ''], ['make', '--accent', '#a94700', '--neutral-hue', '']]) {
+test('palette refuses a malformed colour and a missing one with usage and exit 2', () => {
+  for (const args of [['facts', '#zz'], ['facts'], ['make', '--hue', '200']]) {
     const r = run('palette.mjs', ...args);
     assert.equal(r.status, 2, args.join(' '));
     assert.match(r.stderr, /usage: palette\.mjs/);
