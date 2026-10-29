@@ -11,10 +11,9 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    imports, comments that narrate, a wrapper with one caller, a layer repeating its callee's
    arguments, a parameter threaded through three layers, a flag that must stay in step with another.
 2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background), then commit; the commit
-   hook refuses code that no green `lpk verify` ran on. It runs the fast tier only, cheapest check first, and stops
-   at the first red one and prints the path of that check's log (its last 1 MiB of output). Rerun only a red check with
+   hook refuses code that no green `lpk verify` ran on. It runs the fast tier only, cheapest check first. Rerun only a red check with
    `lpk verify --only <number or exact command>` (it counts for nothing at the commit gate), then run
-   the full `lpk verify` once on the tree you commit: it runs only the checks not already green on that tree. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
+   the full `lpk verify` once on the tree you commit. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
 3. Run `git fetch`, then `lpk facts` beside `lpk verify` (it diffs against the run's target; `--base <ref>` names
    another): it prints the bundle directory (`impact.md`,
    `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
@@ -42,9 +41,7 @@ the repo, base, commit, bundle, request, scenarios (each with the request senten
 failure table (each row with its `provedBy`), the surface (URL, start command and each login with its role; for a CLI, its command), the main instance,
 the related-test command and the e2e scripts the builders wrote; `range` exactly as `lpk review start`
 printed it, and `lenses` the `lens` of every row `lpk reviews owed --json` lists, in its order and
-with each repeat (a lens owed twice runs twice). The mutant runs beside the prover unless
-`mutantAfterProver` is true: set it when the env agent's `db` line shows the test command and the
-app share a database or a port, because then each breaks the other's runs. When the scenarios and
+with each repeat (a lens owed twice runs twice). Set `mutantAfterProver` from the env agent's `db` line. When the scenarios and
 failure rows run on two or more surfaces or screens, set `proverGroups`, one group per surface or
 screen, each naming its ids, so that no two groups share a page or the data one of them changes: a
 Prover per group finishes sooner and reads a shorter context. Pass `bundle.json`'s `groups` (the facts bundle) as `bugGroups`: above 600 changed
@@ -113,9 +110,8 @@ other.
    unpushed; an amended commit conflicts with its first version) and run step 5 again. A finding confirmed after the green
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
-   changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
-   with `finding_fixed`, loaded with ToolSearch if your tool
-   list does not hold it yet; give its id, `commit` the fix's SHA
+   changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Give
+   `finding_fixed` the id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as

@@ -92,7 +92,7 @@ Read each step's file when the step starts; each file states its goal and how it
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
   contract. It skips the brief and the design check, records its numbered requirements and the
   scenarios that prove them at `lpk run start`, and owes the Code reviewer and the Bug hunter.
-- **Full**: everything else: the whole review net and the Prover (documentation only: Tech lead, Claims). A run starts at the increment bar unless the owner asks for production; `design.md` in this skill's directory says what the bar changes.
+- **Full**: everything else: the whole review net and the Prover (documentation only: Tech lead, Claims).
 
 ## The bar
 

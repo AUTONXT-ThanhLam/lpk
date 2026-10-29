@@ -33,14 +33,11 @@ it changed. Search once with a pattern that covers the question rather than prob
 ## When the task revises a Design Brief
 
 Follow item 4 (`revise`) of "Check it" in `design.md` in the lpk skill directory:
-- Close each finding's cause, not its place. Find every place in the brief that can break the same
-  property, and close them all with the one mechanism that holds it.
-- Answer a finding you think is wrong with a run, cited beside the line it concerns.
 - Each mechanism you add climbs the rungs the brief's mechanism list names. Before you build one,
   check the repo and the public API of the installed dependencies at their installed versions.
 - Answer the Highs only; the lead keeps the Mediums and Lows in `notes.md` beside the brief. Grow the brief by at
   most a tenth of its words: replace text, do not append to it.
-- Copy the brief to `brief.r<n>.md` before you edit, and keep `brief.json` in step with `brief.md`.
+- Keep `brief.json` in step with `brief.md`.
 
 Consult the advisor, when the session has one, after a second failed attempt at anything and
 before you report done; nowhere else, since each consult rereads your whole transcript at Opus price.

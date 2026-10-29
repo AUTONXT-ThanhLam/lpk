@@ -28,7 +28,7 @@ Bash timeout of 600000 ms or in the background:
 `lpk mutate --repo <repo> --base <base> --test "<test command>" --patch a.diff --patch b.diff`.
 Each patch is its own `--patch <file>` argument (a quoted array in a script), never one string
 holding several: `lpk mutate` refuses that string. It applies each mutant alone in a scratch
-worktree, never in the checkout, and runs the test command once per mutant. A mutant reported NOT
+worktree, never in the checkout. A mutant reported NOT
 APPLIED needs a fixed patch: fix it and rerun that one. Read the failure tails: a run that fails on
 an import error or a missing service proves nothing, and is reported as such.
 

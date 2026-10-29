@@ -47,8 +47,7 @@ meet most defects before the first review.
 
 Read the sources whole and the `lpk precedent` output when you are given one: a blocker the tech
 lead raised before on these files is a constraint on the design. Run the fact commands the section
-"Gather the facts" of `design.md` in the lpk skill directory lists (`lpk map`, `lpk cochange`,
-`lpk rules --all --repo <repo>`, `lpk floor`) for what you change. Then design from your card. The
+"Gather the facts" of `design.md` in the lpk skill directory lists for what you change. Then design from your card. The
 card decides what you look at first and what you are willing to pay for, not which facts you report:
 a fact that hurts your approach goes in the brief. Write `brief.md` and `brief.json` in your
 directory, holding what the section "Write the Design Brief (Full lane)" of `design.md` in the lpk

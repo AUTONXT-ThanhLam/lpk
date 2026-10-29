@@ -24,17 +24,14 @@ instance of it or order the slices. A builder that reports `CHECKPOINT`, or stop
 off: run `lpk handoff <slice>` and start a fresh `lpk:builder` (`lpk:designer` for a screen slice) in the same worktree. Never continue
 it by messaging the same agent, which keeps its whole conversation and the cost of every later turn.
 Glue that joins the slices
-is a slice of its own, with its own builder, started once the slices it joins are in. Builders
-start after `lpk go`, when the design review has ended.
+is a slice of its own, with its own builder, started once the slices it joins are in.
 
 Each builder reports its commit and any `contested:`
 item. Rule on each contested item before you bring the slice in: the test or the task changes, or
 the builder was wrong, with the reason.
 
 A builder whose slice is stuck (no new commit after its second failed attempt, or a report that it
-cannot meet the contract), or whose remaining work is the run's long pole, is handed off or split.
-`lpk handoff <slice>` prints what the slice has done and what is left, for a fresh builder to
-start from, or for you to split between two builders on disjoint files.
+cannot meet the contract), or whose remaining work is the run's long pole, is handed off or split between two builders on disjoint files.
 
 A **high-risk** slice gets two builders, each told one of the two approaches the brief weighed;
 keep the one whose tests pass with the cleaner `lpk check` and the smaller diff, and say which and
