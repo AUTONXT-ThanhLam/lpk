@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { fontVerdict } from '../skills/ui-craft/fontverdict.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,5 +52,14 @@ test('the audit passes the mandated type stack when its web face is defined and 
   assert.equal(fontVerdict(stack, face('error')), 'NOT LOADED');
   assert.equal(fontVerdict('Arial, "Inter Variable"', face('unloaded')), 'loaded');
   assert.equal(fontVerdict('Arial, "Inter Variable"', []), 'NOT LOADED');
+  assert.equal(fontVerdict('Arial, "Inter Variable"', face('error')), 'NOT LOADED');
   assert.equal(fontVerdict('system-ui, sans-serif', []), 'system');
+});
+
+test('fontVerdict judges the same when serialized into the page, where no import or outer helper exists', () => {
+  const inPage = runInNewContext(`(${fontVerdict})`);
+  const face = (status) => [{ family: '"Inter Variable"', status }];
+  assert.equal(inPage('Arial, "Inter Variable"', face('loaded')), 'loaded');
+  assert.equal(inPage('Arial, "Inter Variable"', face('error')), 'NOT LOADED');
+  assert.equal(inPage('system-ui, sans-serif', []), 'system');
 });

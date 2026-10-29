@@ -33,13 +33,13 @@ this is what makes it feel made by someone, and different from the last product 
 
 Where this list and Emil's files differ, this list wins. Anything not on it follows Emil.
 
-1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins, except where overrides 3 and 7 say they are the kit's own. lpk's "faster than Emil" is dropped.
+1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins, except where override 3 says it is the kit's own. lpk's "faster than Emil" is dropped.
 2. "Every change moves" is dropped. Frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
 3. Kit rules beyond Emil: his 30-80 ms stagger between items is capped at 300 ms for the whole group; a skeleton or spinner only for loads over 300 ms; a count-up only on a real value change after a user action, never on mount.
 4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
 5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
 6. Type: the stack of section 2 item 6, tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
-7. Tab switches and in-app route changes are 100+/day: no animation. The kit's own rule, not Emil's: a panel swap on a frequent surface is opacity at 150 ms or nothing.
+7. Tab switches and in-app route changes are 100+/day: no animation. A panel swap on a frequent surface is opacity at 150 ms or nothing; the 150 ms is Emil's (`skills/remove-animations/SKILL.md`, "Opacity only, 150ms").
 8. `designer.md` and `ui-reviewer.md` carry no numbers: they point to section 6 and to Emil's files.
 9. The app's own design system wins over this kit. Machine tells check (impeccable `detect`) stays as a check, never as taste authority.
 

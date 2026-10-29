@@ -10,7 +10,7 @@ const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : res
 const spaceScale = (opt('space', '0,2,4,8,12,16,24,32,40,48,64')).split(',').map(Number);
 const radiusScale = (opt('radius', '0,4,5,6,8,10,12,9999')).split(',').map(Number);
 const heights = (opt('heights', '24,28,32,40,48')).split(',').map(Number);
-const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${function (spaceScale, radiusScale, heights) {
+const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${async function (spaceScale, radiusScale, heights) {
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   const sel = (e) => { let p = e.tagName.toLowerCase(); if (e.id) p += '#' + e.id; else if (e.classList[0]) p += '.' + [...e.classList].slice(0, 2).join('.'); return p + (e.textContent.trim() ? ` "${e.textContent.trim().slice(0, 24)}"` : ''); };
   const all = [...document.body.querySelectorAll('*')].filter((e) => vis(e) && e.getBoundingClientRect().width > 1 && e.getBoundingClientRect().height > 1);
@@ -88,7 +88,13 @@ const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${function (
     const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
     if (w > 2 && h > 2 && !leaves[i].contains(leaves[j]) && !leaves[j].contains(leaves[i])) overlapText.push(sel(leaves[i]) + ' x ' + sel(leaves[j]));
   }
-  const faces = [...document.fonts].map((x) => ({ family: x.family, status: x.status }));
+  const bare = (n) => n.replace(/["']/g, '').trim();
+  const named = (f) => Object.keys(families).some((st) => st.split(',').some((n) => bare(n) === bare(f.family)));
+  const faces = await Promise.all([...document.fonts].map(async (x) => {
+    if (!named(x)) return { family: x.family, status: x.status };
+    try { await Promise.race([x.load(), new Promise((_, no) => setTimeout(() => no(new Error('font load timeout')), 5000))]); } catch { return { family: x.family, status: 'error' }; }
+    return { family: x.family, status: x.status };
+  }));
   const loaded = Object.keys(families).map((stack) => [stack, fontVerdict(stack, faces)]);
   return {
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,

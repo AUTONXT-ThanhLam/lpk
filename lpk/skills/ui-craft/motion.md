@@ -17,7 +17,8 @@ scale.
 | Rare or first time (onboarding, success, celebration) | The delight budget lives here |
 
 - Tab switches and in-app route changes are hundreds a day: they do not animate. A panel swap on a
-  frequent surface is an opacity change at 150 ms, or nothing (a kit rule, override 7 of `SKILL.md`).
+  frequent surface is an opacity change at 150 ms, or nothing (Emil's value, in
+  `skills/remove-animations/SKILL.md`; override 7 of `SKILL.md`).
 - A screen with no motion on a gated change is correct, not a finding. Zero lines of code is a
   result: animating what should not animate is the worse failure.
 - Every motion that survives names its purpose from this list only: feedback to an action, spatial
@@ -176,9 +177,9 @@ measured height, not to `auto`: Radix supplies `--radix-accordion-content-height
 ```
 
 No library: `assets/apple.css` carries the same hidden states as `@starting-style` helpers
-(`enter-pop`, `enter-menu`, `enter-tooltip`, `enter-dialog`, `enter-toast`, `enter-drawer`,
-`enter-panel`). On a native `[popover]` or `dialog`, add `display` and `overlay` to the transition
-with `allow-discrete` so `display` waits for the exit.
+(the `data-enter` attribute: bare for a popover, or `data-enter="menu"`, `"tooltip"`, `"dialog"`,
+`"toast"`, `"drawer"`, `"panel"`). On a native `[popover]` or `dialog`, add `display` and `overlay`
+to the transition with `allow-discrete` so `display` waits for the exit.
 
 ## 5. Crossfades, stagger and hold to confirm
 
