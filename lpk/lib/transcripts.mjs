@@ -1,7 +1,3 @@
-// Facts about the agents a session ran, read from the transcripts the host keeps on disk: each
-// subagent's and each workflow agent's type, the range its first prompt names, and how it ended. No
-// agent writes these; a gate reads them to know a lens ran. Both hosts' stores are searched, so a
-// lens that ran on the other one is still seen, and each row names the store it came from.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { agentFile, agentIdOf, hostOf, sessionDirs } from './host.mjs';
@@ -12,8 +8,6 @@ const SHA = '(?=[a-f]*\\d)[0-9a-f]{7,40}';
 const RANGE = new RegExp(`(?<![0-9a-zA-Z])(${SHA})(?:\\.\\.\\.?(${SHA}))?(?![0-9a-zA-Z])`);
 const RELAY = '[Workflow harness — user request]';
 
-// The session's directories that hold subagents, on either host: the session may have started in a
-// parent of the repo or in a worktree of it, so every project folder of both stores is asked.
 const lensDirs = (session) => sessionDirs(session).filter((d) => existsSync(join(d, 'subagents')));
 
 function agentFiles(dir) {
@@ -40,8 +34,6 @@ export function lensRun(file) {
   const ended = !last ? 'running' : last.isApiErrorMessage ? 'error' : so ? 'structured' : last.message?.stop_reason === 'end_turn' ? 'end_turn' : 'running';
   return {
     agentType: meta.agentType || '',
-    // Its own id where the lines carry one; else the name of its file, which on Qoder is the type and
-    // a hash rather than a bare id.
     agentId: entries.find((e) => e.agentId)?.agentId || agentIdOf(file) || basename(file).replace(/\.jsonl$/, ''),
     range: m ? (m[2] ? `${m[1]}..${m[2]}` : m[1]) : '',
     ended,
@@ -52,8 +44,6 @@ export function lensRun(file) {
   };
 }
 
-// Every subagent and workflow agent of the session. `repo` is kept for callers; the transcripts are
-// found by session id alone, in either host's store.
 export function lensRuns(repo, session) {
   return lensDirs(session).flatMap((d) => agentFiles(d).map(lensRun));
 }

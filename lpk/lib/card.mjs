@@ -1,10 +1,10 @@
 // The cards lpk hands the model at the start: the run card each `lpk:*` agent gets when it starts
 // (SubagentStart), and the resume card the session gets when its host carries it on — after a restart
 // or a compaction (SessionStart). Each line is a fact read from the run's files, git or the
-// transcripts on disk, in whichever host's store the session is (lib/host.mjs).
+// transcripts on disk.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { hostName, pluginRoot } from './host.mjs';
+import { pluginRoot } from './host.mjs';
 import { baseOf, runOf } from './hooks.mjs';
 import { changeOf, loadRules, triggered } from './rules.mjs';
 import { CREDENTIALS, GIT_TRIPS, READ_ONLY, REPRO } from './safety.mjs';
@@ -16,9 +16,7 @@ import { heirs } from './sessions.mjs';
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
 export const LEDGER_TOOLS = ['add', 'list', 'get', 'verdict', 'fixed'].map((t) => `mcp__plugin_lpk_lpk__finding_${t}`);
-const ledgerHint = () => (hostName() === 'qoder'
-  ? '- The findings ledger tools are deferred: `mcp_list` (keyword `finding`) names them, `mcp_get` loads one, `mcp_call` runs it with its own fields as `arguments`; the finding hook stamps the repo, run, who and range into that call.'
-  : `- The findings ledger tools are deferred: load them before the first call with ToolSearch, query \`select:${LEDGER_TOOLS.join(',')}\`.`);
+const ledgerHint = () => `- The findings ledger tools are deferred: load them before the first call with ToolSearch, query \`select:${LEDGER_TOOLS.join(',')}\`.`;
 const RULES_SHOWN = 25;
 
 // What an agent of this type may not touch; the first line is every lpk agent's.
@@ -50,10 +48,6 @@ export function runCard(input) {
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: text } };
 }
 
-// The session's newest workflow run, from the files the host keeps beside the transcript: its id,
-// name, status, and the agents that finished and that did not. Workflows are Claude Code's; a host
-// that runs none (measured: Qoder writes no `workflows/` folder, only `subagents/task-<id>.json`) reads
-// as null, which the card says out loud.
 export function lastWorkflow(transcriptPath) {
   const dir = transcriptPath ? join(transcriptPath.replace(/\.jsonl$/, ''), 'workflows') : '';
   if (!dir || !existsSync(dir)) return null;

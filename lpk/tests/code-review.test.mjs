@@ -75,9 +75,9 @@ test('a code review child that ends without a result fails and leaves the code r
 });
 
 test('on a host without the code review command the lane owes the code-reviewer agent', () => {
-  const S = 'qoder';
-  const repo = changedRepo('qoder', S);
-  const env = { ...noHost(ENV), QODER_CONFIG_DIR: join(tmp, 'home', '.qoder'), QODER_PLUGIN_ROOT: ROOT };
-  const lenses = owed(repo, S, env);
+  const S = 'nohost';
+  const repo = changedRepo('nohost', S);
+  const out = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: noHost(ENV), encoding: 'utf8' });
+  const lenses = JSON.parse(out.stdout).map((r) => r.lens);
   assert.ok(lenses.includes('code-reviewer') && !lenses.includes('code-review'), lenses.join());
 });

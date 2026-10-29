@@ -11,11 +11,7 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const tmp = mkdtempSync(join(tmpdir(), 'lpk-verbs-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 const BIN = join(tmp, 'bin');
-// `lib/host.mjs` answers for the host whose names the environment carries, so both families are
-// dropped from what a child inherits: a suite launched by Qoder would else hand its own
-// `QODER_SESSION_ID` to every `lpk` run here, and a test could pass or fail by who started it. The
-// helper's own `CLAUDE_*` is what a child runs under.
-export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^(CLAUDE|QODER)_/.test(k)));
+export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const ENV = {
   ...noHost(process.env), HOME: join(tmp, 'home'), PATH: `${BIN}:${process.env.PATH}`, CLAUDE_CONFIG_DIR: join(tmp, 'claude'), CLAUDE_CODE_SESSION_ID: '',
   GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t',
