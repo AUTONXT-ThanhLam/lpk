@@ -2,7 +2,8 @@
 
 **Goal.** A PR the tech lead can merge, with CI green for the right reasons, a body that claims only
 what the code does, and a report the owner reads in ten seconds. The report never says "delivered"
-unless `lpk gates` holds on the HEAD it names.
+unless `lpk gates` holds on the HEAD it names. The verify gate holds when both tiers, fast and
+final, are green on the tree of that HEAD.
 
 ## CI
 
@@ -10,7 +11,7 @@ After each push wait for CI with Monitor on `gh pr checks <pr> --watch`, never a
 latest run, red only here, or flipped on one rerun, and each new test file's pass count in CI. A
 job red only here in code the PR did not touch may be a stale base: check
 `git merge-base --is-ancestor <target> HEAD` and rebase before any rerun. After a rebase compare
-`git patch-id`: when equal, keep the review verdicts and rerun only verify and CI (check first that
+`git patch-id`: when equal, keep the review verdicts and rerun verify, the final tier too, and CI (check first that
 the gate is not keyed to HEAD). Any other job red only here is a finding: reproduce it here, fix it at its cause, `lpk verify`, commit and
 push, and add its command to the run's checks and the repo profile. A new test file with no passes
 in CI is not run by CI: wire it into the CI command now.

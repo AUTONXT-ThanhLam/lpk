@@ -11,19 +11,21 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    imports, comments that narrate, a wrapper with one caller, a layer repeating its callee's
    arguments, a parameter threaded through three layers, a flag that must stay in step with another.
 2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background), then commit; the commit
-   hook refuses code that no green `lpk verify` ran on. It runs the cheapest check first and stops
-   at the first red one. Rerun only a red check with `lpk verify --only <number or exact command>`
+   hook refuses code that no green `lpk verify` ran on. It runs the fast tier only, cheapest check
+   first, and stops at the first red one. Rerun only a red check with `lpk verify --only <number or exact command>`
    (it counts for nothing at the commit gate), then run the full `lpk verify` once on the tree you
    commit. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
 3. Run `git fetch`, then `lpk facts` beside `lpk verify` (it diffs against the run's target; `--base <ref>` names
    another): it prints the bundle directory (`impact.md`,
    `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
    branch, so check the target yourself with `git rev-list --count HEAD..<target>`. When the branch
-   is behind, rebase now, `lpk verify`, commit, and run it again, so the reviewers see the code
-   that will merge.
+   is behind, rebase now, `lpk verify`, commit, and run it again: the reviewers then see the merge code.
 4. Freeze the commit in its own tree, so the reviewers and the Prover use exactly it while you keep
    working: `lpk run worktree review <commit>`, with its dependencies installed,
    and move the app there (the env agent's report says how to stop and start it).
+   If the run has final checks, start `lpk verify --final --repo <review worktree>` now with Bash
+   `run_in_background`, beside the net: a foreground call ends at 600000 ms, before a real suite does.
+   It uses its own database or port (the env step prepares it), so never start a second while one runs.
 5. Where the owner granted early drafts for this repo (`lpk run status` shows it), push the branch
    and open a draft PR now, so CI and any review bot run while the net runs. Elsewhere ask before
    the first push. Draft the PR body from the brief now (`deliver.md` in this skill's directory
@@ -31,8 +33,8 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
 
 ## Run the net
 
-Run `lpk slot --count`: it prints the lanes this machine and this model backend carry at once.
-Take that number as the workflow's `args.maxParallel`.
+Run `lpk slot --count`, which prints the lanes this machine and model backend carry at once, and take
+that number as the workflow's `args.maxParallel`.
 Run `lpk review start <base>..<commit>`: it records the range under review, and every finding is
 stamped with it. Start `lpk repro prepare` in the background right after it: it creates and installs
 the repro trees of the commit and the base while the net runs, so the first verifier does not wait
@@ -59,8 +61,7 @@ still owed and why. A lens that stalled or errored is re-run once; after that it
 
 ## Check yourself while it runs
 
-On the reviewed commit, in the checkout (the net reads the frozen tree, so your edits never change
-what it sees):
+On the reviewed commit, in the checkout (the net reads the frozen tree, so your edits change nothing there):
 - `lpk check --base <target>`: each candidate the hooks did not already show you is a defect, or you can say in one
   line why it is right;
 - `lpk rules`: for each loaded rule marked `blocks: high`, find the line that makes it hold;
@@ -84,8 +85,7 @@ scenario is never `neither`. The reviewers are told the same scope, so they rais
 Everything else is fixed at its root, whatever its stated severity, all in one round. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
-also uses (the env agent's `db` line), start when the net returns, because shared runs break each
-other.
+also uses (the env agent's `db` line), start when the net returns, because shared runs break each other.
 1. Group the confirmed findings by root cause. Start from the `cause` each CONFIRMED ruling
    records and the `same fix:` ids that end its evidence, and read the claims too: a verifier sees
    only the findings filed before it ruled. A cause born in the design or the request is fixed
@@ -106,16 +106,17 @@ other.
 5. Note your branch head, then bring each builder's commit in with `git cherry-pick`. Run
    `lpk fixlines <commit>` for each: it prints the fix's lines that an earlier commit of this run
    wrote. A confirmed finding on those lines means revert or redesign, never another patch.
-6. When the last commit of the round is in, run `lpk verify` once (a Bash timeout of 600000 ms).
-   When it is red, the builder of the fix that broke it amends that commit, never a commit of its
+6. When the last commit of the round is in, run `lpk verify` once (in the background when a check
+   outlasts 600000 ms). Then, once any final run from step 4 has ended, freeze the new head as in
+   step 4 and run `lpk verify --final --repo <review worktree>` on it, in the background beside the
+   delta review: the old final record belongs to the old tree. When a tier is red, the builder of the fix that broke it amends that commit, never a commit of its
    own, because a commit that closes no finding owes the whole net. Whenever a commit you picked
    is amended, drop your picks with `git reset --keep <the head you noted>` (they are yours and
    unpushed; an amended commit conflicts with its first version) and run step 5 again. A finding confirmed after the green
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Load it
-   with `finding_fixed`, loaded with ToolSearch on Claude Code or `mcp_list` on Qoder if your tool
-   list does not hold it yet; give its id, `commit` the fix's SHA
+   with ToolSearch on Claude Code or `mcp_list` on Qoder if your tool list lacks it; give its id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
@@ -123,8 +124,7 @@ other.
    verifier rules it `fixed` on the fix commit.
 8. `unsettled` findings and the ones you ruled on yourself go in the report with their evidence
    (`lpk report` lists them for the owner to read; they do not block); so do `preexisting` ones
-   and the deferred ones.
-   Surviving mutants (`test-gap`) are listed in the report.
+   and the deferred ones. Surviving mutants (`test-gap`) are listed in the report.
 9. A refactor a finding seems to call for is a separate PR, named in the report.
 
 Then one delta review: rerun the self-check on the files the fixes touched,
