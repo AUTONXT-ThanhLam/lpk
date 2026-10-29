@@ -13,13 +13,29 @@ constraint. Each PR runs in its own
 worktree, with its own `lpk run start` there, so PRs of one repo run side by side.
 
 `lpk run start --base <base> --verify "<command>"`, once for each check CI runs on the touched code
-(typecheck, lint, the test suites; `lpk facts` lists them). In the Full lane it records the
+(typecheck, lint, the test suites; `lpk facts` lists them). Give a check that is slow and that CI runs
+too, such as a database suite, to `--verify-final "<command>"` instead. The fast checks gate every
+commit and the final ones gate delivery, so a slow suite does not stall each commit. Both flags
+repeat, and the lead names the final ones, because lpk never guesses that a check is slow. In the Full lane it records the
 scenarios of `brief.json`. In the Quick lane add `--lane quick`, one `--req "<text>"` per
 requirement (numbered `R1`, `R2`… in that order), and one `--scenario "<command>"` per scenario,
 with `--expect "<literal>"` when the output must contain it and `--proves R1,R2` for the
 requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover judges). The run's preflight prints what is missing (the test command, `gh auth`, Chrome,
 memory); fix it before you build. Its hooks then show a hint after each edit: fix each one at
 once, or know the one line that says why it is right.
+
+## Run the final tier
+
+1. Register each slow check that CI runs with `--verify-final`. `lpk verify` runs the fast tier only.
+2. In the review step, after you freeze the commit with `lpk run worktree review <commit>`, run
+   `lpk verify --final --repo <review worktree>` with Bash `run_in_background`. A foreground call
+   ends at 600000 ms, before a real suite does.
+3. Run it beside the review net, against its own database or port. Never run two final runs at once.
+4. After the fix round, freeze the new head under a new name: `lpk run worktree review-2 <new head>`
+   (`review-3` for a later one). The name `review` is taken, and the command fails on it.
+5. Run `lpk verify --final --repo <that worktree>` the same way. The final record of the old review
+   worktree belongs to the old tree and counts for nothing.
+6. Delivery needs both tiers green on the tree of HEAD (`lpk gates` shows it).
 
 ## Build with its tests
 

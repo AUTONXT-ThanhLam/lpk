@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { git } from './git.mjs';
 import { appendRecord, readRecords } from './records.mjs';
 import { CODE } from './rules.mjs';
+import { tiersGreen } from './proof.mjs';
 import { noteBranch, readRun, writeRun } from './run.mjs';
 import { treeOf } from './tree.mjs';
 
@@ -32,7 +33,7 @@ function start(cmd, repo, timeout) {
   const timer = setTimeout(x.kill, timeout * 1000);
   live.add(x);
   x.done = new Promise((resolve) => {
-    const end = (exit) => { clearTimeout(timer); live.delete(x); resolve({ cmd, exit: x.stopped ? 'stopped' : exit, ms: Date.now() - t0, tail: tailOf(out) }); };
+    const end = (exit) => { clearTimeout(timer); live.delete(x); resolve({ cmd, exit: x.stopped ? 'stopped' : exit, ms: Date.now() - t0, limit: timeout, tail: tailOf(out) }); };
     p.on('error', (e) => { out += e.message; end(1); });
     p.on('close', (code, signal) => end(code ?? (signal ? `killed (${signal})` : 1)));
     p.on('exit', (code, signal) => setTimeout(() => { p.stdout.destroy(); p.stderr.destroy(); end(code ?? (signal ? `killed (${signal})` : 1)); }, 1000));
@@ -42,10 +43,10 @@ function start(cmd, repo, timeout) {
 
 const notRun = (cmd) => ({ cmd, exit: 'not run', ms: 0, tail: '' });
 
-async function execute(cmds, order, repo, timeout, parallel) {
+async function execute(cmds, order, repo, limit, parallel) {
   const got = new Map();
   if (parallel) {
-    const runs = order.map((i) => [i, start(cmds[i], repo, timeout)]);
+    const runs = order.map((i) => [i, start(cmds[i], repo, limit(cmds[i]))]);
     let failed = false;
     await Promise.all(runs.map(async ([i, x]) => {
       const v = await x.done;
@@ -55,7 +56,7 @@ async function execute(cmds, order, repo, timeout, parallel) {
     return got;
   }
   for (const i of order) {
-    const v = await start(cmds[i], repo, timeout).done;
+    const v = await start(cmds[i], repo, limit(cmds[i])).done;
     got.set(i, v);
     if (v.exit !== 0) break;
   }
@@ -72,32 +73,44 @@ function pick(cmds, only) {
   return { chosen };
 }
 
-const lastMs = (repo, run) => {
+const FLOOR = { fast: 1200, final: 7200 };
+
+const greenMs = (records) => {
   const ms = new Map();
-  for (const rec of readRecords(repo, { run: run.id })) if (rec.kind === 'verify') for (const x of rec.results || []) if (x.exit === 0) ms.set(x.cmd, x.ms);
+  for (const rec of records) if (rec.kind === 'verify') for (const x of rec.results || []) if (x.exit === 0) ms.set(x.cmd, x.ms);
   return ms;
 };
 
-export async function verify(repo, timeout = 1200, { only = [], parallel = false } = {}) {
+export function timeoutFor(records, cmd, { final = false, explicit } = {}) {
+  if (explicit) return explicit;
+  const last = greenMs(records).get(cmd) ?? 0;
+  return Math.max(final ? FLOOR.final : FLOOR.fast, Math.ceil((1.5 * last) / 1000));
+}
+
+export async function verify(repo, { only = [], parallel = false, final = false, timeout } = {}) {
   const r = readRun(repo);
   if (!r) return { error: 'no lpk run in this repo: start one with `lpk run start --verify "<command>"`' };
-  const picked = pick(r.verify, only);
+  const cmds = final ? r.verifyFinal || [] : r.verify;
+  if (final && !cmds.length) return { error: 'this run has no final checks: name them with `lpk run start --verify-final "<command>"`' };
+  const picked = pick(cmds, only);
   if (picked.error) return picked;
-  const partial = only.length > 0 && picked.chosen.size < r.verify.length;
-  const indexes = r.verify.map((_, i) => i).filter((i) => !only.length || picked.chosen.has(i));
-  const seen = lastMs(repo, r);
-  const order = [...indexes].sort((a, b) => (seen.get(r.verify[a]) ?? -1) - (seen.get(r.verify[b]) ?? -1));
+  const partial = only.length > 0 && picked.chosen.size < cmds.length;
+  const indexes = cmds.map((_, i) => i).filter((i) => !only.length || picked.chosen.has(i));
+  const records = readRecords(repo);
+  const seen = greenMs(records.filter((rec) => Boolean(rec.final) === final));
+  const order = [...indexes].sort((a, b) => (seen.get(cmds[a]) ?? -1) - (seen.get(cmds[b]) ?? -1));
   guard();
   const before = treeOf(repo);
-  const got = await execute(r.verify, order, repo, timeout, parallel);
-  const results = indexes.map((i) => got.get(i) || notRun(r.verify[i]));
+  const got = await execute(cmds, order, repo, (cmd) => timeoutFor(records, cmd, { final, explicit: timeout }), parallel);
+  const results = indexes.map((i) => got.get(i) || notRun(cmds[i]));
   // Files the checks write beside the code (build info, stamps, caches) do not void the result; a
   // code file that changed while they ran does. The id recorded is the one the checks left.
   const after = treeOf(repo);
   const moved = git(['diff-tree', '-r', '--name-only', before.id, after.id], repo).split('\n').filter((p) => CODE.test(p));
   const green = results.every((x) => x.exit === 0) && !moved.length;
   const shown = { id: after.id, tree: after.id, source: after.source, code: after.code, green, at: Date.now(), results };
-  if (!partial) { r.verified = shown; noteBranch(repo, r); writeRun(r); }
-  appendRecord(repo, { kind: 'verify', run: r.id, tree: after.id, exit: green ? 0 : 1, green, partial, untracked: after.untracked, results: results.map(({ cmd, exit, ms }) => ({ cmd, exit, ms })) });
-  return { verified: shown, partial, changedDuring: moved, untracked: after.untracked };
+  if (!partial && !final) { r.verified = shown; noteBranch(repo, r); writeRun(r); }
+  const rec = appendRecord(repo, { kind: 'verify', ...(final ? { final: true } : {}), run: r.id, tree: after.id, exit: green ? 0 : 1, green, partial, untracked: after.untracked, results: results.map(({ cmd, exit, ms, limit }) => ({ cmd, exit, ms, limit })) });
+  const finalOwed = !final && green && !partial && !tiersGreen(r, [...records.filter((x) => x.run === r.id), rec], after.id).final;
+  return { verified: shown, partial, final, finalOwed, changedDuring: moved, untracked: after.untracked };
 }

@@ -66,7 +66,7 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Proof |', '|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
-  facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify').length}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
+  facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {
     const row = run.ended ? null : runRow(repo);
     if (row) facts.push(`Tokens by job: ${Object.entries(row.agents).map(([k, v]) => `${k} ${fmt(v.fresh)} fresh, ${fmt(v.cacheRead)} cache reads`).join('; ') || 'none measured'}`);

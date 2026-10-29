@@ -11,7 +11,7 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    imports, comments that narrate, a wrapper with one caller, a layer repeating its callee's
    arguments, a parameter threaded through three layers, a flag that must stay in step with another.
 2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background), then commit; the commit
-   hook refuses code that no green `lpk verify` ran on. It runs the cheapest check first and stops
+   hook refuses code that no green `lpk verify` ran on. It runs the fast tier only, cheapest check first, and stops
    at the first red one. Rerun only a red check with `lpk verify --only <number or exact command>`
    (it counts for nothing at the commit gate), then run the full `lpk verify` once on the tree you
    commit. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
@@ -23,7 +23,7 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    that will merge.
 4. Freeze the commit in its own tree, so the reviewers and the Prover use exactly it while you keep
    working: `lpk run worktree review <commit>`, with its dependencies installed,
-   and move the app there (the env agent's report says how to stop and start it).
+   and move the app there (the env agent's report says how to stop and start it). When the run has final checks, start the final tier on this tree now, beside the net ("Run the final tier" in `build.md`).
 5. Where the owner granted early drafts for this repo (`lpk run status` shows it), push the branch
    and open a draft PR now, so CI and any review bot run while the net runs. Elsewhere ask before
    the first push. Draft the PR body from the brief now (`deliver.md` in this skill's directory
@@ -106,8 +106,8 @@ other.
 5. Note your branch head, then bring each builder's commit in with `git cherry-pick`. Run
    `lpk fixlines <commit>` for each: it prints the fix's lines that an earlier commit of this run
    wrote. A confirmed finding on those lines means revert or redesign, never another patch.
-6. When the last commit of the round is in, run `lpk verify` once (a Bash timeout of 600000 ms).
-   When it is red, the builder of the fix that broke it amends that commit, never a commit of its
+6. When the last commit of the round is in, run `lpk verify` once, then the final tier on the new head, frozen as `review-2` (step 4 of "Run the final tier" in `build.md`), beside the delta review.
+   When a tier is red, the builder of the fix that broke it amends that commit, never a commit of its
    own, because a commit that closes no finding owes the whole net. Whenever a commit you picked
    is amended, drop your picks with `git reset --keep <the head you noted>` (they are yours and
    unpushed; an amended commit conflicts with its first version) and run step 5 again. A finding confirmed after the green

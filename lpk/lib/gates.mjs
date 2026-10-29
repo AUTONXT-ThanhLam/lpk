@@ -10,7 +10,7 @@ import { knownLimits } from './bar.mjs';
 import { needsOwner, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
-import { named, proofsOf, proverResults, trace, verifiedGreen } from './proof.mjs';
+import { named, proofsOf, proverResults, trace, tiersGreen } from './proof.mjs';
 import { ciFacts } from './ci.mjs';
 import { readRecords, waived } from './records.mjs';
 import { readRun, runDir } from './run.mjs';
@@ -23,10 +23,15 @@ function verifyGate(repo, run, recs) {
   const tree = headTree(repo);
   const untracked = untrackedCode(repo);
   const last = run.verified;
-  const read = `HEAD^{tree} ${short(tree)}; last verify ${last ? `${last.green ? 'green' : 'RED'} on ${short(last.id)}` : 'never ran'}`;
+  const owes = (run.verifyFinal || []).length > 0;
+  const lastFinal = recs.filter((r) => r.kind === 'verify' && r.final).at(-1);
+  const read = `HEAD^{tree} ${short(tree)}; last verify ${last ? `${last.green ? 'green' : 'RED'} on ${short(last.id)}` : 'never ran'}${owes ? `; last final ${lastFinal ? `${lastFinal.green ? 'green' : 'RED'} on ${short(lastFinal.tree)}` : 'never ran'}` : ''}`;
   if (untracked.length) return { holds: false, read, why: `code files that are not committed: ${list(untracked)}`, wayOut: `add or ignore ${list(untracked)}, then \`lpk verify\`` };
-  if (verifiedGreen(run, recs, tree)) return { holds: true, read, why: '' };
-  return { holds: false, read, why: 'no green `lpk verify` of the run\'s current checks on HEAD\'s tree', wayOut: 'run `lpk verify` on the committed tree until it is green' };
+  const t = tiersGreen(run, recs, tree);
+  if (t.fast && t.final) return { holds: true, read, why: '' };
+  const why = [!t.fast && 'no green `lpk verify` of the run\'s current checks on HEAD\'s tree', !t.final && 'no green `lpk verify --final` of the run\'s final checks on HEAD\'s tree'].filter(Boolean);
+  const wayOut = [!t.fast && 'run `lpk verify` on the committed tree until it is green', !t.final && 'run `lpk verify --final` on the committed tree, in the review worktree'].filter(Boolean);
+  return { holds: false, read, why: why.join('; '), wayOut: wayOut.join('; ') };
 }
 
 function findingsGate(repo, run) {
@@ -118,6 +123,7 @@ function planGate(repo, run, recs) {
   }
   const go = recs.filter((r) => r.kind === 'go').at(-1);
   if (go?.verify && go.verify.join('\n') !== (run.verify || []).join('\n')) facts.push(`checks changed after go: ${list(go.verify)} → ${list(run.verify || [])}`);
+  if (go?.verify && (go.verifyFinal || []).join('\n') !== (run.verifyFinal || []).join('\n')) facts.push(`final checks changed after go: ${list(go.verifyFinal || []) || 'none'} → ${list(run.verifyFinal || []) || 'none'}`);
   return { holds: true, read: existsSync(brief) ? 'brief.json slices; the go record' : 'no brief.json', why: facts.join('; ') };
 }
 
