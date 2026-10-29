@@ -46,13 +46,15 @@ test('every agent the plugin ships has a row in the role table, and every row ha
   assert.deepEqual(Object.keys(agents).sort(), Object.keys(TABLE).sort());
 });
 
-const MODELS = ['sonnet', 'haiku'];
+const MODELS = ['sonnet', 'haiku', 'opus'];
+const OPUS = ['designer'];
 test('every agent pins a model alias, never a full model id or Fable, and names its role effort', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;
     assert.ok(fm, `agents/${name}.md exists`);
     assert.equal(fm.name, name, `agents/${name}.md names itself ${name}`);
     assert.ok(MODELS.includes(fm.model), `agents/${name}.md pins model: ${fm.model} outside ${MODELS.join(', ')}`);
+    assert.equal(fm.model === 'opus', OPUS.includes(name), `${name} ${OPUS.includes(name) ? 'runs on opus' : 'stays off opus'}`);
     assert.equal(fm.effort, row.effort, `${name} runs at effort ${row.effort}`);
   }
 });

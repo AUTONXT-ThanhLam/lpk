@@ -1,7 +1,7 @@
 ---
 name: designer
 description: Designs the screens a change touches and builds them. In design mode it returns the UI section of the Design Brief (what each screen answers, what is visible, what is one click away, its states, and the few motions it earns); in build mode it builds a slice of screens in its own git worktree with the design kit, looks at the result in the browser and commits it there. Give it the mode, the brief path (the requirements, in the Quick lane), the repo and the base; in build mode also the worktree, the slice (the files it owns, the contract it must meet, the tests that must pass), the test command and the repo profile path. It edits only the files of its slice.
-model: sonnet
+model: opus
 effort: high
 maxTurns: 100
 disallowedTools: NotebookEdit, Artifact, ArtifactComments, ArtifactData
