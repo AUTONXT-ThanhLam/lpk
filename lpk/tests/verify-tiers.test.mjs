@@ -8,6 +8,7 @@ import { timeoutFor } from '../lib/verify.mjs';
 const commitHook = (repo, session) => hook('PreToolUse', 'commit', { tool_name: 'Bash', cwd: repo, session_id: session, tool_input: { command: 'git commit -am x' } });
 const begin = (repo, session, ...args) => lpk(repo, session, 'run', 'start', '--target', 'main', ...args);
 const verifyRow = (repo, session) => lpk(repo, session, 'gates').stdout.match(/^verify .*(?:\n {13}.*)*/m)?.[0] ?? '';
+const verifyRecords = (repo) => readFileSync(join(repo, '.git', 'lpk', ['records', 'jsonl'].join('.')), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((r) => r.kind === 'verify');
 const gateRow = (repo, session, gate) => JSON.parse(lpk(repo, session, 'gates', '--json').stdout).find((r) => r.gate === gate);
 const status = (repo, session) => JSON.parse(lpk(repo, session, 'run', 'status').stdout);
 
@@ -120,6 +121,26 @@ test('R5: a check\'s timeout is the larger of its floor and 1.5 times its last g
   assert.equal(timeoutFor(records, 'never ran', {}), 1200);
   assert.equal(timeoutFor(records, 'slow', { explicit: 30 }), 30, '--timeout wins');
   assert.equal(timeoutFor(records, 'ignored', {}), 1200);
+});
+
+test('R5: the CLI gives a fast check 1200 s, a final check 7200 s, and --timeout the seconds it names', () => {
+  const repo = repoWith('tiers-limit', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 't', '--verify', 'true', '--verify-final', 'true; :').status, 0);
+  assert.equal(lpk(repo, 't', 'verify').status, 0);
+  assert.equal(lpk(repo, 't', 'verify', '--final').status, 0);
+  assert.equal(lpk(repo, 't', 'verify', '--timeout', '30').status, 0);
+  assert.deepEqual(verifyRecords(repo).map((r) => [Boolean(r.final), r.results[0].limit]), [[false, 1200], [true, 7200], [false, 30]]);
+});
+
+test('R5: --timeout stops a check that runs longer, red and within seconds; zero or text is a usage error', () => {
+  const repo = repoWith('tiers-kill', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 'k', '--verify', 'sleep 5').status, 0);
+  const t0 = Date.now();
+  const slow = lpk(repo, 'k', 'verify', '--timeout', '1');
+  assert.equal(slow.status, 1, slow.stderr + slow.stdout);
+  assert.ok(Date.now() - t0 < 4500, `the check ran ${Date.now() - t0} ms`);
+  assert.equal(verifyRecords(repo).at(-1).results[0].limit, 1);
+  for (const bad of ['0', 'abc']) assert.equal(lpk(repo, 'k', 'verify', '--timeout', bad).status, 2, bad);
 });
 
 test('R4: the requirements gate holds a test-proved requirement only once the final tier is green on HEAD', () => {
