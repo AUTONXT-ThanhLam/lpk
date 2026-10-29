@@ -22,3 +22,11 @@ test('the model is read from execution, not from any other model line', () => {
   assert.equal(executionModel('name: x\ngraders:\n  - model: sonnet\n'), undefined);
   assert.equal(executionModel('execution:\n  max_turns: 8\n  model: sonnet\n  prompt: hi\n'), 'sonnet');
 });
+
+test('every case that dispatches an agent has a grader that checks the dispatch', () => {
+  for (const name of dirs) {
+    const yaml = readFileSync(join(EVALS, name, 'case.yaml'), 'utf8');
+    if (!/allowed_tools:\s*\[Agent\]/.test(yaml)) continue;
+    assert.match(yaml.slice(yaml.indexOf('\ngraders:')), /type:\s*tool_used\s*\n\s*tool:\s*Agent/, `${name} must grade the Agent dispatch`);
+  }
+});

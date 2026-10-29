@@ -25,6 +25,10 @@ execution:
     9    });
     10 }
 graders:
+  - name: dispatched
+    type: tool_used
+    tool: Agent
+    input_match: security
   - name: names-the-missing-owner-check
     type: regex
     pattern: 'invoices\.mjs:?\s*(line\s*)?(6|7|8)\b|line\s*(6|7|8)\b'
