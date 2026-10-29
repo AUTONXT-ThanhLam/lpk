@@ -125,8 +125,11 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   }
   if (take && !open) return { error: 'no open run to take' };
   if (!verify.length && !open) return { error: 'name at least one check with --verify "<command>": the commands CI runs for this change' };
-  const both = (verify.length ? verify : open?.verify || []).filter((c) => (verifyFinal.length ? verifyFinal : open?.verifyFinal || []).includes(c));
+  const both = verify.filter((c) => verifyFinal.includes(c));
   if (both.length) return { error: `${both.map((c) => `\`${c}\``).join(', ')} named in both --verify and --verify-final: a check belongs to one tier` };
+  const fast = verify.length ? verify : (open?.verify || []).filter((c) => !verifyFinal.includes(c));
+  const final = verifyFinal.length ? verifyFinal : (open?.verifyFinal || []).filter((c) => !verify.includes(c));
+  if (!fast.length) return { error: 'moving these checks to the final tier leaves the run with no fast check: keep one with --verify "<command>"' };
   const run = open || { v: 2, id: `${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`, repo, started: Date.now(), branches: [], seen: [], reviewRange: '', previous: [], granted: { draftPush: false } };
   Object.assign(run, { marker, target, base, lane, laneWhy, bar: barFor(open, bar), ...(me ? { session: me } : {}) });
   if (scenarios.length || !open) {
@@ -135,8 +138,9 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
     run.scenarios = scenarios;
   }
   if (requirements.length || !open) run.requirements = requirements;
-  if (verify.length) { if (open && verify.join('\n') !== (open.verify || []).join('\n')) delete run.verified; run.verify = verify; }
-  if (verifyFinal.length || !open) run.verifyFinal = verifyFinal.length ? verifyFinal : open?.verifyFinal || [];
+  if (open && fast.join('\n') !== (open.verify || []).join('\n')) delete run.verified;
+  run.verify = fast;
+  run.verifyFinal = final;
   if (draftPush) run.granted = { ...run.granted, draftPush: true };
   noteBranch(repo, run);
   mkdirSync(dirname(marker), { recursive: true });

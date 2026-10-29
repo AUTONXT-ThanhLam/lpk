@@ -21,8 +21,8 @@ test('R1: a check named in both tiers, or --final without a final tier, is refus
   assert.equal(ok.status, 0, ok.stderr);
   assert.match(ok.stdout, /Final checks[^\n]*`slow`/);
   assert.deepEqual(status(repo, 'r1').verifyFinal, ['slow']);
-  const amended = begin(repo, 'r1', '--verify', 'slow');
-  assert.equal(amended.status, 2, 'the amended fast list may not overlap the kept final list');
+  const same = begin(repo, 'r1', '--verify', 'slow', '--verify-final', 'slow');
+  assert.equal(same.status, 2);
   assert.deepEqual(status(repo, 'r1').verify, ['true']);
 
   const plain = repoWith('tiers-none', { 'src/a.mjs': 'export const a = 1;\n' });
@@ -31,6 +31,27 @@ test('R1: a check named in both tiers, or --final without a final tier, is refus
   assert.equal(none.status, 2);
   assert.match(none.stderr, /no final checks/);
   assert.deepEqual(status(plain, 'r1b').verifyFinal, []);
+});
+
+test('R1: naming a kept check in the other tier moves it, and the run keeps at least one fast check', () => {
+  const repo = repoWith('tiers-move', { 'src/a.mjs': 'export const a = 1;\n' });
+  assert.equal(begin(repo, 'mv', '--verify', 'true', '--verify', 'quick', '--verify-final', 'slow').status, 0);
+  assert.deepEqual(status(repo, 'mv').verify, ['true', 'quick']);
+
+  const toFast = begin(repo, 'mv', '--verify', 'true', '--verify', 'slow');
+  assert.equal(toFast.status, 0, toFast.stderr);
+  assert.deepEqual(status(repo, 'mv').verify, ['true', 'slow']);
+  assert.deepEqual(status(repo, 'mv').verifyFinal, []);
+
+  const toFinal = begin(repo, 'mv', '--verify-final', 'slow');
+  assert.equal(toFinal.status, 0, toFinal.stderr);
+  assert.deepEqual(status(repo, 'mv').verify, ['true']);
+  assert.deepEqual(status(repo, 'mv').verifyFinal, ['slow']);
+
+  const last = begin(repo, 'mv', '--verify-final', 'true');
+  assert.equal(last.status, 2);
+  assert.deepEqual(status(repo, 'mv').verify, ['true']);
+  assert.deepEqual(status(repo, 'mv').verifyFinal, ['slow']);
 });
 
 test('R2 R3 R4: the fast tier lets a commit through, the final tier runs once on the committed tree, and the verify gate holds only then', () => {
