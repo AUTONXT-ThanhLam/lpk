@@ -1,6 +1,7 @@
 ---
 name: env
 description: Gets a repo ready to run while the main session designs: dependencies installed, databases and services up, the app started on free ports, a test login working in the lpk Chrome. Give it the repo path, the repo profile path if one exists, and which surfaces the change touches. It never edits tracked files and stops only what it started.
+model: sonnet
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write, mcp__plugin_lpk_chrome-devtools__*, mcp__chrome-devtools__*
 disallowedTools: Artifact, ArtifactComments, ArtifactData

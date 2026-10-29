@@ -1,6 +1,7 @@
 ---
 name: ui-reviewer
 description: Reviews the screens a committed change touches on the running app, as a person meets them, and returns each problem with a screenshot as the reproduction. Give it the repo, the commit under review, the base, the facts bundle directory and the URL of the running UI. It reads code and drives the browser; it never edits.
+model: sonnet
 effort: high
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData
 color: pink

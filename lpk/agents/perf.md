@@ -1,6 +1,7 @@
 ---
 name: perf
 description: Looks for what a committed change makes slower or hungrier than the base, at the load its users actually bring, and returns each regression with a measurement on both. Give it the repo, the base commit, the commit under review, the facts bundle directory, the request and the acceptance scenarios, and the URL of the running app when the change touches a screen. It reads code and runs read-only commands; it never edits.
+model: sonnet
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Write, mcp__plugin_lpk_chrome-devtools__*, mcp__chrome-devtools__*
 disallowedTools: Edit, NotebookEdit, Artifact, ArtifactComments, ArtifactData

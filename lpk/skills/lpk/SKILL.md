@@ -53,8 +53,8 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
   `lpk watch` names an agent that stopped moving.
-- **Spawn `lpk:` agents as their files define them.** Never pass `model`: it overrides the role's
-  model. Paste the owner's standing constraints, in their words, into every agent prompt. Drafts and fix rounds go to `lpk:staff` or `lpk:builder`,
+- **Spawn `lpk:` agents as their files define them.** Never pass `model`: the role's file sets it
+  and a hook drops one named on the spawn. Paste the owner's standing constraints, in their words, into every agent prompt. Drafts and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`, which works without lpk's rules.
 - **The advisor**, where the host has one (a Sonnet session with an Opus `advisorModel`; each consult
   rereads the whole transcript at Opus price): consult it before choosing the design approach, before
