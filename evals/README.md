@@ -14,7 +14,7 @@ lost, and a check-then-act race. Every check fails on the fixture as shipped.
 Run from the repository root (the case plugins must sit outside the plugin under test):
 
 ```sh
-claude plugin eval . --eval-dir evals/cases --ablation none --model opus --runs 3 -j 4 \
+claude plugin eval . --eval-dir evals/cases --ablation none --model sonnet --runs 3 -j 4 \
   --judge-model sonnet --scaffold --trust-plugin --allow-tools Bash Edit Write
 ```
 

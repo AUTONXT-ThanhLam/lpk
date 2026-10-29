@@ -1,0 +1,16 @@
+schema_version: "1.1"
+name: lane-docs
+description: the lpk skill names the Quick lane for this request
+tags: [skill, lane]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep]
+  append_system_prompt: 'The owner is away. Do not edit, run or start anything. Name the lane the lpk skill assigns, as one line "LANE: Quick" or "LANE: Full", then stop.'
+  prompt: '/lpk:lpk Fix two typos in README.md and docs/usage.md'
+graders:
+  - name: lane
+    type: regex
+    pattern: 'LANE:\s*Quick\b'

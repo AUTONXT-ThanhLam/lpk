@@ -1,0 +1,34 @@
+schema_version: "1.1"
+name: security-seeded
+description: security reports a missing owner check on a seeded route
+tags: [agent, security]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Agent]
+  prompt: |
+    Dispatch the lpk:security agent on the change below. The agent has no repository and no shell, so put the request and the file inside its prompt. Reply with the agent's findings as it returned them, each with file and line.
+
+    Request: add GET /invoices/:id so a customer can download their own invoice.
+
+    File src/routes/invoices.mjs after the change:
+    1  import { requireLogin } from '../auth.mjs';
+    2  import { db } from '../db.mjs';
+    3
+    4  export function register(app) {
+    5    app.get('/invoices/:id', requireLogin, async (req, res) => {
+    6      const invoice = await db.invoices.findById(req.params.id);
+    7      if (!invoice) return res.status(404).end();
+    8      res.json(invoice);
+    9    });
+    10 }
+graders:
+  - name: names-the-missing-owner-check
+    type: regex
+    weight: 3
+    pattern: 'invoices\.mjs:?\s*(line\s*)?(6|7|8)\b|line\s*(6|7|8)\b'
+  - name: judges-the-reason
+    type: llm
+    criteria: 'PASS only if the reply says that any logged-in user can read another customer''s invoice because the handler never compares invoice ownership with the caller. FAIL otherwise.'
