@@ -1,8 +1,15 @@
+// Each function reads the environment when it is called, so a hook, a CLI run from a session's shell
+// and a test each answer for the host they were launched under.
+//
+// Nothing here writes, and nothing here guesses: a host that set no variable of its own is `other`.
 import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Each host's own names for the places it keeps things: `config` the variables it reads for its
+// store, `home` the default folder of it, `plugin`/`session`/`project` what it sets for the process
+// it launches.
 const HOSTS = [
   { name: 'claude', config: ['CLAUDE_CONFIG_DIR'], home: '.claude', plugin: 'CLAUDE_PLUGIN_ROOT', session: ['CLAUDE_CODE_SESSION_ID', 'CLAUDE_SESSION_ID'], project: 'CLAUDE_PROJECT_DIR' },
 ];
@@ -18,6 +25,9 @@ export function hostName(env = process.env) {
   return 'other';
 }
 
+// The candidate store roots, in the order a reader walks them: each its variable's value else its
+// folder in the home. Deduped, so a root named twice is read once. Not filtered by existence: this is
+// the list, and `projectsDirs()` below is the part of it that is there.
 export function configCandidates(env = process.env) {
   const home = env.HOME || homedir();
   const out = [];
@@ -33,10 +43,18 @@ export const configDirs = (env = process.env) => configCandidates(env).map((c) =
 // and walks them; this is for the one place that must name a single store.
 export const configDir = (env = process.env) => configCandidates(env)[0].dir;
 
+// The `projects` folder of every candidate that is on disk, in order: where each host keeps the
+// transcripts of its sessions, `<root>/projects/<slug>/<session>.jsonl` and the session's subagents
+// under `<root>/projects/<slug>/<session>/subagents/`.
 export const projectsDirs = (env = process.env) => configCandidates(env).map((c) => join(c.dir, 'projects')).filter((d) => existsSync(d));
 export const projectsDir = (env = process.env) => join(configDir(env), 'projects');
+// A project folder's name: its directory, every character but a letter or digit a dash. Claude Code
+// names it thus.
 export const slugOf = (dir) => String(dir || '').replace(/[^A-Za-z0-9]/g, '-');
 
+// Every `<root>/projects/<project>/<session>` dir, ordered and deduped. A session may have started in
+// a parent of the repo or in a worktree of it, so each project folder is asked; the caller keeps
+// whichever of its dirs hold what it reads.
 export function sessionDirs(session, env = process.env) {
   const s = String(session || '');
   if (!s) return [];
@@ -73,9 +91,13 @@ export const pluginRoot = (env = process.env) => any(PLUGIN_VARS, env) || join(d
 // The plugin manifest: the version `lpk version` prints and the run's row records as the CLI version.
 export const pluginManifest = (root = pluginRoot()) => MANIFEST_DIRS.map((d) => join(root, d, 'plugin.json')).find((f) => existsSync(f)) || join(root, MANIFEST_DIRS[0], 'plugin.json');
 
+// An agent transcript's name: Claude Code writes `agent-<id>.jsonl`.
 export const agentFile = (name) => /^agent-.+\.jsonl$/.test(String(name || ''));
+// The id in such a name: everything after `agent-`. '' for a file that is no agent transcript.
 export const agentIdOf = (file) => { const n = basename(String(file || '')); return agentFile(n) ? n.slice('agent-'.length, -'.jsonl'.length) : ''; };
 
+// The counts one transcript line carries. `usageRecorded` is the rule every reader goes through, and
+// `recorded` is the field it leaves on what it read: false when the host recorded no counts at all.
 export const TOKEN_KEYS = ['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens'];
 export const TOKENS_UNMEASURED = 'tokens not recorded by this host';
 export const usageRecorded = (usage) => TOKEN_KEYS.some((k) => Number(usage?.[k]) > 0);

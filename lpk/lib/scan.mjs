@@ -1,6 +1,9 @@
 // What a session's transcripts say so far, read incrementally: each file is read from where the
 // last read stopped, and what it said is folded into a small state kept in a cache file per
 // session. A transcript of tens of megabytes is read once; each later call reads only its new lines.
+// Tokens are counted as lib/meter.mjs counts them: each API message once by its id, fresh = input +
+// cache write + output, cache reads apart, and a transcript whose host recorded no counts marks its
+// state unrecorded so its tokens read as unmeasured.
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
@@ -174,6 +177,8 @@ export function tokensOf(states, since = 0) {
 
 const metaOf = (file) => { try { return JSON.parse(readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8')); } catch { return {}; } };
 
+// The session's main transcript, every agent with its meta file, and each workflow's journal, each
+// brought up to date in `cache`.
 export function scanSession(session, cache, root) {
   const found = session ? sessionFiles(session, root || projectsDirs()) : null;
   if (!found) return null;

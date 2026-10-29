@@ -19,6 +19,8 @@ export async function main(argv) {
   if (a.flags.has('--json')) { console.log(JSON.stringify({ session, total: total(rows), agents: rows })); return 0; }
   rows.sort((x, y) => y.fresh - x.fresh);
   const t = total(rows);
+  // A session whose host wrote no counts has no cost to state: the words stand in for the figures, so
+  // its run never prints as one that cost 0 tokens (lib/host.mjs).
   const cost = tokenFigure(t.fresh, t.recorded);
   const head = [`session ${session}: ${rows.length} transcript(s), ${n(t.messages)} API messages; ${typeof cost === 'number'
     ? `fresh tokens ${n(cost)} (input + cache write + output), cache reads ${n(t.cacheRead)}`

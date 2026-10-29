@@ -1,3 +1,9 @@
+// Tokens per agent, from the transcripts the host writes: the session's own, its subagents' and its
+// workflow agents'. Each API message is counted once by its message id (a transcript writes one line
+// per content block, each carrying the same usage). Fresh tokens = input + cache write + output; cache
+// reads are counted apart. A host that writes no counts at all leaves its rows `recorded: false`: its
+// zeros are no measurement, and the report layer prints `tokens not recorded by this host` instead of
+// them.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { agentIdOf, hostOf, projectsDir, projectsDirs, slugOf, usageRecorded } from './host.mjs';
@@ -9,6 +15,7 @@ const roots = (root) => (root ? (Array.isArray(root) ? root : [root]) : projects
 const list = (dir) => { try { return readdirSync(dir); } catch { return []; } };
 const meta = (p) => { try { return JSON.parse(readFileSync(p.replace(/\.jsonl$/, '.meta.json'), 'utf8')); } catch { return {}; } };
 
+// The session's transcript and every agent transcript under it, wherever its project folder is.
 export function sessionFiles(session, root) {
   for (const projects of roots(root)) {
     for (const project of list(projects)) {

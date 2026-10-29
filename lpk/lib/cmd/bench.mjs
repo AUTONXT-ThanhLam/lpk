@@ -1,3 +1,8 @@
+// `lpk bench`: what the recorded runs actually cost and actually found, read from files that already
+// exist (runs.jsonl, the ledgers, the records, the transcripts) and from no model.
+// Yield per lens, fresh tokens per lens and per role, wall time on the critical path, and the bytes
+// lpk keeps resident in every session. Absence is said out loud: a host whose transcripts write
+// usage as zeros has no token figure (null, "unavailable"), never 0.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { capped, parseArgs } from '../out.mjs';
@@ -205,6 +210,9 @@ export async function main(argv) {
   const runRows = [];
   let scanned = 0;
   const injectFiles = [];
+  // Every store the machine names is reported, including one that holds none of these runs: its
+  // verdict on tokens is measured from its own transcripts of the same projects, so a SKIPPED row is a
+  // finding, not an absence.
   const runSessions = [...new Set(runs.map((r) => r.session).filter(Boolean))];
   const known = runSessions.map((s) => ({ session: s, where: sessionFiles(s), rows: (() => { try { return meter(s); } catch { return null; } })() })).filter((x) => x.where && x.rows);
   const slugs = new Set(runs.map((r) => r.path).filter(Boolean).map((p) => slugOf(p)));
