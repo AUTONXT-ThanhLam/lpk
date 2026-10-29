@@ -128,6 +128,7 @@ test('R5: the CLI gives a fast check 1200 s, a final check 7200 s, and --timeout
   assert.equal(begin(repo, 't', '--verify', 'true', '--verify-final', 'true; :').status, 0);
   assert.equal(lpk(repo, 't', 'verify').status, 0);
   assert.equal(lpk(repo, 't', 'verify', '--final').status, 0);
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
   assert.equal(lpk(repo, 't', 'verify', '--timeout', '30').status, 0);
   assert.deepEqual(verifyRecords(repo).map((r) => [Boolean(r.final), r.results[0].limit]), [[false, 1200], [true, 7200], [false, 30]]);
 });

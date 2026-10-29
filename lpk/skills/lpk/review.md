@@ -12,9 +12,9 @@ run at once, so the net costs its slowest lens; you keep working while it runs.
    arguments, a parameter threaded through three layers, a flag that must stay in step with another.
 2. Run `lpk verify` (a Bash timeout of 600000 ms, or in the background), then commit; the commit
    hook refuses code that no green `lpk verify` ran on. It runs the fast tier only, cheapest check first, and stops
-   at the first red one. Rerun only a red check with `lpk verify --only <number or exact command>`
-   (it counts for nothing at the commit gate), then run the full `lpk verify` once on the tree you
-   commit. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
+   at the first red one and prints the path of that check's log (its last 1 MiB of output). Rerun only a red check with
+   `lpk verify --only <number or exact command>` (it counts for nothing at the commit gate), then run
+   the full `lpk verify` once on the tree you commit: it runs only the checks not already green on that tree. `--parallel` runs checks together: chain those that share a database, port or cache into one `--verify` entry with `&&`.
 3. Run `git fetch`, then `lpk facts` beside `lpk verify` (it diffs against the run's target; `--base <ref>` names
    another): it prints the bundle directory (`impact.md`,
    `precedent.md`), the diff groups and the commands CI runs. Its `merge:` line reads the default
