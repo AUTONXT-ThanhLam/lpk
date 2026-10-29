@@ -178,7 +178,7 @@ export function tokensOf(states, since = 0) {
 const metaOf = (file) => { try { return JSON.parse(readFileSync(file.replace(/\.jsonl$/, '.meta.json'), 'utf8')); } catch { return {}; } };
 
 // The session's main transcript, every agent with its meta file, and each workflow's journal, each
-// brought up to date in `cache`.
+// brought up to date in `cache`. Null when no store holds a transcript of the session.
 export function scanSession(session, cache, root) {
   const found = session ? sessionFiles(session, root || projectsDirs()) : null;
   if (!found) return null;

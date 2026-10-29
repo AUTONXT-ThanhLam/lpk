@@ -48,6 +48,9 @@ export function runCard(input) {
   return { hookSpecificOutput: { hookEventName: 'SubagentStart', additionalContext: text } };
 }
 
+// The session's newest workflow run, from the files the host keeps beside the transcript: its id,
+// name, status, and the agents that finished and that did not. Workflows are Claude Code's; a session
+// that ran none reads as null, which the card says out loud.
 export function lastWorkflow(transcriptPath) {
   const dir = transcriptPath ? join(transcriptPath.replace(/\.jsonl$/, ''), 'workflows') : '';
   if (!dir || !existsSync(dir)) return null;

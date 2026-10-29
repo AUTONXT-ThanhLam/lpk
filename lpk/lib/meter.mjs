@@ -8,8 +8,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { agentIdOf, hostOf, projectsDir, projectsDirs, slugOf, usageRecorded } from './host.mjs';
 
+// Where each host keeps its store, and the slug a project's folder is named with (lib/host.mjs).
 export { projectsDir, projectsDirs, slugOf };
 
+// The roots to read: a caller's own (one, or a list), else the host's.
 const roots = (root) => (root ? (Array.isArray(root) ? root : [root]) : projectsDirs());
 
 const list = (dir) => { try { return readdirSync(dir); } catch { return []; } };
