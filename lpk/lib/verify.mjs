@@ -145,7 +145,7 @@ export async function verify(repo, { only = [], parallel = false, final = false,
   const green = results.every((x) => x.exit === 0) && !moved.length;
   const shown = { id: after.id, tree: after.id, source: after.source, code: after.code, green, at: Date.now(), results };
   if (!partial && !final) { r.verified = shown; noteBranch(repo, r); writeRun(r); }
-  const rec = appendRecord(repo, { kind: 'verify', ...(final ? { final: true } : {}), run: r.id, tree: after.id, exit: green ? 0 : 1, green, stable: !moved.length, partial, untracked: after.untracked, results: results.map(({ cmd, exit, ms, limit, log, reused: again }) => ({ cmd, exit, ms, limit, ...(log ? { log } : {}), ...(again ? { reused: true } : {}) })) });
+  const rec = appendRecord(repo, { kind: 'verify', ...(final ? { final: true } : {}), run: r.id, tree: after.id, exit: green ? 0 : 1, green, stable: before.id === after.id, partial, untracked: after.untracked, results: results.map(({ cmd, exit, ms, limit, log, reused: again }) => ({ cmd, exit, ms, limit, ...(log ? { log } : {}), ...(again ? { reused: true } : {}) })) });
   const finalOwed = !final && green && !partial && !tiersGreen(r, [...records.filter((x) => x.run === r.id), rec], after.id).final;
   return { verified: shown, partial, final, finalOwed, changedDuring: moved, untracked: after.untracked };
 }

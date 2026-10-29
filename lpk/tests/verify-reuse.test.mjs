@@ -134,3 +134,33 @@ test('R4 final: --final runs a final check again even when it is green on the sa
   assert.ok(!second.stdout.includes('green earlier'));
   assert.equal(lastVerify(repo).results[0].reused, undefined);
 });
+
+test('R2: a green is not reused when a sibling check rewrote a tracked non-code file during the run', () => {
+  const repo = repoWith('reuse-sibling', { 'src/a.mjs': 'export const a = 1;\n', 'data.json': '{"v":0}\n' });
+  const a = bump('sibling-a');
+  const b = `${bump('sibling-b')}; echo '{"v":1}' > data.json`;
+  assert.equal(begin(repo, 'sb', '--verify', a, '--verify', b).status, 0);
+  assert.equal(lpk(repo, 'sb', 'verify').status, 0);
+  assert.equal(lastVerify(repo).stable, false);
+  const second = lpk(repo, 'sb', 'verify');
+  assert.equal(second.status, 0, second.stdout);
+  assert.ok(!second.stdout.includes('green earlier'), second.stdout);
+  assert.deepEqual([runs('sibling-a'), runs('sibling-b')], [2, 2]);
+  assert.equal(lastVerify(repo).stable, true);
+  assert.equal(lpk(repo, 'sb', 'verify').status, 0);
+  assert.deepEqual([runs('sibling-a'), runs('sibling-b')], [2, 2], 'a run that left the tree as it found it is reusable');
+});
+
+test('R2: --parallel reuses a green check from an earlier red run on the same tree', () => {
+  const repo = fresh('reuse-parallel');
+  const flag = join(tmp, 'parallel.flag');
+  const a = bump('parallel-a');
+  const b = `${bump('parallel-b')}; sleep 1; test -e ${flag}`;
+  assert.equal(begin(repo, 'pl', '--verify', a, '--verify', b).status, 0);
+  assert.equal(lpk(repo, 'pl', 'verify', '--parallel').status, 1);
+  write(tmp, 'parallel.flag', 'x');
+  const again = lpk(repo, 'pl', 'verify', '--parallel');
+  assert.equal(again.status, 0, again.stdout);
+  assert.ok(again.stdout.includes(`ok   \`${a}\` green earlier on this tree, not run again`), again.stdout);
+  assert.deepEqual([runs('parallel-a'), runs('parallel-b')], [1, 2]);
+});
