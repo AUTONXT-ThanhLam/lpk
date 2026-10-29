@@ -111,7 +111,7 @@ other.
    verify gets a fix commit of its own, brought in the same way; it still owes only the delta review.
 7. Close each finding a fix removes with `finding_fixed` yourself, never a builder: a cherry-pick
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Give
-   `finding_fixed` the id, `commit` the fix's SHA
+   `finding_fixed` (loaded with ToolSearch if your tool list does not hold it yet) the id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as

@@ -20,7 +20,7 @@ function owedFor(ext) {
   }
 }
 
-test('a frontend file with the same lines owes every lens a .ts file owes', () => {
+test('a frontend file with route, query, render and message lines owes the lenses a .ts file owes for them', () => {
   const ts = owedFor('ts');
   for (const ext of ['vue', 'svelte', 'html', 'css']) {
     const web = owedFor(ext);
