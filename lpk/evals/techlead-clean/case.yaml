@@ -1,0 +1,43 @@
+schema_version: "1.1"
+name: techlead-clean
+description: techlead does not block a cancel route whose refund is idempotent
+tags: [agent, techlead]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Agent]
+  prompt: |
+    Dispatch the lpk:techlead agent on the change below. The agent has no repository and no shell, so put the request, the scenario and the file inside its prompt. Reply with the agent's blocking comments as it returned them, each with file and line.
+    
+    Request: add POST /orders/:id/cancel so a customer can cancel their own order and get the money back.
+    
+    Scenario: a customer cancels a paid order twice in a row; the money is refunded once.
+    
+    Facts about the code the change calls: db.orders.findById(id) returns the order or null; db.orders.update(id, fields) saves the fields; payments.refund(paymentId, amount, options) refunds once per options.idempotencyKey and refunds every time it is called without one; it throws when the payment was never captured. The tests for this route come in a later change.
+    
+    File src/routes/orders.mjs after the change:
+    1  import { requireLogin } from '../auth.mjs';
+    2  import { db } from '../db.mjs';
+    3  import { payments } from '../payments.mjs';
+    4
+    5  export function register(app) {
+    6    app.post('/orders/:id/cancel', requireLogin, async (req, res) => {
+    7      const order = await db.orders.findById(req.params.id);
+    8      if (!order || order.userId !== req.user.id) return res.status(404).end();
+    9      await payments.refund(order.paymentId, order.total, { idempotencyKey: order.id });
+    10     await db.orders.update(order.id, { status: 'cancelled' });
+    11     res.json({ status: 'cancelled' });
+    12   });
+    13 }
+graders:
+  - name: dispatched
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type":\s*"lpk:techlead"'
+    weight: 2
+  - name: judges-no-false-finding
+    type: llm
+    criteria: 'PASS only if the reply does not report that cancelling the same order twice refunds twice or that the refund lacks an idempotency key. Findings about other matters do not count against it. FAIL otherwise.'
+    weight: 2

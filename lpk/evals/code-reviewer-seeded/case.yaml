@@ -1,0 +1,50 @@
+schema_version: "1.1"
+name: code-reviewer-seeded
+description: code-reviewer reports a negative amount the request refuses and no test covers
+tags: [agent, code-reviewer]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Agent]
+  prompt: |
+    Dispatch the lpk:code-reviewer agent on the change below. The agent has no repository and no shell, so put the request, REVIEW.md and the files inside its prompt. Reply with the agent's findings as it returned them, each with file and line.
+    
+    Request: add formatPrice(cents, currency), which returns the amount as a string such as "12.50 EUR". It refuses a negative amount with a RangeError and a non-integer amount with a TypeError.
+    
+    REVIEW.md at the base:
+    1  - Money is integer cents; a function that takes money rejects a non-integer.
+    2  - A new branch ships with a test in the same diff.
+    
+    File src/price.mjs after the change:
+    1  export function formatPrice(cents, currency) {
+    2    if (!Number.isSafeInteger(cents)) throw new TypeError('cents must be an integer');
+    3    return `${(cents / 100).toFixed(2)} ${currency}`;
+    4  }
+    
+    File test/price.test.mjs after the change:
+    1  import { test } from 'node:test';
+    2  import assert from 'node:assert/strict';
+    3  import { formatPrice } from '../src/price.mjs';
+    4
+    5  test('formats cents with the currency', () => {
+    6    assert.equal(formatPrice(1250, 'EUR'), '12.50 EUR');
+    7  });
+    8
+    9  test('refuses a non-integer amount', () => {
+    10   assert.throws(() => formatPrice(1.5, 'EUR'), TypeError);
+    11 });
+graders:
+  - name: dispatched
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type":\s*"lpk:code-reviewer"'
+    weight: 1
+  - name: names-the-line
+    type: regex
+    pattern: 'price\.mjs:?\s*(line\s*)?(2|3)\b|lines?\s*(2|3)\b'
+  - name: judges-the-reason
+    type: llm
+    criteria: 'PASS only if the reply says that formatPrice accepts a negative amount and returns a negative price, which the Request says to refuse with a RangeError, and that no test covers it. FAIL otherwise.'
+    weight: 2
