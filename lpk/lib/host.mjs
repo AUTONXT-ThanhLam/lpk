@@ -1,5 +1,9 @@
-// Each function reads the environment when it is called, so a hook, a CLI run from a session's shell
-// and a test each answer for the host they were launched under.
+// Which host launched lpk, and where that host keeps what lpk reads: a session's transcripts, its
+// live-process files and its settings.
+//
+// `configDirs()` is the ORDERED list of roots to read, and a reader walks all of them. Each function
+// reads the environment when it is called, so a hook, a CLI run from a session's shell and a test
+// each answer for the host they were launched under.
 //
 // Nothing here writes, and nothing here guesses: a host that set no variable of its own is `other`.
 import { existsSync, readdirSync } from 'node:fs';
@@ -13,13 +17,16 @@ import { fileURLToPath } from 'node:url';
 const HOSTS = [
   { name: 'claude', config: ['CLAUDE_CONFIG_DIR'], home: '.claude', plugin: 'CLAUDE_PLUGIN_ROOT', session: ['CLAUDE_CODE_SESSION_ID', 'CLAUDE_SESSION_ID'], project: 'CLAUDE_PROJECT_DIR' },
 ];
+// The session id, plugin root and project dir variables, in the order lpk trusts them.
 const SESSION_VARS = HOSTS.flatMap((h) => h.session);
 const PROJECT_VARS = HOSTS.map((h) => h.project);
 const PLUGIN_VARS = HOSTS.map((h) => h.plugin);
+// The folder a plugin's manifest is read from.
 const MANIFEST_DIRS = ['.claude-plugin'];
 
 const any = (names, env) => names.map((n) => env[n]).find((v) => v) || '';
 
+// Which host launched this process: 'claude', or 'other' when it was not Claude Code.
 export function hostName(env = process.env) {
   for (const h of HOSTS) if (any(h.config, env) || any(h.session, env) || env[h.plugin] || env[h.project]) return h.name;
   return 'other';

@@ -5,9 +5,11 @@
 import { top } from './git.mjs';
 import { exitedRuns, readRun, sessionRuns } from './run.mjs';
 
+// Claude Code prefixes the plugin's MCP tools (`mcp__plugin_lpk_lpk__`); the hook stamps each finding tool.
 export const FINDING_TOOL = /^mcp__(?:plugin_lpk_lpk|lpk_lpk|plugin_lpk)__finding_(add|list|get|verdict|fixed)$/;
 const STAMPED = ['repo', 'run', 'from', 'agentId', 'at', 'by'];
 
+// The finding call a hook event carries: the tool and its args, or null when the event is no finding tool.
 function findingCall(input) {
   const direct = FINDING_TOOL.exec(input?.tool_name ?? '');
   return direct ? { tool: direct[1], args: input.tool_input ?? {} } : null;
