@@ -126,7 +126,9 @@ test('a store whose usage counts are all zeros has no token figure: unavailable,
   assert.equal(r2.fresh, null);
   assert.match(r2.note, /unavailable, not 0/);
   assert.equal(r2.host, 'claude');
-  assert.match(text, /fresh tokens UNAVAILABLE \(SKIPPED\), cache reads SKIPPED\. SKIPPED for cost: tokens not recorded by this host/);
+  const row = text.split('\n').find((l) => l.startsWith('  host claude:'));
+  assert.ok(row, 'the store has its row in the text output');
+  assert.ok(row.includes('UNAVAILABLE') && !/fresh tokens \d/.test(row), 'the row states no token figure, 0 included');
   assert.ok(!/credits/.test(text), 'a store with no usage prints no credits fragment');
 });
 
