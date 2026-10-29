@@ -4,9 +4,10 @@ import { join } from 'node:path';
 import { ciCommands, git } from '../git.mjs';
 import { runDir } from '../run.mjs';
 export const USAGE = `usage:
-  lpk run start --verify "<command>"... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
+  lpk run start --verify "<command>"... [--verify-final "<command>"]... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
                  (--req numbers R1, R2... in order; --proves names the ones the scenario before it proves.
                   With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
+                 (--verify-final names the slow checks that gate delivery but not each commit: \`lpk verify\` runs the --verify ones, \`lpk verify --final\` the others, once, on the committed tree)
                  (--bar production raises the run from the default increment bar to production; it is never lowered)
   lpk run take [--repo <dir>]             (take over a run whose session has exited, or reopen the one that delivered this branch)
   lpk run worktree <name | path> [<commit>] [--branch <name>] [--repo <dir>]
@@ -18,12 +19,12 @@ export const USAGE = `usage:
   lpk run lane full --why "<why>" [--repo <dir>]
   lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]`;
 
-const VALUED = new Set(['--verify', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch', '--bar']);
+const VALUED = new Set(['--verify', '--verify-final', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch', '--bar']);
 const BARE = new Set(['--take', '--draft-push']);
 
 // Options in order, so each --expect belongs to the --scenario before it.
 export function parse(argv) {
-  const o = { words: [], verify: [], scenarios: [], requirements: [], flags: new Set() };
+  const o = { words: [], verify: [], verifyFinal: [], scenarios: [], requirements: [], flags: new Set() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (BARE.has(a)) { o.flags.add(a); continue; }
@@ -32,6 +33,7 @@ export function parse(argv) {
     const v = argv[++i];
     if (v === undefined) return { error: `${a} needs a value` };
     if (a === '--verify') o.verify.push(v);
+    else if (a === '--verify-final') o.verifyFinal.push(v);
     else if (a === '--scenario') o.scenarios.push({ id: `S${o.scenarios.length + 1}`, cmd: v });
     else if (a === '--judged') o.scenarios.push({ id: `S${o.scenarios.length + 1}`, agentJudged: v });
     else if (a === '--expect') { const s = o.scenarios.at(-1); if (!s?.cmd || s.expect !== undefined) return { error: '--expect follows the --scenario "<command>" it checks' }; s.expect = v; }

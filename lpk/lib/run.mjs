@@ -111,7 +111,7 @@ export function noteBranch(repo, run) {
 
 // Starts a run, or with an open one: amends it when it is this session's (same id, ledger and
 // verify kept), takes it with `take` when its session's process is gone, else refuses.
-export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], take = false, draftPush = false, bar }) {
+export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], verifyFinal = [], take = false, draftPush = false, bar }) {
   const marker = startDir(repo) && join(startDir(repo), 'run.json');
   if (!marker) return { error: 'not inside a git repository' };
   const st = parse(marker), me = sessionId();
@@ -125,6 +125,8 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   }
   if (take && !open) return { error: 'no open run to take' };
   if (!verify.length && !open) return { error: 'name at least one check with --verify "<command>": the commands CI runs for this change' };
+  const both = (verify.length ? verify : open?.verify || []).filter((c) => (verifyFinal.length ? verifyFinal : open?.verifyFinal || []).includes(c));
+  if (both.length) return { error: `${both.map((c) => `\`${c}\``).join(', ')} named in both --verify and --verify-final: a check belongs to one tier` };
   const run = open || { v: 2, id: `${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`, repo, started: Date.now(), branches: [], seen: [], reviewRange: '', previous: [], granted: { draftPush: false } };
   Object.assign(run, { marker, target, base, lane, laneWhy, bar: barFor(open, bar), ...(me ? { session: me } : {}) });
   if (scenarios.length || !open) {
@@ -134,6 +136,7 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   }
   if (requirements.length || !open) run.requirements = requirements;
   if (verify.length) { if (open && verify.join('\n') !== (open.verify || []).join('\n')) delete run.verified; run.verify = verify; }
+  if (verifyFinal.length || !open) run.verifyFinal = verifyFinal.length ? verifyFinal : open?.verifyFinal || [];
   if (draftPush) run.granted = { ...run.granted, draftPush: true };
   noteBranch(repo, run);
   mkdirSync(dirname(marker), { recursive: true });

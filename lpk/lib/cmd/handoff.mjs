@@ -62,8 +62,11 @@ export async function main(argv) {
     if (beyond.length) rows.push(`changed beyond the slice's files: ${beyond.join(', ')}`);
   }
   const run = readRun(repo);
-  const verify = readRecords(repo, run ? { run: run.id } : {}).filter((r) => r.kind === 'verify').at(-1);
-  rows.push(verify ? `last lpk verify${verify.partial ? ' (partial, --only)' : ''}: ${verify.green ? 'green' : 'RED'} on tree ${String(verify.tree || '').slice(0, 12)} at ${verify.at}${verify.green ? '' : `; failing: ${(verify.results || []).filter((x) => x.exit !== 0 && x.exit !== 'not run' && x.exit !== 'stopped').map((x) => `\`${x.cmd}\``).join(', ')}`}` : 'last lpk verify: none in this run');
+  const verifies = readRecords(repo, run ? { run: run.id } : {}).filter((r) => r.kind === 'verify');
+  const line = (name, verify) => `last ${name}${verify.partial ? ' (partial, --only)' : ''}: ${verify.green ? 'green' : 'RED'} on tree ${String(verify.tree || '').slice(0, 12)} at ${verify.at}${verify.green ? '' : `; failing: ${(verify.results || []).filter((x) => x.exit !== 0 && x.exit !== 'not run' && x.exit !== 'stopped').map((x) => `\`${x.cmd}\``).join(', ')}`}`;
+  const fast = verifies.filter((r) => !r.final).at(-1), final = verifies.filter((r) => r.final).at(-1);
+  rows.push(fast ? line('lpk verify', fast) : 'last lpk verify: none in this run');
+  if (final) rows.push(line('lpk verify --final', final));
   let findings = [];
   try { findings = readLedger(repo).findings; } catch { /* no ledger yet */ }
   const mine = findings.filter((f) => !files.length || files.includes(f.file)).filter((f) => !['dropped', 'duplicate', 'fixed', 'deferred', 'preexisting'].includes(f.state));

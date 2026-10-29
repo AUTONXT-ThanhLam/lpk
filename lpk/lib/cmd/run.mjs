@@ -38,13 +38,13 @@ async function start(repo, o) {
   if (unknown.length) { console.error(`lpk: --proves names ${unknown.join(', ')}, and the run's requirements are ${known.join(', ') || 'none (--req "<text>" numbers them)'}`); return 2; }
   let scenarios = o.scenarios;
   try { if (!scenarios.length) scenarios = briefScenarios(repo); } catch (e) { console.error(`lpk: ${e.message}`); return 2; }
-  const r = startRun(repo, { target, base, lane, laneWhy: o.why ?? open?.laneWhy ?? '', scenarios, requirements: o.requirements, verify: o.verify, take: o.flags.has('--take'), draftPush: o.flags.has('--draft-push'), bar: o.bar });
+  const r = startRun(repo, { target, base, lane, laneWhy: o.why ?? open?.laneWhy ?? '', scenarios, requirements: o.requirements, verify: o.verify, verifyFinal: o.verifyFinal, take: o.flags.has('--take'), draftPush: o.flags.has('--draft-push'), bar: o.bar });
   if (r.error) { console.error(`lpk: ${r.error}`); return 2; }
   const run = r.run;
   if (o.lane === 'quick' && !r.took) appendDecision(repo, { what: 'quick lane', why: o.why || 'no reason given' });
   if (o.flags.has('--draft-push')) appendDecision(repo, { what: 'draft pushes granted', why: o.why || 'granted at run start' });
   console.log(`lpk run ${run.id} ${r.took ? 'taken over by this session' : r.amended ? 'amended (ledger and verify kept)' : 'started'} in ${repo} against ${target} (${base.slice(0, 12)}), ${run.lane} lane${run.branch ? `, branch ${run.branch}` : ''}. Bar: ${run.bar || 'production'}.`);
-  console.log(`Checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}. Scenarios: ${run.scenarios.length ? run.scenarios.map((s) => `${s.id} ${s.cmd ? `\`${s.cmd}\`${s.expect !== undefined ? ` expecting "${s.expect}"` : ''}` : `(agent-judged) ${s.agentJudged}`}${s.proves ? ` proves ${s.proves.join(', ')}` : ''}`).join('; ') : 'none yet'}.`);
+  console.log(`Checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}.${run.verifyFinal?.length ? ` Final checks (\`lpk verify --final\`, once on the committed tree): ${run.verifyFinal.map((c) => `\`${c}\``).join(', ')}.` : ''} Scenarios: ${run.scenarios.length ? run.scenarios.map((s) => `${s.id} ${s.cmd ? `\`${s.cmd}\`${s.expect !== undefined ? ` expecting "${s.expect}"` : ''}` : `(agent-judged) ${s.agentJudged}`}${s.proves ? ` proves ${s.proves.join(', ')}` : ''}`).join('; ') : 'none yet'}.`);
   if (run.requirements?.length) console.log(`Requirements: ${run.requirements.map((q) => `${q.id} ${q.text}`).join('; ')}.`);
   const on = currentBranch(repo);
   const targetName = String(target || '').replace(/^origin\//, '');
@@ -128,7 +128,7 @@ export async function main(argv) {
     const st = runState(repo);
     if (st.error) { console.error(`lpk: ${st.error}`); return 1; }
     const r = st.run;
-    console.log(r ? JSON.stringify({ id: r.id, bar: r.bar || 'production', session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
+    console.log(r ? JSON.stringify({ id: r.id, bar: r.bar || 'production', session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verifyFinal: r.verifyFinal || [], verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
     return 0;
   }
   if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {

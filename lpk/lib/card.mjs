@@ -106,7 +106,7 @@ export async function resumeCard(input) {
   const list = (xs, n = 12) => `${xs.slice(0, n).join(', ')}${xs.length > n ? `, and ${xs.length - n} more` : ''}`;
   const text = [
     `lpk: you are inside an lpk run in ${repo}, started ${new Date(run.started).toISOString()}, base ${base ? base.slice(0, 12) : 'not resolved'}.`,
-    `Checks: ${(run.verify ?? []).map((c) => `\`${c}\``).join(', ')}. Last \`lpk verify\`: ${last}.`,
+    `Checks: ${(run.verify ?? []).map((c) => `\`${c}\``).join(', ')}.${run.verifyFinal?.length ? ` Final checks (\`lpk verify --final\`): ${run.verifyFinal.map((c) => `\`${c}\``).join(', ')}.` : ''} Last \`lpk verify\`: ${last}.`,
     ...(run.reviewRange ? [`Range under review: ${run.reviewRange}.`] : []),
     ...(existsSync(brief) ? [`Design Brief: ${brief}; read it again before going on.`] : []),
     typeof wf === 'string' ? wf : !wf ? 'No workflow run in this session.'

@@ -17,9 +17,14 @@ const short = (s) => String(s || '').slice(0, 12);
 // expected text it ran, a `verify` record for the run's current list of checks. A scenario or check
 // changed by `lpk run start` leaves the old records behind.
 export const proofsOf = (recs, s) => recs.filter((r) => r.kind === 'prove' && r.scenario === s.id && r.cmd === s.cmd && (r.expect ?? null) === (s.expect ?? null));
-const sameChecks = (results, run) => JSON.stringify((results || []).map((x) => x.cmd)) === JSON.stringify(run.verify || []);
-export const verifiedGreen = (run, recs, tree) => recs.some((r) => r.kind === 'verify' && r.green && r.tree === tree && sameChecks(r.results, run))
-  || Boolean(run.verified?.green && run.verified.id === tree && sameChecks(run.verified.results, run));
+const sameChecks = (results, cmds) => JSON.stringify((results || []).map((x) => x.cmd)) === JSON.stringify(cmds || []);
+
+export function tiersGreen(run, recs, tree) {
+  const on = (final, cmds) => recs.some((r) => r.kind === 'verify' && r.green && r.tree === tree && Boolean(r.final) === final && sameChecks(r.results, cmds));
+  const fast = on(false, run.verify) || Boolean(run.verified?.green && run.verified.id === tree && sameChecks(run.verified.results, run.verify));
+  return { fast, final: !(run.verifyFinal || []).length || on(true, run.verifyFinal) };
+}
+export const verifiedGreen = (run, recs, tree) => { const t = tiersGreen(run, recs, tree); return t.fast && t.final; };
 
 // The Prover's result line for scenario or failure row `s`: by its id (`S1`, `S1: ...`), or by the
 // agent-judged text itself.
@@ -74,7 +79,9 @@ export function testsNaming(repo, run) {
 export function trace(repo, run, recs) {
   const own = requirementsOf(repo, run);
   const tree = headTree(repo);
-  const verified = verifiedGreen(run, recs, tree);
+  const tiers = tiersGreen(run, recs, tree);
+  const verified = tiers.fast && tiers.final;
+  const missing = !tiers.fast ? 'no green verify' : 'no green `lpk verify --final`';
   const inRun = new Map((run.scenarios || []).map((s) => [s.id, s]));
   let results;
   const passBy = (s) => { results ??= proverResults(repo, run).results; const r = named(results, s); return r?.status === 'PASS' ? `PASS by Prover ${r.agentId}` : null; };
@@ -95,7 +102,7 @@ export function trace(repo, run, recs) {
     const got = [
       ...own.scenarios.filter((s) => (s.proves || []).includes(req.id)).map(scenario),
       ...own.failures.filter((f) => (f.proves || []).includes(req.id)).map(failure),
-      ...(tests.has(req.id) ? [verified ? { proof: `test in ${tests.get(req.id).join(', ')}, verify green` } : { note: `test in ${tests.get(req.id).join(', ')}, but no green verify on HEAD's tree` }] : []),
+      ...(tests.has(req.id) ? [verified ? { proof: `test in ${tests.get(req.id).join(', ')}, verify green` } : { note: `test in ${tests.get(req.id).join(', ')}, but ${missing} on HEAD's tree` }] : []),
     ];
     return { id: req.id, text: req.text || '', source: req.source || '', proofs: got.map((g) => g.proof).filter(Boolean), notes: got.map((g) => g.note).filter(Boolean) };
   });

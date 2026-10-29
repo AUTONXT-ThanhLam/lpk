@@ -82,7 +82,7 @@ export function runRow(repo, extra = {}) {
     files: base ? git(['diff', '--name-only', base, head], repo).split('\n').filter(Boolean) : [],
     findingFiles: [...new Set(findings.map((f) => f.file).filter(Boolean))],
     yield: yieldOf(findings.filter((f) => f.kind !== 'test-gap')), testGaps: findings.filter((f) => f.kind === 'test-gap').length,
-    reviewStarts: reviewStarts.length, fixRounds: Math.max(0, new Set(reviewStarts.map((r) => r.tree)).size - 1), designRounds: designReviews, verifies: records.filter((r) => r.kind === 'verify').length,
+    reviewStarts: reviewStarts.length, fixRounds: Math.max(0, new Set(reviewStarts.map((r) => r.tree)).size - 1), designRounds: designReviews, verifies: records.filter((r) => r.kind === 'verify' && !r.final).length, finalVerifies: records.filter((r) => r.kind === 'verify' && r.final).length,
     lenses, agents, ...extra,
   };
 }
