@@ -6,6 +6,7 @@ import { knownLimits } from '../bar.mjs';
 import { BORN, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
+import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { proofsOf, trace } from '../proof.mjs';
@@ -46,6 +47,8 @@ export async function main(argv) {
     facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'deferred', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
     const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
     if (born.length) facts.push(`Confirmed defects by the step they began in: ${born.map(([b, n]) => `${b} ${n}`).join(', ')}`);
+    const reach = REACH.map((r) => [r, ledger.filter((f) => f.reach === r && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
+    if (reach.length) facts.push(`Confirmed defects by who meets them: ${reach.map(([r, n]) => `${r} ${n}`).join(', ')}`);
     const deferred = [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
     if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}`)].join('\n'));
     const toRead = ledger.filter(needsOwner);
