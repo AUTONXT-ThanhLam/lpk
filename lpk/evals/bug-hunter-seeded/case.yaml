@@ -29,7 +29,6 @@ graders:
     input_match: bug-hunter
   - name: finds-the-off-by-one
     type: regex
-    weight: 3
     pattern: 'page\.mjs:?\s*(line\s*)?7\b|line\s*7\b'
   - name: judges-the-reason
     type: llm

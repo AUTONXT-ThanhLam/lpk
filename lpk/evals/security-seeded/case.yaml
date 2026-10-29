@@ -27,7 +27,6 @@ execution:
 graders:
   - name: names-the-missing-owner-check
     type: regex
-    weight: 3
     pattern: 'invoices\.mjs:?\s*(line\s*)?(6|7|8)\b|line\s*(6|7|8)\b'
   - name: judges-the-reason
     type: llm
