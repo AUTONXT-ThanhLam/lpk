@@ -71,7 +71,7 @@ The brief follows `writing.md` in this skill's directory and stays at 5,000 word
 - each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table,
   script, component) and the first rung that holds it: not needed; a helper in the repo (its path);
   the public API of an installed dependency at its installed version (the export, and a run); the
-  standard library or platform; built here, with the run that shows what the rungs above lack. A
+  standard library or a feature the platform already ships (`claude plugin eval`, hooks, settings: read its `--help` or docs first); built here, with the run that shows what the rungs above lack. A
   design from the owner or the tech lead gives requirements; its mechanisms climb the same rungs,
   and where a lower rung holds one, the brief takes it and says so in the next update to the owner;
 - the approach and at least one alternative you rejected that differs in shape, chosen by
