@@ -50,7 +50,7 @@ test('copyfacts counts em dashes, exclamations, title case, long and generic but
 
 const CHROME = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'].find((c) => spawnSync('which', [c]).status === 0);
 const freePort = () => new Promise((res) => { const s = createServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => res(port)); }); });
-const stop = (child) => new Promise((res) => { if (child.exitCode !== null) return res(); child.once('exit', res); child.kill(); setTimeout(res, 5000); });
+const stop = (child) => new Promise((res) => { if (child.exitCode !== null) return res(); const t = setTimeout(() => { child.kill('SIGKILL'); res(); }, 5000); child.once('exit', () => { clearTimeout(t); res(); }); child.kill(); });
 
 test('copyfacts reads a page in a real Chrome: counts what a person sees and exits at once', { skip: !CHROME && 'no Chrome on this machine' }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'copyfacts-'));
