@@ -2,11 +2,12 @@
 // (outside `.git`, where test runners ignore every path), each installed once from its own lockfile
 // out of the local package store and then shared by every verifier of the run. A link to the
 // checkout's `node_modules` is never made: in a workspace monorepo it resolves to the checkout's code.
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, createWriteStream } from 'node:fs';
 import { homedir, constants } from 'node:os';
 import { join } from 'node:path';
 import { takeLock, release } from './flock.mjs';
+import { killGroup, spawnGroup } from './proc.mjs';
 import { git } from './git.mjs';
 
 export const reproRoot = () => join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'repro');
@@ -67,12 +68,12 @@ export function runIn(cwd, cmd, timeoutS, log) {
   const t0 = Date.now();
   return new Promise((done) => {
     const out = createWriteStream(log);
-    const child = spawn('bash', ['-c', cmd], { cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawnGroup(cmd, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
     let tail = '', timedOut = false;
     const keep = (b) => { out.write(b); tail = (tail + b).slice(-16384); };
     child.stdout.on('data', keep);
     child.stderr.on('data', keep);
-    const kill = () => { try { process.kill(-child.pid, 'SIGKILL'); } catch { /* gone */ } };
+    const kill = () => killGroup(child.pid);
     const timer = setTimeout(() => { timedOut = true; kill(); }, timeoutS * 1000);
     child.on('close', (code, signal) => {
       clearTimeout(timer);

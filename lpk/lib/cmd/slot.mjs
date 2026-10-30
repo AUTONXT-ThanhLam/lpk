@@ -4,11 +4,11 @@
 // each is an flock(1) lock under the user's cache, released when the command ends or is killed.
 // `lpk slot --count` prints the lanes a run can carry at once (memory slots and model streams, the
 // tighter of the two), which is what a workflow takes as its `maxParallel`.
-import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { constants, freemem, homedir } from 'node:os';
 import { join } from 'node:path';
 import { release, takeLock } from '../flock.mjs';
+import { killGroup, spawnGroup } from '../proc.mjs';
 import { parseArgs } from '../out.mjs';
 
 const USAGE = 'usage: lpk slot [--mb <MB per slot>] -- <command>  |  lpk slot --count [--mb <MB per slot>]';
@@ -57,8 +57,8 @@ export async function main(argv) {
     await pause(1000);
   }
   // The command runs in its own process group; an interrupt to lpk reaches the whole group.
-  const child = spawn('bash', ['-c', a.cmd], { stdio: 'inherit', detached: true });
-  const stop = (sig) => { try { process.kill(-child.pid, sig); } catch { /* gone */ } };
+  const child = spawnGroup(a.cmd, { stdio: 'inherit' });
+  const stop = (sig) => killGroup(child.pid, sig);
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => stop(sig));
   const code = await new Promise((r) => child.on('close', (c, s) => r(c ?? 128 + (constants.signals[s] || 1))));
   release(fd);

@@ -5,6 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
 import { repoOf } from '../out.mjs';
@@ -27,7 +28,7 @@ async function start(repo, o) {
   if (o.bar && !BARS.includes(o.bar)) { console.error(`lpk: --bar is ${BARS.join(' or ')}\n${USAGE}`); return 2; }
   const pf = new URL('../preflight.mjs', import.meta.url);
   if (existsSync(pf)) {
-    const p = await (await import(pf)).preflight(repo, { target, verify: o.verify });
+    const p = await (await import(pathToFileURL(pf))).preflight(repo, { target, verify: o.verify });
     if (p.refuse) { console.error(`lpk: ${p.refuse}`); return 2; }
     console.log(p.lines.join('\n'));
   }
