@@ -7,6 +7,7 @@ import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SKIP = { skip: process.platform === 'win32' && 'follow-account runs under cc-switch, which is bash only' };
 const tmp = mkdtempSync(join(tmpdir(), 'lpk-follow-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -34,7 +35,6 @@ else if (a[0] === 'daemon' && fs.existsSync(dir + '/daemonfail')) { console.log(
 else console.log('ok ' + a[0]);
 `);
   chmodSync(join(dir, 'claude'), 0o755);
-  if (process.platform === 'win32') writeFileSync(join(dir, 'claude.cmd'), '@node "%~dp0claude" %*\r\n');
   return dir;
 }
 
@@ -42,7 +42,7 @@ const follow = (dir, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'f
 const calls = (dir) => spawnSync('cat', [join(dir, 'calls')], { encoding: 'utf8' }).stdout.trim().split('\n').map((l) => l.split(' | '));
 const verbs = (dir) => calls(dir).map((c) => c[2]);
 
-test('follow-account stops every working session, restarts the daemon and resumes each in its folder as the new account', () => {
+test('follow-account stops every working session, restarts the daemon and resumes each in its folder as the new account', SKIP, () => {
   const dir = setup('all', [{ id: 'a1' }, { id: 'b2' }]);
   const r = follow(dir);
   assert.equal(r.status, 0, r.stdout + r.stderr);
@@ -57,7 +57,7 @@ test('follow-account stops every working session, restarts the daemon and resume
   assert.ok(!v.some((x) => x.includes('main-session')));
 });
 
-test('follow-account leaves alone a session that will not stop instead of resuming it', () => {
+test('follow-account leaves alone a session that will not stop instead of resuming it', SKIP, () => {
   const dir = setup('nostop', [{ id: 'a1' }, { id: 'b2' }]);
   writeFileSync(join(dir, 'nostop-a1'), '');
   const r = follow(dir);
@@ -68,7 +68,7 @@ test('follow-account leaves alone a session that will not stop instead of resumi
   assert.ok(resumed[0].startsWith('--bg --resume b2-session '));
 });
 
-test('follow-account puts the stopped sessions back where they were when the daemon will not stop', () => {
+test('follow-account puts the stopped sessions back where they were when the daemon will not stop', SKIP, () => {
   const dir = setup('daemonfail', [{ id: 'a1' }]);
   writeFileSync(join(dir, 'daemonfail'), '');
   const r = follow(dir);
@@ -78,7 +78,7 @@ test('follow-account puts the stopped sessions back where they were when the dae
   assert.equal(resumes.length, 1);
 });
 
-test('follow-account with no background session still restarts the daemon so the next --bg starts on the new account', () => {
+test('follow-account with no background session still restarts the daemon so the next --bg starts on the new account', SKIP, () => {
   const dir = setup('none', []);
   const r = follow(dir);
   assert.equal(r.status, 0, r.stdout + r.stderr);
