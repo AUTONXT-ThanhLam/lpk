@@ -58,6 +58,10 @@ requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover j
    default, run `lpk map <name>` and read every writer, reader and consumer. The change is done when
    each of them still holds.
 4. Put each invariant in the lowest function every writer passes through.
+   After each fix commit, write down what the fix itself opens: (a) every state of each path or
+   value the new line reads (missing, file, folder, link, other capitals, empty); (b) a second
+   writer, or a second run at the same time; (c) every consumer that takes the front of what
+   changed (a sort key, a listing, a first match). Test each state you cannot rule out.
 5. A test that starts a server, a process or a container closes it on every path, the failing ones
    included: a leaked server holds the port for the next run.
 6. Write no code comments, and leave the ones already there. A limit you choose on purpose goes in
