@@ -99,9 +99,10 @@ say so. A route, type or endpoint the screen needs that the contract lacks is a 
 1. Run `lpk handoff <your slice>`; read the UI section at the lines it lists, the slice's tests,
    the repo profile and `lpk rules --repo <worktree> --base <base>`.
 2. Read `concept.md` and `pick.md` from the paths in the UI section; without them, run stages 2
-   to 4 of `method.md` yourself before the first line (an app's own design system sets the colours,
-   type and components, and never replaces the research that fills `refs/`). Build the first screen (section 3), then every state, from the pick's colours, type and
-   voice and the app's own components. Run only the tests related to your files.
+   to 4 of `method.md` yourself before the first line, since the research that fills `refs/` is
+   owed in every app. Build the first screen (section 3), then every state, from the pick's voice
+   and layout and from the app's own design system and components: where the app has tokens, they
+   win over the pick's colours and type. Run only the tests related to your files.
 3. Look and fix (stage 6 of `method.md`, at least six rounds, each a line in `rounds.md`): start the
    app from the worktree (`lpk spawn`), render the worst-case data of `ux.md` section 10 through
    every field, screenshot each screen and state at laptop and narrow widths, light and dark, lay
