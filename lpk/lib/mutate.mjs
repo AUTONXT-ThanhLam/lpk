@@ -81,7 +81,7 @@ export function removeOrphans(repo, root) {
   const alive = (pid) => { try { process.kill(Number(pid), 0); return true; } catch (e) { return e.code === 'EPERM'; } };
   for (const line of git(['worktree', 'list', '--porcelain'], repo).split('\n')) {
     const wt = line.startsWith('worktree ') ? line.slice(9) : '';
-    if (!wt.startsWith(`${root}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
+    if (!wt.startsWith(`${root.replaceAll('\\', '/')}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
     const scratch = dirname(wt);
     let pid = '';
     try { pid = readFileSync(join(scratch, 'pid'), 'utf8').trim(); } catch { /* no owner recorded: leave it */ }
