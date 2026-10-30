@@ -10,10 +10,12 @@ export function main(argv) {
   const kind = a.opt('--kind');
   if (kind && !KINDS.includes(kind)) { console.error(`lpk: --kind ${kind} is not one of ${KINDS.join(', ')}\n${USAGE}`); return 2; }
   const all = a.flags.has('--all');
-  if (all && a.opt('--run')) { console.error(`lpk: --all and --run exclude each other\n${USAGE}`); return 2; }
+  const given = a.opt('--run');
+  if (given === '') { console.error(`lpk: --run needs a run id\n${USAGE}`); return 2; }
+  if (all && given !== undefined) { console.error(`lpk: --all and --run exclude each other\n${USAGE}`); return 2; }
   const repo = repoOf(a.opt('--repo'));
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
-  const run = all ? undefined : a.opt('--run') || readRun(repo)?.id;
+  const run = all ? undefined : given ?? readRun(repo)?.id;
   if (!all && !run) { console.error(`lpk: no open run here; give --run <id> or --all\n${USAGE}`); return 2; }
   for (const r of readRecords(repo, { run }).filter((x) => !kind || x.kind === kind)) console.log(JSON.stringify(r));
   return 0;
