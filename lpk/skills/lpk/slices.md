@@ -20,7 +20,7 @@ A slice waits for another only when the brief names the dependency the contract 
 because slices built in turn add their times instead of overlapping them. A builder runs only the tests of its own files while it works. The repo's full suites, and any
 suite on a database, queue, port or container the slices share, run once in `lpk verify`: builders
 that share a stateful resource wait on each other and add their times, so give each slice its own
-instance of it or order the slices. A builder that reports `CHECKPOINT`, or stops at its 100-turn limit with work left, is handed
+instance of it or order the slices. A builder that reports `CHECKPOINT`, or stops with work left, is handed
 off: run `lpk handoff <slice>` and start a fresh `lpk:builder` (`lpk:designer` for a screen slice) in the same worktree. Never continue
 it by messaging the same agent, which keeps its whole conversation and the cost of every later turn.
 Glue that joins the slices
