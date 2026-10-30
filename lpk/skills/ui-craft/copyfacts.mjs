@@ -31,10 +31,11 @@ export function copyFacts({ headings = [], buttons = [], text = '', errors = [] 
 }
 
 const probe = `(() => {
-  const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 4 && r.height > 4 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
+  const faded = (e) => { for (let p = e; p && p !== document.documentElement; p = p.parentElement) { if (+getComputedStyle(p).opacity === 0) return true; } return false; };
+  const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 4 && r.height > 4 && r.right > 0 && r.bottom > 0 && s.visibility !== 'hidden' && s.display !== 'none' && !faded(e); };
   const clean = (e) => (e.innerText || '').replace(/\\s+/g, ' ').trim();
   const seen = (n) => {
-    for (let e = n.parentElement; e && e !== document.documentElement; e = e.parentElement) { if (+getComputedStyle(e).opacity === 0) return false; }
+    if (faded(n.parentElement)) return false;
     const range = document.createRange(); range.selectNodeContents(n);
     const r = range.getBoundingClientRect();
     const box = n.parentElement.getBoundingClientRect();
@@ -45,7 +46,7 @@ const probe = `(() => {
   const take = (sel) => outer([...document.querySelectorAll(sel)].filter(vis)).map(clean).filter((t) => t && t.length < 200);
   return {
     headings: take('h1,h2,h3'),
-    buttons: take('button,[role=button]').filter((t) => t.length < 40),
+    buttons: take('button,[role=button]'),
     text: pageText(),
     errors: take('[role=alert],[aria-live=assertive],.error'),
   };
@@ -55,6 +56,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [url, ...rest] = process.argv.slice(2);
   if (!url) { console.error('usage: copyfacts.mjs <url> [--width 1440] [--scheme light|dark] [--port 9333]\n  Prints counts of mechanical wording facts of the visible text of the page, and the spread of its headings and buttons. It never fails on wording: the agent decides.'); process.exit(2); }
   const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
-  const text = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light'), port: Number(opt('port', 9333)) }, ({ evaluate }) => evaluate(probe));
+  const port = Number(opt('port', 9333));
+  const text = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light'), port }, ({ evaluate }) => evaluate(probe)).catch((e) => { console.error(`copyfacts: cannot read ${url} through Chrome on port ${port}: ${e.cause?.code || e.message}`); process.exit(1); });
   console.log(JSON.stringify(copyFacts(text), null, 1));
 }
