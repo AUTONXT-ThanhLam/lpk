@@ -46,7 +46,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
  measuring what the run cost
   lpk bench [--json] [--lane quick|full] [--runs <n>] [--repo <dir>] [--no-transcripts]
  delivery
-  lpk gates  |  lpk report  |  lpk records [--kind <kind>] [--run <id> | --all]  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
+  lpk gates  |  lpk report  |  lpk records [--kind <kind>] [--all]  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
  the machine
   lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
   lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)`;
