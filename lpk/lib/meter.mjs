@@ -1,25 +1,23 @@
 // Tokens per agent, from the transcripts the host writes: the session's own, its subagents' and its
 // workflow agents'. Each API message is counted once by its message id (a transcript writes one line
 // per content block, each carrying the same usage). Fresh tokens = input + cache write + output; cache
-// reads are counted apart. Both hosts' stores are walked (lib/host.mjs), so a run made on either
-// measures, and a row says which store it came from. A host that writes no counts at all — measured:
-// Qoder writes every usage count as 0 — leaves its rows `recorded: false`: its zeros are no
-// measurement, and the report layer prints `tokens not recorded by this host` instead of them.
+// reads are counted apart. A host that writes no counts at all leaves its rows `recorded: false`: its
+// zeros are no measurement, and the report layer prints `tokens not recorded by this host` instead of
+// them.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { agentIdOf, hostOf, projectsDir, projectsDirs, slugOf, usageRecorded } from './host.mjs';
 
-// Where each host keeps its store, and the slug both name a project's folder with (lib/host.mjs).
+// Where each host keeps its store, and the slug a project's folder is named with (lib/host.mjs).
 export { projectsDir, projectsDirs, slugOf };
 
-// The roots to read: a caller's own (one, or a list), else both hosts'.
+// The roots to read: a caller's own (one, or a list), else the host's.
 const roots = (root) => (root ? (Array.isArray(root) ? root : [root]) : projectsDirs());
 
 const list = (dir) => { try { return readdirSync(dir); } catch { return []; } };
 const meta = (p) => { try { return JSON.parse(readFileSync(p.replace(/\.jsonl$/, '.meta.json'), 'utf8')); } catch { return {}; } };
 
-// The session's transcript and every agent transcript under it, wherever its project folder is, on
-// either host.
+// The session's transcript and every agent transcript under it, wherever its project folder is.
 export function sessionFiles(session, root) {
   for (const projects of roots(root)) {
     for (const project of list(projects)) {
@@ -35,7 +33,7 @@ export function sessionFiles(session, root) {
   return null;
 }
 
-// The newest session transcript of the project folder for `dir`, in either store.
+// The newest session transcript of the project folder for `dir`.
 export function latestSession(dir, root) {
   let best = null;
   for (const projects of roots(root)) {

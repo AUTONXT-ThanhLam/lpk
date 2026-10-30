@@ -9,10 +9,9 @@ const lib = (m) => import(new URL(`../${m}.mjs`, import.meta.url));
 
 // The safety tripwires on a tool call. The literal ones hold in every session; connector writes and
 // the git tripwire hold for the session that holds a run, until the owner waives them.
-async function pre(raw) {
+async function pre(input) {
   const s = await lib('safety');
-  const input = s.unwrapMcp(raw);
-  const now = s.credentialTrip(input) || s.waiverTrip(input) || s.fileUrl(input) || s.writeGuard(input);
+  const now = s.credentialTrip(input) || s.waiverTrip(input) || s.fileUrl(input) || s.dockerTrip(input) || s.writeGuard(input);
   if (now?.hookSpecificOutput?.permissionDecision === 'deny') return now;
   const tool = s.connectorTool(input.tool_name);
   const trip = s.gitTrip(input);
@@ -46,6 +45,7 @@ const HOOKS = {
   commit: { gate: true, run: async (i) => (await lib('hooks')).beforeCommit(i) },
   stamp: { gate: true, run: async (i) => (await lib('stamp')).stampHookOutput(i) },
   post: { run: async (i) => (await lib('hooks')).afterTool(i) },
+  typecheck: { run: async (i) => (await lib('typecheck')).afterTsEdit(i) },
   trim: { run: async (i) => (await lib('trim')).trimBash(i) },
   subject: { run: async (i) => (await lib('hooks')).afterCommit(i) },
   stop: { run: async (i) => (await lib('hooks')).beforeStop(i) },

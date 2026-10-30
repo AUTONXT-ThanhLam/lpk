@@ -69,7 +69,7 @@ test('lpk-switch writes the state card, moves cc-switch and tells the owner to /
       (a[2] === 'hook' ? { stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: 'lpk: you are inside an lpk run' } }) } : undefined),
   })
   const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
-  const card = w.written[`${CWD}/.git/lpk/state-card.md`] ?? ''
+  const card = w.written[`${CWD}/.git/lpk/state-card-session-1.md`] ?? ''
   expect(card).toContain('{"base":"abc"}')
   expect(card).toContain('lpk: you are inside an lpk run')
   expect(card).toContain('lpk:techlead: review the slice (a1, running)')
@@ -89,7 +89,7 @@ test('lpk-switch under the claude launcher writes the card and restarts the same
   const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
   expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', 'cc2'])
   expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
-  expect(w.written[`${CWD}/.git/lpk/state-card.md`]).toContain('lpk state card')
+  expect(w.written[`${CWD}/.git/lpk/state-card-session-1.md`]).toContain('lpk state card')
   expect(r.text).toContain('restarts on the same conversation')
   expect(r.text).not.toContain('claude -c')
   expect(r.context?.[0]).toContain('lpk state card')

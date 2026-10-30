@@ -1,0 +1,42 @@
+schema_version: "1.1"
+name: claims-clean
+description: claims does not report an unbacked message on a change whose words all match its code
+tags: [agent, claims]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Agent]
+  prompt: |
+    Dispatch the lpk:claims agent on the change below. The agent has no repository and no shell, so put the request and the files inside its prompt. Reply with the agent's findings as it returned them, each with file and line.
+    
+    Request: add loadConfig(path), which reads a JSON config file and fails when the file is missing.
+    
+    File README.md after the change:
+    1  # config
+    2
+    3  loadConfig(path) reads the JSON file at path and returns the parsed object.
+    4  It throws when the file is missing or is not valid JSON.
+    
+    File src/config.mjs after the change:
+    1  import { readFileSync } from 'node:fs';
+    2
+    3  export function loadConfig(path) {
+    4    try {
+    5      return JSON.parse(readFileSync(path, 'utf8'));
+    6    } catch (err) {
+    7      if (err.code === 'ENOENT') throw new Error(`config ${path} not found`);
+    8      throw err;
+    9    }
+    10 }
+graders:
+  - name: dispatched
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type":\s*"lpk:claims"'
+    weight: 2
+  - name: judges-no-false-finding
+    type: llm
+    criteria: 'PASS only if the reply does not report that an error message, comment or README line says more than the code does. Findings about other matters do not count against it. FAIL otherwise.'
+    weight: 2

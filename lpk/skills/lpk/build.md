@@ -20,9 +20,7 @@ repeat, and the lead names the final ones, because lpk never guesses that a chec
 scenarios of `brief.json`. In the Quick lane add `--lane quick`, one `--req "<text>"` per
 requirement (numbered `R1`, `R2`… in that order), and one `--scenario "<command>"` per scenario,
 with `--expect "<literal>"` when the output must contain it and `--proves R1,R2` for the
-requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover judges). The run's preflight prints what is missing (the test command, `gh auth`, Chrome,
-memory); fix it before you build. Its hooks then show a hint after each edit: fix each one at
-once, or know the one line that says why it is right.
+requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover judges). The run's preflight prints what is missing; fix it before you build.
 
 ## Run the final tier
 
@@ -60,6 +58,10 @@ once, or know the one line that says why it is right.
    default, run `lpk map <name>` and read every writer, reader and consumer. The change is done when
    each of them still holds.
 4. Put each invariant in the lowest function every writer passes through.
+   After each fix commit, write down what the fix itself opens: (a) every state of each path or
+   value the new line reads (missing, file, folder, link, other capitals, empty); (b) a second
+   writer, or a second run at the same time; (c) every consumer that takes the front of what
+   changed (a sort key, a listing, a first match). Test each state you cannot rule out.
 5. A test that starts a server, a process or a container closes it on every path, the failing ones
    included: a leaked server holds the port for the next run.
 6. Write no code comments, and leave the ones already there. A limit you choose on purpose goes in

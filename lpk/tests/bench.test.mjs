@@ -1,6 +1,3 @@
-// `lpk bench` reads only files that already exist, so the fixture plants them: two hosts'
-// transcripts, a findings ledger, the CLI records and the runs.jsonl rows. Each assertion is written
-// so it fails on both sides — a deleted rule, and the opposite rule — never green by omission.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,20 +5,13 @@ import { test } from 'node:test';
 import { ENV, lpk, tmp, write } from './verbs-env.mjs';
 
 const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
-// The fixture owns both stores: a Qoder variable inherited from the machine would point the reader at
-// the real one, where none of these sessions exist.
-ENV.QODER_CONFIG_DIR = join(ENV.HOME, '.qoder');
-const QODER = ENV.QODER_CONFIG_DIR;
 const DATA = join(ENV.XDG_DATA_HOME, 'lpk');
-const msg = (id, [input, write_, read, output], at, extra = {}) => ({ type: 'assistant', timestamp: at, message: { id, model: 'claude-sonnet-5-5', role: 'assistant', content: [{ type: 'text', text: 'x' }], usage: { input_tokens: input, cache_creation_input_tokens: write_, cache_read_input_tokens: read, output_tokens: output, ...(extra.credits !== undefined ? { credits: extra.credits } : {}) } } });
+const msg = (id, [input, write_, read, output], at) => ({ type: 'assistant', timestamp: at, message: { id, model: 'claude-sonnet-5-5', role: 'assistant', content: [{ type: 'text', text: 'x' }], usage: { input_tokens: input, cache_creation_input_tokens: write_, cache_read_input_tokens: read, output_tokens: output } } });
 const jsonl = (rows) => rows.map((r) => `${JSON.stringify(r)}`).join('\n') + '\n';
 const RUN1 = '20261021100000-r1';
 const RUN2 = '20261021100000-r2';
 const RUN3 = '20261021100000-r3';
 
-// A repo whose run directory holds a ledger and the CLI's own records, two sessions' transcripts (one
-// on each host) and three runs.jsonl rows: RUN1 measured on claude, RUN2 on the host that writes no
-// counts, RUN3 with no transcript at all.
 import { commit, repoWith, sh } from './verbs-env.mjs';
 
 function plant(name) {
@@ -56,16 +46,9 @@ function plant(name) {
   write(main, 's-claude/subagents/agent-a1.meta.json', JSON.stringify({ agentType: 'lpk:techlead' }));
   write(main, 's-claude/subagents/agent-a2.jsonl', jsonl([msg('s3', [5, 5, 40, 5], '2026-10-21T10:00:10Z'), msg('s4', [5, 5, 40, 5], '2026-10-21T10:00:30Z')]));
   write(main, 's-claude/subagents/agent-a2.meta.json', JSON.stringify({ agentType: 'lpk:bug-hunter' }));
-  // Qoder's store: the same layout, every usage count written as 0.
-  const q = join(QODER, 'projects', '-work-repo');
-  write(q, 's-qoder.jsonl', jsonl([
-    { type: 'user', timestamp: '2026-10-21T09:59:00Z', message: { content: 'go' } },
-    msg('q1', [0, 0, 0, 0], '2026-10-21T10:00:00Z', { credits: 0.5 }),
-    msg('q2', [0, 0, 0, 0], '2026-10-21T10:01:00Z', { credits: 0.25 }),
-  ]));
   write(DATA, 'runs.jsonl', jsonl([
     { id: RUN1, repo: 'work-repo', path: repo, session: 's-claude', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T11:00:00.000Z', wallMs: 3600000, yield: {}, agents: {}, lenses: {}, files: [] },
-    { id: RUN2, repo: 'work-repo', path: repo, session: 's-qoder', lane: 'quick', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:30:00.000Z', wallMs: 1800000, yield: {}, agents: {}, lenses: {}, files: [] },
+    { id: RUN2, repo: 'work-repo', path: repo, session: 's-zero', lane: 'quick', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:30:00.000Z', wallMs: 1800000, yield: {}, agents: {}, lenses: {}, files: [] },
     { id: RUN3, repo: 'work-repo', path: repo, session: 's-gone', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:10:00.000Z', wallMs: 600000, yield: {}, agents: {}, lenses: {}, files: [] },
   ]));
   return repo;
@@ -108,27 +91,45 @@ test('fresh tokens leave cache reads out, and say so per agent and per lens', ()
   assert.equal(j.cliLensRuns.find((c) => c.lens === 'security-review:sonnet').runs, 1);
 });
 
-test('a host that writes usage as zeros has no token figure: unavailable, never 0', () => {
-  plant('bench-qoder');
-  const j = out(tmp);
-  const q = j.hosts.find((h) => h.host === 'qoder');
-  const c = j.hosts.find((h) => h.host === 'claude');
+test('a store whose usage counts are all zeros has no token figure: unavailable, never 0', () => {
+  plant('bench-zero');
+  const measured = out(tmp).hosts.find((h) => h.host === 'claude');
+  assert.equal(measured.tokensAvailable, true);
+  assert.ok(measured.fresh > 0);
+  const kept = ENV.CLAUDE_CONFIG_DIR;
+  ENV.CLAUDE_CONFIG_DIR = join(tmp, 'claude-zero');
+  let j, text;
+  try {
+    write(join(ENV.CLAUDE_CONFIG_DIR, 'projects', '-work-repo'), 's-zero.jsonl', jsonl([
+      { type: 'user', timestamp: '2026-10-21T09:59:00Z', message: { content: 'go' } },
+      msg('z1', [0, 0, 0, 0], '2026-10-21T10:00:00Z'),
+      msg('z2', [0, 0, 0, 0], '2026-10-21T10:01:00Z'),
+    ]));
+    j = out(tmp);
+    text = bench(tmp).stdout;
+  } finally { ENV.CLAUDE_CONFIG_DIR = kept; }
+  assert.equal(j.hosts.length, 1);
+  const q = j.hosts[0];
+  assert.equal(q.host, 'claude');
   assert.equal(q.tokensAvailable, false, 'the verdict is measured from the transcripts, not hardcoded');
   assert.equal(q.fresh, null, 'a token figure that does not exist is null');
   assert.equal(JSON.stringify(q.fresh), 'null', 'and stays null through the JSON, not 0');
-  assert.equal(c.tokensAvailable, true);
-  assert.ok(c.fresh > 0);
+  assert.equal(j.missing.tokensUnavailableFor.join(), 'claude');
   assert.match(q.note, /SKIPPED/, 'the note says the row was skipped and why');
   assert.match(q.note, /unavailable, not 0/);
+  assert.ok(!('creditsSum' in q) && !('creditsNote' in q), 'the zero-usage row carries no credits figure');
+  assert.ok(!JSON.stringify(j).includes('credits'));
   assert.ok(!JSON.stringify(q).includes('"fresh":0'), 'no zero of a token figure stands in for the absent measurement, not even per transcript');
   // The run made on that host keeps its row, with the reason its cost is blank.
   const r2 = j.wall.runs.find((r) => r.id === RUN2);
   assert.ok(r2, 'a run of the unmeasured host is still a run');
   assert.equal(r2.fresh, null);
   assert.match(r2.note, /unavailable, not 0/);
-  assert.equal(r2.host, 'qoder');
-  // The one cost figure that host does write is credits, named apart from tokens.
-  assert.equal(q.creditsSum, 0.75, 'credits, summed once per message id');
+  assert.equal(r2.host, 'claude');
+  const row = text.split('\n').find((l) => l.startsWith('  host claude:'));
+  assert.ok(row, 'the store has its row in the text output');
+  assert.ok(row.includes('UNAVAILABLE') && !/fresh tokens \d/.test(row), 'the row states no token figure, 0 included');
+  assert.ok(!/credits/.test(text), 'a store with no usage prints no credits fragment');
 });
 
 test('a finding only one lens raised counts once, and a shared file does not count as unique', () => {
@@ -174,7 +175,7 @@ test('absence is printed as an empty verdict, and every key the gates read is th
   assert.equal(j.runs.withLedger, 1);
   assert.equal(j.runs.withoutLedger, 2);
   assert.equal(j.runs.unrecordedLedgers.length, 0, 'no orphan ledger here, and that is a 0-length array, not a missing key');
-  assert.equal(j.missing.tokensUnavailableFor.join(), 'qoder');
+  assert.deepEqual(j.missing.tokensUnavailableFor, []);
   assert.ok(j.context.resident.agents.length > 0 && j.context.resident.skills.length > 0, 'the plugin itself is always measured');
   assert.ok(j.context.residentBytes > 0 && j.context.onInvokeBytes > j.context.residentBytes);
   // The repo filter narrows to its runs and still answers with arrays, not absent keys.
@@ -189,7 +190,7 @@ test('absence is printed as an empty verdict, and every key the gates read is th
   assert.deepEqual(noRead.agents, [], 'no agent was read, so no agent row');
   assert.equal(noRead.wall.runs.every((r) => r.fresh === null), true, 'a run whose transcripts were not read has no token figure');
   assert.equal(noRead.wall.runs.length, 3, 'but every run keeps its row');
-  assert.equal(noRead.hosts.length, 2, 'both stores are still named, with their verdict');
+  assert.equal(noRead.hosts.length, 1, 'the store is still named, with its verdict');
   assert.equal(out(repo, '--lane', 'quick').runs.distinct, 1);
 });
 
@@ -200,4 +201,30 @@ test('bad arguments are refused, and the command is reachable as lpk bench', () 
   assert.match(r.stderr, /unknown option --nonsense/);
   assert.match(bench(tmp, '--lane', 'full').stdout, /lens \| raised \| fixed/);
   assert.match(bench(tmp, '--lane', 'full').stdout, /critical path .*lens sum/);
+});
+
+test('a run\'s idle time is the waits the owner closed, apart from the time agents worked', () => {
+  plant('bench-idle');
+  const turn = (id, at, stop, extra = []) => ({ ...msg(id, [1, 1, 1, 1], at), message: { ...msg(id, [1, 1, 1, 1], at).message, stop_reason: stop, content: [{ type: 'text', text: 'x' }, ...extra] } });
+  const say = (at, content) => ({ type: 'user', timestamp: at, message: { content } });
+  write(join(CLAUDE, 'projects', '-work-repo'), 's-idle.jsonl', jsonl([
+    say('2026-10-21T10:00:00Z', 'go'),
+    turn('i1', '2026-10-21T10:00:10Z', 'end_turn'),
+    say('2026-10-21T10:01:50Z', 'next'),
+    turn('i2', '2026-10-21T10:02:00Z', 'end_turn'),
+    say('2026-10-21T10:03:00Z', '<task-notification><task-id>b1</task-id><status>completed</status></task-notification>'),
+    turn('i3', '2026-10-21T10:03:10Z', 'tool_use'),
+    turn('i4', '2026-10-21T10:03:15Z', 'tool_use', [{ type: 'tool_use', id: 'q1', name: 'AskUserQuestion', input: {} }]),
+    say('2026-10-21T10:04:15Z', [{ type: 'tool_result', tool_use_id: 'q1', content: 'yes' }]),
+    turn('i5', '2026-10-21T10:04:25Z', 'end_turn'),
+  ]));
+  const rows = readFileSync(join(DATA, 'runs.jsonl'), 'utf8');
+  writeFileSync(join(DATA, 'runs.jsonl'), `${rows}${JSON.stringify({ id: '20261021100000-r4', repo: 'work-repo', path: tmp, session: 's-idle', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:05:00.000Z', wallMs: 300000, yield: {}, agents: {}, lenses: {}, files: [] })}\n`);
+  const j = out(tmp);
+  const r = j.wall.runs.find((x) => x.id === '20261021100000-r4');
+  assert.equal(r.ownerIdleMs, 160000, '100s until the owner\'s prompt and 60s until the answer to the question; the 60s a task notice closed is not theirs');
+  assert.equal(r.workingMs, 140000, 'the wall without the owner\'s idle time');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
 });

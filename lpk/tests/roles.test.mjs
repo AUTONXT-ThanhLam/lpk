@@ -1,7 +1,5 @@
-// The role table: each agent's effort, and which roles cannot edit. A session started with another
-// model must not change who builds or who reviews, so no agent but the designer names a model: the
-// rest inherit the session's, on both hosts. A reviewing role must be unable to edit a file even
-// where the plugin's hooks do not fire.
+// The role table: each agent's effort, and which roles cannot edit. A reviewing role must be
+// unable to edit a file even where the plugin's hooks do not fire.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -11,9 +9,6 @@ import { fileURLToPath } from 'node:url';
 const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 
 // The effort the plan settled for each role, by measured results, and whether the role ever edits.
-// The model is deliberately absent: an agent that names one runs the same model on a session started
-// on another, which is exactly what makes a review depend on who happened to start the session.
-const OWNER_CHOSEN_MODEL = { designer: 'opus' };
 const TABLE = {
   architect: { effort: 'high', readOnly: false },
   'design-critic': { effort: 'high', readOnly: true },
@@ -51,13 +46,15 @@ test('every agent the plugin ships has a row in the role table, and every row ha
   assert.deepEqual(Object.keys(agents).sort(), Object.keys(TABLE).sort());
 });
 
-test('only the designer names a model, so every other agent inherits the session model, and each names its role effort', () => {
+const MODELS = ['sonnet', 'haiku', 'opus'];
+const OPUS = ['designer'];
+test('every agent pins a model alias, never a full model id or Fable, and names its role effort', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;
     assert.ok(fm, `agents/${name}.md exists`);
     assert.equal(fm.name, name, `agents/${name}.md names itself ${name}`);
-    if (OWNER_CHOSEN_MODEL[name]) assert.equal(fm.model, OWNER_CHOSEN_MODEL[name], `${name} runs on ${OWNER_CHOSEN_MODEL[name]}`);
-    else assert.ok(!('model' in fm), `agents/${name}.md declares no model: on a session started with another model a declared one would review on it`);
+    assert.ok(MODELS.includes(fm.model), `agents/${name}.md pins model: ${fm.model} outside ${MODELS.join(', ')}`);
+    assert.equal(fm.model === 'opus', OPUS.includes(name), `${name} ${OPUS.includes(name) ? 'runs on opus' : 'stays off opus'}`);
     assert.equal(fm.effort, row.effort, `${name} runs at effort ${row.effort}`);
   }
 });
@@ -72,9 +69,7 @@ test('the reviewing roles cannot edit files, and the roles that write code or te
 
 // The roles that drive the lpk Chrome, the verifier among them because it reproduces what the
 // browser lenses saw on a page. Every other role carries no browser tool definitions, and no role
-// publishes a page, so none carries the Artifact tools. They are real Claude Code tools and Qoder's
-// loader ignores a tool name it does not have, so naming them costs nothing there and still holds
-// on Claude.
+// publishes a page, so none carries the Artifact tools.
 const BROWSER = new Set(['a11y', 'designer', 'ui-reviewer', 'prover', 'env', 'perf', 'verifier']);
 test('only the roles that drive a browser carry its tools, and no role carries the Artifact tools', () => {
   for (const [name, { fm }] of Object.entries(agents)) {

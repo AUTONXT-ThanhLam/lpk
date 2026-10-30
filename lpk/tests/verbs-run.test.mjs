@@ -1,7 +1,7 @@
 // The verbs that run things: repeat, slot, spawn and reap; and the ones that read a run's state for
 // the lead: watch and handoff.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { commit, ENV, lpk, lpkAsync, repoWith, sh, tmp, write } from './verbs-env.mjs';
@@ -135,4 +135,16 @@ test('a worktree named for its slice lives in the git directory and `lpk run end
   const listed = sh(repo, 'worktree', 'list');
   assert.doesNotMatch(listed, /\/api\b/);
   assert.match(listed, /\/wip\b/);
+});
+
+test('lpk slot reuses an empty slot lock file left by an earlier version', () => {
+  const cache = ENV.XDG_CACHE_HOME;
+  mkdirSync(join(cache, 'lpk', 'slots'), { recursive: true });
+  const lock = join(cache, 'lpk', 'slots', 'slot-0.lock');
+  writeFileSync(lock, '');
+  const old = new Date(Date.now() - 60_000);
+  utimesSync(lock, old, old);
+  const r = lpk(tmp, 'slot', '--mb', '100000000', '--', 'echo ran');
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout, 'ran\n');
 });

@@ -12,9 +12,7 @@ nothing waits for an install, a database or a login later.
    of the main checkout, also from a worktree) says how to start the app, log in (by variable name
    only), run what CI runs, the tech lead's GitHub login, the checks already red on main, the
    screens a past run drove, and the repo's conventions, each with a file to copy from. It holds
-   the feature map too: for each feature a user meets, how to reach it (the URL or command, the
-   login, the selector or shortcut that opens it) and the file that owns it; and the lines of
-   what was tried and ruled out, each with the files it touches and why. A past dead end on a
+   the feature map too and the lines of what was tried and ruled out. A past dead end on a
    file you touch is a constraint on the design, as a past blocker is.
 3. **Read the request and the code.** Read the ticket (the tracker is read-only unless the owner
    asks), the code involved and what `main` does today. Run `git fetch`, then `lpk facts --about <file>...`:

@@ -11,15 +11,12 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const tmp = mkdtempSync(join(tmpdir(), 'lpk-gates-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
-// Neither host's own names come along into a child: `lib/host.mjs` reads both families, so a suite
-// launched by Qoder would otherwise hand the launcher's `QODER_SESSION_ID` (or Claude Code's) to every
-// `lpk`, hook and in-process call here, and a test could pass or fail by who started it.
-export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^(CLAUDE|QODER)_/.test(k)));
+export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const ENV = { ...noHost(process.env), HOME: join(tmp, 'home'), CLAUDE_CONFIG_DIR: join(tmp, 'home', '.claude'), CLAUDE_CODE_SESSION_ID: '', LPK_CHROME_PORT: '1', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), CLAUDE_PLUGIN_ROOT: ROOT };
 delete ENV.NODE_TEST_CONTEXT;
 // The lib modules read these when they load, so the in-process calls below use the same dirs — and no
 // launcher's host vars either, which would point them at the store of whoever started the suite.
-for (const k of Object.keys(process.env)) if (/^(CLAUDE|QODER)_/.test(k)) delete process.env[k];
+for (const k of Object.keys(process.env)) if (/^CLAUDE_/.test(k)) delete process.env[k];
 for (const k of ['HOME', 'CLAUDE_CONFIG_DIR', 'CLAUDE_PLUGIN_ROOT', 'XDG_DATA_HOME', 'XDG_STATE_HOME', 'XDG_CACHE_HOME']) process.env[k] = ENV[k];
 
 export const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });

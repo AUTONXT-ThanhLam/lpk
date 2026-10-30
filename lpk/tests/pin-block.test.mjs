@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -56,7 +56,7 @@ const freshHome = (name, stale) => {
 };
 
 const env = (home) => ({
-  ...process.env, HOME: home, PATH: `${wrapperDir}:${process.env.PATH}`,
+  ...process.env, HOME: home, PATH: `${wrapperDir}${delimiter}${process.env.PATH}`,
   GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: `url.file://${bare}.insteadOf`, GIT_CONFIG_VALUE_0: URL_IN_BLOCK,
 });
 

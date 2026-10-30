@@ -75,9 +75,6 @@ test('the tokens are the run\'s own: what the session spent before its /lpk is l
   assert.deepEqual(json(repo, S).tokens, { fresh: 130, cacheRead: 1000, recorded: true });
 });
 
-// Measured: Qoder writes every usage count in its transcripts as 0, so a session of it has no token
-// figure at all. `tokens.recorded` says so, and the band and `lpk status` print those words instead
-// of 0 (lib/host.mjs TOKENS_UNMEASURED).
 test('a session whose host recorded no counts reports its tokens as unmeasured, not as 0', async () => {
   const S = 'status-zero';
   const repo = repoWith('status-zero', { 'a.mjs': '1\n' });

@@ -55,7 +55,7 @@ export function runRow(repo, extra = {}) {
     e.ended[l.ended] = (e.ended[l.ended] || 0) + 1;
   }
   // Tokens, models and first-to-last wall time per agent type, from the transcripts. `recorded` is
-  // false when the host that wrote them named no count at all, so the row's tokens read as
+  // false when the transcripts named no count at all, so the row's tokens read as
   // unmeasured rather than as 0 (lib/host.mjs).
   const agents = {};
   const hosts = new Set();

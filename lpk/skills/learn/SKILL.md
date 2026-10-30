@@ -30,8 +30,7 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
      file and finding class: a defect every layer missed, weighing most after a revert;
    - **CI failures** (`gh pr checks`, `gh run view --log-failed`): a check red after the push names
      a command `lpk verify` should have run; add it to `~/.local/share/lpk/profiles/<repo>.md`;
-   - **fix commits after review**: `git log <first review time>..<merge>` on the PR branch; the
-     diff of each shows the defect and its fix exactly;
+   - **fix commits after review**: `git log <first review time>..<merge>` on the PR branch;
    - **reverts and hotfixes on main** (`git log --grep='^Revert\|hotfix\|fix' main`, with the PR
      each one fixes): a defect that reached users weighs most;
    - **the owner's corrections**: what they said was wrong, in their words. During an lpk run every

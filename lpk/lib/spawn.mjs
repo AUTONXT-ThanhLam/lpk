@@ -1,13 +1,13 @@
 // The apps lpk starts for a run (a dev server, an API for the prover): each recorded with its
 // process group, port, commit and data dir in the run directory, so a resumed prover reuses the
 // live one for the same commit, port and data dir, and `lpk reap` stops exactly these and nothing else.
-import { spawn } from 'node:child_process';
 import { closeSync, existsSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { join } from 'node:path';
 import { git } from './git.mjs';
 import { locked } from './lock.mjs';
 import { outDir } from './out.mjs';
+import { killGroup, spawnGroup, startTime } from './proc.mjs';
 import { runDir } from './run.mjs';
 
 const registry = (repo) => join(runDir(repo), 'spawned.json');
@@ -15,11 +15,6 @@ const read = (repo) => { try { return JSON.parse(readFileSync(registry(repo), 'u
 const write = (repo, list) => writeFileSync(registry(repo), JSON.stringify(list, null, 1));
 const edit = (repo, fn) => locked(runDir(repo), () => { const l = fn(read(repo)); write(repo, l); return l; }, 'spawned.lock');
 
-// The kernel's start time of a process (field 22 of /proc/<pid>/stat): with the pid it names one
-// process, so a pid the system reused for something else never counts as ours.
-export function startTime(pid) {
-  try { return readFileSync(`/proc/${pid}/stat`, 'utf8').split(') ').at(-1).split(' ')[19]; } catch { return ''; }
-}
 export const alive = (rec) => Boolean(rec.start) && startTime(rec.pid) === rec.start;
 
 // Whether something accepts connections on the port on this machine.
@@ -53,7 +48,7 @@ export function reusable(repo, { commit, dirty, port, dataDir }) {
 export function start(repo, { cmd, cwd, port, dataDir, commit, dirty }) {
   const log = join(outDir(repo), `spawn-${port}-${Date.now()}.log`);
   const fd = openSync(log, 'a');
-  const child = spawn('bash', ['-c', cmd], { cwd, detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, PORT: String(port) } });
+  const child = spawnGroup(cmd, { cwd, survive: true, stdio: ['ignore', fd, fd], env: { ...process.env, PORT: String(port) } });
   closeSync(fd);
   child.unref();
   const rec = { pid: child.pid, start: '', port, dataDir, commit, dirty, cmd, cwd, log, at: new Date().toISOString() };
@@ -68,9 +63,9 @@ export async function reap(repo) {
   const out = [];
   for (const r of list) {
     if (!alive(r)) { out.push({ ...r, was: 'already stopped' }); continue; }
-    try { process.kill(-r.pid, 'SIGTERM'); } catch { /* group gone */ }
+    killGroup(r.pid, 'SIGTERM');
     for (let i = 0; i < 50 && alive(r); i++) await new Promise((t) => setTimeout(t, 100));
-    if (alive(r)) try { process.kill(-r.pid, 'SIGKILL'); } catch { /* gone */ }
+    if (alive(r)) killGroup(r.pid);
     out.push({ ...r, was: alive(r) ? 'STILL RUNNING' : 'stopped' });
   }
   edit(repo, (l) => l.filter((r) => !list.some((x) => x.pid === r.pid && x.start === r.start) && alive(r)));

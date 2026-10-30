@@ -5,8 +5,7 @@ import { projectsDirs, sessionsDirs } from './host.mjs';
 import { checkout, registered } from './where.mjs';
 
 // The pid of a live host process holding `session`, from the per-process files each host keeps in its
-// own store; 0 when none does. Measured: Qoder keeps no such folder, so a session of it reads as one
-// that has exited, and `lpk run take` takes its run.
+// own store; 0 when none does.
 export function sessionPid(session) {
   let names = [];
   for (const dir of sessionsDirs()) {

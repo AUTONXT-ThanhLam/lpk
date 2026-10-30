@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
 
@@ -84,7 +85,7 @@ test('after a resume the session learns the last workflow run, the open findings
   mkdirSync(join(tmp, 'projects', 'resume', 'workflows'), { recursive: true });
   writeFileSync(join(tmp, 'projects', 'resume', 'workflows', 'wf_1234abcd-001.json'), JSON.stringify({ runId: 'wf_1234abcd-001', workflowName: 'lpk-review', status: 'running', workflowProgress: [
     { type: 'workflow_phase', title: 'Review' }, { type: 'workflow_agent', label: 'techlead', state: 'done' }, { type: 'workflow_agent', label: 'claims', state: 'running' }] }));
-  const add = `const { addFinding } = await import(${JSON.stringify(join(ROOT, 'lib', 'findings.mjs'))}); const r = addFinding(process.cwd(), { from: 'lpk:techlead', at: 'abc..def', claim: 'the lock leaks', repro: 'npm test', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }); if (r.error) { console.error(r.error); process.exit(1); }`;
+  const add = `const { addFinding } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'findings.mjs')).href)}); const r = addFinding(process.cwd(), { from: 'lpk:techlead', at: 'abc..def', claim: 'the lock leaks', repro: 'npm test', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }); if (r.error) { console.error(r.error); process.exit(1); }`;
   const p = spawnSync('node', ['--input-type=module', '-e', add], { cwd: repo, env: ENV, encoding: 'utf8' });
   assert.equal(p.status, 0, p.stderr);
   const card = context(hook('SessionStart', 'start', { source: 'resume', session_id: 'resume', cwd: repo, transcript_path: transcript }));
@@ -166,13 +167,6 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   const call = { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'stamp', cwd: outer, agent_type: 'lpk:bug-hunter', agent_id: 'a1', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } };
   const stamped = hook('PreToolUse', 'stamp', call).hookSpecificOutput.updatedInput;
   assert.deepEqual([stamped.repo, stamped.run, stamped.from, stamped.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
-  // Qoder names the same tool without the plugin segment; it is stamped the same.
-  const qoder = hook('PreToolUse', 'stamp', { ...call, tool_name: 'mcp__lpk__finding_add' }).hookSpecificOutput.updatedInput;
-  assert.deepEqual([qoder.repo, qoder.run, qoder.from, qoder.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
-  // On Qoder a deferred MCP tool arrives as `mcp_call`; the stamps go into the arguments it carries.
-  const wrapped = hook('PreToolUse', 'stamp', { ...call, tool_name: 'mcp_call', tool_input: { toolName: 'mcp__lpk__finding_add', arguments: { ...call.tool_input, at: 'what-the-agent-said' } } }).hookSpecificOutput.updatedInput;
-  assert.equal(wrapped.toolName, 'mcp__lpk__finding_add');
-  assert.deepEqual([wrapped.arguments.repo, wrapped.arguments.run, wrapped.arguments.from, wrapped.arguments.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
   // Before `lpk review start`, a builder's own review still records the range it read.
   writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, base: 'abcdef1234567890' }));
   const early = hook('PreToolUse', 'stamp', { ...call, tool_input: { ...call.tool_input, at: 'what-the-agent-said' } }).hookSpecificOutput.updatedInput;

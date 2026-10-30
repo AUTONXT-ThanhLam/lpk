@@ -10,9 +10,8 @@ export const NAMES = { understand: 'Understand', design: 'Design', build: 'Build
 // A duration as the band shows it: seconds under a minute, minutes under an hour, then hours.
 const mins = (ms) => { const s = Math.round(ms / 1000); return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : `${Math.floor(s / 3600)}h ${String(Math.round((s % 3600) / 60)).padStart(2, '0')}m`; };
 const tokens = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
-// The token figure of the band's head line: a host that wrote no counts (measured: Qoder writes every
-// usage figure as 0) has no number to show, and the words lib/host.mjs names stand in, so an
-// unmeasured run never reads as one that cost nothing.
+// The token figure of the band's head line: a host that wrote no counts has no number to show, and the
+// words lib/host.mjs names stand in, so an unmeasured run never reads as one that cost nothing.
 const tokenText = (t) => { const f = tokenFigure(t.fresh, t.recorded); return typeof f === 'number' ? `${tokens(f)} tokens` : f; };
 const MARK = { landed: '●', building: '◐', waiting: '○' };
 

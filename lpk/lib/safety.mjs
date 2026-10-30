@@ -11,9 +11,8 @@ export const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreTool
 export const hint = (text) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: `lpk: ${text}` } });
 
 // Where the owner's subscription tokens live, and the command that prints one. Matched as literal
-// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match. Both hosts'
-// stores are named: Claude Code's credential file and the folder Qoder keeps its login in.
-export const CREDENTIALS = ['.claude/.credentials.json', '.qoder/.auth', '.config/lpk/accounts', 'cc-switch token'];
+// text anywhere in the call's input, so `~/`, `$HOME/` and an absolute home all match.
+export const CREDENTIALS = ['.claude/.credentials.json', '.config/lpk/accounts', 'cc-switch token'];
 export function credentialTrip(input) {
   if (!/^(Bash|Read|Grep)$/.test(input.tool_name || '')) return null;
   const text = JSON.stringify(input.tool_input ?? {});
@@ -28,7 +27,7 @@ export function waiverTrip(input) {
   const t = input.tool_input ?? {};
   const hit = input.tool_name === 'Bash' ? WAIVER_TEXT.find((c) => String(t.command || '').includes(c))
     : /^(Write|Edit|MultiEdit)$/.test(input.tool_name || '') && String(t.file_path || '').endsWith('/lpk/records.jsonl') ? 'records.jsonl' : null;
-  return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.`) : null;
+  return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.${hit === 'records.jsonl' && input.tool_name === 'Bash' ? ' To read the run\'s records, run \`lpk records\`: no command needs to name the file.' : ''}`) : null;
 }
 
 // A page opened from a file in the lpk Chrome reads the local disk with the owner's browser profile.
@@ -49,14 +48,6 @@ export const connectorTool = (name) => {
   return m && CONNECTOR_WRITES.includes(m[1]) ? m[1] : '';
 };
 
-// Qoder reaches a deferred MCP tool through one `mcp_call` whose input names the real tool, so every
-// tripwire reads the call a person is actually making, not the wrapper.
-export function unwrapMcp(input) {
-  if (input?.tool_name !== 'mcp_call') return input;
-  const name = String(input.tool_input?.toolName || '');
-  return name ? { ...input, tool_name: name, tool_input: input.tool_input?.arguments ?? {} } : input;
-}
-
 // Git commands that discard work or skip the repo's own checks. Quoted text and here-document
 // bodies are blanked first, so a commit message that mentions one does not trip it.
 const bare = (cmd) => String(cmd || '').replace(/<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2\s*(\n|$)/g, '\n').replace(/"(\\.|[^"\\])*"|'[^']*'/g, '""');
@@ -72,6 +63,29 @@ export function gitTrip(input) {
   if (input.tool_name !== 'Bash') return '';
   const cmd = bare(input.tool_input?.command);
   return GIT_TRIPS.find((t) => t.re.test(cmd))?.id || '';
+}
+
+// Docker removal whose targets another run's containers can match: a command substitution, xargs, or
+// a prune. Double-quoted text is kept, since a substitution runs inside it. A removal that names an
+// exact name or id, or filters on the label `lpk.run=<id>`, passes.
+const DOCKER_REMOVE = /(?:^|[;&|(`\s])docker\s+(?:container\s+)?(?:rm|stop|kill)\b([^;&\n]*)/g;
+const XARGS_DOCKER = /\bxargs\b[^;&|\n]*\sdocker\s+(?:container\s+)?(?:rm|stop|kill)\b/;
+const DOCKER_PRUNE = /(?:^|[;&|(`\s])docker\s+(?:container|system)\s+prune\b/;
+const NO_HEREDOC = /<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2\s*(\n|$)/g;
+const listed = (stmt) => {
+  if (/label=lpk\.run=[\w.$-]{2,}/.test(stmt)) return false;
+  const bare = stmt.replace(/'[^']*'/g, "''");
+  return [...bare.matchAll(DOCKER_REMOVE)].some((m) => /\$\(|`/.test(m[1])) || XARGS_DOCKER.test(bare);
+};
+export function dockerTrip(input) {
+  if (input.tool_name !== 'Bash') return null;
+  const stmts = String(input.tool_input?.command || '').replace(NO_HEREDOC, '\n').split(/;|&&|\|\||\n/);
+  const prune = stmts.some((x) => DOCKER_PRUNE.test(x.replace(/'[^']*'/g, "''")));
+  const fromList = stmts.some(listed);
+  if (!fromList && !prune) return null;
+  const what = prune ? '`docker container prune` and `docker system prune` remove containers, networks and images this run did not start'
+    : 'this `docker rm|stop|kill` takes its targets from a command substitution or xargs, which removes every container the filter matches, including ones another run started';
+  return deny(`${what} (rule owned-cleanup). This is a tripwire on that literal text. Remove what you started by exact name or id (\`docker rm -f <name>\`), or label what you start (\`docker run --label lpk.run=<run id>\`) and remove by that label (\`docker rm -f $(docker ps -aq --filter label=lpk.run=<run id>)\`). A prune is the owner's to run in their own terminal.`);
 }
 
 // The roles that review and never edit a checkout. The verifier writes its repro tests in the

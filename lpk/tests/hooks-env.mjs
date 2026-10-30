@@ -6,17 +6,13 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
 export const tmp = mkdtempSync(join(tmpdir(), 'lpk-hooks-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
-// `lib/host.mjs` answers for the host whose names the environment carries, so both families are
-// dropped from what a child inherits: a suite launched by Qoder would else hand its own
-// `QODER_SESSION_ID` to every hook and `lpk` run here, and a test could pass or fail by who started
-// it. The helper's own `CLAUDE_*` is what a child runs under.
-export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^(CLAUDE|QODER)_/.test(k)));
+export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const HOME = join(tmp, 'home');
 export const ENV = { ...noHost(process.env), HOME, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), CLAUDE_PLUGIN_ROOT: ROOT };
 export const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -53,7 +49,7 @@ export function repoWith(name, files) {
 // Starts a run held by `session` in `repo`, as `lpk run start` does from that session's shell.
 export function startRun(repo, session, extra = {}) {
   const base = sh(repo, 'merge-base', 'main', 'HEAD').trim();
-  const code = `const { startRun } = await import(${JSON.stringify(join(ROOT, 'lib', 'run.mjs'))}); const r = startRun(process.cwd(), ${JSON.stringify({ target: 'main', base, verify: ['true'], ...extra })}); if (r.error) { console.error(r.error); process.exit(1); }`;
+  const code = `const { startRun } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'run.mjs')).href)}); const r = startRun(process.cwd(), ${JSON.stringify({ target: 'main', base, verify: ['true'], ...extra })}); if (r.error) { console.error(r.error); process.exit(1); }`;
   const p = spawnSync('node', ['--input-type=module', '-e', code], { cwd: repo, env: { ...ENV, CLAUDE_CODE_SESSION_ID: session }, encoding: 'utf8' });
   assert.equal(p.status, 0, p.stderr);
   return join(sh(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk');

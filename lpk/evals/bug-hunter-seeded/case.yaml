@@ -1,0 +1,35 @@
+schema_version: "1.1"
+name: bug-hunter-seeded
+description: bug-hunter reports an off-by-one in a seeded diff, at the right line
+tags: [agent, bug-hunter]
+runs: 3
+execution:
+  model: sonnet
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Agent]
+  prompt: |
+    Dispatch the lpk:bug-hunter agent on the change below. The agent has no repository and no shell, so put the request and the file inside its prompt. Reply with the agent's findings as it returned them, each with file and line.
+
+    Request: add paginate(items, page, size), which returns the items of the 1-based page, size items per page.
+
+    File src/page.mjs after the change:
+    1  export function totalPages(count, size) {
+    2    return Math.ceil(count / size);
+    3  }
+    4
+    5  export function paginate(items, page, size) {
+    6    const start = (page - 1) * size;
+    7    return items.slice(start, start + size - 1);
+    8  }
+graders:
+  - name: dispatched
+    type: tool_used
+    tool: Agent
+    input_match: '"subagent_type":\s*"lpk:bug-hunter"'
+  - name: finds-the-off-by-one
+    type: regex
+    pattern: 'page\.mjs:?\s*(line\s*)?7\b|line\s*7\b'
+  - name: judges-the-reason
+    type: llm
+    criteria: 'PASS only if the reply says that slice excludes its end index, so start + size - 1 returns one item too few per page. FAIL otherwise.'

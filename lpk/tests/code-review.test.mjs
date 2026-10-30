@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, lpk, noHost, repoWith, sh, tmp, write } from './gates-env.mjs';
-import { readLedger } from '../lib/findings.mjs';
+import { readLedger, ruleOn } from '../lib/findings.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const owed = (repo, S, env = ENV) => JSON.parse(spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: { ...env, CLAUDE_CODE_SESSION_ID: S }, encoding: 'utf8' }).stdout).map((r) => r.lens);
@@ -52,6 +52,29 @@ test('a code review adds its findings to the ledger and pays the code review the
   assert.match(args[args.indexOf('--append-system-prompt') + 1], /^You review a diff\./);
 });
 
+test('the child is given a fallback model only when --fallback-model is passed', () => {
+  const S = 'crfallback';
+  const repo = changedRepo('crfallback', S);
+  const bin = fakeClaude('claude-fallback', [report, result]);
+  ok(codeReview(repo, S, bin));
+  assert.ok(!seen(bin).argv.includes('--fallback-model'), 'no fallback model unless asked');
+  ok(codeReview(repo, S, bin, '--fallback-model', 'opus'));
+  const args = seen(bin).argv;
+  assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
+});
+
+test('a code review finding the verifier confirms carries reach and born into the ledger and the report', () => {
+  const S = 'crreach';
+  const repo = changedRepo('crreach', S);
+  ok(codeReview(repo, S, fakeClaude('claude-reach', [report, result])));
+  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
+  const [f] = readLedger(repo).findings;
+  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'build', 'user']);
+  const shown = lpk(repo, S, 'report').stdout;
+  assert.match(shown, /^Confirmed defects by the step they began in: build 1$/m);
+  assert.match(shown, /^Confirmed defects by who meets them: user 1$/m);
+});
+
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
   const S = 'crdelta';
   const repo = changedRepo('crdelta', S);
@@ -75,9 +98,9 @@ test('a code review child that ends without a result fails and leaves the code r
 });
 
 test('on a host without the code review command the lane owes the code-reviewer agent', () => {
-  const S = 'qoder';
-  const repo = changedRepo('qoder', S);
-  const env = { ...noHost(ENV), QODER_CONFIG_DIR: join(tmp, 'home', '.qoder'), QODER_PLUGIN_ROOT: ROOT };
-  const lenses = owed(repo, S, env);
+  const S = 'nohost';
+  const repo = changedRepo('nohost', S);
+  const out = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: noHost(ENV), encoding: 'utf8' });
+  const lenses = JSON.parse(out.stdout).map((r) => r.lens);
   assert.ok(lenses.includes('code-reviewer') && !lenses.includes('code-review'), lenses.join());
 });
