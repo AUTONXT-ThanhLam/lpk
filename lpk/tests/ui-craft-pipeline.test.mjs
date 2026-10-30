@@ -63,14 +63,14 @@ test('copyfacts reads a page in a real Chrome: counts what a person sees and exi
       if (!up) await new Promise((r) => setTimeout(r, 100));
     }
     assert.ok(up, 'Chrome did not start');
-    writeFileSync(join(dir, 'p.html'), '<meta charset="utf-8"><h1>Plain heading</h1><p>Short copy!</p><span style="position:absolute;left:-9999px;width:200px;height:30px">Unlock a seamless dashboard!</span><div style="opacity:0"><b>Supercharge</b> your journey!</div><div style="display:none">Leverage this!</div><p>Visible <a href="#">link</a> here — done.</p><h2 style="opacity:0">Faded Title Case Heading</h2><h2 style="position:absolute;left:-9999px">Offscreen Title Case Heading</h2><button>Save this recipe for later and share it widely</button><button style="opacity:0">Hidden Long Button Label Now</button><div role="alert">Could not save the recipe</div><div role="alert" style="opacity:0">Faded alert text here</div>');
+    writeFileSync(join(dir, 'p.html'), '<meta charset="utf-8"><h1>Plain heading</h1><p>Take\n   your time.</p><p>Short copy!</p><span style="position:absolute;left:-9999px;width:200px;height:30px">Unlock a seamless dashboard!</span><div style="opacity:0"><b>Supercharge</b> your journey!</div><div style="display:none">Leverage this!</div><p>Visible <a href="#">link</a> here — done.</p><h2 style="opacity:0">Faded Title Case Heading</h2><h2 style="position:absolute;left:-9999px">Offscreen Title Case Heading</h2><button>Save this recipe for later and share it widely</button><button style="opacity:0">Hidden Long Button Label Now</button><div role="alert">Could not save the recipe</div><div role="alert" style="opacity:0">Faded alert text here</div>');
     const started = Date.now();
     const r = run('copyfacts.mjs', pathToFileURL(join(dir, 'p.html')).href, '--port', String(port));
     assert.equal(r.status, 0, r.stderr);
     const facts = JSON.parse(r.stdout);
     assert.equal(facts.exclamations, 1);
     assert.equal(facts.emDashes, 1);
-    assert.deepEqual(facts.hypeWords, {});
+    assert.deepEqual(facts.hypeWords, { 'take your': 1 });
     assert.equal(facts.headings.n, 1);
     assert.equal(facts.buttons.n, 1);
     assert.equal(facts.buttons.over3Words, 1);

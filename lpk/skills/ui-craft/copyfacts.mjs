@@ -41,7 +41,7 @@ const probe = `(() => {
     const box = n.parentElement.getBoundingClientRect();
     return r.width > 4 && r.height > 4 && box.width > 4 && box.height > 4 && r.right > 0 && r.bottom > 0 && !['script', 'style', 'noscript'].includes(n.parentElement.localName) && getComputedStyle(n.parentElement).visibility !== 'hidden';
   };
-  const pageText = () => { const out = []; const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.nodeValue.trim() && seen(n)) out.push(n.nodeValue.trim()); } return out.join(' '); };
+  const pageText = () => { const out = []; const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.nodeValue.trim() && seen(n)) out.push(n.nodeValue.trim()); } return out.join(' ').replace(/\\s+/g, ' '); };
   const outer = (list) => list.filter((e) => !list.some((o) => o !== e && o.contains(e)));
   const take = (sel) => outer([...document.querySelectorAll(sel)].filter(vis)).map(clean).filter((t) => t && t.length < 200);
   return {
