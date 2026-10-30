@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { moveInteractive } from '../lib/follow.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SKIP = { skip: process.platform === 'win32' && 'follow-account runs under cc-switch, which is bash only' };
@@ -14,10 +15,14 @@ after(() => rmSync(tmp, { recursive: true, force: true }));
 function setup(name, sessions) {
   const dir = join(tmp, name);
   mkdirSync(dir, { recursive: true });
-  const list = sessions.map(({ id }) => {
+  const list = sessions.map(({ id, state = 'working', transcript = true }) => {
     const cwd = join(dir, 'work', id);
     mkdirSync(cwd, { recursive: true });
-    return { id, kind: 'background', cwd, sessionId: `${id}-session`, name: `job ${id}`, state: 'working' };
+    if (transcript) {
+      mkdirSync(join(dir, 'cfg', 'projects', 'p'), { recursive: true });
+      writeFileSync(join(dir, 'cfg', 'projects', 'p', `${id}-session.jsonl`), '{}\n');
+    }
+    return { id, kind: 'background', cwd, sessionId: `${id}-session`, name: `job ${id}`, state };
   });
   list.push({ kind: 'interactive', cwd: '/work/main', sessionId: 'main-session', name: 'main', status: 'busy' });
   writeFileSync(join(dir, 'list.json'), JSON.stringify(list));
@@ -38,7 +43,7 @@ else console.log('ok ' + a[0]);
   return dir;
 }
 
-const follow = (dir, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'follow-account', ...args], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, LPK_ACCOUNT: 'cc2', CLAUDE_CONFIG_DIR: join(dir, 'cfg') } });
+const follow = (dir, ...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'follow-account', '--except', 'main-session', ...args], { encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, LPK_ACCOUNT: 'cc2', CLAUDE_CONFIG_DIR: join(dir, 'cfg') } });
 const calls = (dir) => spawnSync('cat', [join(dir, 'calls')], { encoding: 'utf8' }).stdout.trim().split('\n').map((l) => l.split(' | '));
 const verbs = (dir) => calls(dir).map((c) => c[2]);
 
@@ -55,6 +60,16 @@ test('follow-account stops every working session, restarts the daemon and resume
   }
   assert.equal(v.filter((x) => x.includes('--resume')).length, 2);
   assert.ok(!v.some((x) => x.includes('main-session')));
+});
+
+test('follow-account keeps the blocked and done background sessions in the list by resuming them without a prompt, and names one with no transcript', SKIP, () => {
+  const dir = setup('idle', [{ id: 'a1' }, { id: 'k1', state: 'blocked' }, { id: 'd1', state: 'done' }, { id: 'n1', state: 'done', transcript: false }]);
+  const r = follow(dir);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  const v = verbs(dir);
+  assert.ok(v.includes('--bg --resume k1-session') && v.includes('--bg --resume d1-session'), v.join('\n'));
+  assert.ok(!v.some((x) => x.includes('n1-session')));
+  assert.match(r.stdout, /lost: n1 \(job n1\) has no transcript to resume/);
 });
 
 test('follow-account leaves alone a session that will not stop instead of resuming it', SKIP, () => {
@@ -83,4 +98,33 @@ test('follow-account with no background session still restarts the daemon so the
   const r = follow(dir);
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.deepEqual(verbs(dir).filter((x) => !x.startsWith('agents')), ['daemon stop --any']);
+});
+
+test('follow-account restarts the other interactive sessions through their launcher, never the one it is told to leave and never one already on the account', () => {
+  const dir = join(tmp, 'interactive');
+  mkdirSync(dir, { recursive: true });
+  const req = (n) => join(dir, `req-${n}`);
+  const list = [
+    { kind: 'interactive', pid: 11, cwd: '/w/one', sessionId: 's-one' },
+    { kind: 'interactive', pid: 12, cwd: '/w/main', sessionId: 's-main' },
+    { kind: 'interactive', pid: 13, cwd: '/w/done', sessionId: 's-done' },
+    { kind: 'interactive', pid: 14, cwd: '/w/plain', sessionId: 's-plain' },
+    { kind: 'background', id: 'b1', pid: 15, cwd: '/w/bg', sessionId: 's-bg' },
+  ];
+  const envs = {
+    11: { LPK_ACCOUNT: 'cc1', CC_SWAP_REQUEST: req(11), CC_SWAP_LAUNCHER: '100' },
+    12: { LPK_ACCOUNT: 'cc1', CC_SWAP_REQUEST: req(12), CC_SWAP_LAUNCHER: '100' },
+    13: { LPK_ACCOUNT: 'cc2', CC_SWAP_REQUEST: req(13), CC_SWAP_LAUNCHER: '100' },
+    14: { LPK_ACCOUNT: 'cc1' },
+  };
+  const said = [];
+  const killed = [];
+  const failed = moveInteractive(list, { except: 's-main', account: 'cc2', say: (m) => said.push(m), environ: (pid) => envs[pid], parent: () => '100', kill: (pid, sig) => killed.push([pid, sig]) });
+  assert.deepEqual(killed, [[11, 'SIGTERM']]);
+  const [id, card] = readFileSync(req(11), 'utf8').trim().split('\n');
+  assert.equal(id, '-');
+  assert.match(readFileSync(card, 'utf8'), /agents and workflows that were running here are gone/i);
+  assert.equal(failed, 1);
+  assert.match(said.join('\n'), /not moved: pid 14 in \/w\/plain was not started through the cc-switch launcher/);
+  assert.ok(!said.join('\n').includes('pid 13') && !said.join('\n').includes('pid 12') && !said.join('\n').includes('pid 15'));
 });

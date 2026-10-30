@@ -50,7 +50,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
  the machine
   lpk meter  |  lpk escapes  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
   lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)
-  cc-switch run node <lpk>/bin/lpk follow-account   (move the background claude sessions to the active account)`;
+  cc-switch run node <lpk>/bin/lpk follow-account [--except <session id>]   (move every claude session on the machine to the active account)`;
 
 function resolveBase(repo) {
   const ref = targetOf(repo, opt('--base'));
