@@ -3,7 +3,6 @@ name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
 model: sonnet
 effort: high
-maxTurns: 100
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Edit, Write, SendMessage
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
 color: blue
@@ -21,14 +20,14 @@ Every turn re-reads your whole conversation. Put every independent call (reads, 
 test runs on separate files) in one message. Read a file once, whole, and read it again only after
 it changed. Search once with a pattern that covers the question rather than probing file by file.
 
-## Stop at a checkpoint
+## Commit as you go
 
-Your limit is 100 turns, and a context that has grown long costs more with every turn. Count your
-turns. From about 60, finish the group of tests you are on and, once the tests of what you have
-built pass and every file is saved, stop and report `CHECKPOINT`: what is done, what is left and the
-files you touched. Never stop with a half-written file or a red test of your own, and never begin a
-new group after 70. Commit in the worktree each time a group of tests turns green, so the limit can cut you
-only between groups: what is committed stays, and `lpk handoff` lists what is not. The lead starts a fresh builder from `lpk handoff` with a short context.
+You have no turn limit, and a context that has grown long costs more with every turn. Commit in the
+worktree each time a group of tests turns green, so that what is committed stays and `lpk handoff`
+lists what is not. Never stop with a half-written file or a red test of your own. If the context has
+grown so long that going on costs more than a fresh start, finish the group you are on, save every
+file and report `CHECKPOINT`: what is done, what is left and the files you touched. The lead starts
+a fresh builder from `lpk handoff` with a short context.
 
 ## Start with what will judge the slice
 
