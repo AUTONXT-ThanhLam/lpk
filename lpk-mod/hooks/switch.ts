@@ -76,7 +76,8 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
   let cardPath = ''
   if (dir) {
     const made = await run($, ['mkdir', '-p', dir])
-    const path = `${dir}/state-card.md`
+    const path = `${dir}/state-card-${await $.session.id()}.md`
+    if (made.exitCode === 0) await run($, ['find', dir, '-maxdepth', '1', '-name', 'state-card-*.md', '-mtime', '+7', '-delete'])
     where = made.exitCode === 0 ? await $.fs.write(path, `${card.text}\n`).then(() => path, (err: unknown) => `not written: ${String(err)}`) : `not written: ${made.stderr.trim()}`
     if (where === path) cardPath = path
   }
