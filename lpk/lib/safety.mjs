@@ -27,7 +27,7 @@ export function waiverTrip(input) {
   const t = input.tool_input ?? {};
   const hit = input.tool_name === 'Bash' ? WAIVER_TEXT.find((c) => String(t.command || '').includes(c))
     : /^(Write|Edit|MultiEdit)$/.test(input.tool_name || '') && String(t.file_path || '').endsWith('/lpk/records.jsonl') ? 'records.jsonl' : null;
-  return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.`) : null;
+  return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.${hit === 'records.jsonl' && input.tool_name === 'Bash' ? ' To read the run\'s records, run \`lpk records\`: no command needs to name the file.' : ''}`) : null;
 }
 
 // A page opened from a file in the lpk Chrome reads the local disk with the owner's browser profile.
