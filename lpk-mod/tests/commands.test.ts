@@ -80,6 +80,7 @@ test('lpk-switch writes the state card, moves cc-switch and tells the owner to /
   expect(r.context?.[0]).toContain(card.trim())
 })
 
+const FOLLOW = 'sleep 3; cc-switch swap "$1" && env -u CLAUDE_CODE_SESSION_ID -u CC_SWAP_CARD -u CC_SWAP_REQUEST -u CC_SWAP_LAUNCHER cc-switch run node "$2" follow-account >> "$3" 2>&1'
 const UNDER_LAUNCHER = { CC_SWAP_LAUNCHER: '4242', CC_SWAP_REQUEST: '/run/user/1000/cc-swap.x' }
 const swapReply = (a: readonly string[]) => git(a) ?? (a[0] === 'cc-switch' && a[1] === 'status' ? { stdout: STATUS } : undefined) ?? flippedAny(a)
 const flippedAny = (a: readonly string[]) => (a[0] === 'cc-switch' ? { stdout: `Now on ${a[1]} (x).\n` } : undefined)
@@ -87,8 +88,9 @@ const flippedAny = (a: readonly string[]) => (a[0] === 'cc-switch' ? { stdout: `
 test('lpk-switch under the claude launcher writes the card and restarts the same conversation on the other account', async ($, on) => {
   const w = world(on, { env: UNDER_LAUNCHER, files: installedLpk(), reply: swapReply })
   const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
-  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', 'cc2'])
+  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', FOLLOW, '_', 'cc2', `${LPK}/bin/lpk`, `${CWD}/.git/lpk/follow-account.log`])
   expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
+  expect(r.text).toContain('Background claude sessions follow to cc2')
   expect(w.written[`${CWD}/.git/lpk/state-card-session-1.md`]).toContain('lpk state card')
   expect(r.text).toContain('restarts on the same conversation')
   expect(r.text).not.toContain('claude -c')
@@ -98,11 +100,12 @@ test('lpk-switch under the claude launcher writes the card and restarts the same
 test('lpk-switch under the launcher restarts even with agents still at work and says they end', async ($, on) => {
   const w = world(on, {
     env: UNDER_LAUNCHER,
+    files: installedLpk(),
     agents: [{ id: 'a1', description: 'review the slice', type: 'lpk:techlead', status: 'running' }],
     reply: swapReply,
   })
   const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
-  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', 'cc2'])
+  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', FOLLOW, '_', 'cc2', `${LPK}/bin/lpk`, `${CWD}/.git/lpk/follow-account.log`])
   expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
   expect(r.text).toContain('1 agent(s) still at work end with the restart')
 })
