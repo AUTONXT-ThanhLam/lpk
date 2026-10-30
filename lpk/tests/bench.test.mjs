@@ -202,3 +202,29 @@ test('bad arguments are refused, and the command is reachable as lpk bench', () 
   assert.match(bench(tmp, '--lane', 'full').stdout, /lens \| raised \| fixed/);
   assert.match(bench(tmp, '--lane', 'full').stdout, /critical path .*lens sum/);
 });
+
+test('a run\'s idle time is the waits the owner closed, apart from the time agents worked', () => {
+  plant('bench-idle');
+  const turn = (id, at, stop, extra = []) => ({ ...msg(id, [1, 1, 1, 1], at), message: { ...msg(id, [1, 1, 1, 1], at).message, stop_reason: stop, content: [{ type: 'text', text: 'x' }, ...extra] } });
+  const say = (at, content) => ({ type: 'user', timestamp: at, message: { content } });
+  write(join(CLAUDE, 'projects', '-work-repo'), 's-idle.jsonl', jsonl([
+    say('2026-10-21T10:00:00Z', 'go'),
+    turn('i1', '2026-10-21T10:00:10Z', 'end_turn'),
+    say('2026-10-21T10:01:50Z', 'next'),
+    turn('i2', '2026-10-21T10:02:00Z', 'end_turn'),
+    say('2026-10-21T10:03:00Z', '<task-notification><task-id>b1</task-id><status>completed</status></task-notification>'),
+    turn('i3', '2026-10-21T10:03:10Z', 'tool_use'),
+    turn('i4', '2026-10-21T10:03:15Z', 'tool_use', [{ type: 'tool_use', id: 'q1', name: 'AskUserQuestion', input: {} }]),
+    say('2026-10-21T10:04:15Z', [{ type: 'tool_result', tool_use_id: 'q1', content: 'yes' }]),
+    turn('i5', '2026-10-21T10:04:25Z', 'end_turn'),
+  ]));
+  const rows = readFileSync(join(DATA, 'runs.jsonl'), 'utf8');
+  writeFileSync(join(DATA, 'runs.jsonl'), `${rows}${JSON.stringify({ id: '20261021100000-r4', repo: 'work-repo', path: tmp, session: 's-idle', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T10:05:00.000Z', wallMs: 300000, yield: {}, agents: {}, lenses: {}, files: [] })}\n`);
+  const j = out(tmp);
+  const r = j.wall.runs.find((x) => x.id === '20261021100000-r4');
+  assert.equal(r.ownerIdleMs, 160000, '100s until the owner\'s prompt and 60s until the answer to the question; the 60s a task notice closed is not theirs');
+  assert.equal(r.workingMs, 140000, 'the wall without the owner\'s idle time');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
+});
