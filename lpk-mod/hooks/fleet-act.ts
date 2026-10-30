@@ -1,10 +1,10 @@
 import type { CommandRunInput, CommandRunResult, PluginOptions, PromptSubmitInput } from 'claude-code'
 
-import { findMember, repoSessions } from './fleet'
+import { findTarget, repoSessions } from './fleet'
 import { openFleet } from './fleet-ui'
 import { type Host, run, words } from './lpk'
 
-const AT = /^@(\S+)\s+([\s\S]+)$/
+const AT = /^@(\S[\s\S]*)$/
 const NAME = /^[a-z0-9][a-z0-9._-]*$/i
 
 const isOwner = (origin: { kind: string } | undefined) => origin === undefined || origin.kind === 'composer'
@@ -12,14 +12,15 @@ const isOwner = (origin: { kind: string } | undefined) => origin === undefined |
 export async function sendAt($: Host, e: PromptSubmitInput): Promise<string | undefined> {
   const m = AT.exec(e.text.trim())
   if (!m || e.command || e.isMeta || !isOwner(e.origin)) return undefined
-  const [, word = '', text = ''] = m
   const sessions = await repoSessions($)
   const me = await $.session.id()
-  const found = findMember(sessions.filter((s) => s.sessionId !== me).map((s) => ({ id: s.sessionId, name: s.name ?? s.sessionId.slice(0, 8) })), word)
+  const found = findTarget(sessions.filter((s) => s.sessionId !== me).map((s) => ({ id: s.sessionId, name: s.name ?? s.sessionId.slice(0, 8) })), m[1] ?? '')
   if (!found.length) return undefined
-  if (found.length > 1) return `"@${word}" names ${found.length} sessions: ${found.map((x) => x.name).join(', ')}. Nothing was sent.`
-  const sent = await $.session.send({ to: { sessionId: found[0]!.id }, text: `Message from the owner, sent from the repo's main session: ${text}` })
-  return sent.isDelivered ? `Sent to ${found[0]!.name}.` : `Not delivered to ${found[0]!.name}: ${sent.reason}`
+  const names = [...new Set(found.map((x) => x.member.id))].map((id) => found.find((x) => x.member.id === id)!.member.name)
+  if (names.length > 1) return `"@${m[1]?.split(/\s+/)[0]}" names ${names.length} sessions: ${names.join(', ')}. Nothing was sent.`
+  const { member, body } = found[0]!
+  const sent = await $.session.send({ to: { sessionId: member.id }, text: `Message from the owner, sent from the repo's main session: ${body}` })
+  return sent.isDelivered ? `Sent to ${member.name}.` : `Not delivered to ${member.name}: ${sent.reason}`
 }
 
 async function baseRef($: Host, cwd: string): Promise<string> {
@@ -39,10 +40,10 @@ export async function spawn($: Host, e: CommandRunInput, options: PluginOptions)
   if (!first) return { text: 'This folder is not inside a git repository. Nothing started.' }
   const parent = first.slice(0, first.lastIndexOf('/'))
   const dir = `${parent}/${first.slice(first.lastIndexOf('/') + 1)}-wt/${name}`
-  const made = await run($, ['git', 'worktree', 'add', '-b', name, dir, await baseRef($, cwd)], { cwd })
+  const made = await run($, ['git', 'worktree', 'add', '--no-track', '-b', name, dir, await baseRef($, cwd)], { cwd })
   if (made.exitCode !== 0) return { text: `git worktree add failed, nothing started: ${(made.stderr || made.stdout).trim()}` }
   const extra = typeof options.spawnArgs === 'string' ? words(options.spawnArgs) : []
-  const started = await run($, ['claude', '--bg', '-n', name, ...extra, task], { cwd: dir, timeoutMs: 60_000 })
+  const started = await run($, ['claude', '--bg', '-n', name, ...extra, '--', task], { cwd: dir, timeoutMs: 60_000 })
   if (started.exitCode !== 0) return { text: `The worktree ${dir} is ready but claude did not start: ${(started.stderr || started.stdout).trim()}` }
   await openFleet($)
   return { text: `Started ${name} in ${dir} on branch ${name}. ${started.stdout.trim()}` }

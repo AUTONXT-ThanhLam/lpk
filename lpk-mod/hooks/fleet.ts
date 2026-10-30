@@ -12,12 +12,10 @@ const state = (l: Listed) => {
   return STATES[s] ?? s
 }
 
-export async function checkouts($: Host, cwd: string): Promise<string[]> {
-  const r = await run($, ['git', 'worktree', 'list', '--porcelain'], { cwd })
-  return r.stdout.split('\n').filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9))
+async function commonDir($: Host, cwd: string): Promise<string> {
+  const r = await run($, ['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd })
+  return r.exitCode === 0 ? r.stdout.trim() : ''
 }
-
-const inside = (cwd: string, dirs: readonly string[]) => dirs.some((d) => cwd === d || cwd.startsWith(`${d}/`))
 
 export async function listed($: Host): Promise<Listed[]> {
   const r = await run($, ['claude', 'agents', '--json'], { timeoutMs: 15_000 })
@@ -29,8 +27,11 @@ export async function listed($: Host): Promise<Listed[]> {
 }
 
 export async function repoSessions($: Host): Promise<Listed[]> {
-  const dirs = await checkouts($, await $.session.cwd())
-  return (await listed($)).filter((l) => inside(l.cwd, dirs))
+  const mine = await commonDir($, await $.session.cwd())
+  if (!mine) return []
+  const all = await listed($)
+  const dirs = await Promise.all(all.map((l) => commonDir($, l.cwd)))
+  return all.filter((_, i) => dirs[i] === mine)
 }
 
 async function home($: Host): Promise<string> {
@@ -71,4 +72,16 @@ export function findMember(members: readonly { id: string; name: string }[], wor
   const w = word.toLowerCase()
   const exact = members.filter((m) => m.name.toLowerCase() === w || m.id === w)
   return exact.length ? exact : members.filter((m) => m.name.toLowerCase().startsWith(w) || m.id.startsWith(w))
+}
+
+export function findTarget<T extends { id: string; name: string }>(members: readonly T[], text: string): { member: T; body: string }[] {
+  const hits = members.flatMap((m) =>
+    [m.name, m.id].flatMap((label) => {
+      const head = text.slice(0, label.length)
+      const body = text.slice(label.length)
+      return head.toLowerCase() === label.toLowerCase() && /^\s+\S/.test(body) ? [{ member: m, body: body.trim(), size: label.length }] : []
+    }),
+  )
+  const longest = Math.max(0, ...hits.map((h) => h.size))
+  return hits.filter((h) => h.size === longest).map(({ member, body }) => ({ member, body }))
 }

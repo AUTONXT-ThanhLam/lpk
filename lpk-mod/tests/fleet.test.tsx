@@ -9,6 +9,7 @@ const WT = '/repo-wt/api'
 const AGENTS = [
   { pid: 1, cwd: CWD, kind: 'interactive', sessionId: ME, name: 'main', status: 'busy' },
   { id: 'bbbbbbbb', cwd: WT, kind: 'background', sessionId: OTHER, name: 'api', state: 'blocked' },
+  { id: 'dddddddd', cwd: WT, kind: 'background', sessionId: 'dddddddd-0000-0000-0000-000000000004', name: 'fix the retry', state: 'idle' },
   { pid: 3, cwd: '/elsewhere', kind: 'interactive', sessionId: 'cccccccc', name: 'other-repo', status: 'idle' },
 ]
 const row = (type: string, content: unknown) => JSON.stringify({ type, message: { content } })
@@ -39,6 +40,7 @@ function host(on: On, extra: (argv: readonly string[]) => Record<string, unknown
     const a = e.argv
     const r =
       extra(a) ??
+      (a[0] === 'git' && a[1] === 'rev-parse' ? { stdout: `${e.init?.cwd === '/elsewhere' ? '/elsewhere/.git' : `${CWD}/.git`}\n` } : undefined) ??
       git(a) ??
       (a[0] === 'git' && a[1] === 'worktree' && a[2] === 'list' ? { stdout: `worktree ${CWD}\nHEAD x\n\nworktree ${WT}\nHEAD y\n` } : undefined) ??
       (a[0] === 'claude' && a[1] === 'agents' ? { stdout: JSON.stringify(AGENTS) } : undefined) ??
@@ -107,9 +109,18 @@ test('@name text sends the owner\'s words to that session, does not start a turn
   expect(state.filled).toEqual([''])
 })
 
+test('@ followed by a name with spaces sends the rest of the line', async ($, on) => {
+  const { state } = await started($, on)
+  const r = await submit($, '@fix the retry add the test')
+  expect(state.sent).toEqual([{ to: 'dddddddd-0000-0000-0000-000000000004', text: "Message from the owner, sent from the repo's main session: add the test" }])
+  expect(r.drop).toBe('Sent to fix the retry.')
+})
+
 test('an @ that names no session of this repo, or arrives from elsewhere than the owner, goes on untouched', async ($, on) => {
   const { state } = await started($, on)
   expect((await submit($, '@src/index.ts explain this')).drop).toBeUndefined()
+  expect((await submit($, '@ap explain this')).drop).toBeUndefined()
+  expect((await submit($, '@b explain this')).drop).toBeUndefined()
   expect((await submit($, '@api do it', { kind: 'bridge' })).drop).toBeUndefined()
   expect((await submit($, '@main talk to yourself')).drop).toBeUndefined()
   expect(state.sent).toEqual([])
@@ -124,8 +135,8 @@ test('a message that is not delivered says why', async ($, on) => {
 test('/lpk-spawn makes a worktree and a branch off the default branch and starts a background session there', async ($, on) => {
   const { state } = await started($, on, (a) => (a[1] === 'symbolic-ref' ? { stdout: 'origin/main\n' } : a[0] === 'claude' && a[1] === '--bg' ? { stdout: 'started 1a2b3c4d' } : undefined))
   const r = await $.command.run({ command: 'lpk-spawn', args: 'ui fix the header', origin: OWNER, presentation: PRESENT })
-  expect(state.ran).toContainEqual(['git', 'worktree', 'add', '-b', 'ui', '/repo-wt/ui', 'origin/main'])
-  expect(state.ran).toContainEqual(['claude', '--bg', '-n', 'ui', 'fix the header'])
+  expect(state.ran).toContainEqual(['git', 'worktree', 'add', '--no-track', '-b', 'ui', '/repo-wt/ui', 'origin/main'])
+  expect(state.ran).toContainEqual(['claude', '--bg', '-n', 'ui', '--', 'fix the header'])
   expect(r.text).toContain('Started ui in /repo-wt/ui on branch ui.')
   expect(state.opened).toEqual(['lpk-fleet'])
 })
