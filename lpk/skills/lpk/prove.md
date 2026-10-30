@@ -18,6 +18,9 @@ meets, with evidence a reader can check. A scenario with no evidence is NOT PROV
 In the Full lane the net starts the Prover on the frozen tree. In the Quick lane, start it yourself
 when a scenario is agent-judged, with the scenarios, the failure table, the commit, the surface and
 the proof directory (`<bundle>/proof`).
+- A request that names an environment to host or show the result on (a shared environment, a host
+  name) is answered on that environment, by the profile's deploy procedure; a local preview or a
+  screenshot is not a substitute. When the profile has no such procedure, ask the owner for it once.
 - Start each app through `lpk spawn --port <port> -- <command>`: it records what it starts, reuses a live app it
   started for the same commit, port and data directory, and `lpk reap` stops exactly those when
   the run ends. Never stop a process another session started.
