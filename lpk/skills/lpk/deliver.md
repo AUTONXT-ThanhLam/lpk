@@ -74,7 +74,9 @@ and answer a repeated point in one line ("declined, see the first triage").
    question (draft, ready, merge, as this repo's CLAUDE files authorize), and, multi-select, only
    the gates that do not hold for a reason no agent can fix (a service that is down, a lens that
    stalled twice). Fix every other gate instead. The owner's answer is recorded as the waiver.
-   While the owner is away, the PR stays a draft and the report lists what waits.
+   While the owner is away, the PR stays a draft and the report lists what waits. When the owner asks
+   for the PRs ready, run `lpk run grant ready --why "<their words>"`: `lpk run end` then lists the
+   PRs of the run and refuses a draft one or one that conflicts with its base.
 3. Run `lpk run end` (it names the file of the owner's messages and removes the frozen tree and the
    slice worktrees that hold no uncommitted work), then `lpk reap`, and stop what the env agent
    started (its report lists the commands).

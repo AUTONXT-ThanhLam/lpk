@@ -1,6 +1,7 @@
 // `lpk run start|take|worktree|end|status|lane|grant`: the run's life. Start records the lane, the
 // scenarios and the checks; a second start in the same session amends the open run and keeps its
-// ledger; `take` takes over a run whose session has exited; `end` never refuses.
+// ledger; `take` takes over a run whose session has exited; `end` refuses while a PR of the run conflicts
+// with its base, or is a draft the owner asked for ready, until the owner waives it or the run is abandoned.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -11,6 +12,7 @@ import { owed } from '../owed.mjs';
 import { appendDecision } from '../records.mjs';
 import { cleanRepro } from '../repro.mjs';
 import { recordRun } from '../runs.mjs';
+import { prLine, prWaiver, prBlocks, runPrs, unwaived } from '../prs.mjs';
 import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
@@ -100,6 +102,16 @@ export async function main(argv) {
     // stops the run from ending.
     const open = readRun(repo);
     if (open) {
+      const { prs, errors } = runPrs(repo, open);
+      if (prs.length) console.log(`PRs of this run:\n${prs.map((p) => `- ${prLine(p)}`).join('\n')}`);
+      if (errors.length) console.error(`lpk: PR state not read: ${errors.join('; ')}`);
+      const stuck = why ? [] : unwaived(repo, open, prBlocks(prs, open));
+      if (stuck.length) {
+        console.error(`lpk: the run stays open: ${stuck.map((b) => `${b.pr.url} (${b.why})`).join('; ')}. Fix each, or the owner releases it with the waiver question: an option labelled \`${prWaiver(stuck[0].pr)}\`. \`lpk run end --abandon "<why>"\` ends the run anyway.`);
+        return 1;
+      }
+    }
+    if (open) {
       try { recordRun(repo, { owed: await owed(repo, open).catch((e) => [{ error: e.message }]), ...(why ? { abandon: why } : {}) }); }
       catch (e) { console.error(`lpk: the run's row for runs.jsonl was not written: ${e.message}`); }
     }
@@ -131,20 +143,22 @@ export async function main(argv) {
     console.log(r ? JSON.stringify({ id: r.id, bar: r.bar || 'production', session: r.session || null, heldBy: heldBy(r), target: r.target, branch: r.branch || null, lane: r.lane, laneWhy: r.laneWhy, scenarios: r.scenarios, requirements: r.requirements || [], verify: r.verify, verifyFinal: r.verifyFinal || [], verified: r.verified ? { green: r.verified.green, id: r.verified.id } : null, reviewRange: r.reviewRange || null, granted: r.granted, started: new Date(r.started).toISOString() }, null, 1) : 'no lpk run in this repo');
     return 0;
   }
-  if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && arg === 'draft-push')) {
+  if ((sub === 'lane' && arg === 'full') || (sub === 'grant' && ['draft-push', 'ready'].includes(arg))) {
     if (!o.why) { console.error(`lpk: --why "<why>" is required\n${USAGE}`); return 2; }
+    const key = arg === 'ready' ? 'ready' : 'draftPush';
+    const what = arg === 'ready' ? 'the owner asked for the PRs ready' : 'draft pushes granted';
     const owner = sub === 'grant' ? runForBranch(repo, currentBranch(repo)) : null;
     if (owner?.ended) {
-      owner.granted = { ...owner.granted, draftPush: true };
+      owner.granted = { ...owner.granted, [key]: true };
       writeFileSync(join(runDir(repo), 'runs', owner.id, 'run.json'), JSON.stringify(owner, null, 1));
-      appendDecision(repo, { what: 'draft pushes granted', why: o.why });
-      console.log(`draft pushes granted in run ${owner.id}: ${o.why}`);
+      appendDecision(repo, { what, why: o.why });
+      console.log(`${what} in run ${owner.id}: ${o.why}`);
       return 0;
     }
-    const u = update(repo, (run) => { if (sub === 'lane') Object.assign(run, { lane: 'full', laneWhy: o.why }); else run.granted = { ...run.granted, draftPush: true }; });
+    const u = update(repo, (run) => { if (sub === 'lane') Object.assign(run, { lane: 'full', laneWhy: o.why }); else run.granted = { ...run.granted, [key]: true }; });
     if (u.error) { console.error(`lpk: ${u.error}`); return 1; }
-    appendDecision(repo, { what: sub === 'lane' ? 'quick lane switched to full' : 'draft pushes granted', why: o.why });
-    console.log(sub === 'lane' ? `run ${u.run.id} is now full lane: ${o.why}` : `draft pushes granted in run ${u.run.id}: ${o.why}`);
+    appendDecision(repo, { what: sub === 'lane' ? 'quick lane switched to full' : what, why: o.why });
+    console.log(sub === 'lane' ? `run ${u.run.id} is now full lane: ${o.why}` : `${what} in run ${u.run.id}: ${o.why}`);
     return 0;
   }
   console.error(USAGE);
