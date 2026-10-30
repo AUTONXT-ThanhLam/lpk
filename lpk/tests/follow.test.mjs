@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
@@ -127,4 +127,32 @@ test('follow-account restarts the other interactive sessions through their launc
   assert.equal(failed, 1);
   assert.match(said.join('\n'), /not moved: pid 14 in \/w\/plain was not started through the cc-switch launcher/);
   assert.ok(!said.join('\n').includes('pid 13') && !said.join('\n').includes('pid 12') && !said.join('\n').includes('pid 15'));
+});
+
+test('a session whose transcript lives in its own config dir is resumed, and one that cannot be signalled does not stop the others', () => {
+  const dir = join(tmp, 'configdir');
+  mkdirSync(join(dir, 'cfgA', 'projects', 'p'), { recursive: true });
+  writeFileSync(join(dir, 'cfgA', 'projects', 'p', 's-two.jsonl'), '{}\n');
+  const req = (n) => join(dir, `req-${n}`);
+  const list = [
+    { kind: 'interactive', pid: 11, cwd: '/w/one', sessionId: 's-one' },
+    { kind: 'interactive', pid: 12, cwd: '/w/two', sessionId: 's-two' },
+  ];
+  const envs = {
+    11: { LPK_ACCOUNT: 'cc1', CC_SWAP_REQUEST: req(11), CC_SWAP_LAUNCHER: '100', CLAUDE_CONFIG_DIR: join(dir, 'cfgA') },
+    12: { LPK_ACCOUNT: 'cc1', CC_SWAP_REQUEST: req(12), CC_SWAP_LAUNCHER: '100', CLAUDE_CONFIG_DIR: join(dir, 'cfgA') },
+  };
+  const said = [];
+  const killed = [];
+  const kill = (pid, sig) => {
+    if (pid === 11) throw new Error('kill ESRCH');
+    killed.push([pid, sig]);
+  };
+  const failed = moveInteractive(list, { account: 'cc2', say: (m) => said.push(m), environ: (pid) => envs[pid], parent: () => '100', kill });
+  assert.equal(failed, 1);
+  assert.deepEqual(killed, [[12, 'SIGTERM']]);
+  assert.ok(!existsSync(req(11)));
+  assert.equal(readFileSync(req(12), 'utf8').split('\n')[0], 's-two');
+  assert.match(said.join('\n'), /not moved: pid 11 in \/w\/one, kill ESRCH/);
+  assert.match(said.join('\n'), /restarting pid 12/);
 });

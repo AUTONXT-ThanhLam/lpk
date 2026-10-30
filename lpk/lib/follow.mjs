@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -44,8 +44,8 @@ function parentOf(pid) {
   }
 }
 
-function hasTranscript(sessionId) {
-  const projects = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects');
+function hasTranscript(sessionId, configDir = process.env.CLAUDE_CONFIG_DIR) {
+  const projects = join(configDir || join(homedir(), '.claude'), 'projects');
   return existsSync(projects) && readdirSync(projects).some((d) => existsSync(join(projects, d, `${sessionId}.jsonl`)));
 }
 
@@ -61,13 +61,23 @@ export function moveInteractive(list, { except, account, say, environ = environO
       failed += 1;
       continue;
     }
-    const dir = join(process.env.XDG_RUNTIME_DIR || tmpdir(), 'lpk-follow');
-    mkdirSync(dir, { recursive: true });
-    const card = join(dir, `card-${s.sessionId}.md`);
-    writeFileSync(card, CARD);
-    writeFileSync(env.CC_SWAP_REQUEST, `${hasTranscript(s.sessionId) ? s.sessionId : '-'}\n${card}\n`);
-    kill(s.pid, 'SIGTERM');
-    say(`restarting ${who} on ${account ?? 'the active account'}`);
+    try {
+      const dir = join(process.env.XDG_RUNTIME_DIR || tmpdir(), 'lpk-follow');
+      mkdirSync(dir, { recursive: true });
+      const card = join(dir, `card-${s.sessionId}.md`);
+      writeFileSync(card, CARD);
+      writeFileSync(env.CC_SWAP_REQUEST, `${hasTranscript(s.sessionId, env.CLAUDE_CONFIG_DIR) ? s.sessionId : '-'}\n${card}\n`);
+      try {
+        kill(s.pid, 'SIGTERM');
+      } catch (err) {
+        rmSync(env.CC_SWAP_REQUEST, { force: true });
+        throw err;
+      }
+      say(`restarting ${who} on ${account ?? 'the active account'}`);
+    } catch (err) {
+      say(`not moved: ${who}, ${err.message}`);
+      failed += 1;
+    }
   }
   return failed;
 }
