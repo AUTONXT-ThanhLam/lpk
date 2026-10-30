@@ -1,4 +1,4 @@
-export async function withPage(url, { width = 1440, height = 900, scheme = 'light', port = 9333 } = {}, fn) {
+export async function withPage(url, { width = 1440, height = 900, scheme = 'light', port = Number(process.env.LPK_CHROME_PORT) || 9333 } = {}, fn) {
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' })).json();
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
