@@ -82,12 +82,13 @@ export async function lpkSwitch($: Host, e: CommandRunInput, options: PluginOpti
     if (where === path) cardPath = path
   }
 
-  const swappable = card.agents.length === 0 && Boolean(await $.env.get('CC_SWAP_LAUNCHER')) && Boolean(await $.env.get('CC_SWAP_REQUEST'))
+  const swappable = Boolean(await $.env.get('CC_SWAP_LAUNCHER')) && Boolean(await $.env.get('CC_SWAP_REQUEST'))
   if (swappable) {
     const started = await run($, ['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', to.id], { env: { CLAUDE_CODE_SESSION_ID: await $.session.id(), CC_SWAP_CARD: cardPath } })
     if (started.exitCode !== 0) return { text: `Could not start the restart (exit ${started.exitCode}): ${started.stderr.trim()}\nState card: ${where}` }
+    const lost = card.agents.length ? `\n${card.agents.length} agent(s) still at work end with the restart; the state card names them.` : ''
     return {
-      text: `Moving this session to ${to.id} (${to.name}); claude restarts on the same conversation in a few seconds.\nState card: ${where}${to.limited ? `\n${to.id} is at its limit: the next turn there stops on quota.` : ''}`,
+      text: `Moving this session to ${to.id} (${to.name}); claude restarts on the same conversation in a few seconds.\nState card: ${where}${lost}${to.limited ? `\n${to.id} is at its limit: the next turn there stops on quota.` : ''}`,
       context: [`The owner moved this session to the account ${to.id} with /lpk-switch and claude restarts on it. Agents and workflows that were running here are gone: continue their unfinished work with new agents or a new workflow, not by messaging old agent ids. The state card, read it first after the restart:\n\n${card.text}`],
     }
   }
