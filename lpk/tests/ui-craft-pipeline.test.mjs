@@ -63,7 +63,7 @@ test('copyfacts reads a page in a real Chrome: counts what a person sees and exi
       if (!up) await new Promise((r) => setTimeout(r, 100));
     }
     assert.ok(up, 'Chrome did not start');
-    writeFileSync(join(dir, 'p.html'), '<meta charset="utf-8"><h1>Plain heading</h1><p>Short copy!</p><span style="position:absolute;left:-9999px;width:200px;height:30px">Unlock a seamless dashboard!</span><div style="opacity:0"><b>Supercharge</b> your journey!</div><div style="display:none">Leverage this!</div><p>Visible <a href="#">link</a> here — done.</p><h2 style="opacity:0">Faded Title Case Heading</h2><h2 style="position:absolute;left:-9999px">Offscreen Title Case Heading</h2><button>Save this recipe for later and share it widely</button><button style="opacity:0">Hidden Long Button Label Now</button>');
+    writeFileSync(join(dir, 'p.html'), '<meta charset="utf-8"><h1>Plain heading</h1><p>Short copy!</p><span style="position:absolute;left:-9999px;width:200px;height:30px">Unlock a seamless dashboard!</span><div style="opacity:0"><b>Supercharge</b> your journey!</div><div style="display:none">Leverage this!</div><p>Visible <a href="#">link</a> here — done.</p><h2 style="opacity:0">Faded Title Case Heading</h2><h2 style="position:absolute;left:-9999px">Offscreen Title Case Heading</h2><button>Save this recipe for later and share it widely<span style="position:absolute;left:-9999px;width:200px;height:20px">Unlock your seamless account now!</span></button><button style="opacity:0">Hidden Long Button Label Now</button>');
     const started = Date.now();
     const r = run('copyfacts.mjs', pathToFileURL(join(dir, 'p.html')).href, '--port', String(port));
     assert.equal(r.status, 0, r.stderr);
@@ -84,7 +84,7 @@ test('copyfacts reads a page in a real Chrome: counts what a person sees and exi
 test('copyfacts says Chrome cannot be reached on the port it was given, in one line', () => {
   const r = run('copyfacts.mjs', 'file:///x', '--port', '1');
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /^copyfacts: cannot read file:\/\/\/x through Chrome on port 1/);
+  assert.match(r.stderr, /^copyfacts: file:\/\/\/x \(Chrome port 1\): /);
   assert.doesNotMatch(r.stderr, /\n\s+at /);
 });
 
