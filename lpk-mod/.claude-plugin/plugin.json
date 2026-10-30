@@ -1,7 +1,7 @@
 {
   "name": "lpk-mod",
   "version": "0.5.0",
-  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch (the state card and the account for the next claude start), /lpk-waive, a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
+  "description": "Early-access extras for lpk: /lpk-status (a pane with the lpk run's steps, slices, gates, team and findings), /lpk-switch (the state card and the account for the next claude start), /lpk-waive, /lpk-fleet, /lpk-view, /lpk-spawn and `@name text` (the sessions working in the repo: a pane, a tab to watch one, one to start, a message to one), a memory and quota hint before a fan-out, and compaction that keeps an lpk run's state. lpk works without it.",
   "author": {
     "name": "lam"
   },
@@ -12,6 +12,12 @@
       "type": "string",
       "title": "lpk plugin folder",
       "description": "The folder holding lpk's bin/lpk. Empty: the installed lpk plugin.",
+      "default": ""
+    },
+    "spawnArgs": {
+      "type": "string",
+      "title": "Extra claude arguments for /lpk-spawn",
+      "description": "Added to `claude --bg` when /lpk-spawn starts a session, for example --permission-mode bypassPermissions. Empty: the session asks for permissions as claude does by default.",
       "default": ""
     },
     "memoryFloorGb": {
