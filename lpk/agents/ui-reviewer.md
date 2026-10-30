@@ -42,8 +42,8 @@ uppercase eyebrow labels above headings. A hero metric row of big numbers with s
 Entrances that grow from nothing. Ease-in curves. A transition on every property. Bounce on
 ordinary UI. Em dashes in UI copy. Generic claims ("supercharge", "seamless"). A row of big-number
 cards above a chart above a table. Demo or placeholder copy, round numbers and identical rows.
-Components drawn by hand that the app's own system already has. The same pale tinted ground with
-one warm accent on every build.
+Components drawn by hand that the app's own system already has. A pale tinted ground with one
+warm accent that no reference from the reader's own category shows.
 These are a check on a finished screen, never the reason a screen is good: the research and the
 references decide taste.
 

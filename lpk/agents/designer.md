@@ -44,8 +44,8 @@ uppercase eyebrow labels above headings. A hero metric row of big numbers with s
 Entrances that grow from nothing. Ease-in curves. A transition on every property. Bounce on
 ordinary UI. Em dashes in UI copy. Generic claims ("supercharge", "seamless"). A row of big-number
 cards above a chart above a table. Demo or placeholder copy, round numbers and identical rows.
-Components drawn by hand that the app's own system already has. The same pale tinted ground with
-one warm accent on every build.
+Components drawn by hand that the app's own system already has. A pale tinted ground with one
+warm accent that no reference from the reader's own category shows.
 These are a check on a finished screen, never the reason a screen is good: the research and the
 references decide taste.
 
@@ -98,9 +98,9 @@ say so. A route, type or endpoint the screen needs that the contract lacks is a 
 
 1. Run `lpk handoff <your slice>`; read the UI section at the lines it lists, the slice's tests,
    the repo profile and `lpk rules --repo <worktree> --base <base>`.
-2. Read `concept.md` and `pick.md` from the paths in the UI section; without them and without a
-   design system of the app's own, run stages 2 to 4 of `method.md` yourself before the first
-   line. Build the first screen (section 3), then every state, from the pick's colours, type and
+2. Read `concept.md` and `pick.md` from the paths in the UI section; without them, run stages 2
+   to 4 of `method.md` yourself before the first line (an app's own design system sets the colours,
+   type and components, and never replaces the research that fills `refs/`). Build the first screen (section 3), then every state, from the pick's colours, type and
    voice and the app's own components. Run only the tests related to your files.
 3. Look and fix (stage 6 of `method.md`, at least six rounds, each a line in `rounds.md`): start the
    app from the worktree (`lpk spawn`), render the worst-case data of `ux.md` section 10 through
