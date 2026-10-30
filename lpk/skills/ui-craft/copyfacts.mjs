@@ -33,12 +33,20 @@ export function copyFacts({ headings = [], buttons = [], text = '', errors = [] 
 const probe = `(() => {
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 4 && r.height > 4 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   const clean = (e) => (e.innerText || '').replace(/\\s+/g, ' ').trim();
+  const seen = (n) => {
+    for (let e = n.parentElement; e && e !== document.documentElement; e = e.parentElement) { if (+getComputedStyle(e).opacity === 0) return false; }
+    const range = document.createRange(); range.selectNodeContents(n);
+    const r = range.getBoundingClientRect();
+    const box = n.parentElement.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && box.width > 4 && box.height > 4 && r.right > 0 && r.bottom > 0 && !['script', 'style', 'noscript'].includes(n.parentElement.localName) && getComputedStyle(n.parentElement).visibility !== 'hidden';
+  };
+  const pageText = () => { const out = []; const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (n.nodeValue.trim() && seen(n)) out.push(n.nodeValue.trim()); } return out.join(' '); };
   const outer = (list) => list.filter((e) => !list.some((o) => o !== e && o.contains(e)));
   const take = (sel) => outer([...document.querySelectorAll(sel)].filter(vis)).map(clean).filter((t) => t && t.length < 200);
   return {
     headings: take('h1,h2,h3'),
     buttons: take('button,[role=button]').filter((t) => t.length < 40),
-    text: document.body.innerText,
+    text: pageText(),
     errors: take('[role=alert],[aria-live=assertive],.error'),
   };
 })()`;
