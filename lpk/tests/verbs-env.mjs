@@ -3,7 +3,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -13,7 +13,7 @@ after(() => rmSync(tmp, { recursive: true, force: true }));
 const BIN = join(tmp, 'bin');
 export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const ENV = {
-  ...noHost(process.env), HOME: join(tmp, 'home'), PATH: `${BIN}:${process.env.PATH}`, CLAUDE_CONFIG_DIR: join(tmp, 'claude'), CLAUDE_CODE_SESSION_ID: '',
+  ...noHost(process.env), HOME: join(tmp, 'home'), PATH: `${BIN}${delimiter}${process.env.PATH}`, CLAUDE_CONFIG_DIR: join(tmp, 'claude'), CLAUDE_CODE_SESSION_ID: '',
   GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t',
   XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), FAKE_GH: join(tmp, 'gh.json'),
 };
@@ -49,4 +49,5 @@ if (!(k in f)) { process.stderr.write('fake gh: no answer for ' + k + '\\n'); pr
 process.stdout.write(JSON.stringify(f[k]));
 `);
 chmodSync(join(BIN, 'gh'), 0o755);
+if (process.platform === 'win32') writeFileSync(join(BIN, 'gh.cmd'), '@node "%~dp0gh" %*\r\n');
 export const ghAnswers = (map) => writeFileSync(ENV.FAKE_GH, JSON.stringify(map));

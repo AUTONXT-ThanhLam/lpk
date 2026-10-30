@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { touched } from '../lib/facts.mjs';
@@ -166,7 +166,7 @@ test('the push guard runs the gitleaks lpk setup fetched when none is on PATH', 
   // A stand-in for the fetched binary that reports one secret, as `gitleaks git --exit-code 3` does.
   write(data, 'lpk/bin/gitleaks', '#!/bin/sh\nprintf \'[{"Commit":"abc","File":"a.env","StartLine":1,"RuleID":"generic-api-key"}]\'\nexit 3\n');
   execFileSync('chmod', ['+x', join(data, 'lpk/bin/gitleaks')]);
-  const PATH = ENV.PATH.split(':').filter((d) => !existsSync(join(d, 'gitleaks'))).join(':');
+  const PATH = ENV.PATH.split(delimiter).filter((d) => !existsSync(join(d, 'gitleaks'))).join(delimiter);
   const out = execFileSync('node', [LPK, 'push-check'], { cwd: repo, env: { ...ENV, PATH, XDG_DATA_HOME: data }, encoding: 'utf8', input: JSON.stringify({ tool_input: { command: 'git push' }, cwd: repo }) });
   assert.match(JSON.parse(out).hookSpecificOutput.permissionDecisionReason, /gitleaks found 1 secret.*\n.*a\.env:1 generic-api-key/);
 });

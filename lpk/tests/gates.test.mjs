@@ -3,7 +3,7 @@
 // the run's branch from any session, also after `lpk run end`.
 import assert from 'node:assert/strict';
 import { chmodSync } from 'node:fs';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { test } from 'node:test';
 import { hookBash, lens, lpk, repoWith, sh, tmp, write } from './gates-env.mjs';
 import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
@@ -264,7 +264,7 @@ test('the owner\'s waiver of gate:error lets through a call the gate cannot deci
   const repo = quickRun('gate-error', S);
   write(tmp, 'broken-gh/gh', '#!/bin/sh\necho "gh: no host" >&2; exit 1\n');
   chmodSync(join(tmp, 'broken-gh', 'gh'), 0o755);
-  const env = { PATH: `${join(tmp, 'broken-gh')}:${process.env.PATH}` };
+  const env = { PATH: `${join(tmp, 'broken-gh')}${delimiter}${process.env.PATH}` };
   assert.match(hookBash(repo, S, 'gh pr ready 12', env), /could not decide: .*gh pr view 12[\s\S]*`gate:error`/);
   ok(lpk(repo, S, 'waive', 'gate:error', '--why', 'GitHub is down', '--via', '/lpk-waive'));
   assert.equal(hookBash(repo, S, 'gh pr ready 12', env), null);

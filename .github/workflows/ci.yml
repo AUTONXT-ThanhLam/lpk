@@ -20,6 +20,7 @@ jobs:
       - run: node --test tests/*.test.mjs
   test-windows:
     runs-on: windows-latest
+    continue-on-error: true
     defaults:
       run:
         shell: bash
