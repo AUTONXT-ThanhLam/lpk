@@ -18,6 +18,19 @@ jobs:
           node-version: 24
       - run: npm i -g @ast-grep/cli@0.51.0 && ast-grep --version
       - run: node --test tests/*.test.mjs
+  test-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: lpk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm i -g @ast-grep/cli@0.51.0 && ast-grep --version
+      - run: which bash && node --test tests/*.test.mjs
   draw:
     runs-on: ubuntu-latest
     defaults:
