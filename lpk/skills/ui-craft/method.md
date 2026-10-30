@@ -71,8 +71,9 @@ changes nothing means you did not look hard enough.
 Run, on the built page, each at 1440 and 390 and in both schemes where the app has both:
 
 - `node copyfacts.mjs <url>`: counts of em dashes, exclamation marks, title case, long and generic
-  button labels and hype words. It never fails: read the counts against the voice you chose and fix
-  what you would not have written.
+  button labels and hype words. It counts `<button>` and `[role=button]` only, so read the label of a
+  link styled as a button yourself. It never fails: read the counts against the voice you chose and
+  fix what you would not have written.
 - `node palette.mjs facts <ground> <text>...` for every text and state colour: body text and every
   meaningful state reach 4.5:1.
 - `node audit.mjs <url>` and the other checks of `SKILL.md` section 7.
