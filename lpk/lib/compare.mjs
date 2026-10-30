@@ -2,11 +2,11 @@
 // one of the change (the working tree as it is), once per input file. Facts only: which inputs
 // give another exit code or output. Whether a difference is the one the request asked for is the
 // agent's call. The developer's checkout, index and stash are never touched.
-import { spawn } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { git } from './git.mjs';
-import { killGroup, linkShared, scratchRun, snapshot } from './mutate.mjs';
+import { linkShared, scratchRun, snapshot } from './mutate.mjs';
+import { killGroup, spawnGroup } from './proc.mjs';
 
 const live = new Set();
 
@@ -14,14 +14,14 @@ const live = new Set();
 // timeout stops it together with whatever it started.
 function runOne(dir, cmd, input, timeout) {
   return new Promise((done) => {
-    const child = spawn('bash', ['-c', cmd], { cwd: dir, detached: true, env: { ...process.env, LPK_INPUT: input }, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawnGroup(cmd, { cwd: dir, env: { ...process.env, LPK_INPUT: input }, stdio: ['pipe', 'pipe', 'pipe'] });
     live.add(child);
     let out = '', err = '', timedOut = false;
     child.stdout.on('data', (b) => { out = (out + b).slice(-(1 << 20)); });
     child.stderr.on('data', (b) => { err = (err + b).slice(-16384); });
     child.stdin.on('error', () => { /* the command did not read its input */ });
     child.stdin.end(readFileSync(input));
-    const timer = setTimeout(() => { timedOut = true; killGroup(child); }, timeout * 1000);
+    const timer = setTimeout(() => { timedOut = true; killGroup(child.pid); }, timeout * 1000);
     // A directory missing on one side (new in the change) fails to spawn: that is this side's result.
     let settled = false;
     child.on('error', (e) => { if (settled) return; settled = true; clearTimeout(timer); live.delete(child); done({ exit: e.code, out: '', err: e.code === 'ENOENT' ? 'no such directory on this side' : e.message }); });
@@ -29,7 +29,7 @@ function runOne(dir, cmd, input, timeout) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      killGroup(child);
+      killGroup(child.pid);
       live.delete(child);
       // Each side runs in its own tree: paths into it must not read as a difference.
       const clean = (t) => t.split(dir).join('.');
@@ -43,7 +43,7 @@ export async function compare({ repo, base, cmd, inputs, sub = '', timeout = 30,
   if (!existsSync(inputs) || !statSync(inputs).isDirectory()) return { error: `no input directory at ${inputs}` };
   const files = readdirSync(inputs).sort().map((n) => join(inputs, n)).filter((p) => statSync(p).isFile());
   if (!files.length) return { error: `no input files in ${inputs}` };
-  const { scratch, end: endRun } = scratchRun(repo, ['base', 'wt'], () => { for (const c of live) killGroup(c); });
+  const { scratch, end: endRun } = scratchRun(repo, ['base', 'wt'], () => { for (const c of live) killGroup(c.pid); });
   const trees = { main: join(scratch, 'base'), change: join(scratch, 'wt') };
   try {
     const snap = snapshot(repo, scratch);

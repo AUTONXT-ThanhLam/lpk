@@ -1,10 +1,10 @@
 // `lpk verify`: runs the run's checks in place, with the repo's own dependencies, and records the
 // result against the working-tree id it ran on (tree.mjs), before anything is committed, so the
 // commit gate can let that exact tree in.
-import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { git } from './git.mjs';
+import { killGroup, spawnGroup } from './proc.mjs';
 import { appendRecord, readRecords } from './records.mjs';
 import { CODE } from './rules.mjs';
 import { tiersGreen } from './proof.mjs';
@@ -27,11 +27,11 @@ function start(cmd, repo, timeout) {
   const t0 = Date.now();
   let out = '';
   const x = { stopped: false };
-  const p = spawn('bash', ['-c', cmd], { cwd: repo, detached: true });
+  const p = spawnGroup(cmd, { cwd: repo });
   const take = (d) => { out = (out + d).slice(-(1 << 20)); };
   p.stdout.on('data', take);
   p.stderr.on('data', take);
-  x.kill = () => { try { process.kill(-p.pid, 'SIGKILL'); } catch { /* already gone */ } };
+  x.kill = () => killGroup(p.pid);
   const timer = setTimeout(x.kill, timeout * 1000);
   live.add(x);
   x.done = new Promise((resolve) => {

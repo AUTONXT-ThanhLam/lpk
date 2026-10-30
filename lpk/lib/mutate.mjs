@@ -1,11 +1,12 @@
 // Proof that tests can fail: in a scratch worktree of the current change, undo one changed
 // source file at a time and run the test command. A file whose undo leaves the tests green is
 // not proved by them. The developer's checkout, index and stash are never touched.
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { git } from './git.mjs';
+import { killGroup, spawnGroup } from './proc.mjs';
 import { CODE, TEST } from './rules.mjs';
 
 const SHARED = ['node_modules', '.venv', 'venv', '.env', '.env.local', '.env.test', '.env.development'];
@@ -22,35 +23,52 @@ export function snapshot(repo, scratch) {
 }
 
 // Dependencies and local env files are ignored by git, so the worktree links to the repo's own.
-export function linkShared(repo, wt) {
+const sharedPaths = (repo) => {
   const dirs = new Set(['.']);
   for (const p of git(['ls-files', '*package.json', '*pyproject.toml', '*requirements*.txt'], repo).split('\n').filter(Boolean))
     if (p.split('/').length <= 4) dirs.add(dirname(p));
-  for (const d of dirs) for (const name of SHARED) {
+  return [...dirs].flatMap((d) => SHARED.map((name) => [d, name]));
+};
+
+export function linkShared(repo, wt) {
+  for (const [d, name] of sharedPaths(repo)) {
     const src = join(repo, d, name), dest = join(wt, d, name);
-    if (existsSync(src) && !existsSync(dest)) { mkdirSync(dirname(dest), { recursive: true }); symlinkSync(src, dest); }
+    if (!existsSync(src) || existsSync(dest)) continue;
+    mkdirSync(dirname(dest), { recursive: true });
+    if (process.platform !== 'win32') symlinkSync(src, dest);
+    else if (statSync(src).isDirectory()) symlinkSync(src, dest, 'junction');
+    else copyFileSync(src, dest);
+  }
+}
+
+export function unlinkShared(repo, wt) {
+  for (const [d, name] of sharedPaths(repo)) {
+    const dest = join(wt, d, name);
+    try {
+      if (!lstatSync(dest).isSymbolicLink()) continue;
+      try { unlinkSync(dest); } catch { rmdirSync(dest); }
+    } catch { /* not there */ }
   }
 }
 
 // The test command runs in its own process group, so a timeout or an interrupt stops the
 // runner together with its workers and servers.
 let current = null, groupFile = '';
-export const killGroup = (child) => { try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already gone */ } };
 
 function runTests(dir, cmd, timeout) {
   const t0 = Date.now();
   return new Promise((done) => {
-    const child = spawn('bash', ['-c', cmd], { cwd: dir, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawnGroup(cmd, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
     current = child;
     if (groupFile) writeFileSync(groupFile, String(child.pid));
     let out = '', timedOut = false;
     const keep = (b) => { out = (out + b).slice(-65536); };
     child.stdout.on('data', keep);
     child.stderr.on('data', keep);
-    const timer = setTimeout(() => { timedOut = true; killGroup(child); }, timeout * 1000);
+    const timer = setTimeout(() => { timedOut = true; killGroup(child.pid); }, timeout * 1000);
     child.on('close', (code, signal) => {
       clearTimeout(timer);
-      killGroup(child);
+      killGroup(child.pid);
       current = null;
       done({ exit: code ?? `killed (${signal})`, ms: Date.now() - t0, timedOut, tail: out.trimEnd().split('\n').slice(-12).join('\n') });
     });
@@ -63,12 +81,13 @@ export function removeOrphans(repo, root) {
   const alive = (pid) => { try { process.kill(Number(pid), 0); return true; } catch (e) { return e.code === 'EPERM'; } };
   for (const line of git(['worktree', 'list', '--porcelain'], repo).split('\n')) {
     const wt = line.startsWith('worktree ') ? line.slice(9) : '';
-    if (!wt.startsWith(`${root}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
+    if (!wt.startsWith(`${root.replaceAll('\\', '/')}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
     const scratch = dirname(wt);
     let pid = '';
     try { pid = readFileSync(join(scratch, 'pid'), 'utf8').trim(); } catch { /* no owner recorded: leave it */ }
     if (!pid || alive(pid)) continue;
-    try { process.kill(-Number(readFileSync(join(scratch, 'group'), 'utf8')), 'SIGKILL'); } catch { /* no test command left running */ }
+    try { killGroup(Number(readFileSync(join(scratch, 'group'), 'utf8'))); } catch { /* no test command left running */ }
+    unlinkShared(repo, wt);
     git(['worktree', 'remove', '--force', wt], repo);
     if (['wt', 'base'].some((d) => existsSync(join(scratch, d)))) continue; // compare's other tree is next
     for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
@@ -87,7 +106,7 @@ export function scratchRun(repo, trees, stop) {
   writeFileSync(join(scratch, 'pid'), String(process.pid));
   const cleanup = () => {
     stop();
-    for (const t of trees) if (existsSync(join(scratch, t))) git(['worktree', 'remove', '--force', join(scratch, t)], repo);
+    for (const t of trees) if (existsSync(join(scratch, t))) { unlinkShared(repo, join(scratch, t)); git(['worktree', 'remove', '--force', join(scratch, t)], repo); }
     git(['worktree', 'prune'], repo);
     for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
     try { rmdirSync(scratch); } catch { /* not empty: left for the next run's orphan check */ }
@@ -118,7 +137,7 @@ function hunkUndos(repo, base, snap, c) {
 // `maxRuns` test runs in all. `patches` replaces the undos with given mutants: each a unified diff
 // against the change, applied alone; a mutant the tests still pass on is a defect they miss.
 export async function mutate({ repo, base, cmd, sub = '', only = [], timeout = 600, hunks = false, maxRuns = 40, patches = [] }) {
-  const { scratch, end } = scratchRun(repo, ['wt'], () => current && killGroup(current));
+  const { scratch, end } = scratchRun(repo, ['wt'], () => current && killGroup(current.pid));
   groupFile = join(scratch, 'group');
   const wt = join(scratch, 'wt');
   try {
