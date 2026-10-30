@@ -22,15 +22,8 @@ export type LpkStatus = {
   view: { track: TrackStep[]; quiet: string; head: string; detail: string; rows: BandRow[]; waits: string; line: string }
 }
 
-export type FleetMember = {
-  id: string; name: string; cwd: string; kind: 'interactive' | 'background'; state: string; me: boolean
-  branch: string; pr: string; step: string; said: string
-}
-export type FleetLine = { who: 'owner' | 'claude' | 'tool'; text: string }
-export type FleetView = { members: FleetMember[]; views: Record<string, { name: string; state: string; lines: FleetLine[] }> }
-
 declare module 'claude-code' {
   interface PluginState {
-    'lpk-mod': { full: LpkStatus | null; fleet: FleetView | null }
+    'lpk-mod': { full: LpkStatus | null }
   }
 }
