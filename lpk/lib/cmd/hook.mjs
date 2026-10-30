@@ -11,7 +11,7 @@ const lib = (m) => import(new URL(`../${m}.mjs`, import.meta.url));
 // the git tripwire hold for the session that holds a run, until the owner waives them.
 async function pre(input) {
   const s = await lib('safety');
-  const now = s.credentialTrip(input) || s.waiverTrip(input) || s.fileUrl(input) || s.writeGuard(input);
+  const now = s.credentialTrip(input) || s.waiverTrip(input) || s.fileUrl(input) || s.dockerTrip(input) || s.writeGuard(input);
   if (now?.hookSpecificOutput?.permissionDecision === 'deny') return now;
   const tool = s.connectorTool(input.tool_name);
   const trip = s.gitTrip(input);

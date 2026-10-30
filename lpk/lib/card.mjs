@@ -21,7 +21,7 @@ const RULES_SHOWN = 25;
 
 // What an agent of this type may not touch; the first line is every lpk agent's.
 function limits(type) {
-  const all = `Never read the owner's tokens (${CREDENTIALS.map((c) => `\`${c}\``).join(', ')}) and never run git ${GIT_TRIPS.map((t) => `\`${t.id}\``).join(', ')}.`;
+  const all = `Never read the owner's tokens (${CREDENTIALS.map((c) => `\`${c}\``).join(', ')}) and never run git ${GIT_TRIPS.map((t) => `\`${t.id}\``).join(', ')}. Remove a docker container only by its exact name or id, or by a label you set on it; never from a command substitution, xargs or a prune.`;
   const role = READ_ONLY.test(type) ? `You never edit a checkout; scratch files go under /tmp.${/verifier$/.test(type) ? ` Repro tests go in the repro worktrees under ${REPRO}/.` : ''}`
     : /(builder|designer)$/.test(type) ? 'Edit only the files of your slice, in your own worktree: not the main checkout, not another slice\'s files.'
       : /env$/.test(type) ? 'Never edit tracked files; stop only what you started.' : '';
