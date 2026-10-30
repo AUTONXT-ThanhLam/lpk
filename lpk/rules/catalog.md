@@ -202,7 +202,7 @@ needs.
 - blocks: medium
 - when: always
 - rule: Every comment a reviewer or review bot leaves on the PR is fixed in a named commit or declined with the reason, and the answers are rechecked against each bot's newest review after every push: a bot that re-reviewed later can reopen an item answered earlier.
-- check: `gh api repos/<o>/<r>/pulls/<n>/reviews` gives each review's `commit_id`; for each bot, its newest review is on the head, and each of its comments has a row in the triage comment. Repro: the comment and the review on the head that still raises it.
+- check: `gh api repos/<o>/<r>/pulls/<n>/reviews` gives each review's `commit_id`; for each bot, its newest review is on the head (for a bot that edits one comment, the comment's `updated_at` is later than the end of its workflow run for the head), and each of its comments has a row in the triage comment. Repro: the comment and the review on the head that still raises it.
 
 ### truthful-claims: words state only what the code checks
 - blocks: high
