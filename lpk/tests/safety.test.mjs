@@ -120,3 +120,26 @@ test('preflight prints the machine\'s facts within five seconds and refuses only
   assert.match((await preflight(tmp)).refuse, /not inside a git repository/);
   assert.match((await preflight(repo, { target: 'nope' })).refuse, /no merge base between nope and HEAD/);
 });
+
+test('every session is denied docker removal driven by a substitution, xargs or a prune, and allowed by name, id or run label', () => {
+  const bash = (command) => pre({ tool_name: 'Bash', tool_input: { command } });
+  for (const command of [
+    'docker rm -f $(docker ps -aq --filter name=selftest)',
+    'docker ps -aq --filter name=selftest | xargs -r docker rm -f',
+    'docker stop "$(docker ps -q)"',
+    'docker container kill `docker ps -q`',
+    'docker container prune -f',
+    'docker system prune --volumes',
+    'docker rm -f $(docker ps -aq); docker ps --filter label=lpk.run=20261030-ab12',
+    'docker rm $(docker ps -aq --filter label=lpk.run=abcd)\ndocker rm $(docker ps -aq)',
+  ]) assert.match(reason(bash(command)), /owned-cleanup.*exact name or id.*label lpk\.run=/s, command);
+  for (const command of [
+    'docker rm -f web-1 db-1',
+    'docker stop $ID && echo $(date)',
+    'docker rm -f $(docker ps -aq --filter label=lpk.run=20261030-ab12)',
+    'docker run -d --rm --label lpk.run=20261030-ab12 img',
+    "docker rm -f $(docker ps -aq --filter 'label=lpk.run=20261030-ab12')",
+    'docker ps -aq --filter label=lpk.run=$LPK_RUN | xargs docker rm -f',
+    "git commit -m 'never docker rm $(docker ps -aq)'",
+  ]) assert.equal(bash(command), null, command);
+});

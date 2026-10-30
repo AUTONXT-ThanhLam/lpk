@@ -17,7 +17,8 @@ export const USAGE = `usage:
   lpk run end [--abandon "<why>"] [--repo <dir>]
   lpk run status [--repo <dir>]
   lpk run lane full --why "<why>" [--repo <dir>]
-  lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]`;
+  lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]
+  lpk run grant ready --why "<the owner's words>" [--repo <dir>]   (the owner asked for the PRs ready: lpk run end then refuses a draft one)`;
 
 const VALUED = new Set(['--verify', '--verify-final', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch', '--bar']);
 const BARE = new Set(['--take', '--draft-push']);

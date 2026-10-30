@@ -65,6 +65,29 @@ export function gitTrip(input) {
   return GIT_TRIPS.find((t) => t.re.test(cmd))?.id || '';
 }
 
+// Docker removal whose targets another run's containers can match: a command substitution, xargs, or
+// a prune. Double-quoted text is kept, since a substitution runs inside it. A removal that names an
+// exact name or id, or filters on the label `lpk.run=<id>`, passes.
+const DOCKER_REMOVE = /(?:^|[;&|(`\s])docker\s+(?:container\s+)?(?:rm|stop|kill)\b([^;&\n]*)/g;
+const XARGS_DOCKER = /\bxargs\b[^;&|\n]*\sdocker\s+(?:container\s+)?(?:rm|stop|kill)\b/;
+const DOCKER_PRUNE = /(?:^|[;&|(`\s])docker\s+(?:container|system)\s+prune\b/;
+const NO_HEREDOC = /<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\s*\2\s*(\n|$)/g;
+const listed = (stmt) => {
+  if (/label=lpk\.run=[\w.$-]{2,}/.test(stmt)) return false;
+  const bare = stmt.replace(/'[^']*'/g, "''");
+  return [...bare.matchAll(DOCKER_REMOVE)].some((m) => /\$\(|`/.test(m[1])) || XARGS_DOCKER.test(bare);
+};
+export function dockerTrip(input) {
+  if (input.tool_name !== 'Bash') return null;
+  const stmts = String(input.tool_input?.command || '').replace(NO_HEREDOC, '\n').split(/;|&&|\|\||\n/);
+  const prune = stmts.some((x) => DOCKER_PRUNE.test(x.replace(/'[^']*'/g, "''")));
+  const fromList = stmts.some(listed);
+  if (!fromList && !prune) return null;
+  const what = prune ? '`docker container prune` and `docker system prune` remove containers, networks and images this run did not start'
+    : 'this `docker rm|stop|kill` takes its targets from a command substitution or xargs, which removes every container the filter matches, including ones another run started';
+  return deny(`${what} (rule owned-cleanup). This is a tripwire on that literal text. Remove what you started by exact name or id (\`docker rm -f <name>\`), or label what you start (\`docker run --label lpk.run=<run id>\`) and remove by that label (\`docker rm -f $(docker ps -aq --filter label=lpk.run=<run id>)\`). A prune is the owner's to run in their own terminal.`);
+}
+
 // The roles that review and never edit a checkout. The verifier writes its repro tests in the
 // shared repro worktrees under ~/.cache/lpk/repro/ and nowhere else inside a checkout.
 export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|ui-reviewer)$/;
