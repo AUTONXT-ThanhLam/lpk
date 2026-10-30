@@ -53,8 +53,8 @@ const probe = `(() => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [url, ...rest] = process.argv.slice(2);
-  if (!url) { console.error('usage: copyfacts.mjs <url> [--width 1440] [--scheme light|dark]\n  Prints counts of mechanical wording facts of the visible text of the page, and the spread of its headings and buttons. It never fails on wording: the agent decides.'); process.exit(2); }
+  if (!url) { console.error('usage: copyfacts.mjs <url> [--width 1440] [--scheme light|dark] [--port 9333]\n  Prints counts of mechanical wording facts of the visible text of the page, and the spread of its headings and buttons. It never fails on wording: the agent decides.'); process.exit(2); }
   const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
-  const text = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light') }, ({ evaluate }) => evaluate(probe));
+  const text = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light'), port: Number(opt('port', 9333)) }, ({ evaluate }) => evaluate(probe));
   console.log(JSON.stringify(copyFacts(text), null, 1));
 }
