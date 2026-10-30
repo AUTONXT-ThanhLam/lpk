@@ -95,16 +95,16 @@ test('lpk-switch under the claude launcher writes the card and restarts the same
   expect(r.context?.[0]).toContain('lpk state card')
 })
 
-test('lpk-switch with agents still at work leaves the restart to the owner even under the launcher', async ($, on) => {
+test('lpk-switch under the launcher restarts even with agents still at work and says they end', async ($, on) => {
   const w = world(on, {
     env: UNDER_LAUNCHER,
     agents: [{ id: 'a1', description: 'review the slice', type: 'lpk:techlead', status: 'running' }],
     reply: swapReply,
   })
   const r = await $.command.run({ command: 'lpk-switch', args: 'home', origin: OWNER, presentation: PRESENT })
-  expect(w.ran.some((a) => a[0] === 'setsid')).toBe(false)
-  expect(w.ran).toContainEqual(['cc-switch', 'cc2'])
-  expect(r.text).toContain('1 agent(s) still at work')
+  expect(w.ran).toContainEqual(['setsid', '-f', 'bash', '-c', 'sleep 3; exec cc-switch swap "$1"', '_', 'cc2'])
+  expect(w.ran).not.toContainEqual(['cc-switch', 'cc2'])
+  expect(r.text).toContain('1 agent(s) still at work end with the restart')
 })
 
 test('lpk-switch with no account moves to the next one after the active', async ($, on) => {
