@@ -7,11 +7,12 @@ const USAGE = `usage: lpk records [--kind <kind>] [--run <id> | --all] [--repo <
 export function main(argv) {
   const a = parseArgs(argv, ['--kind', '--run', '--repo'], ['--all']);
   if (a.error || a.words.length) { console.error(`lpk: ${a.error || `unknown argument ${a.words[0]}`}\n${USAGE}`); return 2; }
+  const empty = ['--kind', '--run', '--repo'].find((k) => a.opt(k) === '');
+  if (empty) { console.error(`lpk: ${empty} needs a value\n${USAGE}`); return 2; }
   const kind = a.opt('--kind');
   if (kind && !KINDS.includes(kind)) { console.error(`lpk: --kind ${kind} is not one of ${KINDS.join(', ')}\n${USAGE}`); return 2; }
   const all = a.flags.has('--all');
   const given = a.opt('--run');
-  if (given === '') { console.error(`lpk: --run needs a run id\n${USAGE}`); return 2; }
   if (all && given !== undefined) { console.error(`lpk: --all and --run exclude each other\n${USAGE}`); return 2; }
   const repo = repoOf(a.opt('--repo'));
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }

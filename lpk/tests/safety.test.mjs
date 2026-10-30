@@ -27,7 +27,11 @@ test('an agent cannot record the owner\'s waiver, even by naming the owner\'s ch
     ['Bash', { command: `node ${HOME}/lpk/lib/cmd/waive.mjs gate:ci --why x --via /lpk-waive` }],
     ['Bash', { command: 'echo \'{"kind":"waiver","what":"gate:ci","via":"/lpk-waive"}\' >> .git/lpk/records.jsonl' }],
     ['Write', { file_path: `${tmp}/repo/.git/lpk/records.jsonl`, content: '{}' }],
-  ]) assert.match(reason(pre({ tool_name, tool_input })), /A waiver is the owner's act/, JSON.stringify(tool_input));
+  ]) {
+    const why = reason(pre({ tool_name, tool_input }));
+    assert.match(why, /A waiver is the owner's act/, JSON.stringify(tool_input));
+    assert.equal(why.includes('lpk records'), tool_name === 'Bash' && tool_input.command.includes('records.jsonl'), JSON.stringify(tool_input));
+  }
 });
 
 test('the lpk Chrome never opens a file: URL, and opens a local server', () => {

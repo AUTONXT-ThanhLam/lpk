@@ -19,5 +19,5 @@ test('lpk records prints the open run\'s records, narrowed by kind, and refuses 
   appendRecord(repo, { kind: 'go', run: 'earlier-run' });
   assert.equal(lines(lpk(repo, 'rec', 'records')).length, 2, 'the open run only');
   assert.equal(lines(lpk(repo, 'rec', 'records', '--all')).length, 3);
-  for (const args of [['--kind', 'verfy'], ['--all', '--run', 'x'], ['--run', ''], ['extra'], ['--nope']]) assert.equal(lpk(repo, 'rec', 'records', ...args).status, 2, args.join(' '));
+  for (const args of [['--kind', 'verfy'], ['--all', '--run', 'x'], ['--run', ''], ['--kind', ''], ['--repo', ''], ['extra'], ['--nope']]) assert.equal(lpk(repo, 'rec', 'records', ...args).status, 2, args.join(' '));
 });
