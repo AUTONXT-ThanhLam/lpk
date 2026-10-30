@@ -2,7 +2,7 @@
 // unwired env names `lpk check` reports, the route census, and which changes no test depends on.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
@@ -191,6 +191,8 @@ test('lpk mutate names the changed file no test depends on and leaves the checko
   write(repo, 'src/clamp.mjs', 'export const clamp = (n) => Math.min(n, 100);\n');
   write(repo, 'src/label.mjs', "export const label = (n) => `#${n}`;\n");
   write(repo, 'test/clamp.test.mjs', "import { test } from 'node:test';\nimport assert from 'node:assert';\nimport { clamp } from '../src/clamp.mjs';\ntest('c', () => assert.equal(clamp(500), 100));\n");
+  write(repo, '.gitignore', 'node_modules\n');
+  write(repo, 'node_modules/dep/index.js', 'export default 1;\n');
   const before = sh(repo, 'status', '--porcelain');
   const r = lpk(repo, ['mutate', '--base', 'main', '--test', 'npm test --silent', '--timeout', '120']);
   assert.equal(r.status, 0, r.stdout + r.stderr);
@@ -200,6 +202,7 @@ test('lpk mutate names the changed file no test depends on and leaves the checko
   assert.equal(sh(repo, 'status', '--porcelain'), before);
   assert.equal(sh(repo, 'stash', 'list'), '');
   assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 1);
+  assert.ok(existsSync(join(repo, 'node_modules', 'dep', 'index.js')), 'the checkout\'s dependencies survive the removal of the worktree that linked them');
 });
 
 test('an interrupted lpk mutate stops its tests and removes its worktree', async () => {

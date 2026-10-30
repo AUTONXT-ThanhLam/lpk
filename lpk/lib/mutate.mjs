@@ -2,7 +2,7 @@
 // source file at a time and run the test command. A file whose undo leaves the tests green is
 // not proved by them. The developer's checkout, index and stash are never touched.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { git } from './git.mjs';
@@ -23,13 +23,31 @@ export function snapshot(repo, scratch) {
 }
 
 // Dependencies and local env files are ignored by git, so the worktree links to the repo's own.
-export function linkShared(repo, wt) {
+const sharedPaths = (repo) => {
   const dirs = new Set(['.']);
   for (const p of git(['ls-files', '*package.json', '*pyproject.toml', '*requirements*.txt'], repo).split('\n').filter(Boolean))
     if (p.split('/').length <= 4) dirs.add(dirname(p));
-  for (const d of dirs) for (const name of SHARED) {
+  return [...dirs].flatMap((d) => SHARED.map((name) => [d, name]));
+};
+
+export function linkShared(repo, wt) {
+  for (const [d, name] of sharedPaths(repo)) {
     const src = join(repo, d, name), dest = join(wt, d, name);
-    if (existsSync(src) && !existsSync(dest)) { mkdirSync(dirname(dest), { recursive: true }); symlinkSync(src, dest); }
+    if (!existsSync(src) || existsSync(dest)) continue;
+    mkdirSync(dirname(dest), { recursive: true });
+    if (process.platform !== 'win32') symlinkSync(src, dest);
+    else if (statSync(src).isDirectory()) symlinkSync(src, dest, 'junction');
+    else copyFileSync(src, dest);
+  }
+}
+
+export function unlinkShared(repo, wt) {
+  for (const [d, name] of sharedPaths(repo)) {
+    const dest = join(wt, d, name);
+    try {
+      if (!lstatSync(dest).isSymbolicLink()) continue;
+      try { unlinkSync(dest); } catch { rmdirSync(dest); }
+    } catch { /* not there */ }
   }
 }
 
@@ -69,6 +87,7 @@ export function removeOrphans(repo, root) {
     try { pid = readFileSync(join(scratch, 'pid'), 'utf8').trim(); } catch { /* no owner recorded: leave it */ }
     if (!pid || alive(pid)) continue;
     try { killGroup(Number(readFileSync(join(scratch, 'group'), 'utf8'))); } catch { /* no test command left running */ }
+    unlinkShared(repo, wt);
     git(['worktree', 'remove', '--force', wt], repo);
     if (['wt', 'base'].some((d) => existsSync(join(scratch, d)))) continue; // compare's other tree is next
     for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
@@ -87,7 +106,7 @@ export function scratchRun(repo, trees, stop) {
   writeFileSync(join(scratch, 'pid'), String(process.pid));
   const cleanup = () => {
     stop();
-    for (const t of trees) if (existsSync(join(scratch, t))) git(['worktree', 'remove', '--force', join(scratch, t)], repo);
+    for (const t of trees) if (existsSync(join(scratch, t))) { unlinkShared(repo, join(scratch, t)); git(['worktree', 'remove', '--force', join(scratch, t)], repo); }
     git(['worktree', 'prune'], repo);
     for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
     try { rmdirSync(scratch); } catch { /* not empty: left for the next run's orphan check */ }
