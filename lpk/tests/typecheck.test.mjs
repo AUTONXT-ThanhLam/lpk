@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { chmodSync } from 'node:fs';
+import { chmodSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { context, hook, repoWith, write } from './hooks-env.mjs';
+import { context, hook, repoWith, tmp, write } from './hooks-env.mjs';
 
 const STUB = `#!/usr/bin/env node
 process.stdout.write(process.env.STUB_OUT ?? require('node:fs').readFileSync(__dirname + '/out.txt', 'utf8'));
@@ -36,7 +36,7 @@ test('after a TypeScript edit the compiler errors that name the edited file are 
 });
 
 test('the typecheck stays silent without errors, without a tsconfig, without a local tsc, and for files that are not TypeScript', () => {
-  assert.equal(edit(tsProject('ts-clean', ''), 'src/a.ts'), null);
+  assert.equal(edit(tsProject('ts-clean', `${join(tmp, 'ts-clean', 'src', 'a.ts')}\n`), 'src/a.ts'), null);
   const repo = tsProject('ts-skips', TSC_OUT);
   assert.equal(edit(repo, 'src/c.js'), null);
   const noConfig = repoWith('ts-no-config', { 'src/a.ts': 'x\n' });
@@ -45,4 +45,21 @@ test('the typecheck stays silent without errors, without a tsconfig, without a l
   assert.equal(edit(noConfig, 'src/a.ts'), null);
   const noTsc = repoWith('ts-no-tsc', { 'tsconfig.json': '{}\n', 'src/a.ts': 'x\n' });
   assert.equal(edit(noTsc, 'src/a.ts'), null);
+});
+
+test('a file the tsconfig does not build is reported as not type-checked instead of passing silently', () => {
+  const repo = tsProject('ts-uncovered', `${join(tmp, 'ts-uncovered', 'src', 'b.ts')}\n`);
+  assert.match(context(edit(repo, 'src/a.ts')), /src\/a\.ts is not part of what `tsc --noEmit -p tsconfig\.json` builds/);
+  assert.match(context(edit(tsProject('ts-solution', ''), 'src/a.ts')), /not type-checked/);
+  assert.equal(edit(tsProject('ts-covered', `${join(tmp, 'ts-covered', 'src', 'a.ts')}\n`), 'src/a.ts'), null);
+});
+
+test('a tsc found above a directory with no git repository is never run', () => {
+  const outer = join(tmp, 'ts-outer');
+  write(outer, 'node_modules/.bin/tsc', `#!/usr/bin/env node\nrequire('node:fs').writeFileSync(${JSON.stringify(join(tmp, 'ts-outer-ran'))}, 'x');\n`);
+  chmodSync(join(outer, 'node_modules/.bin/tsc'), 0o755);
+  write(outer, 'proj/tsconfig.json', '{}\n');
+  write(outer, 'proj/src/a.ts', 'x\n');
+  assert.equal(edit(join(outer, 'proj'), 'src/a.ts'), null);
+  assert.equal(existsSync(join(tmp, 'ts-outer-ran')), false);
 });

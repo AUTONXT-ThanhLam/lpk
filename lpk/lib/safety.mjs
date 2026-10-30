@@ -21,15 +21,13 @@ export function credentialTrip(input) {
 }
 
 // The owner's waiver is theirs alone: it comes from /lpk-waive or the waiver question, never from an
-// agent running `lpk waive` or writing the run's records. A tripwire on that literal text, except that
-// a command made only of `cd` and the fixed read-only commands below, with no redirect, `;`, `&`,
-// backtick or `$(`, may name the records to read them. `git grep -O` runs a program and stays refused.
+// agent running `lpk waive` or writing the run's records. A tripwire on that literal text.
 export const WAIVER_TEXT = ['lpk waive', 'cmd/waive.mjs', 'records.jsonl'];
-const READ_ONLY_WORDS = /^(cat|head|tail|wc|ls|grep|git grep)(\s|$)/;
+const READ_ONLY_WORDS = /^(cat|head|tail|wc|ls|grep)(\s|$)/;
 export function readsOnly(command) {
   if (/[;<>`\n]|\$\(/.test(command)) return false;
   const parts = command.split(/&&|\|\||\|/).map((p) => p.trim());
-  return parts.every((p) => !p.includes('&') && (/^cd\s+\S+$/.test(p) || (READ_ONLY_WORDS.test(p) && !/\s-O|--open-files-in-pager/.test(p))));
+  return parts.every((p) => !p.includes('&') && (/^cd\s+\S+$/.test(p) || (READ_ONLY_WORDS.test(p))));
 }
 export function waiverTrip(input) {
   const t = input.tool_input ?? {};

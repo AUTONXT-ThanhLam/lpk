@@ -35,14 +35,14 @@ test('a command that only reads the run\'s records passes, and one that could wr
   for (const command of [
     'cat .git/lpk/records.jsonl',
     'cd /x && grep kind .git/lpk/records.jsonl | wc -l',
-    'git grep records.jsonl',
   ]) assert.equal(bash(command), null, command);
   for (const command of [
     'cat a > .git/lpk/records.jsonl',
     'grep x records.jsonl; echo y >> records.jsonl',
     'cd /x && echo y >> .git/lpk/records.jsonl',
     'cat $(echo > records.jsonl)',
-    'git grep -Osh x records.jsonl',
+    'git grep -nOsh x records.jsonl',
+    'git grep --open-f=sh x records.jsonl',
     'cat records.jsonl && lpk waive F1 --why x',
   ]) assert.match(reason(bash(command)), /A waiver is the owner's act/, command);
 });
