@@ -75,6 +75,11 @@ build's context through every later turn; a builder's context ends with its slic
 builds here, except the screens: `lpk:designer` runs in design mode on the requirements and
 returns its UI section, then in build mode with that section in its prompt (`SKILL.md`, Screens).
 
+When the designer's build is done, its report names the proof directory (`research/`, `refs/`,
+`shots/`). Start the critic of `ui-craft/method.md` stage 8 there: a fresh `lpk:ui-reviewer` in critic
+mode, given only `shots/`, `refs/` and the job sentence with its result line. Send its problems to
+the same designer for the one repair round, then go on to the review.
+
 In either lane the designer's UI section holds the design and the build follows it. When the owner
 wants a choice of looks, the variants are full-size screens that differ on one axis each, and the
 pick goes in the build-mode prompt.

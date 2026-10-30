@@ -69,8 +69,7 @@ scale.
   one the app already ships. A dialog is exempt and stays at `center`.
 - Press: `transform: scale(0.97)` on `:active` with a 160 ms `--ease-out` transition (100 to 160 ms).
   `scale()` carries the label and icons, which is what reads as a physical press. `:active` is a real
-  press on touch, so it needs no hover gate; any `:hover` styling does (section 8). `.pressable` and
-`.btn` in `assets/apple.css` do this.
+  press on touch, so it needs no hover gate; any `:hover` styling does (section 8).
 
 ## 4. Overlay recipes
 
@@ -176,10 +175,8 @@ measured height, not to `auto`: Radix supplies `--radix-accordion-content-height
 }
 ```
 
-No library: `assets/apple.css` carries the same hidden states as `@starting-style` helpers
-(the `data-enter` attribute: bare for a popover, or `data-enter="menu"`, `"tooltip"`, `"dialog"`,
-`"toast"`, `"drawer"`, `"panel"`). On a native `[popover]` or `dialog`, add `display` and `overlay`
-to the transition with `allow-discrete` so `display` waits for the exit.
+On a native `[popover]` or `dialog`, add `display` and `overlay` to the transition with
+`allow-discrete` so `display` waits for the exit.
 
 ## 5. Crossfades, stagger and hold to confirm
 
@@ -267,7 +264,7 @@ comprehension, drop transform and position movement, drop bounce.
 ```
 
 Hover motion sits inside `@media (hover: hover) and (pointer: fine)`: touch fires false hovers on tap.
-`assets/apple.css` ships the same blocks for its own classes. For `motion`, `useReducedMotion()`
+For `motion`, `useReducedMotion()`
 returns the flag to zero the offsets (`const closedX = reduce ? 0 : "-100%"`).
 
 ## 9. What moves cheaply

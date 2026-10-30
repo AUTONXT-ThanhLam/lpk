@@ -1,6 +1,6 @@
 ---
 name: ui-craft
-description: How to design and review a working screen so it feels like Apple's craft and does not look generated - the pinned Emil Kowalski skills as the one spine, the overrides this kit decides, the face of the product, depth and materials, type, motion, and a scored look-and-fix loop. Load it before you design or build a screen, or review one. The designer and ui-reviewer agents load it.
+description: How to design and review a screen so it looks made by a skilled person and not generated - the pinned Emil Kowalski skills as the craft spine, the overrides this kit decides, a method that runs from wide research on real products through a concept and one chosen direction to many look-and-fix rounds and a blind critic, depth and materials, type and motion. Load it before you design or build a screen, or review one. The designer and ui-reviewer agents load it.
 ---
 
 # ui-craft: from clean to designed
@@ -18,16 +18,16 @@ this is what makes it feel made by someone, and different from the last product 
    then what the task needs from the list in `parts.md` (`remove-animations`, `animate`,
    `review-animations/STANDARDS.md`). Their "Initial Response" and "Review Format (Required)" blocks
    are the output format of the standalone skills: ignore them.
-3. Precedence: the app's own design system (tokens, a `DESIGN.md`, a component library it ships,
-   and any skill or server that library comes with) wins; then section 1 below; then Emil's files;
-   then `apple.md`, `ux.md`, `benchmarks.md` and `motion.md` of this directory. No other design skill
+3. Precedence: the app's own design system (tokens, a `DESIGN.md` it ships, a component library
+   and any skill or server that library comes with) wins; then the references and the pick of this
+   build (section 2: what the references measure and `pick.md` chose); then section 1 below; then
+   Emil's files; then `apple.md`, `ux.md` and `motion.md` of this directory. No other design skill
    from the session's listing is used, however well its description matches.
-4. Write the job and count it (`ux.md` section 1). Open two products of the kind of screen from
-   `benchmarks.md` in the lpk Chrome, screenshot them into the proof directory and write three
-   moves you take, each with its measured value (a type setting, a row anatomy, a keyboard
-   behaviour). An app with a design system takes its references from its own screens.
-5. Without a design system, start from `assets/apple.css` of this directory (structure only, see
-   section 2); with one, extend its tokens and do not use `apple.css`.
+4. Follow the stages of section 2 in order, with `method.md` of this directory: the job sentence,
+   wide research, `concept.md`, `pick.md`, the build, look and fix, the facts, the critic. Read
+   `knowledge.md` before the research: where to look, what the world agrees on, and why agent-made
+   UI reads as agent-made.
+5. With no design system in the app, `knowledge.md` says where to start; with one, extend its tokens.
 
 ## 1. Overrides
 
@@ -38,47 +38,51 @@ Where this list and Emil's files differ, this list wins. Anything not on it foll
 3. Kit rules beyond Emil: his 30-80 ms stagger between items is capped at 300 ms for the whole group; a skeleton or spinner only for loads over 300 ms; a count-up only on a real value change after a user action, never on mount.
 4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
 5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
-6. Type: the stack of section 2 item 6, tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
+6. Type: the face the pick names, loaded (the audit fails an unloaded one), tracking by size (`-0.02em` large, near 0 body), `rem` sizes. Times relative up to a week, then absolute.
 7. Tab switches and in-app route changes are 100+/day: no animation. A panel swap on a frequent surface is opacity at 150 ms or nothing; the 150 ms is Emil's (`skills/remove-animations/SKILL.md`, "Opacity only, 150ms").
 8. `designer.md` and `ui-reviewer.md` carry no numbers: they point to section 6 and to Emil's files.
 9. The app's own design system wins over this kit. Machine tells check (impeccable `detect`) stays as a check, never as taste authority.
 
-## 2. The face
+## 2. The method and the face
 
-`apple.css` carries structure: three layers, materials with their fallbacks, Emil's curves, press,
-a type scale with tracking, a focus ring, reduced motion, transparency and contrast. It carries no
-identity. Two products built from it must come out with different faces, so before any code derive
-these from the product's own objects (what the person handles, not what the industry looks like)
-and write them into the notes:
+Identity comes from research and a choice, not from a starter file or a palette rule. The stages,
+each leaving a file the next one reads (`method.md` says how, with the commands):
 
-1. **The question** the screen answers, in the words of the trade.
-2. **The hue**: one, on the main data and on what needs the person, 5% of the pixels or less. Take
-   it from the object whose state matters most (a queue's age, a deploy's red, a ledger's
-   balance), name it and give its value. Apple blue or the default of the starter is a failed pick.
-3. **The ground**: a neutral ramp tinted toward the product's world (warm paper, cool slate, ink),
-   never pure grey, never `#fff` on `#000`; the same tint in `ground`, `raised`, `overlay`, `ring`
-   and the ink steps. Set them over the starter's tokens.
-4. **The mark**: a name and a small drawn mark in the shell, built from one of the product's
-   objects, not an icon-set glyph beside a word.
-5. **One signature element** only this product has, built from its own objects and drawn rather
-   than listed: a run's step trail, a deploy's commit line, a queue's age ruler. It sits on the
-   first screen, answers its question, and may carry the one rare-tier motion.
-6. **The typeface**: `font-family: -apple-system, BlinkMacSystemFont, "Inter Variable", system-ui,
-   sans-serif` with `@fontsource-variable/inter` installed and imported (`import
-   "@fontsource-variable/inter"`). An unloaded name is a failed build. A design system's own face
-   replaces it.
+1. **The job sentence** and the result it names. The first viewport shows that result.
+2. **Research** on many real screens: the job's own, the category's leaders, inner pages and public
+   demos, design galleries. Each is read and measured, with a source for why it is good.
+3. **`concept.md`**: the reader and what they distrust, the five-second feeling, one idea built from
+   the product's own objects, what the screen refuses.
+4. **`pick.md`**: one direction, with the others and the category default named and dropped.
+5. **The build**, from sections 3 to 6.
+6. **Look and fix**: at least six rounds, each against three real pages of the same type.
+7. **The facts**: `copyfacts.mjs`, `palette.mjs facts`, `audit.mjs` and the checks of section 7.
+8. **The critic**, a fresh agent that sees only screenshots, references and the job sentence, and
+   one repair round.
+
+What the pick also holds, derived from the product's own objects and the references, never from the
+industry's habit or from this kit:
+
+- **The colour**: how many hues and why, each colour carrying one meaning. A starter's default blue
+  is a failed pick; so is the pale tinted ground with one warm accent, unless a reference shows the
+  reader's own category doing it for a reason you can state.
+- **The mark**: a name and a small drawn mark built from one of the product's objects, not an
+  icon-set glyph beside a word.
+- **The signature**: what only this product has, drawn from its own objects rather than listed (a
+  run's printed gates, a deploy's commit line, a queue's age ruler). It sits on the first screen and
+  answers its question.
+- **The typeface**: a face the pick names, from an npm package or a local file and declared with a
+  fallback, so it loads: an unloaded name is a failed build. A design system's own face replaces it.
 
 Check against the first screenshot: cover the name and the mark; if the screen could be another
-product's, or the hue and ground are the starter's, redo 2 to 5. When the owner wants a choice of
-looks, build full-size working variants that differ on one named axis (layout, density,
-personality, motion, interaction), named by their direction, with real content; two that differ
-only in accent are one.
+product's, go back to stage 2 or 3, not to the CSS.
 
 ## 3. The first screen
 
 Quiet is the start, not the goal. At 1440x900 every block the screen needs shows its header and its
 first rows with real content, and the canvas is never half blank because nothing was selected.
 
+- The first viewport shows the result the job sentence names (section 2, stage 1), at both widths.
 - A master and detail screen opens with the first item that needs the person selected.
 - The detail answers the question with the object itself: the step trail, the diff summary, the
   thread, a timeline, in that order of preference. Fields in a grid are the last resort.
@@ -117,13 +121,13 @@ first rows with real content, and the canvas is never half blank because nothing
 
 ## 5. Type
 
-- The stack of section 2 item 6 (override 6), sizes in `rem`, and the app's own scale when it has
+- The face of the pick (override 6), sizes in `rem`, and the app's own scale when it has
   one; extend it, never add a second scale beside it.
 - Tracking follows size: `-0.02em` from 24 px up, near 0 for body, `+0.01em` at 12 px and under;
   leading tight on titles (about 1.15) and 1.4 on body. Titles `text-wrap: balance`, body `pretty`.
-- Three sizes and two weights (450 and 600) on a screen: body and controls 13-14 px (16 under
-  `pointer: coarse`), smallest 12, section headings 14-16 at 600, a page title 20-28. Display above
-  32 px is for brand pages.
+- A few sizes and weights on a screen, stated in the pick: on a working screen body and controls sit
+  at 13-16 px (16 under `pointer: coarse`), smallest 12; display above 32 px is for brand and
+  landing pages. A reference measured to differ wins, and the pick says so.
 - Sentence case everywhere; no uppercase outside a `kbd` or a status pill. `tabular-nums` on every
   figure, times and costs right-aligned. Muted text is a step of the ink ramp at 4.5:1 or more,
   never an opacity. Text over a material is not flat grey: higher contrast, a little heavier.
@@ -169,10 +173,10 @@ reason (`find-animation-opportunities`). A motion that is not on that list is no
 reviewer deletes first: remove, reduce, fix easing, fix origin, make interruptible, move to the
 GPU, then polish (`review-animations/STANDARDS.md`).
 
-## 7. The look-and-fix loop
+## 7. The checks, the critic and the frames
 
-Screenshots and frames, never the code. Before you score, run the three machine checks and fix what
-they print:
+Screenshots and frames, never the code. Before the critic sees anything, run the machine checks
+and fix what they print:
 
 - `lighthouse_audit` in `snapshot` mode on the page: every failing accessibility rule.
 - `DO_NOT_TRACK=1 npx -y impeccable@4.8.0 detect --json --no-advisory <url>`, and again with
@@ -184,11 +188,14 @@ they print:
   Tab stop. Exit 2 means clipped or overlapping text, a covered control, page overflow, an unloaded
   face, a Tab stop without a focus ring, `transition: all`, `ease-in` or a viewport that blocks
   zoom; its other lines are for you to judge.
+- `node copyfacts.mjs <url>` (counts for you to read against the voice), as `method.md` stage 7 says.
 
 Then capture 1440x900 and 390x844 in light and dark, the selected, empty and loading states, and
 the three media features emulated (`prefers-reduced-transparency`, `prefers-contrast`,
-`prefers-reduced-motion`). Score each row 1-5 and write the scores down. Task flow, feedback and
-recovery come from doing the job in the browser, not from looking.
+`prefers-reduced-motion`) into `<proof>/shots/`. The builder does not score its own screens: a
+designer marks its work generously. The critic of `method.md` stage 8 scores them from the shots,
+and a `ui-reviewer` in review mode scores them with this rubric, each row 1-5. Task flow, feedback
+and recovery come from doing the job in the browser, not from looking.
 
 | Row | A 5 looks like |
 |---|---|
@@ -203,8 +210,9 @@ recovery come from doing the job in the browser, not from looking.
 | Feedback and recovery | each action answers at once, each mistake is undoable or guarded, each error says what to do |
 | Reach | at 200% zoom nothing clips; a finger hits every control; dark, high contrast and reduced motion each hold (`apple.md`) |
 
-Fix any score under 4 first, worst first, then recapture. Stop at three rounds or when every score
-is 4 or more; report the final scores with the screenshot paths, and name any 3 you left, with why.
+Fix any score under 4 first, worst first. The designer gets one repair round from the critic and
+reports the rest as it stands; a reviewer's findings follow the lpk skill's fix round. Report the
+scores with the screenshot paths and name any 3 left, with why.
 
 `frames.mjs` in this directory acts in the lpk Chrome and saves the frames the browser paints
 afterwards (at most `--max`, named by the milliseconds since the first action; the first is the

@@ -21,7 +21,9 @@ export async function withPage(url, { width = 1440, height = 900, scheme = 'ligh
     const loaded = new Promise((res) => waiters.push((m) => m.method === 'Page.loadEventFired' && res()));
     const nav = await send('Page.navigate', { url });
     if (nav.errorText) throw new Error(`${url}: ${nav.errorText}`);
-    await Promise.race([loaded, new Promise((r) => setTimeout(r, 15000))]);
+    let giveUp;
+    await Promise.race([loaded, new Promise((r) => { giveUp = setTimeout(r, 15000); })]);
+    clearTimeout(giveUp);
     const status = await evaluate("performance.getEntriesByType('navigation')[0]?.responseStatus || 0");
     if (status >= 400) throw new Error(`${url}: HTTP ${status}`);
     await evaluate('document.fonts.ready.then(()=>1)');
