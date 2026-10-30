@@ -5,7 +5,6 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { compareText } from '../lib/compare.mjs';
 import { alreadyFixed, alreadyFixedText, buildBundle } from '../lib/facts.mjs';
 import { defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
@@ -20,7 +19,7 @@ const [cmd, ...argv] = process.argv.slice(2);
 // A command added as its own module (`lib/cmd/<name>.mjs`, exporting `main(argv)` that returns the
 // exit code) runs here; the rest are handled below.
 const CMD = new URL(`../lib/cmd/${cmd}.mjs`, import.meta.url);
-if (cmd && /^[a-z-]+$/.test(cmd) && existsSync(CMD)) process.exit(await (await import(pathToFileURL(CMD))).main(process.argv.slice(3)) ?? 0);
+if (cmd && /^[a-z-]+$/.test(cmd) && existsSync(CMD)) process.exit(await (await import(CMD)).main(process.argv.slice(3)) ?? 0);
 const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? undefined : argv[i + 1]; };
 const all = (k) => argv.flatMap((a, i) => (a === k ? [argv[i + 1]] : []));
 const USAGE = `usage (each command prints its own usage when called wrongly):

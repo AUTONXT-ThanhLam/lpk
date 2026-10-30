@@ -7,7 +7,6 @@
 // one owes a delta review.
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { isIncrement } from './bar.mjs';
 import { ledgerFile, readLedger } from './findings.mjs';
 import { hostName } from './host.mjs';
@@ -65,7 +64,7 @@ export function evidence(repo, run, ledger) {
 async function laneSet(repo, run, base, list) {
   let floor = null;
   const file = new URL('./floor.mjs', import.meta.url);
-  if (existsSync(file)) floor = await (await import(pathToFileURL(file))).floor(repo, base);
+  if (existsSync(file)) floor = await (await import(file)).floor(repo, base);
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
   if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };

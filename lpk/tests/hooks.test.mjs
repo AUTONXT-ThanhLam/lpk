@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
 
@@ -84,7 +85,7 @@ test('after a resume the session learns the last workflow run, the open findings
   mkdirSync(join(tmp, 'projects', 'resume', 'workflows'), { recursive: true });
   writeFileSync(join(tmp, 'projects', 'resume', 'workflows', 'wf_1234abcd-001.json'), JSON.stringify({ runId: 'wf_1234abcd-001', workflowName: 'lpk-review', status: 'running', workflowProgress: [
     { type: 'workflow_phase', title: 'Review' }, { type: 'workflow_agent', label: 'techlead', state: 'done' }, { type: 'workflow_agent', label: 'claims', state: 'running' }] }));
-  const add = `const { addFinding } = await import(${JSON.stringify(join(ROOT, 'lib', 'findings.mjs'))}); const r = addFinding(process.cwd(), { from: 'lpk:techlead', at: 'abc..def', claim: 'the lock leaks', repro: 'npm test', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }); if (r.error) { console.error(r.error); process.exit(1); }`;
+  const add = `const { addFinding } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'findings.mjs')).href)}); const r = addFinding(process.cwd(), { from: 'lpk:techlead', at: 'abc..def', claim: 'the lock leaks', repro: 'npm test', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }); if (r.error) { console.error(r.error); process.exit(1); }`;
   const p = spawnSync('node', ['--input-type=module', '-e', add], { cwd: repo, env: ENV, encoding: 'utf8' });
   assert.equal(p.status, 0, p.stderr);
   const card = context(hook('SessionStart', 'start', { source: 'resume', session_id: 'resume', cwd: repo, transcript_path: transcript }));

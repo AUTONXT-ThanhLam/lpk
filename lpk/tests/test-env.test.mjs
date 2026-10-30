@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HELPERS = join(ROOT, 'tests');
@@ -16,10 +16,10 @@ const LEAK = { CLAUDE_CODE_SESSION_ID: FAKE, CLAUDE_SESSION_ID: FAKE, CLAUDE_PLU
 const PROBE = `
   const { spawnSync } = await import('node:child_process');
   const { rmSync, writeFileSync } = await import('node:fs');
-  const { hostName, sessionId } = await import(${JSON.stringify(join(ROOT, 'lib', 'host.mjs'))});
+  const { hostName, sessionId } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'host.mjs')).href)});
   const [name, file] = process.argv.slice(1);
   const inherited = process.env.CLAUDE_CODE_SESSION_ID;
-  const m = await import(${JSON.stringify(HELPERS)} + '/' + name + '.mjs');
+  const m = await import(${JSON.stringify(pathToFileURL(HELPERS).href)} + '/' + name + '.mjs');
   const seen = spawnSync('node', ['-e', 'process.stdout.write(process.env.CLAUDE_CODE_SESSION_ID ?? "<none>")'], { env: m.ENV, encoding: 'utf8' }).stdout;
   writeFileSync(file, JSON.stringify({
     inherited,
