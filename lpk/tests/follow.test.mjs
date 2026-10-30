@@ -34,6 +34,7 @@ else if (a[0] === 'daemon' && fs.existsSync(dir + '/daemonfail')) { console.log(
 else console.log('ok ' + a[0]);
 `);
   chmodSync(join(dir, 'claude'), 0o755);
+  if (process.platform === 'win32') writeFileSync(join(dir, 'claude.cmd'), '@node "%~dp0claude" %*\r\n');
   return dir;
 }
 
