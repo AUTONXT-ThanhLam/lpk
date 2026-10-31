@@ -4,7 +4,7 @@
 // the call.
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { git, within } from './git.mjs';
 
 export const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: ${reason}` } });
@@ -106,8 +106,9 @@ function checkoutOf(file) {
 // and goes on: the review reads what it did.
 export function writeGuard(input) {
   const type = input.agent_type || '';
-  const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
-  if (!WRITES.test(input.tool_name || '') || !file) return null;
+  const named = input.tool_input?.file_path || input.tool_input?.notebook_path;
+  if (!WRITES.test(input.tool_name || '') || !named) return null;
+  const file = resolve(input.cwd || '', named);
   if (/^(lpk:)?architect$/.test(type)) {
     const at = checkoutOf(file);
     if (!at || [at.gitDir, at.common].some((d) => within(file, d))) return null;
