@@ -23,8 +23,14 @@ nothing waits for an install, a database or a login later.
    hypothesis about it is a candidate, not a premise.
 4. **A bug follows `diagnose.md` in this skill's directory** before any design: a fix built on a
    guessed cause ships a second bug.
-5. **Ask what only the owner knows**: what users should get where the sources leave it open, the
-   scope, a cost or time limit. Use rounds of `AskUserQuestion`, your recommended option first, each
+5. **Say back what you understood, and ask what only the owner knows.** Before any design, write
+   in the user's terms: who uses the change and where, the before and the after, the bar
+   (increment unless the owner asks for production, so the owner sees the default and can raise
+   it), the platforms and surfaces it must work on, and what is out of scope. Mark each line as read from a source or taken as a default. The owner's yes to
+   that text is the cheapest check that the run builds what they meant; a correction costs a line
+   now and a rebuild later. Ask what only the owner knows: what users should get where the
+   sources leave it open, the scope, the platforms when the request does not say, a cost or
+   time limit. Use rounds of `AskUserQuestion`, your recommended option first, each
    with a concrete before and after in the user's terms. Each round asks every question whose
    prerequisites are settled. A technical choice (a library, a mechanism, a default, a label) is
    yours: decide it from evidence and log it. Never ask what a command, the code, the ticket or a
@@ -38,4 +44,4 @@ Once the owner says go, or is away, decide and log each decision. The build star
 design review ends and `lpk go` (`design.md` in this skill's directory says when).
 
 **Done when** you can state, in the user's terms, who uses the change, where they meet it, the
-before and the after, and each numbered requirement with its source.
+before and the after, the bar, the platforms and what is out of scope, and each numbered requirement with its source.
