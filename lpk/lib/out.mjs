@@ -66,3 +66,5 @@ export function targetOf(repo, ref) {
   const run = readRun(repo);
   return ref || run?.target || run?.base || defaultBranch(repo);
 }
+
+export const finish = (code) => new Promise(() => process.stdout.write('', () => process.stderr.write('', () => process.exit(code))));

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { ENV, lpk, tmp, write } from './verbs-env.mjs';
+import { spawn } from 'node:child_process';
+import { measureInjections } from '../lib/bench-context.mjs';
+import { ENV, ROOT, lpk, tmp, write } from './verbs-env.mjs';
 
 const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
 const DATA = join(ENV.XDG_DATA_HOME, 'lpk');
@@ -227,4 +229,38 @@ test('a run\'s idle time is the waits the owner closed, apart from the time agen
   assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
+});
+
+test('R1 R2: an injection is counted by what it carries, and a line that only quotes its marker is counted in no bucket', () => {
+  const advice = 'lpk check, on lines you just added: x';
+  const card = '# lpk state card\nbranch: b';
+  const skill = 'Base directory for this skill: /p\nbody';
+  const toolResult = (text) => ({ type: 'user', toolUseResult: { stdout: text }, message: { content: [{ type: 'tool_result', content: text }] } });
+  const rows = [
+    { type: 'attachment', attachment: { type: 'hook_additional_context', content: [advice], hookEvent: 'PostToolUse' }, rendered: [{ content: `hook additional context: ${advice}` }] },
+    { type: 'attachment', attachment: { type: 'hook_additional_context', content: ['another plugin says hi'] } },
+    { type: 'user', isMeta: true, message: { content: [{ type: 'text', text: skill }] } },
+    { type: 'user', message: { content: card } },
+    toolResult(`hook additional context: ${advice} ${'x'.repeat(5000)}`),
+    toolResult(card.repeat(100)),
+    toolResult(skill),
+    { type: 'api-request-blob', content: [{ type: 'text', text: `${skill} ${card} hook additional context: ${advice}` }] },
+    { type: 'assistant', message: { content: [{ type: 'text', text: card }] } },
+  ];
+  const file = join(tmp, 'injections.jsonl');
+  writeFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n{"half');
+  const ctx = { measured: { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, cardLines: 0, cardBytes: 0, mainTranscriptBytes: 0 } };
+  measureInjections(ctx, [file]);
+  assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 1, skillInjectBytes: skill.length, cardLines: 1, cardBytes: card.length, mainTranscriptBytes: readFileSync(file, 'utf8').length });
+});
+
+test('R3: output larger than a pipe buffer reaches a reader that starts late, with the exit code of the command', async () => {
+  const lib = join(ROOT, 'lib', 'out.mjs');
+  const child = spawn('node', ['--input-type=module', '-e', `import { finish } from ${JSON.stringify(lib)}; console.log('x'.repeat(300000)); await finish(3);`], { stdio: ['ignore', 'pipe', 'inherit'] });
+  await new Promise((r) => setTimeout(r, 300));
+  let got = 0;
+  child.stdout.on('data', (b) => { got += b.length; });
+  const code = await new Promise((r) => child.on('close', r));
+  assert.equal(got, 300001);
+  assert.equal(code, 3);
 });

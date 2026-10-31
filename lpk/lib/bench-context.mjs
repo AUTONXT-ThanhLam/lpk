@@ -48,15 +48,46 @@ export function context(root) {
   return out;
 }
 
+const SKILL_MARK = 'Base directory for this skill';
+const CARD_MARK = '# lpk state card';
+
+function userText(entry) {
+  const c = entry.message?.content;
+  if (typeof c === 'string') return c;
+  return Array.isArray(c) ? c.filter((b) => b?.type === 'text').map((b) => b.text).join('\n') : '';
+}
+
+export function injectionOf(entry) {
+  if (entry.type === 'attachment') {
+    const a = entry.attachment ?? {};
+    if (a.type === 'hook_additional_context') {
+      const text = [].concat(a.content ?? []).join('\n');
+      return text.startsWith('lpk') ? ['advice', text.length] : null;
+    }
+    const raw = a.type === 'file' ? JSON.stringify(a) : '';
+    return raw.includes(CARD_MARK) ? ['card', raw.length] : null;
+  }
+  if (entry.type !== 'user' || entry.toolUseResult) return null;
+  const text = userText(entry);
+  if (text.startsWith(SKILL_MARK)) return ['skill', text.length];
+  return text.includes(CARD_MARK) ? ['card', text.length] : null;
+}
+
 export function measureInjections(ctx, files) {
+  const m = ctx.measured;
   for (const f of files) {
     const text = read(f);
-    ctx.measured.mainTranscriptBytes += text.length;
+    m.mainTranscriptBytes += text.length;
     for (const line of text.split('\n')) {
       if (!line.trim()) continue;
-      if (line.includes('hook additional context: lpk')) { ctx.measured.adviceLines++; ctx.measured.adviceBytes += line.length; }
-      else if (line.includes('Base directory for this skill')) { ctx.measured.skillInjectLines++; ctx.measured.skillInjectBytes += line.length; }
-      else if (line.includes('# lpk state card')) { ctx.measured.cardLines++; ctx.measured.cardBytes += line.length; }
+      let entry;
+      try { entry = JSON.parse(line); } catch { continue; }
+      const hit = injectionOf(entry);
+      if (!hit) continue;
+      const [bucket, bytes] = hit;
+      const key = { advice: 'advice', skill: 'skillInject', card: 'card' }[bucket];
+      m[`${key}Lines`]++;
+      m[`${key}Bytes`] += bytes;
     }
   }
 }
