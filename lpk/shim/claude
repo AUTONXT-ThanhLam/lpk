@@ -1,0 +1,27 @@
+#!/bin/sh
+if [ -n "$LPK_ACCOUNT" ] && [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+  if [ -n "$LPK_SHIM_ACCOUNT" ]; then
+    echo "lpk: cc-switch run gave claude no token; claude was not started, because it would use the default account" >&2
+    exit 2
+  fi
+  export LPK_SHIM_ACCOUNT="$LPK_ACCOUNT"
+  exec cc-switch run "$0" "$@"
+fi
+if [ -n "$LPK_SHIM_ACCOUNT" ] && [ "$LPK_SHIM_ACCOUNT" != "$LPK_ACCOUNT" ]; then
+  echo "lpk: this session runs as $LPK_SHIM_ACCOUNT but the active account is $LPK_ACCOUNT; claude was not started, because cc-switch would hand it $LPK_ACCOUNT" >&2
+  exit 2
+fi
+unset LPK_SHIM_ACCOUNT
+[ "$ANTHROPIC_API_KEY" = lpk-placeholder-start-claude-through-cc-switch-run ] && unset ANTHROPIC_API_KEY
+here=$(cd "$(dirname "$0")" && pwd -P)
+set -f
+IFS=:
+for d in $PATH; do
+  [ "$(cd "$d" 2>/dev/null && pwd -P)" = "$here" ] && continue
+  if [ -x "$d/claude" ] && [ ! -d "$d/claude" ]; then
+    unset IFS
+    exec "$d/claude" "$@"
+  fi
+done
+echo "lpk: no claude found on PATH besides the lpk shim" >&2
+exit 127

@@ -50,6 +50,7 @@ const HOOKS = {
   subject: { run: async (i) => (await lib('hooks')).afterCommit(i) },
   stop: { run: async (i) => (await lib('hooks')).beforeStop(i) },
   start: { run: async (i) => (await lib('card')).resumeCard(i) },
+  account: { run: async () => { (await lib('account')).writeAccountEnv(); return null; } },
   card: { run: async (i) => (await lib('card')).runCard(i) },
   prompt: { run: async (i) => (await lib('hooks')).onPrompt(i) },
   ask: { run: async (i) => unattended(i) },
