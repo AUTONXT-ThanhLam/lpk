@@ -1,7 +1,7 @@
 // The safety tripwires as Claude Code runs them: the PreToolUse hook from hooks.json, fed the call.
 import assert from 'node:assert/strict';
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, HOME, hook, reaches, reason, repoWith, sh, startRun, tmp } from './hooks-env.mjs';
 import { remapWarning } from '../lib/safety.mjs';
@@ -77,6 +77,7 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   mkdirSync(repro, { recursive: true });
   sh(repro, 'init', '-q');
   assert.equal(hook('PreToolUse', 'pre', { tool_name: 'Write', agent_id: 'v', agent_type: 'lpk:verifier', cwd: repo, tool_input: { file_path: join(repro, 'x.test.ts'), content: '' } }), null);
+  assert.equal(edit('lpk:verifier', `${repro}/${relative(repro, join(repo, 'src', 'a.ts'))}`).hookSpecificOutput.permissionDecision, 'deny');
   const told = edit('lpk:builder', join(repo, 'src/a.ts'));
   assert.equal(told.hookSpecificOutput.permissionDecision, undefined);
   assert.match(context(told), /a builder works in its own worktree/);
@@ -86,6 +87,7 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
   assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(edit('lpk:architect', join(repo, '.git', 'lpk', 'duel', 'small', 'brief.md')), null);
+  assert.equal(edit('lpk:architect', `${repo}/.git/../src/a.ts`).hookSpecificOutput.permissionDecision, 'deny');
   const sub = repoWith('sub', { 'a.ts': 'a\n' });
   const gitDir = join(tmp, 'super', '.git', 'modules', 'sub');
   mkdirSync(dirname(gitDir), { recursive: true });

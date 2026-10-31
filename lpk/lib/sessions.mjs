@@ -1,6 +1,7 @@
 // Which sessions are alive, and so which open runs have lost the session that held them.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { within } from './git.mjs';
 import { projectsDirs, sessionsDirs } from './host.mjs';
 import { checkout, registered } from './where.mjs';
 
@@ -23,7 +24,7 @@ export function sessionPid(session) {
 export function exitedRuns(session, repo) {
   const at = checkout(repo);
   if (!at) return [];
-  const near = (r) => r.repo === repo || r.repo?.startsWith(`${repo}/`) || r.marker.startsWith(`${at.common}/`);
+  const near = (r) => within(r.repo, repo) || within(r.marker, at.common);
   return registered().map((x) => x.run).filter((r) => r?.session && r.session !== session && near(r) && !sessionPid(r.session));
 }
 

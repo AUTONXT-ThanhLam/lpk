@@ -50,7 +50,8 @@ export function reproTree(repo, run, sha) {
       const log = `${dir}.install.log`;
       if (!how) install = { cmd: null, exit: 0, ms: 0 };
       else {
-        const r = spawnSync(how[0], how[1], { cwd: dir, encoding: 'utf8', timeout: INSTALL_TIMEOUT_S * 1000, env: { ...process.env, CI: '1', HUSKY: '0' }, maxBuffer: 1 << 28 });
+        const opts = { cwd: dir, encoding: 'utf8', timeout: INSTALL_TIMEOUT_S * 1000, env: { ...process.env, CI: '1', HUSKY: '0' }, maxBuffer: 1 << 28 };
+        const r = process.platform === 'win32' ? spawnSync([how[0], ...how[1]].join(' '), { ...opts, shell: true }) : spawnSync(how[0], how[1], opts);
         writeFileSync(log, `${r.stdout || ''}${r.stderr || ''}${r.error ? `\n${r.error.message}` : ''}`);
         install = { cmd: [how[0], ...how[1]].join(' '), exit: r.status ?? (r.signal || r.error?.code || 'failed'), ms: Date.now() - t0, log };
       }
