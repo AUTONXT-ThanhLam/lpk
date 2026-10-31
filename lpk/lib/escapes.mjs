@@ -3,7 +3,7 @@
 // class of defect a comment names is the agent's reading of its text.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { readRuns, runsFile } from './runs.mjs';
 
 export const escapesFile = () => join(runsFile(), '..', 'escapes.jsonl');
@@ -19,7 +19,7 @@ export function readEscapes() {
 // the PR's author and bots). Runs whose checkout is gone are listed in `skipped`.
 export function escapes({ repo = '', reviewer = '' } = {}) {
   const rows = [], skipped = [];
-  for (const run of readRuns().filter((r) => !repo || r.path === repo)) {
+  for (const run of readRuns().filter((r) => !repo || (r.path && resolve(r.path) === resolve(repo)))) {
     if (!run.path || !existsSync(run.path)) { skipped.push(`${run.id}: checkout ${run.path} is gone`); continue; }
     for (const branch of run.branches || []) {
       let prs;

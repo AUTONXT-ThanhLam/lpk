@@ -10,7 +10,7 @@ import { stubBin } from './stub.mjs';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-verbs-')));
-after(() => rmSync(tmp, { recursive: true, force: true }));
+after(() => rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }));
 const BIN = join(tmp, 'bin');
 export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const ENV = {
@@ -43,7 +43,8 @@ export function repoWith(name, files) {
 
 // `gh` answers each call with the fixture's value for its arguments joined by spaces, else fails.
 mkdirSync(BIN, { recursive: true });
-stubBin(BIN, 'gh', `import { readFileSync } from 'node:fs';
+stubBin(BIN, 'gh', `import { existsSync, readFileSync } from 'node:fs';
+if (!existsSync(process.env.FAKE_GH)) { process.stderr.write('fake gh: no fixture\\n'); process.exit(1); }
 const f = JSON.parse(readFileSync(process.env.FAKE_GH, 'utf8'));
 const k = process.argv.slice(2).join(' ');
 if (!(k in f)) { process.stderr.write('fake gh: no answer for ' + k + '\\n'); process.exit(1); }
