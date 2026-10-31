@@ -19,6 +19,12 @@ export function childArgs({ prompt, model, fallbackModel, effort, appendSystemPr
     ...(appendSystemPrompt ? ['--append-system-prompt', appendSystemPrompt] : [])];
 }
 
+const notStartedWhy = (e, bin) => {
+  if (e.code !== 'ENOENT') return e.message;
+  if (process.platform === 'win32') return `the ${bin} CLI was not found as an .exe on PATH; Node cannot start the .cmd shim an npm install leaves, so use the native installer's claude.exe or set LPK_CLAUDE_BIN to a .exe`;
+  return `the ${bin} CLI is not on PATH`;
+};
+
 export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE_BIN || 'claude', ...opts }) {
   const env = { ...process.env, CLAUDE_CODE_REPORT_FINDINGS: '1' };
   const launch = launchAs(bin, childArgs(opts), env);
@@ -26,8 +32,12 @@ export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE
   return new Promise((done) => {
     const out = createWriteStream(rawFile);
     let text = '', err = '', timedOut = false;
-    const child = spawn(launch.cmd, launch.args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
-    child.on('error', (e) => { err = e.code === 'ENOENT' ? `the ${bin} CLI is not on PATH` : e.message; });
+    let child;
+    try { child = spawn(launch.cmd, launch.args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) {
+      out.end();
+      return done({ ...readStream(''), exit: 'not started', stderr: notStartedWhy(e, bin) });
+    }
+    child.on('error', (e) => { err = notStartedWhy(e, bin); });
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (d) => { text += d; out.write(d); });
     child.stderr.on('data', (d) => { err = `${err}${d}`.slice(-2000); });
