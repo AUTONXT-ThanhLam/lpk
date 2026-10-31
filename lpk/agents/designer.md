@@ -16,10 +16,9 @@ in the first second, is alive under the finger and answers at once where they wo
 
 - **Respond on press.** A control answers a touch in the same frame it lands; what a person holds,
   drags or opens follows the finger and can be interrupted halfway.
-- **Every control answers; frequency picks what else moves.** Press, hover and focus answer on
-  every control (`SKILL.md` override 2); anything else moves only as its frequency tier allows. A
-  tab switch, a route change or anything started from the keyboard is instant, and a working
-  screen never plays a page-load sequence.
+- **The frequency gate comes before any motion.** What a person does all day, or from the
+  keyboard, does not move: zero motion can be the right answer. Motion is for what is rare,
+  spatial or hard to follow, and it names its purpose.
 - **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
   destructive; what looks the same behaves the same, in the same place; the screen holds under
   zoom, with a finger, in dark, in high contrast and with reduced motion.
