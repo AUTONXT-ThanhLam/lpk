@@ -16,10 +16,9 @@ does, and report what is wrong.
 
 - **Respond on press.** A control answers a touch in the same frame it lands; what a person holds,
   drags or opens follows the finger and can be interrupted halfway.
-- **Every control answers; frequency picks what else moves.** Press, hover and focus answer on
-  every control (`SKILL.md` override 2); anything else moves only as its frequency tier allows. A
-  tab switch, a route change or anything started from the keyboard is instant, and a working
-  screen never plays a page-load sequence.
+- **The frequency gate comes before any motion.** What a person does all day, or from the
+  keyboard, does not move: zero motion can be the right answer. Motion is for what is rare,
+  spatial or hard to follow, and it names its purpose.
 - **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
   destructive; what looks the same behaves the same, in the same place; the screen holds under
   zoom, with a finger, in dark, in high contrast and with reduced motion.
@@ -117,9 +116,9 @@ bundle's `proof/` directory and check:
 5. the rubric of section 7 of `lpk:ui-craft`, judged from the screenshots and from doing the
    primary job yourself in the browser: a flat, system-font or half-empty screen is an
    `important` finding;
-6. motion, in the order of `review-animations`: delete first. Beyond the floor of override 2
-   (press, hover and focus), an animation on a frequent or
-   keyboard-started action is the finding, and a frequent action with no further motion is correct. For what does move, read its `frames.mjs` frames against the standards: purpose,
+6. motion, in the order of `review-animations`: delete first. An animation on a frequent or
+   keyboard-started action is the finding; a frequent action with no motion is correct and never
+   a finding. For what does move, read its `frames.mjs` frames against the standards: purpose,
    origin, curve, interruptibility by a second action mid-flight, exit, reduced motion;
 7. what a person touches responds on press and can be interrupted, an action that cannot be
    undone is guarded and names its consequence, an error or required action is never in a

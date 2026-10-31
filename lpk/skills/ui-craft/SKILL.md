@@ -33,7 +33,7 @@ this is what makes it feel made by someone, and different from the last product 
 Where this list and Emil's files differ, this list wins. Anything not on it follows Emil.
 
 1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins, except where override 3 says it is the kit's own. lpk's "faster than Emil" is dropped.
-2. The floor: press, hover and focus answer on every control. That is response, not motion (`apple-design` section 1), and the gate never removes it. Everything else that moves passes the gate of `motion.md` section 1 and moves only as its tier allows, so an occasional overlay gets the recipes and a keyboard-started or 100+/day change shows identical frames.
+2. "Every change moves" is dropped. Frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
 3. Kit rules beyond Emil: his 30-80 ms stagger between items is capped at 300 ms for the whole group; a skeleton or spinner only for loads over 300 ms; a count-up only on a real value change after a user action, never on mount.
 4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
 5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
@@ -145,8 +145,7 @@ Order of work, from `emil-design-eng` "The Animation Decision Framework" and `an
 1. **The gate.** How often does the person meet it? Keyboard-started and 100+ a day: no motion,
    identical frames, and zero lines of code is the right result. Tens a day: remove or reduce.
    `remove-animations` holds the decision tree and the reduced forms. Press feedback on
-   pointer-down is not motion to gate: it is response (`apple-design` section 1), and so are hover
-   and focus, the floor of override 2.
+   pointer-down is not motion to gate: it is response (`apple-design` section 1).
 2. **The purpose**, from the closed list: feedback, spatial consistency, a state change, softening a
    jarring jump, explaining, delight at the rare tier only. Data being read or acted on does not
    move for style.
@@ -170,9 +169,9 @@ Order of work, from `emil-design-eng` "The Animation Decision Framework" and `an
    app once in `<MotionConfig reducedMotion="user">`.
 
 Extend the app's tokens (its easing and duration variables) with Emil's curves where they are
-missing; never add a parallel scale. The floor of override 2 is built without a list. In design
-mode the report's UI section names the motions beyond it, each with its purpose and frequency
-tier, then the two to five rejected with the reason (`find-animation-opportunities`). A
+missing; never add a parallel scale. In design mode the report's UI section names at most five to
+seven motions, each with its purpose and frequency tier, then the two to five rejected with the
+reason (`find-animation-opportunities`). A motion that is not on that list is not built. A
 reviewer deletes first: remove, reduce, fix easing, fix origin, make interruptible, move to the
 GPU, then polish (`review-animations/STANDARDS.md`).
 
