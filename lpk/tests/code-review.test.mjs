@@ -87,7 +87,21 @@ test('a fix delta is reviewed alone: the child finds no branch or upstream holdi
   assert.deepEqual([head, [...new Set(refs)], remotes, staged, index], [reviewed, [reviewed], '', ['src/b.mjs'], sh(repo, 'rev-parse', 'HEAD^{tree}').trim()]);
 });
 
-test('a review asked for a range other than the recorded one stops before any model runs and names lpk review start', () => {
+async function workflowCodeReview(args) {
+  const body = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8').replace(/^export const meta = \{[\s\S]*?\n\}\n/, '');
+  const prompts = [];
+  const agent = async (prompt) => { prompts.push(prompt); return { record: '', ids: [] }; };
+  const parallel = (ts) => Promise.all(ts.map((t) => Promise.resolve().then(t).catch(() => null)));
+  const pipeline = (items, ...stages) => Promise.all(items.map(async (item, i) => {
+    let v = item;
+    for (const s of stages) { try { v = await s(v, item, i); } catch { return null; } }
+    return v;
+  }));
+  await new (async () => {}).constructor('args', 'agent', 'parallel', 'pipeline', 'log', 'phase', body)(args, agent, parallel, pipeline, () => {}, () => {});
+  return prompts.join('\n').match(/^lpk code-review .*$/m)[0];
+}
+
+test('a review workflow given a range lpk review start did not record stops its code review before any model runs', async () => {
   const S = 'crexpect';
   const repo = changedRepo('crexpect', S);
   const reviewed = sh(repo, 'rev-parse', 'HEAD').trim();
@@ -95,11 +109,12 @@ test('a review asked for a range other than the recorded one stops before any mo
   write(repo, 'src/b.mjs', 'export const b = 1;\n');
   sh(repo, 'add', '.');
   sh(repo, 'commit', '-qm', 'Add b');
-  const head = sh(repo, 'rev-parse', 'HEAD').trim();
+  const range = `${reviewed}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
+  const cmd = await workflowCodeReview({ repo, base: reviewed, commit: 'HEAD', range, bundle: '/b', request: 'r', scenarios: 's', lenses: ['code-review'] });
   const bin = fakeClaude('claude-expect', [report, result]);
-  const r = codeReview(repo, S, bin, '--expect-range', `${reviewed}..HEAD`);
+  const r = codeReview(repo, S, bin, ...cmd.split(' ').slice(2));
   assert.equal(r.status, 2, r.stderr);
-  assert.ok(r.stderr.includes(`lpk review start ${reviewed}..${head}`), r.stderr);
+  assert.ok(r.stderr.includes(`lpk review start ${range}`), r.stderr);
   assert.throws(() => seen(bin), /ENOENT/);
   ok(codeReview(repo, S, bin, '--expect-range', `${reviewed}~1..${reviewed.slice(0, 7)}`));
 });

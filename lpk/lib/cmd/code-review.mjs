@@ -54,6 +54,7 @@ const row = (f, from, at) => ({
 export async function main(argv) {
   const a = parseArgs(argv, ['--repo', '--range', '--base', '--expect-range', '--model', '--fallback-model', '--effort', '--level', '--timeout']);
   if (a.error || a.words.length) { console.error(a.error ? `lpk: ${a.error}\n${USAGE}` : USAGE); return 2; }
+  if (['--range', '--base', '--expect-range'].filter((o) => a.opt(o)).length > 1) { console.error(`lpk: give one of --range, --base and --expect-range\n${USAGE}`); return 2; }
   const repo = repoOf(a.opt('--repo'));
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
   const r = rangeOf(repo, a);
