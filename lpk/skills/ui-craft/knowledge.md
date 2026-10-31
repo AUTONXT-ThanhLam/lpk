@@ -48,7 +48,8 @@ of high-end software holds up as the bar. Sizes are about, read from screenshots
 - **One thing is first, and it is big.** A sentence that states the finding as the section title
   ("$884K spent this week, averaging $126K per day", Ramp), one number set far above everything
   else ("58m", Linear Insights), or a filled band that holds the actions (Datadog's next steps).
-  The title or number is two to three times the body size; nothing else competes with it.
+  The title or number is set far above the body (`SKILL.md` section 5 gives the size); nothing
+  else competes with it.
 - **Colour is spent generously on categories and states, one meaning per hue.** Attio gives each
   deal type its own soft-tinted pill with dark text of the same hue (green recurring, blue
   one-time, pink exclusive, purple referral); Datadog fills a red HIGH and an amber LOW chip on
