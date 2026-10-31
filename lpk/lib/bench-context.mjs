@@ -44,12 +44,11 @@ export function context(root) {
   out.onInvokeBytes = out.onInvoke.skillBodies + out.onInvoke.agentBodies;
   // The advice a hook hands back is resident once it lands: measured from the transcripts, not from
   // the strings in lib/hooks.mjs, so a hook that never fires costs nothing here.
-  out.measured = { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, cardLines: 0, cardBytes: 0, mainTranscriptBytes: 0 };
+  out.measured = { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, mainTranscriptBytes: 0 };
   return out;
 }
 
 const SKILL_MARK = 'Base directory for this skill';
-const CARD_HEADING = /^# lpk state card/m;
 
 function userBlocks(entry) {
   const c = entry.message?.content;
@@ -64,15 +63,16 @@ function injectionOf(entry) {
       const text = [].concat(a.content ?? []).join('\n');
       return text.startsWith('lpk') ? ['advice', text.length] : null;
     }
-    const text = a.type === 'file' ? a.content?.file?.content : '';
-    return typeof text === 'string' && CARD_HEADING.test(text) ? ['card', text.length] : null;
+    if (a.type === 'invoked_skills') {
+      const bytes = [].concat(a.skills ?? []).reduce((x, k) => x + (typeof k?.content === 'string' ? k.content.length : 0), 0);
+      return bytes ? ['skillInject', bytes] : null;
+    }
+    return null;
   }
   if (entry.type !== 'user' || entry.toolUseResult) return null;
   const blocks = userBlocks(entry);
   const skill = blocks.find((t) => t.startsWith(SKILL_MARK));
-  if (skill) return ['skillInject', skill.length];
-  const card = blocks.find((t) => CARD_HEADING.test(t));
-  return card ? ['card', card.length] : null;
+  return skill ? ['skillInject', skill.length] : null;
 }
 
 export function measureInjections(ctx, files) {

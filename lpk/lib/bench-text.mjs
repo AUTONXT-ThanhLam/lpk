@@ -21,7 +21,7 @@ export function render(out, repo) {
     '  always-on context (bytes, token estimate at 4 bytes/token):',
     `  resident: skill descriptions ${n(ctx.skillDescriptionBytes)} B / ~${n(est(ctx.skillDescriptionBytes))} tok across ${ctx.resident.skills.length} skill(s); agent descriptions ${n(ctx.agentDescriptionBytes)} B / ~${n(est(ctx.agentDescriptionBytes))} tok across ${ctx.resident.agents.length} agent(s); hooks.json ${n(ctx.hooksJsonBytes)} B; plugin.json ${n(ctx.pluginJsonBytes)} B`,
     `  only on invoke: skill bodies ${n(ctx.onInvoke.skillBodies)} B / ~${n(est(ctx.onInvoke.skillBodies))} tok, agent bodies ${n(ctx.onInvoke.agentBodies)} B / ~${n(est(ctx.onInvoke.agentBodies))} tok`,
-    `  measured in the scanned sessions' main transcripts: hook advice ${n(ctx.measured.adviceLines)} lines ${n(ctx.measured.adviceBytes)} B, skill injections ${n(ctx.measured.skillInjectLines)} lines ${n(ctx.measured.skillInjectBytes)} B, state cards ${n(ctx.measured.cardLines)} lines ${n(ctx.measured.cardBytes)} B over ${n(ctx.measured.mainTranscriptBytes)} B of main transcript`,
+    `  measured in the scanned sessions' main transcripts: hook advice ${n(ctx.measured.adviceLines)} lines ${n(ctx.measured.adviceBytes)} B, skill injections ${n(ctx.measured.skillInjectLines)} lines ${n(ctx.measured.skillInjectBytes)} B over ${n(ctx.measured.mainTranscriptBytes)} B of main transcript`,
   ];
   console.log(capped(repo, 'bench', head, [
     ...hostRows, '', 'yield and cost per lens:', ...lensRows, ...cliRows, '', ...bornRows, '', ...wallRows, ...ctxRows,
