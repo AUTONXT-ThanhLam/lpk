@@ -87,6 +87,23 @@ test('a fix delta is reviewed alone: the child finds no branch or upstream holdi
   assert.deepEqual([head, [...new Set(refs)], remotes, staged, index], [reviewed, [reviewed], '', ['src/b.mjs'], sh(repo, 'rev-parse', 'HEAD^{tree}').trim()]);
 });
 
+test('a review asked for a range other than the recorded one stops before any model runs and names lpk review start', () => {
+  const S = 'crexpect';
+  const repo = changedRepo('crexpect', S);
+  const reviewed = sh(repo, 'rev-parse', 'HEAD').trim();
+  ok(lpk(repo, S, 'review', 'start', `${reviewed}~1..${reviewed}`));
+  write(repo, 'src/b.mjs', 'export const b = 1;\n');
+  sh(repo, 'add', '.');
+  sh(repo, 'commit', '-qm', 'Add b');
+  const head = sh(repo, 'rev-parse', 'HEAD').trim();
+  const bin = fakeClaude('claude-expect', [report, result]);
+  const r = codeReview(repo, S, bin, '--expect-range', `${reviewed}..HEAD`);
+  assert.equal(r.status, 2, r.stderr);
+  assert.ok(r.stderr.includes(`lpk review start ${reviewed}..${head}`), r.stderr);
+  assert.throws(() => seen(bin), /ENOENT/);
+  ok(codeReview(repo, S, bin, '--expect-range', `${reviewed}~1..${reviewed.slice(0, 7)}`));
+});
+
 test('a code review child that ends without a result fails and leaves the code review owed', () => {
   const S = 'crfail';
   const repo = changedRepo('crfail', S);
