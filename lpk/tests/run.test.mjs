@@ -61,7 +61,7 @@ test('worktrees of one repo hold runs side by side, and a builder\'s worktree wo
   start(repo, 'main');
   assert.equal(resolve(JSON.parse(readFileSync(runFile(repo), 'utf8')).repo), repo, 'the main checkout keeps its run where it always did');
   ok(lpk(repo, 'main', 'run', 'end'));
-  writeFileSync(runFile(repo), JSON.stringify({ v: 2, id: 'before', repo: old, session: 'old', started: Date.now(), branches: [], scenarios: [], verify: ['true'], granted: {} }));
+  writeFileSync(runFile(repo), JSON.stringify({ v: 2, id: 'before', repo: sh(old, 'rev-parse', '--show-toplevel').trim(), session: 'old', started: Date.now(), branches: [], scenarios: [], verify: ['true'], granted: {} }));
   assert.match(start(old, 'old'), /lpk run before amended/, 'a run started from a worktree before runs moved there is still its run');
 });
 
