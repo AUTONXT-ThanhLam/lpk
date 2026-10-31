@@ -19,10 +19,11 @@ export function childArgs({ prompt, model, fallbackModel, effort, appendSystemPr
     ...(appendSystemPrompt ? ['--append-system-prompt', appendSystemPrompt] : [])];
 }
 
+const WINDOWS_NOT_AN_EXE = new Set(['ENOENT', 'EINVAL', 'EFTYPE']);
+
 const notStartedWhy = (e, bin) => {
-  if (e.code !== 'ENOENT') return e.message;
-  if (process.platform === 'win32') return `the ${bin} CLI was not found as an .exe on PATH; Node cannot start the .cmd shim an npm install leaves, so use the native installer's claude.exe or set LPK_CLAUDE_BIN to a .exe`;
-  return `the ${bin} CLI is not on PATH`;
+  if (process.platform === 'win32' && WINDOWS_NOT_AN_EXE.has(e.code)) return `the ${bin} CLI could not be started (${e.message}); Node starts only an .exe on Windows, not the .cmd shim an npm install leaves or a script, so use the native installer's claude.exe or set LPK_CLAUDE_BIN to a .exe`;
+  return e.code === 'ENOENT' ? `the ${bin} CLI is not on PATH` : e.message;
 };
 
 export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE_BIN || 'claude', ...opts }) {
