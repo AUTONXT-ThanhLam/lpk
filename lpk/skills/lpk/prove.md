@@ -21,6 +21,11 @@ the proof directory (`<bundle>/proof`).
 - A request that names an environment to host or show the result on (a shared environment, a host
   name) is answered on that environment, by the profile's deploy procedure; a local preview or a
   screenshot is not a substitute. When the profile has no such procedure, ask the owner for it once.
+- A deliverable its user installs (a plugin, a CLI on the PATH, a desktop app, a package, a status
+  line or hook in the host's settings) is proved on a copy installed from the commit under test the
+  way its user installs it, and started the way they start it (a new session for a plugin or a
+  status line), never on the checkout: a run from the checkout skips the build, the manifest, the
+  install path and the restart the user meets.
 - Start each app through `lpk spawn --port <port> -- <command>`: it records what it starts, reuses a live app it
   started for the same commit, port and data directory, and `lpk reap` stops exactly those when
   the run ends. Never stop a process another session started.
