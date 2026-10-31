@@ -97,7 +97,7 @@ test('mutate refuses an unknown argument, a missing patch and a run without --te
   let piped;
   if (process.platform === 'win32') {
     const pipe = `\\\\.\\pipe\\lpk-patch-${process.pid}`;
-    const server = createServer((c) => c.end(diff)).listen(pipe);
+    const server = createServer((c) => { c.on('error', () => {}); c.end(diff); }).listen(pipe);
     await once(server, 'listening');
     try { piped = await lpkAsync(repo, ...mutate, '--patch', pipe); } finally { server.close(); }
   } else {

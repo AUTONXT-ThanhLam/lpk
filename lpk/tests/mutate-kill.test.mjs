@@ -37,6 +37,7 @@ async function pidOf(file) {
   assert.ok(existsSync(file), `${file} was never written: the command did not start`);
   return Number(readFileSync(file, 'utf8'));
 }
+const processes = () => (WIN ? spawnSync('powershell', ['-NoProfile', '-Command', 'Get-CimInstance Win32_Process | ForEach-Object { "$($_.ProcessId) <- $($_.ParentProcessId) $($_.Name) $($_.CommandLine)" }'], { encoding: 'utf8' }).stdout : '');
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 async function gone(pid) {
   for (let i = 0; i < 30 && alive(pid); i++) await pause(100);
@@ -71,7 +72,7 @@ test('a run killed outright is cleaned up by the next lpk mutate', async () => {
   const next = lpk(repo, ['mutate', '--base', 'main', '--test', 'true']);
   assert.equal(next.status, 0, next.stderr);
   assert.equal(worktrees(repo), 1);
-  assert.equal(await gone(testPid), true, 'the orphaned test command still runs');
+  assert.equal(await gone(testPid), true, `the orphaned test command ${testPid} still runs:\n${processes()}`);
   mkdirSync(join(tmp, 'orphan-in'), { recursive: true });
   writeFileSync(join(tmp, 'orphan-in', 'a'), '1\n');
   const c = sleeper('orphan-compare', 3);

@@ -58,7 +58,7 @@ let current = null, groupFile = '';
 function runTests(dir, cmd, timeout) {
   const t0 = Date.now();
   return new Promise((done) => {
-    const child = spawnGroup(cmd, { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawnGroup(cmd, { survive: true, cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
     current = child;
     if (groupFile) writeFileSync(groupFile, String(child.pid));
     let out = '', timedOut = false;

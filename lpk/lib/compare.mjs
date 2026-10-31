@@ -3,7 +3,7 @@
 // give another exit code or output. Whether a difference is the one the request asked for is the
 // agent's call. The developer's checkout, index and stash are never touched.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { git } from './git.mjs';
 import { linkShared, scratchRun, snapshot } from './mutate.mjs';
 import { killGroup, spawnGroup } from './proc.mjs';
@@ -14,7 +14,7 @@ const live = new Set();
 // timeout stops it together with whatever it started.
 function runOne(dir, cmd, input, timeout) {
   return new Promise((done) => {
-    const child = spawnGroup(cmd, { cwd: dir, env: { ...process.env, LPK_INPUT: input }, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawnGroup(cmd, { survive: true, cwd: dir, env: { ...process.env, LPK_INPUT: input }, stdio: ['pipe', 'pipe', 'pipe'] });
     live.add(child);
     let out = '', err = '', timedOut = false;
     child.stdout.on('data', (b) => { out = (out + b).slice(-(1 << 20)); });
@@ -58,7 +58,7 @@ export async function compare({ repo, base, cmd, inputs, sub = '', timeout = 30,
       for (let i = next++; i < files.length; i = next++) {
         const [m, c] = await Promise.all([runOne(join(trees.main, sub), cmd, files[i], timeout), runOne(join(trees.change, sub), cmd, files[i], timeout)]);
         const head = readFileSync(files[i], 'utf8').slice(0, 200).split('\n')[0];
-        rows[i] = { input: files[i].slice(inputs.length).replace(/^\//, ''), head: head.includes('\0') ? '' : head, main: m, change: c, same: m.exit === c.exit && m.out === c.out };
+        rows[i] = { input: relative(inputs, files[i]), head: head.includes('\0') ? '' : head, main: m, change: c, same: m.exit === c.exit && m.out === c.out };
       }
     };
     await Promise.all(Array.from({ length: Math.max(1, Math.min(jobs, files.length)) }, worker));
