@@ -72,7 +72,7 @@ const call = (prompt, opts) => gate(() => agent(prompt, opts))
 
 const typed = (type, schema, ask) => (lens) => (label) => call(`${change}\n${ask}`, { label, phase: 'Review', agentType: `lpk:${type}`, schema, stallMs: stall(lens) })
 const codeReview = (lens) => (label) => {
-  const cmd = `${LPK} code-review --repo ${a.repo} --model sonnet --effort high${a.delta ? ` --range ${at}` : ''}`
+  const cmd = `${LPK} code-review --repo ${a.repo} --model sonnet --effort high${a.delta ? ` --range ${at}` : ` --expect-range ${a.range}`}`
   return call(`${change}\nRun exactly this command, with a Bash timeout of 600000 ms, and wait for it:\n${cmd}\nIts last line names the record file and the ledger ids it added. Return that record path and those ids exactly as printed. If it exits non-zero, also return its error line as error.`,
     { label, phase: 'Review', schema: RECORD, model: 'haiku', effort: 'low', bashCommandClamp: [`Bash(${LPK} code-review *)`], stallMs: stall(lens) || 660000 })
     .then((o) => o && { findings: o.ids.map((id) => ({ id })), record: o.record, error: o.error })

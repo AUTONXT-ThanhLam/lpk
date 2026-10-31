@@ -9,12 +9,13 @@ import { resolveRange } from '../range.mjs';
 import { appendRecord, readDecisions } from '../records.mjs';
 import { readRun } from '../run.mjs';
 
-const USAGE = `usage: lpk code-review [--repo <dir>] [--range <from>..<to> | --base <ref>]
+const USAGE = `usage: lpk code-review [--repo <dir>] [--range <from>..<to> | --base <ref> | --expect-range <from>..<to>]
          [--model sonnet] [--fallback-model <model>] [--effort high] [--level high] [--timeout <s>]
   Runs Claude Code's /code-review, with the code-reviewer role in its system prompt, as a headless
   child on the run's reviewed range (\`lpk review start\`), else <merge base>..HEAD, and adds what it
   finds to the run's findings ledger.
-  --range    a fix delta: only <from>..<to>, told which findings the ledger already holds`;
+  --range    a fix delta: only <from>..<to>, told which findings the ledger already holds
+  --expect-range  refuse, before any model runs, when the range it would review is not this one`;
 
 const DECISIONS_SHOWN = 40;
 const CLEANUP = ['simplification', 'efficiency', 'reuse', 'altitude'];
@@ -51,12 +52,18 @@ const row = (f, from, at) => ({
 });
 
 export async function main(argv) {
-  const a = parseArgs(argv, ['--repo', '--range', '--base', '--model', '--fallback-model', '--effort', '--level', '--timeout']);
+  const a = parseArgs(argv, ['--repo', '--range', '--base', '--expect-range', '--model', '--fallback-model', '--effort', '--level', '--timeout']);
   if (a.error || a.words.length) { console.error(a.error ? `lpk: ${a.error}\n${USAGE}` : USAGE); return 2; }
+  if (['--range', '--base', '--expect-range'].filter((o) => a.opt(o)).length > 1) { console.error(`lpk: give one of --range, --base and --expect-range\n${USAGE}`); return 2; }
   const repo = repoOf(a.opt('--repo'));
   if (!repo) { console.error('lpk: not inside a git repository'); return 2; }
   const r = rangeOf(repo, a);
   if (r.error) { console.error(`lpk: ${r.error}`); return 2; }
+  if (a.opt('--expect-range')) {
+    const want = resolveRange(repo, a.opt('--expect-range'));
+    if (want.error) { console.error(`lpk: ${want.error}`); return 2; }
+    if (want.range !== r.range) { console.error(`lpk: this review would cover ${r.range}, not ${want.range}; run \`lpk review start ${want.range}\` first`); return 2; }
+  }
   const model = a.opt('--model') || 'sonnet', effort = a.opt('--effort') || 'high', level = a.opt('--level') || 'high';
   const delta = Boolean(a.opt('--range'));
   const timeoutMs = Number(a.opt('--timeout') || 540) * 1000;
