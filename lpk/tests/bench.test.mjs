@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
-import { measureInjections } from '../lib/bench-context.mjs';
+import { context, measureInjections } from '../lib/bench-context.mjs';
 import { ENV, ROOT, lpk, tmp, write } from './verbs-env.mjs';
 
 const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
@@ -247,7 +247,7 @@ test('an injection is counted by what it carries, and a line that only quotes it
   ];
   const file = join(tmp, 'injections.jsonl');
   writeFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n{"half');
-  const ctx = { measured: { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, mainTranscriptBytes: 0 } };
+  const ctx = context(ROOT);
   measureInjections(ctx, [file]);
   assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 3, skillInjectBytes: skill.length * 4, mainTranscriptBytes: readFileSync(file, 'utf8').length });
 });
