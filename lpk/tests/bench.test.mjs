@@ -258,6 +258,9 @@ test('a run\'s idle time is the waits the owner closed, apart from the time agen
   const r = j.wall.runs.find((x) => x.id === '20261021100000-r4');
   assert.equal(r.ownerIdleMs, 160000, '100s until the owner\'s prompt and 60s until the answer to the question; the 60s a task notice closed is not theirs');
   assert.equal(r.workingMs, 140000, 'the wall without the owner\'s idle time');
+  assert.equal(r.ownerTurns, 3, 'the first prompt, the next one and the answer; the task notice is not the owner\'s');
+  assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerTurns, null, 'a run with no transcript has no turn count, not 0');
+  assert.match(bench(tmp).stdout, /3 owner turns/);
   assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
