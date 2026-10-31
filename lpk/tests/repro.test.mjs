@@ -1,7 +1,7 @@
 // A verifier's reproduction runs in the run's shared worktree of the reviewed commit or of its base,
 // installed from that commit's own lockfile, and what it did is recorded for the gates.
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -18,7 +18,7 @@ test('lpk repro runs a command at the reviewed commit and at its base, each in i
     'package.json': '{ "name": "app", "version": "1.0.0", "dependencies": { "dep": "file:./dep" } }\n',
   });
   sh(repo, 'switch', '-q', 'main');
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--silent'], { cwd: repo, env: ENV });
+  execSync('npm install --no-audit --no-fund --silent', { cwd: repo, env: ENV });
   write(repo, '.gitignore', 'node_modules\n');
   commit(repo, 'Lock the dependencies', {});
   sh(repo, 'switch', '-q', 'feat');
@@ -30,8 +30,8 @@ test('lpk repro runs a command at the reviewed commit and at its base, each in i
   const atCommit = lpk(repo, 'repro', '--cmd', cmd, '--at', 'commit');
   assert.equal(atCommit.status, 0, atCommit.stderr);
   const tree = join(ENV.XDG_CACHE_HOME, 'lpk', 'repro', 'run1', head.slice(0, 12));
-  assert.match(atCommit.stdout, new RegExp(`commit ${head.slice(0, 12)} tree ${tree}: installed with \`npm ci --prefer-offline --no-audit --no-fund\``));
-  assert.match(atCommit.stdout, new RegExp(`exit 0 in \\d+s\\n {2}\\| dep is commit ${realpathSync(tree)}/dep/index\\.js`));
+  assert.ok(atCommit.stdout.includes(`commit ${head.slice(0, 12)} tree ${tree}: installed with \`npm ci --prefer-offline --no-audit --no-fund\``), atCommit.stdout);
+  assert.match(atCommit.stdout, new RegExp(`exit 0 in \\d+s\\n {2}\\| dep is commit ${join(realpathSync(tree), 'dep', 'index.js').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   const atBase = lpk(repo, 'repro', '--cmd', cmd, '--at', 'base');
   assert.match(atBase.stdout, /\| dep is base /);
   // The second verifier on the same commit shares the tree and its install.

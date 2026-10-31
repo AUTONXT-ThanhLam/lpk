@@ -1,14 +1,14 @@
 // Shared by the fact-verb tests: a scratch home, git repos with commits, `lpk` run as the agent runs
 // it, and a stand-in `gh` that answers from a fixture of argument lines.
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-export const tmp = mkdtempSync(join(tmpdir(), 'lpk-verbs-'));
+export const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-verbs-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 const BIN = join(tmp, 'bin');
 export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));

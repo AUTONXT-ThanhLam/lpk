@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { delimiter, join, relative, resolve } from 'node:path';
+import { gitPath } from './git.mjs';
 import { candidates, CATALOG, LEARNED, NOT_CODE, TEST } from './rules.mjs';
 
 export const AST_DIRS = [['plugin', join(CATALOG, 'ast')], ['learned', join(LEARNED, 'ast')]];
@@ -75,7 +76,7 @@ export function astCandidates(repo, files, only) {
   const seen = new Set();
   const cands = [];
   for (const h of s.hits) {
-    const f = byPath.get(h.file) || byPath.get(relative(repo, resolve(repo, h.file)));
+    const f = byPath.get(h.file) || byPath.get(gitPath(relative(repo, resolve(repo, h.file))));
     const a = f?.added.find((x) => x.n >= h.range.start.line + 1 && x.n <= h.range.end.line + 1);
     const id = baseId(h.ruleId);
     if (f && TEST.test(f.path) && !TEST_RULES.has(id)) continue;

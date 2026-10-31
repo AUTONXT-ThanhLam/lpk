@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { barFor } from './bar.mjs';
 import { archiveLedger } from './findings.mjs';
-import { git, top } from './git.mjs';
+import { git, top, within } from './git.mjs';
 import { sessionId } from './host.mjs';
 import { gone, heirs, sessionPid } from './sessions.mjs';
 import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
@@ -56,7 +56,7 @@ export function activeRun(session, bind = true, cwd = '') {
     rmSync(file, { force: true });
     return null;
   }).filter(Boolean);
-  const above = (r) => cwd && (r.repo === cwd || r.repo.startsWith(`${cwd.replace(/\/$/, '')}/`));
+  const above = (r) => within(r.repo, cwd);
   const mine = runs.filter((r) => (r.session ? r.session === session : above(r))).sort((a, b) => b.started - a.started);
   let pick = bind ? mine[0] : mine.find((r) => r.session);
   if (!pick) { const only = heirs(session, top(cwd)); if (only.length === 1) pick = only[0]; }
