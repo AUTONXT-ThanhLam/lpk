@@ -5,42 +5,43 @@
 ## The pinned reference
 
 Emil Kowalski's skills sit on this machine at one pinned commit, `a81dbca`, under
-`~/.local/share/lpk/design-kit/emilkowalski-skills`. This block builds the clone in a private temp
-directory, then renames it into place, so parallel runs never touch the same directory and never
-wait; it does nothing when HEAD already is the pin:
+`~/.local/share/lpk/design-kit/emilkowalski-skills@a81dbca07f2217b7103e510c0f13f8d5b017afc9`. This
+block builds the clone in a private temp directory, then renames it into place, so parallel runs
+never touch the same directory and never wait; it does nothing when the clone is already there:
 
 ```sh
 K="$HOME/.local/share/lpk/design-kit"
-E="$K/emilkowalski-skills"
 PIN=a81dbca07f2217b7103e510c0f13f8d5b017afc9
+E="$K/emilkowalski-skills@$PIN"
 at_pin() { test "$(git -C "$E" rev-parse HEAD 2>/dev/null)" = "$PIN"; }
 find "$K" -maxdepth 1 -name '.pin.*' -mmin +60 -exec rm -rf {} + 2>/dev/null
 at_pin || {
   mkdir -p "$K"
-  T=$(mktemp -d "$K/.pin.XXXXXX") && mkdir "$T/emilkowalski-skills" &&
-    git -C "$T/emilkowalski-skills" init -q &&
-    git -C "$T/emilkowalski-skills" remote add origin https://github.com/emilkowalski/skills.git &&
-    GIT_TERMINAL_PROMPT=0 git -C "$T/emilkowalski-skills" fetch -q --depth 1 origin "$PIN" &&
-    git -C "$T/emilkowalski-skills" checkout -q -f FETCH_HEAD &&
-    { mv "$T/emilkowalski-skills" "$K/" 2>/dev/null || at_pin ||
-      { mv "$E" "$T/old" 2>/dev/null; mv "$T/emilkowalski-skills" "$K/" 2>/dev/null || at_pin; }; }
+  T=$(mktemp -d "$K/.pin.XXXXXX") && C="$T/emilkowalski-skills@$PIN" && mkdir "$C" &&
+    git -C "$C" init -q &&
+    git -C "$C" remote add origin https://github.com/emilkowalski/skills.git &&
+    GIT_TERMINAL_PROMPT=0 git -C "$C" fetch -q --depth 1 origin "$PIN" &&
+    git -C "$C" checkout -q -f FETCH_HEAD &&
+    mv "$C" "$K/" 2>/dev/null
   test -n "$T" && rm -rf "${T:?}"
 }
-at_pin || sleep 1
-at_pin && test -f "$E/skills/apple-design/SKILL.md" && echo "pinned $PIN" || echo "not confirmed"
+if at_pin && test -f "$E/skills/apple-design/SKILL.md"; then echo "pinned $PIN"
+elif test -e "$E"; then echo "not confirmed: $E is not a clean clone at the pin; delete it and run again"
+else echo "not confirmed"; fi
 ```
 
 A rename onto a non-empty directory fails, so only one run puts its clone in place; the others
-find HEAD at the pin and discard theirs. A clone left at another commit is renamed aside first. A
-run killed mid-fetch leaves only an unreferenced `.pin.*` directory, which any later run removes
-once it is an hour old, even a run that finds the pin in place.
+find it at the pin and discard theirs. A clone is never moved or removed once in place, so a run
+reading it never loses a file; the clone of an earlier pin stays beside it until you delete it by
+hand. A run killed mid-fetch leaves only an unreferenced `.pin.*` directory, which any later run
+removes once it is an hour old, even a run that finds the pin in place.
 
 Run it first, every time; never fetch a branch or any other commit. When it prints `not confirmed`
 (no network, no git, the pin missing) stop and report `not confirmed` with the reason: you never
 design from memory of these files, and a paraphrase of them is how the rules came to contradict
 his. Read in full, before any design: `skills/apple-design/SKILL.md` and
 `skills/emil-design-eng/SKILL.md`. Read when the task needs it, under
-`~/.local/share/lpk/design-kit/emilkowalski-skills`:
+`~/.local/share/lpk/design-kit/emilkowalski-skills@a81dbca07f2217b7103e510c0f13f8d5b017afc9`:
 
 - `skills/animate/RECIPES.md`: the motion of an overlay (popover, menu, dialog, toast, drawer), next
   to `motion.md` of `lpk:ui-craft`; `skills/animate/SKILL.md` for the build order.
