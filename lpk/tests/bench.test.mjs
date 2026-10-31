@@ -240,7 +240,11 @@ test('R1 R2: an injection is counted by what it carries, and a line that only qu
     { type: 'attachment', attachment: { type: 'hook_additional_context', content: [advice], hookEvent: 'PostToolUse' }, rendered: [{ content: `hook additional context: ${advice}` }] },
     { type: 'attachment', attachment: { type: 'hook_additional_context', content: ['another plugin says hi'] } },
     { type: 'user', isMeta: true, message: { content: [{ type: 'text', text: skill }] } },
+    { type: 'user', isMeta: true, message: { content: [{ type: 'text', text: '<command-message>x</command-message>\n<skill-format>true</skill-format>' }, { type: 'text', text: skill }] } },
     { type: 'user', message: { content: card } },
+    { type: 'attachment', attachment: { type: 'file', filename: '/p/card.md', content: { type: 'text', file: { filePath: '/p/card.md', content: card, numLines: 2 } } } },
+    { type: 'user', message: { content: 'This summary mentions `# lpk state card` in a sentence.' } },
+    { type: 'attachment', attachment: { type: 'file', content: { type: 'text', file: { content: 'export const mark = "# lpk state card";\n// # lpk state card' } } } },
     toolResult(`hook additional context: ${advice} ${'x'.repeat(5000)}`),
     toolResult(card.repeat(100)),
     toolResult(skill),
@@ -251,10 +255,10 @@ test('R1 R2: an injection is counted by what it carries, and a line that only qu
   writeFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n{"half');
   const ctx = { measured: { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, cardLines: 0, cardBytes: 0, mainTranscriptBytes: 0 } };
   measureInjections(ctx, [file]);
-  assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 1, skillInjectBytes: skill.length, cardLines: 1, cardBytes: card.length, mainTranscriptBytes: readFileSync(file, 'utf8').length });
+  assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 2, skillInjectBytes: skill.length * 2, cardLines: 2, cardBytes: card.length * 2, mainTranscriptBytes: readFileSync(file, 'utf8').length });
 });
 
-test('R3: output larger than a pipe buffer reaches a reader that starts late, with the exit code of the command', async () => {
+test('output larger than a pipe buffer reaches a reader that starts late, with the exit code of the command', async () => {
   const lib = join(ROOT, 'lib', 'out.mjs');
   const child = spawn('node', ['--input-type=module', '-e', `import { finish } from ${JSON.stringify(lib)}; console.log('x'.repeat(300000)); await finish(3);`], { stdio: ['ignore', 'pipe', 'inherit'] });
   await new Promise((r) => setTimeout(r, 300));

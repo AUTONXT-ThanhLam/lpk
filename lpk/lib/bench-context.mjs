@@ -49,28 +49,30 @@ export function context(root) {
 }
 
 const SKILL_MARK = 'Base directory for this skill';
-const CARD_MARK = '# lpk state card';
+const CARD_HEADING = /^# lpk state card/m;
 
-function userText(entry) {
+function userBlocks(entry) {
   const c = entry.message?.content;
-  if (typeof c === 'string') return c;
-  return Array.isArray(c) ? c.filter((b) => b?.type === 'text').map((b) => b.text).join('\n') : '';
+  if (typeof c === 'string') return [c];
+  return Array.isArray(c) ? c.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text) : [];
 }
 
-export function injectionOf(entry) {
+function injectionOf(entry) {
   if (entry.type === 'attachment') {
     const a = entry.attachment ?? {};
     if (a.type === 'hook_additional_context') {
       const text = [].concat(a.content ?? []).join('\n');
       return text.startsWith('lpk') ? ['advice', text.length] : null;
     }
-    const raw = a.type === 'file' ? JSON.stringify(a) : '';
-    return raw.includes(CARD_MARK) ? ['card', raw.length] : null;
+    const text = a.type === 'file' ? a.content?.file?.content : '';
+    return typeof text === 'string' && CARD_HEADING.test(text) ? ['card', text.length] : null;
   }
   if (entry.type !== 'user' || entry.toolUseResult) return null;
-  const text = userText(entry);
-  if (text.startsWith(SKILL_MARK)) return ['skill', text.length];
-  return text.includes(CARD_MARK) ? ['card', text.length] : null;
+  const blocks = userBlocks(entry);
+  const skill = blocks.find((t) => t.startsWith(SKILL_MARK));
+  if (skill) return ['skillInject', skill.length];
+  const card = blocks.find((t) => CARD_HEADING.test(t));
+  return card ? ['card', card.length] : null;
 }
 
 export function measureInjections(ctx, files) {
@@ -84,10 +86,8 @@ export function measureInjections(ctx, files) {
       try { entry = JSON.parse(line); } catch { continue; }
       const hit = injectionOf(entry);
       if (!hit) continue;
-      const [bucket, bytes] = hit;
-      const key = { advice: 'advice', skill: 'skillInject', card: 'card' }[bucket];
-      m[`${key}Lines`]++;
-      m[`${key}Bytes`] += bytes;
+      m[`${hit[0]}Lines`]++;
+      m[`${hit[0]}Bytes`] += hit[1];
     }
   }
 }
