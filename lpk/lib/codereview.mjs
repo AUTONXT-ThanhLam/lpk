@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createWriteStream, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { launchAs } from './account.mjs';
 import { fromReport, proseFindings, readStream } from './codereview-parse.mjs';
 import { git } from './git.mjs';
 
@@ -20,10 +21,12 @@ export function childArgs({ prompt, model, fallbackModel, effort, appendSystemPr
 
 export function runChild({ cwd, timeoutMs, rawFile, bin = process.env.LPK_CLAUDE_BIN || 'claude', ...opts }) {
   const env = { ...process.env, CLAUDE_CODE_REPORT_FINDINGS: '1' };
+  const launch = launchAs(bin, childArgs(opts), env);
+  if (launch.error) return Promise.resolve({ ...readStream(''), exit: 'not started', stderr: launch.error });
   return new Promise((done) => {
     const out = createWriteStream(rawFile);
     let text = '', err = '', timedOut = false;
-    const child = spawn(bin, childArgs(opts), { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(launch.cmd, launch.args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
     child.on('error', (e) => { err = e.code === 'ENOENT' ? `the ${bin} CLI is not on PATH` : e.message; });
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (d) => { text += d; out.write(d); });
