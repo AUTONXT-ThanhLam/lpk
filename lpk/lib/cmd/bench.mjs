@@ -72,7 +72,8 @@ export async function main(argv) {
       for (let i = 0; i < list.length; i++) {
         const r = list[i];
         const from = Date.parse(r.started);
-        const to = i + 1 < list.length ? Date.parse(list[i + 1].started) : Infinity;
+        const next = i + 1 < list.length ? Date.parse(list[i + 1].started) : Infinity;
+        const to = r.wallMs > 0 ? Math.min(next, from + r.wallMs) : next;
         const spans = [];
         const worked = [];
         const per = {};
@@ -91,7 +92,7 @@ export async function main(argv) {
           const t = (agentRows.get(k) || (() => { const x = { agent: k, host, runs: 0, fresh: 0, cacheRead: 0, messages: 0, spanMs: 0 }; agentRows.set(k, x); return x; })());
           t.runs++; t.fresh += w.fresh; t.cacheRead += w.cacheRead; t.messages += w.messages; t.spanMs += union(sp, from, to);
         }
-        const ownerIdleMs = idle(worked, owner, from, Number.isFinite(r.wallMs) ? Math.min(to, from + r.wallMs) : to);
+        const ownerIdleMs = idle(worked, owner, from, to);
         runRows.push({
           id: r.id, repo: r.repo, path: r.path, lane: r.lane, host, session: r.session,
           wallMs: r.wallMs ?? null, ledger: led.byRun.has(r.id) ? 'present' : 'absent',
