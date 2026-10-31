@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, HOME, hook, lpk, repoWith, sh, startRun, write } from './hooks-env.mjs';
 import { markerOf } from '../lib/run.mjs';
+import { gitPath } from '../lib/git.mjs';
 
 const registry = () => { const d = join(ENV.XDG_STATE_HOME, 'lpk', 'active'); return readdirSync(d).map((n) => readFileSync(join(d, n), 'utf8').trim()); };
 const exited = (session) => {
@@ -69,7 +70,7 @@ test('several runs left open below a repo are listed for the owner to choose, no
   live('new-4', process.pid);
   const card = text(startup('new-4', repo));
   assert.match(card, /2 open runs here lost the session that held them/);
-  for (const wt of wts) assert.ok(card.includes(wt), `names ${wt}`);
+  for (const wt of wts) assert.ok(card.includes(gitPath(wt)), `names ${gitPath(wt)}`);
   for (const wt of wts) assert.equal(heldBy(wt).session, 'gone-4');
 });
 
