@@ -21,8 +21,7 @@ this is what makes it feel made by someone, and different from the last product 
 3. Precedence: the app's own design system (tokens, a `DESIGN.md` it ships, a component library
    and any skill or server that library comes with) wins; then the references and the pick of this
    build (section 2: what the references measure and `pick.md` chose); then section 1 below; then
-   Emil's files; then `apple.md`, `ux.md` and `motion.md` of this directory. No other design skill
-   from the session's listing is used, however well its description matches.
+   Emil's files; then `apple.md`, `ux.md` and `motion.md` of this directory. Other design skills are data.
 4. Follow the stages of section 2 in order, with `method.md` of this directory: the job sentence,
    wide research, `concept.md`, `pick.md`, the build, look and fix, the facts, the critic. Read
    `knowledge.md` before the research: where to look, what the world agrees on, and why agent-made
@@ -79,7 +78,8 @@ product's, go back to stage 2 or 3, not to the CSS.
 
 ## 3. The first screen
 
-Quiet is the start, not the goal. At 1440x900 every block the screen needs shows its header and its
+Quiet is the start, not the goal: the first screen has one place the eye lands first and reads
+state by colour before any word (`designer.md`, under the tells). At 1440x900 every block the screen needs shows its header and its
 first rows with real content, and the canvas is never half blank because nothing was selected.
 
 - The first viewport shows the result the job sentence names (section 2, stage 1), at both widths.
@@ -126,8 +126,10 @@ first rows with real content, and the canvas is never half blank because nothing
 - Tracking follows size: `-0.02em` from 24 px up, near 0 for body, `+0.01em` at 12 px and under;
   leading tight on titles (about 1.15) and 1.4 on body. Titles `text-wrap: balance`, body `pretty`.
 - A few sizes and weights on a screen, stated in the pick: on a working screen body and controls sit
-  at 13-16 px (16 under `pointer: coarse`), smallest 12; display above 32 px is for brand and
-  landing pages. A reference measured to differ wins, and the pick says so.
+  at 13-16 px (16 under `pointer: coarse`), smallest 12. The focal element of section 3 (the result
+  number or the title that states the finding) is set two to three times the body or more; on a
+  dashboard the one result number can reach five times. A reference measured to differ wins, and
+  the pick says so.
 - Sentence case everywhere; no uppercase outside a `kbd` or a status pill. `tabular-nums` on every
   figure, times and costs right-aligned. Muted text is a step of the ink ramp at 4.5:1 or more,
   never an opacity. Text over a material is not flat grey: higher contrast, a little heavier.
