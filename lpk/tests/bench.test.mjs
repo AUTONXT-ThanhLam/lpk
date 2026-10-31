@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
@@ -148,6 +148,21 @@ test('a finding only one lens raised counts once, and a shared file does not cou
   assert.equal(by['lpk:bug-hunter'].dropped, 1, 'a contested finding is not counted as a fixed one');
   assert.equal(by['lpk:techlead'].confirmed, 1);
   assert.equal(by['lpk:techlead'].fixed, 0);
+});
+
+test('work a session does after its run ended is no part of the run\'s window', () => {
+  plant('bench-after-end');
+  const main = join(CLAUDE, 'projects', '-work-repo', 's-claude', 'subagents');
+  write(main, 'agent-late.jsonl', jsonl([msg('l1', [7, 7, 70, 7], '2026-10-21T14:00:00Z'), msg('l2', [7, 7, 70, 7], '2026-10-21T14:30:00Z')]));
+  write(main, 'agent-late.meta.json', JSON.stringify({ agentType: 'lpk:builder' }));
+  const j = out(tmp);
+  rmSync(join(main, 'agent-late.jsonl'));
+  rmSync(join(main, 'agent-late.meta.json'));
+  const r = j.wall.runs.find((x) => x.id === RUN1);
+  assert.equal(r.criticalPathMs, 30000, 'the run began at 10:00 and lasted an hour: work at 14:00 is another job');
+  assert.equal(r.lensMsSum, 40000);
+  assert.equal(r.longPole, 'lpk:techlead');
+  assert.equal(j.agents.find((a) => a.agent === 'lpk:builder'), undefined, 'an agent that worked only after the run ended is no role of the run');
 });
 
 test('the critical path is the union of the lenses\' spans, not their sum', () => {
