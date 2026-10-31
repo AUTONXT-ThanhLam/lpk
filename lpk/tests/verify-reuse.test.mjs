@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { test } from 'node:test';
 import { hook, lpk, reason, repoWith, tmp, write } from './hooks-env.mjs';
 import { readRecords } from '../lib/records.mjs';
@@ -9,7 +9,8 @@ import { runDir } from '../lib/run.mjs';
 const commitHook = (repo, session) => hook('PreToolUse', 'commit', { tool_name: 'Bash', cwd: repo, session_id: session, tool_input: { command: 'git commit -am x' } });
 const begin = (repo, session, ...args) => lpk(repo, session, 'run', 'start', '--target', 'main', ...args);
 const count = (name) => join(tmp, `${name}.count`);
-const bump = (name) => `echo x >> ${count(name)}`;
+const inBash = (path) => path.replaceAll('\\', '/');
+const bump = (name) => `echo x >> ${inBash(count(name))}`;
 const runs = (name) => (existsSync(count(name)) ? readFileSync(count(name), 'utf8').trim().split('\n').length : 0);
 const lastVerify = (repo) => readRecords(repo).filter((r) => r.kind === 'verify').at(-1);
 const fresh = (name) => repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
@@ -27,7 +28,7 @@ test('R1: a failing check keeps its output in a log whose path is printed and re
   const [green, failed] = lastVerify(repo).results;
   assert.equal(failed.log, path);
   assert.equal(green.log, undefined);
-  assert.deepEqual(readdirSync(logDir(repo)), [path.split('/').at(-1)]);
+  assert.deepEqual(readdirSync(logDir(repo)), [basename(path)]);
 
   const par = fresh('reuse-stopped');
   assert.equal(begin(par, 'st', '--verify', 'sleep 5', '--verify', 'echo boom; exit 1').status, 0);
@@ -61,7 +62,7 @@ test('R1: a log that cannot be written leaves the result, the FAIL line and the 
 test('R2 R4: the next full verify runs only the checks not green on this tree and the record counts at the commit gate', () => {
   const repo = fresh('reuse-flow');
   const a = bump('flow-a');
-  const b = `${bump('flow-b')}; test $(wc -l < ${count('flow-b')}) -gt 1`;
+  const b = `${bump('flow-b')}; test $(wc -l < ${inBash(count('flow-b'))}) -gt 1`;
   assert.equal(begin(repo, 'fl', '--verify', a, '--verify', b).status, 0);
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
 
@@ -87,7 +88,7 @@ test('R2 R4: the next full verify runs only the checks not green on this tree an
 test('R2 R4: a later red of a check on the same tree cancels its earlier green', () => {
   const repo = fresh('reuse-newest');
   const flag = join(tmp, 'newest.flag');
-  const a = `${bump('newest-a')}; test ! -e ${flag}`;
+  const a = `${bump('newest-a')}; test ! -e ${inBash(flag)}`;
   assert.equal(begin(repo, 'nw', '--verify', a, '--verify', 'true').status, 0);
   assert.equal(lpk(repo, 'nw', 'verify').status, 0);
   write(tmp, 'newest.flag', 'x');
@@ -155,7 +156,7 @@ test('R2: --parallel reuses a green check from an earlier red run on the same tr
   const repo = fresh('reuse-parallel');
   const flag = join(tmp, 'parallel.flag');
   const a = bump('parallel-a');
-  const b = `${bump('parallel-b')}; sleep 1; test -e ${flag}`;
+  const b = `${bump('parallel-b')}; sleep 1; test -e ${inBash(flag)}`;
   assert.equal(begin(repo, 'pl', '--verify', a, '--verify', b).status, 0);
   assert.equal(lpk(repo, 'pl', 'verify', '--parallel').status, 1);
   write(tmp, 'parallel.flag', 'x');

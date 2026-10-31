@@ -1,22 +1,21 @@
 // `lpk code-review` as the lead meets it: a headless /code-review child whose findings land in the
 // ledger and whose record pays the code review the lane owes, and a child that fails pays nothing.
 import assert from 'node:assert/strict';
-import { chmodSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, lpk, noHost, repoWith, sh, tmp, write } from './gates-env.mjs';
 import { readLedger, ruleOn } from '../lib/findings.mjs';
+import { stubBin } from './stub.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const owed = (repo, S, env = ENV) => JSON.parse(spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: { ...env, CLAUDE_CODE_SESSION_ID: S }, encoding: 'utf8' }).stdout).map((r) => r.lens);
 
 function fakeClaude(name, lines) {
-  const bin = join(tmp, `${name}.mjs`);
+  const bin = join(tmp, process.platform === 'win32' ? `${name}.exe` : name);
   const seen = `{ argv: process.argv.slice(2), refs: git('for-each-ref', '--format=%(objectname)', 'refs/heads', 'refs/remotes').split('\\n').filter(Boolean), head: git('rev-parse', 'HEAD').trim(), remotes: git('remote').trim(), index: git('write-tree').trim(), staged: git('diff', '--cached', '--name-only').split('\\n').filter(Boolean) }`;
-  write(tmp, `${name}.mjs`, `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nimport { execFileSync } from 'node:child_process';\nconst git = (...a) => execFileSync('git', a, { encoding: 'utf8' });\nwriteFileSync(${JSON.stringify(`${bin}.seen`)}, JSON.stringify(${seen}));\n${lines.map((l) => `console.log(${JSON.stringify(JSON.stringify(l))});`).join('\n')}\n`);
-  chmodSync(bin, 0o755);
-  return bin;
+  return stubBin(tmp, name, `import { writeFileSync } from 'node:fs';\nimport { execFileSync } from 'node:child_process';\nconst git = (...a) => execFileSync('git', a, { encoding: 'utf8' });\nwriteFileSync(${JSON.stringify(`${bin}.seen`)}, JSON.stringify(${seen}));\n${lines.map((l) => `console.log(${JSON.stringify(JSON.stringify(l))});`).join('\n')}\n`);
 }
 
 const report = { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'ReportFindings', input: { findings: [
@@ -103,4 +102,15 @@ test('on a host without the code review command the lane owes the code-reviewer 
   const out = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'reviews', 'owed', '--json'], { cwd: repo, env: noHost(ENV), encoding: 'utf8' });
   const lenses = JSON.parse(out.stdout).map((r) => r.lens);
   assert.ok(lenses.includes('code-reviewer') && !lenses.includes('code-review'), lenses.join());
+});
+
+test('a review child that cannot be started fails with lpk\'s message, not a stack, and pays nothing', () => {
+  const S = 'nostart';
+  const repo = changedRepo('nostart', S);
+  write(tmp, 'not-a-program.txt', 'this is text, not an executable\n');
+  const r = codeReview(repo, S, join(tmp, 'not-a-program.txt'));
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /the review child ended without a result \(exit [^)]+\): /);
+  assert.doesNotMatch(r.stderr, /\n\s+at /);
+  assert.ok(owed(repo, S).includes('code-review'));
 });

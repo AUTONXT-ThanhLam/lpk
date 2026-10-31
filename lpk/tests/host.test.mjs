@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -202,7 +202,7 @@ test('the transcripts reader finds a session\'s lenses and labels them', () => {
 
   const found = withEnv({}, () => sessionFiles(ZS));
   assert.equal(found.host, 'claude');
-  assert.deepEqual(found.agents.map((f) => f.split('/').pop()).sort(), ['agent-a2.jsonl', 'agent-a3.jsonl']);
+  assert.deepEqual(found.agents.map((f) => basename(f)).sort(), ['agent-a2.jsonl', 'agent-a3.jsonl']);
 });
 
 test('the incremental reader folds an all-zero transcript and calls its tokens unmeasured', () => {

@@ -1,15 +1,16 @@
 // Shared by the fact-verb tests: a scratch home, git repos with commits, `lpk` run as the agent runs
 // it, and a stand-in `gh` that answers from a fixture of argument lines.
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { stubBin } from './stub.mjs';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-verbs-')));
-after(() => rmSync(tmp, { recursive: true, force: true }));
+after(() => rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }));
 const BIN = join(tmp, 'bin');
 export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const ENV = {
@@ -42,12 +43,11 @@ export function repoWith(name, files) {
 
 // `gh` answers each call with the fixture's value for its arguments joined by spaces, else fails.
 mkdirSync(BIN, { recursive: true });
-writeFileSync(join(BIN, 'gh'), `#!/usr/bin/env node
-const f = JSON.parse(require('fs').readFileSync(process.env.FAKE_GH, 'utf8'));
+stubBin(BIN, 'gh', `import { existsSync, readFileSync } from 'node:fs';
+if (!existsSync(process.env.FAKE_GH)) { process.stderr.write('fake gh: no fixture\\n'); process.exit(1); }
+const f = JSON.parse(readFileSync(process.env.FAKE_GH, 'utf8'));
 const k = process.argv.slice(2).join(' ');
 if (!(k in f)) { process.stderr.write('fake gh: no answer for ' + k + '\\n'); process.exit(1); }
 process.stdout.write(JSON.stringify(f[k]));
 `);
-chmodSync(join(BIN, 'gh'), 0o755);
-if (process.platform === 'win32') writeFileSync(join(BIN, 'gh.cmd'), '@node "%~dp0gh" %*\r\n');
 export const ghAnswers = (map) => writeFileSync(ENV.FAKE_GH, JSON.stringify(map));

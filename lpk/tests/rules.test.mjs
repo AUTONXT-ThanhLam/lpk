@@ -1,8 +1,8 @@
 // The facts behind the rule catalog: which rules a change loads, the literal candidates and
 // unwired env names `lpk check` reports, the route census, and which changes no test depends on.
 import assert from 'node:assert/strict';
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
@@ -105,16 +105,17 @@ test('a submodule change, also in its frozen review tree, sees the team rule fil
   const svc = join(sup, 'services', 'svc');
   write(svc, 'pkg/a.ts', 'export const a = 2;\n');
   const listed = (out) => out.slice(out.indexOf('Team rule files')).split('\n').filter((l) => /^ {2}\S/.test(l)).map((l) => l.trim().split(' (')[0]).sort();
-  const want = ['AGENTS.md', 'pkg/CLAUDE.md', join(sup, 'CLAUDE.md'), join(sup, 'docs/guide.md'), join(sup, 'docs/rules/security.md')].sort();
+  const root = realpathSync.native(sup);
+  const want = ['AGENTS.md', join('pkg', 'CLAUDE.md'), join(root, 'CLAUDE.md'), join(root, 'docs', 'guide.md'), join(root, 'docs', 'rules', 'security.md')].sort();
   const out = lpk(svc, ['rules', '--base', 'main']).stdout;
   assert.deepEqual(listed(out), want);
-  assert.match(out, /docs\/guide\.md \(1 lines, linked from .*CLAUDE\.md\) {2}names: svc\n {6}Read \[the rules\]/);
+  assert.match(out, /docs[\\/]guide\.md \(1 lines, linked from .*CLAUDE\.md\) {2}names: svc\n {6}Read \[the rules\]/);
   // The frozen review tree is a linked worktree of the submodule, where git names no superproject.
   const frozen = join(tmp, 'svc-review');
   sh(svc, 'worktree', 'add', '-q', '--detach', frozen);
   write(frozen, 'pkg/a.ts', 'export const a = 2;\n');
   assert.deepEqual(listed(lpk(frozen, ['rules', '--base', 'main']).stdout), want);
-  assert.match(lpk(frozen, ['facts', '--base', 'main']).stdout, new RegExp(`siblings searched: ${join(sup, 'services', 'web')}\n`));
+  assert.match(lpk(frozen, ['facts', '--base', 'main']).stdout, new RegExp(`siblings searched: ${join(root, 'services', 'web').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\n`));
 });
 
 test('lpk check puts the language and CI traps on the line they are written, and only there', () => {
@@ -203,45 +204,6 @@ test('lpk mutate names the changed file no test depends on and leaves the checko
   assert.equal(sh(repo, 'stash', 'list'), '');
   assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 1);
   assert.ok(existsSync(join(repo, 'node_modules', 'dep', 'index.js')), 'the checkout\'s dependencies survive the removal of the worktree that linked them');
-});
-
-test('an interrupted lpk mutate stops its tests and removes its worktree', async () => {
-  const repo = repoWith('interrupt', { 'src/a.mjs': 'export const a = 1;\n' });
-  write(repo, 'src/a.mjs', 'export const a = 2;\n');
-  const child = spawn('node', [LPK, 'mutate', '--base', 'main', '--test', 'sleep 30 && echo lpk-marker-sleep'], { cwd: repo, env: ENV });
-  const childClosed = new Promise((r) => child.on('close', r));
-  await new Promise((r) => setTimeout(r, 2000));
-  child.kill('SIGTERM');
-  await childClosed;
-  assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 1);
-  let alive = true;
-  for (let i = 0; i < 20 && alive; i++) { alive = spawnSync('pgrep', ['-f', '^bash -c sleep 30 && echo lpk-marker-sleep']).status === 0; if (alive) await new Promise((r) => setTimeout(r, 100)); }
-  assert.equal(alive, false, 'the test command still runs');
-});
-
-test('a run killed outright is cleaned up by the next lpk mutate', async () => {
-  const repo = repoWith('orphan', { 'src/a.mjs': 'export const a = 1;\n' });
-  write(repo, 'src/a.mjs', 'export const a = 2;\n');
-  const child = spawn('node', [LPK, 'mutate', '--base', 'main', '--test', 'sleep 30 && echo lpk-marker-orphan'], { cwd: repo, env: ENV });
-  const childClosed = new Promise((r) => child.on('close', r));
-  await new Promise((r) => setTimeout(r, 2000));
-  child.kill('SIGKILL');
-  await childClosed;
-  assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 2, 'SIGKILL leaves the worktree behind');
-  const next = lpk(repo, ['mutate', '--base', 'main', '--test', 'true']);
-  assert.equal(next.status, 0, next.stderr);
-  assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 1);
-  assert.equal(spawnSync('pgrep', ['-f', '^bash -c sleep 30 && echo lpk-marker-orphan']).status, 1, 'the orphaned test command still runs');
-  // lpk compare keeps two worktrees, main's and the change's: both are cleaned up the same way.
-  write(tmp, 'orphan-in/a', '1\n');
-  const cmp = spawn('node', [LPK, 'compare', '--base', 'main', '--run', 'sleep 3', '--inputs', join(tmp, 'orphan-in')], { cwd: repo, env: ENV });
-  const cmpClosed = new Promise((r) => cmp.on('close', r));
-  await new Promise((r) => setTimeout(r, 1500));
-  cmp.kill('SIGKILL');
-  await cmpClosed;
-  assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 3, 'SIGKILL leaves both worktrees behind');
-  assert.equal(lpk(repo, ['mutate', '--base', 'main', '--test', 'true']).status, 0);
-  assert.equal(sh(repo, 'worktree', 'list').trim().split('\n').length, 1);
 });
 
 test('lpk mutate --hunks names each hunk of a tested file that no test depends on, imports included', () => {

@@ -4,11 +4,10 @@
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { freemem } from 'node:os';
-import { join } from 'node:path';
 import { defaultBranch, git, mergeBase, top } from './git.mjs';
 import { astGrepBin, INSTALL } from './ast.mjs';
 import { remapWarning } from './safety.mjs';
-import { BIN } from './tools.mjs';
+import { OWN_GITLEAKS } from './tools.mjs';
 
 // A command's exit code (or the error code when it could not start), killed after `ms`.
 const exitOf = (cmd, args, cwd, ms) => new Promise((done) => {
@@ -52,7 +51,7 @@ export async function preflight(repo, { target = '', verify = [], env = process.
     `gh: ${gh === 0 ? 'signed in' : gh === 'missing' ? 'not installed' : gh === 'timeout' ? 'did not answer in 3 s' : 'not signed in (`gh auth login`)'}`,
     browser,
     memory(),
-    leaks === 0 || existsSync(join(BIN, 'gitleaks')) ? 'gitleaks: installed' : 'gitleaks: missing; the PR body says secrets were not scanned (`lpk setup` fetches it)',
+    leaks === 0 || existsSync(OWN_GITLEAKS) ? 'gitleaks: installed' : 'gitleaks: missing; the PR body says secrets were not scanned (`lpk setup` fetches it)',
     sg === 0 ? 'ast-grep: installed' : `ast-grep: missing; lpk check runs only the regex patterns (\`${INSTALL}\`)`,
     ...(remap ? [remap] : []),
   ];

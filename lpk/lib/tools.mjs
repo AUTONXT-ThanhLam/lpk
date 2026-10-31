@@ -5,27 +5,28 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 const GITLEAKS = '8.30.1';
 export const BIN = join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'lpk', 'bin');
+const WIN = process.platform === 'win32';
+export const OWN_GITLEAKS = join(BIN, WIN ? 'gitleaks.exe' : 'gitleaks');
 
 const runs = (cmd, args) => spawnSync(cmd, args, { stdio: 'ignore', timeout: 20000 }).status === 0;
 
 // The gitleaks to run: the one on PATH, else lpk's own, else none.
 export function gitleaks() {
   if (runs('gitleaks', ['version'])) return 'gitleaks';
-  const own = join(BIN, 'gitleaks');
-  return existsSync(own) ? own : null;
+  return existsSync(OWN_GITLEAKS) ? OWN_GITLEAKS : null;
 }
 
 export function installGitleaks() {
   const have = gitleaks();
   if (have) return { path: have };
-  const os = { linux: 'linux', darwin: 'darwin' }[process.platform];
+  const os = { linux: 'linux', darwin: 'darwin', win32: 'windows' }[process.platform];
   const arch = { x64: 'x64', arm64: 'arm64' }[process.arch];
   if (!os || !arch) return { error: `no gitleaks build for ${process.platform}/${process.arch}` };
-  const name = `gitleaks_${GITLEAKS}_${os}_${arch}.tar.gz`;
+  const name = `gitleaks_${GITLEAKS}_${os}_${arch}.${WIN ? 'zip' : 'tar.gz'}`;
   const url = `https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS}`;
   mkdirSync(BIN, { recursive: true });
   const tmp = mkdtempSync(join(BIN, '.download-'));
@@ -35,9 +36,10 @@ export function installGitleaks() {
     const want = readFileSync(join(tmp, 'sums'), 'utf8').split('\n').find((l) => l.endsWith(`  ${name}`))?.split(' ')[0];
     const got = createHash('sha256').update(readFileSync(join(tmp, 'tgz'))).digest('hex');
     if (!want || want !== got) return { error: `${name} does not match its published checksum` };
-    if (!runs('tar', ['-xzf', join(tmp, 'tgz'), '-C', tmp, 'gitleaks'])) return { error: `could not unpack ${name}` };
-    renameSync(join(tmp, 'gitleaks'), join(BIN, 'gitleaks'));
-    return { path: join(BIN, 'gitleaks') };
+    const tar = WIN ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
+    if (!runs(tar, [WIN ? '-xf' : '-xzf', join(tmp, 'tgz'), '-C', tmp, basename(OWN_GITLEAKS)])) return { error: `could not unpack ${name}` };
+    renameSync(join(tmp, basename(OWN_GITLEAKS)), OWN_GITLEAKS);
+    return { path: OWN_GITLEAKS };
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

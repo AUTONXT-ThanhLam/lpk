@@ -49,7 +49,7 @@ export function repoWith(name, files) {
 // Starts a run held by `session` in `repo`, as `lpk run start` does from that session's shell.
 export function startRun(repo, session, extra = {}) {
   const base = sh(repo, 'merge-base', 'main', 'HEAD').trim();
-  const code = `const { startRun } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'run.mjs')).href)}); const r = startRun(process.cwd(), ${JSON.stringify({ target: 'main', base, verify: ['true'], ...extra })}); if (r.error) { console.error(r.error); process.exit(1); }`;
+  const code = `const { startRun } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'run.mjs')).href)}); const { top } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'git.mjs')).href)}); const r = startRun(top(process.cwd()), ${JSON.stringify({ target: 'main', base, verify: ['true'], ...extra })}); if (r.error) { console.error(r.error); process.exit(1); }`;
   const p = spawnSync('node', ['--input-type=module', '-e', code], { cwd: repo, env: { ...ENV, CLAUDE_CODE_SESSION_ID: session }, encoding: 'utf8' });
   assert.equal(p.status, 0, p.stderr);
   return join(sh(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk');
