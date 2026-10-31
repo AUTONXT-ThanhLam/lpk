@@ -1,6 +1,6 @@
 // The safety tripwires as Claude Code runs them: the PreToolUse hook from hooks.json, fed the call.
 import assert from 'node:assert/strict';
-import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, HOME, hook, reaches, reason, repoWith, sh, startRun, tmp } from './hooks-env.mjs';
@@ -96,6 +96,19 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   sh(sub, 'config', 'core.worktree', sub);
   assert.equal(edit('lpk:architect', join(gitDir, 'lpk', 'duel', 'small', 'brief.md')), null);
   assert.equal(edit('lpk:architect', join(sub, 'a.ts')).hookSpecificOutput.permissionDecision, 'deny');
+});
+
+test('a write is judged where the Write tool puts it, which reads .. as written, through a missing directory or a link', () => {
+  const repo = repoWith('climb', { 'src/a.ts': 'a\n' });
+  const edit = (agent_type, file_path) => pre({ tool_name: 'Edit', agent_id: 'x1', agent_type, cwd: repo, tool_input: { file_path, old_string: 'a', new_string: 'b' } });
+  const repro = join(ENV.XDG_CACHE_HOME, 'lpk', 'repro');
+  mkdirSync(repro, { recursive: true });
+  const target = join(repo, 'src', 'a.ts');
+  assert.equal(edit('lpk:verifier', `${repro}/ghost/../${relative(repro, target)}`).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(edit('lpk:architect', `${repo}/.git/ghost/../../src/a.ts`).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(edit('lpk:techlead', `${tmp}/nodir/ghost/../../${relative(tmp, target)}`).hookSpecificOutput.permissionDecision, 'deny');
+  symlinkSync(join(repo, 'src'), join(tmp, 'climb-link'), 'junction');
+  assert.equal(edit('lpk:techlead', `${tmp}/climb-link/../climb-notes.md`), null, 'the Write tool puts this beside the link, outside the checkout');
 });
 
 test('a spawn of an lpk agent runs on its role\'s model, whatever model the call names', () => {
