@@ -83,7 +83,7 @@ function sessionShell(name, active) {
   mkdirSync(real, { recursive: true });
   writeFileSync(join(real, 'claude'), `#!/bin/sh\necho "$LPK_ACCOUNT token=\${CLAUDE_CODE_OAUTH_TOKEN:-none} key=\${ANTHROPIC_API_KEY:+placeholder}" >> ${real}/ran\n`);
   chmodSync(join(real, 'claude'), 0o755);
-  const run = (cmd) => spawnSync('sh', ['-c', `. '${envFile}'; ${cmd}`], { env: { ...env, PATH: `${env.PATH.split(':')[0]}:${real}:${process.env.PATH}` }, encoding: 'utf8' });
+  const run = (cmd, extra = {}) => spawnSync('sh', ['-c', `. '${envFile}'; ${cmd}`], { env: { ...env, PATH: `${env.PATH.split(':')[0]}:${real}:${process.env.PATH}`, ...extra }, encoding: 'utf8' });
   const ran = () => { try { return readFileSync(join(real, 'ran'), 'utf8').trim().split('\n'); } catch { return []; } };
   return { run, ran, real };
 }
@@ -94,6 +94,8 @@ test('in a session running as an lpk account, claude runs as that account throug
   assert.deepEqual(s.ran(), ['cc2 token=token-of-cc2 key=']);
   assert.equal(s.run(`c='${s.real}'; "$c/claude" -p y`).status, 0);
   assert.equal(s.ran()[1], 'cc2 token=none key=placeholder', 'a claude reached past the shim gets the placeholder key, which claude prefers over the stored login');
+  assert.equal(s.run('claude -p z', { ANTHROPIC_API_KEY: 'own-key' }).status, 0);
+  assert.equal(s.ran()[2], 'cc2 token=token-of-cc2 key=', 'a key in the shell never outranks the session account');
   const other = sessionShell('other-active', 'cc1');
   const r = other.run('claude -p x');
   assert.equal(r.status, 2);
