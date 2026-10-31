@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { compareText } from '../lib/compare.mjs';
 import { alreadyFixed, alreadyFixedText, buildBundle } from '../lib/facts.mjs';
-import { defaultBranch, git, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
+import { defaultBranch, git, gitPath, mergeBase, mergeState, scanners, siblingRefs, siblings, top } from '../lib/git.mjs';
 import { MAX_SUBJECT } from '../lib/push.mjs';
 import { setup } from '../lib/tools.mjs';
 import { freshCandidates } from '../lib/hooks.mjs';
@@ -109,7 +109,7 @@ function mergeLine(repo) {
 function aboutPaths(repo) {
   const paths = [];
   argv.forEach((a, i) => { if (a === '--about') for (let j = i + 1; j < argv.length && !argv[j].startsWith('--'); j++) paths.push(argv[j]); });
-  return paths.map((p) => { const abs = resolve(p); try { return relative(repo, realpathSync(abs)); } catch { return relative(repo, abs); } });
+  return paths.map((p) => { const abs = resolve(p); try { return gitPath(relative(repo, realpathSync(abs))); } catch { return gitPath(relative(repo, abs)); } });
 }
 
 if (cmd === 'facts') {

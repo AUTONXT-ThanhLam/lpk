@@ -1,7 +1,7 @@
 // A verifier's reproduction runs in the run's shared worktree of the reviewed commit or of its base,
 // installed from that commit's own lockfile, and what it did is recorded for the gates.
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -18,7 +18,7 @@ test('lpk repro runs a command at the reviewed commit and at its base, each in i
     'package.json': '{ "name": "app", "version": "1.0.0", "dependencies": { "dep": "file:./dep" } }\n',
   });
   sh(repo, 'switch', '-q', 'main');
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--silent'], { cwd: repo, env: ENV });
+  execSync('npm install --no-audit --no-fund --silent', { cwd: repo, env: ENV });
   write(repo, '.gitignore', 'node_modules\n');
   commit(repo, 'Lock the dependencies', {});
   sh(repo, 'switch', '-q', 'feat');

@@ -21,9 +21,9 @@ export function afterTsEdit(input) {
   if (!climb(dirname(file), (d) => existsSync(join(d, '.git')) && d)) return null;
   const project = climb(dirname(file), (d) => existsSync(join(d, 'tsconfig.json')) && d);
   if (!project) return null;
-  const tsc = climb(project, (d) => existsSync(join(d, 'node_modules', '.bin', 'tsc')) && join(d, 'node_modules', '.bin', 'tsc'));
+  const tsc = climb(project, (d) => existsSync(join(d, 'node_modules', 'typescript', 'bin', 'tsc')) && join(d, 'node_modules', 'typescript', 'bin', 'tsc'));
   if (!tsc) return null;
-  const ran = spawnSync(tsc, ['--noEmit', '--pretty', 'false', '-p', join(project, 'tsconfig.json')], { cwd: project, encoding: 'utf8', timeout: TIMEOUT_MS });
+  const ran = spawnSync(process.execPath, [tsc, '--noEmit', '--pretty', 'false', '-p', join(project, 'tsconfig.json')], { cwd: project, encoding: 'utf8', timeout: TIMEOUT_MS });
   const name = relative(input.cwd || '.', file);
   const say = (text) => ({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } });
   if (ran.error?.code === 'ETIMEDOUT') return say(`lpk: \`tsc --noEmit -p ${relative(input.cwd || '.', join(project, 'tsconfig.json'))}\` did not finish in ${TIMEOUT_MS / 1000}s, so ${name} was not type-checked this time.`);

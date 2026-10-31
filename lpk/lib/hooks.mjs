@@ -5,7 +5,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { allCandidates } from './ast.mjs';
-import { commits, git, mergeBase, runsGit, siblings, top } from './git.mjs';
+import { commits, git, gitPath, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
 import { readRecords } from './records.mjs';
@@ -82,7 +82,7 @@ export function afterTool(input) {
   const { repo, run } = runOf(input);
   if (!run) return null;
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
-  const edited = file ? [relative(repo, resolve(input.cwd || '.', file))] : undefined;
+  const edited = file ? [gitPath(relative(repo, resolve(input.cwd || '.', file)))] : undefined;
   const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen, siblings(repo), edited);
   if (!text) return null;
   run.seen = seen;

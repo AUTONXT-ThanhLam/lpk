@@ -4,7 +4,7 @@
 // with its base, or is a draft the owner asked for ready, until the owner waives it or the run is abandoned.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
 import { repoOf } from '../out.mjs';
@@ -77,8 +77,9 @@ function worktree(repo, o) {
   if (!path || o.words.length > 3) { console.error(USAGE); return 2; }
   const run = readRun(repo);
   if (!run) { console.error(`lpk: no lpk run in ${repo} for the worktree to work in`); return 2; }
-  const at = path.includes('/') ? resolve(path) : treeOf(repo, run, path);
-  if (!path.includes('/')) mkdirSync(dirname(at), { recursive: true });
+  const named = basename(path) === path;
+  const at = named ? treeOf(repo, run, path) : resolve(path);
+  if (named) mkdirSync(dirname(at), { recursive: true });
   const r = spawnSync('git', ['worktree', 'add', ...(o.branch ? ['-b', o.branch] : ['--detach']), at, commit], { cwd: repo, encoding: 'utf8' });
   if (r.status !== 0) { console.error(`lpk: git worktree add failed: ${(r.stderr || '').trim()}`); return 1; }
   linkWorktree(at, dirname(run.marker));

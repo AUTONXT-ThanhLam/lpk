@@ -1,7 +1,7 @@
 // Exact facts from git and the files in a checkout. No judgement lives here.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 // Paths come back unquoted (core.quotepath=off), so non-ASCII file names match the diff headers.
 // Directories of vendored or generated code: never the change's own source.
@@ -23,6 +23,14 @@ export const top = (cwd) => git(['rev-parse', '--show-toplevel'], cwd).trim();
 export function absGitPath(repo, p) {
   if (!p) return '';
   return isAbsolute(p) || /^[A-Za-z]:[\\/]/.test(p) ? p : join(repo, p);
+}
+
+export const gitPath = (p) => String(p).split(sep).join('/');
+
+export function within(p, dir) {
+  if (!p || !dir) return false;
+  const r = relative(dir, p);
+  return r === '' || (!isAbsolute(r) && r !== '..' && !r.startsWith(`..${sep}`));
 }
 
 // The branch the change will merge into: origin's default branch, else main, else master.
