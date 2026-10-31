@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { astGrepBin } from '../lib/ast.mjs';
 import { delimiter, join } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, hook, lpk, repoWith, ROOT, startRun, write } from './hooks-env.mjs';
@@ -34,6 +35,15 @@ test('lpk check reports each ast match on added lines by rule id, once, beside t
     'lpk-test-eval src/b.js:1 eval(z);',
   ]);
   assert.doesNotMatch(r.stdout, /ast-grep: not installed/);
+});
+
+test('on Windows lpk runs the ast-grep.exe the npm shim stands for, and elsewhere the name on PATH', () => {
+  const prefix = join(ENV.XDG_DATA_HOME, 'npm-prefix');
+  write(prefix, 'ast-grep.cmd', '@echo off\r\n');
+  write(prefix, 'node_modules/@ast-grep/cli/ast-grep.exe', '');
+  assert.equal(astGrepBin({ Path: `${join(ENV.XDG_DATA_HOME, 'nowhere')}${delimiter}${prefix}` }, 'win32'), join(prefix, 'node_modules', '@ast-grep', 'cli', 'ast-grep.exe'));
+  assert.equal(astGrepBin({ PATH: join(ENV.XDG_DATA_HOME, 'nowhere') }, 'win32'), 'ast-grep');
+  assert.equal(astGrepBin({ PATH: prefix }, 'linux'), 'ast-grep');
 });
 
 test('without ast-grep, lpk check says how to install it and keeps the regex candidates', () => {

@@ -84,7 +84,7 @@ export const sessionsDirs = (env = process.env) => configCandidates(env).map((c)
 // Which host's store a path came from, so a fact read from it says where it was measured.
 export function hostOf(path, env = process.env) {
   const p = String(path || '');
-  for (const c of configCandidates(env)) if (p === c.dir || p.startsWith(`${c.dir}/`)) return c.host;
+  for (const c of configCandidates(env)) if (p === c.dir || p.startsWith(`${c.dir}/`) || p.startsWith(`${c.dir}\\`)) return c.host;
   return '';
 }
 

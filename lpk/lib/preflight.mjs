@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { freemem } from 'node:os';
 import { join } from 'node:path';
 import { defaultBranch, git, mergeBase, top } from './git.mjs';
-import { INSTALL } from './ast.mjs';
+import { astGrepBin, INSTALL } from './ast.mjs';
 import { remapWarning } from './safety.mjs';
 import { BIN } from './tools.mjs';
 
@@ -39,7 +39,7 @@ export async function preflight(repo, { target = '', verify = [], env = process.
     exitOf('gh', ['auth', 'status'], root, 3000),
     exitOf('gitleaks', ['version'], root, 3000),
     chrome(env.LPK_CHROME_PORT || 9333),
-    exitOf('ast-grep', ['--version'], root, 3000),
+    exitOf(astGrepBin(), ['--version'], root, 3000),
   ]);
   const dirty = git(['status', '--porcelain'], root).split('\n').filter(Boolean).length;
   const author = ['user.name', 'user.email'].map((k) => git(['config', k], root).trim());

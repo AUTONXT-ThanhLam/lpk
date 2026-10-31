@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { delimiter, join, relative, resolve } from 'node:path';
 import { candidates, CATALOG, LEARNED, NOT_CODE, TEST } from './rules.mjs';
 
 export const AST_DIRS = [['plugin', join(CATALOG, 'ast')], ['learned', join(LEARNED, 'ast')]];
@@ -16,7 +16,15 @@ export function ruleFiles(dir) {
 export const baseId = (id) => id.replace(/\.[a-z]+$/i, '');
 export const idsOf = (file) => [...new Set([...readFileSync(file, 'utf8').matchAll(/^id:\s*(\S+)/gm)].map((m) => baseId(m[1])))];
 
-const sg = (args, cwd) => spawnSync('ast-grep', args, { cwd, encoding: 'utf8', maxBuffer: 256 * 2 ** 20, env: { ...process.env, NO_COLOR: '1' } });
+export function astGrepBin(env = process.env, platform = process.platform) {
+  if (platform !== 'win32') return 'ast-grep';
+  for (const dir of (env.PATH || env.Path || '').split(delimiter).filter(Boolean)) {
+    for (const exe of [join(dir, 'ast-grep.exe'), join(dir, 'node_modules', '@ast-grep', 'cli', 'ast-grep.exe')]) if (existsSync(exe)) return exe;
+  }
+  return 'ast-grep';
+}
+
+const sg = (args, cwd) => spawnSync(astGrepBin(), args, { cwd, encoding: 'utf8', maxBuffer: 256 * 2 ** 20, env: { ...process.env, NO_COLOR: '1' } });
 const reason = (stderr) => (stderr.split('\n').filter((l) => l.startsWith('╰▻')).at(-1) || stderr.trim().split('\n')[0] || 'failed').replace(/^╰▻\s*/, '');
 
 function scanWith(repo, files, paths) {
