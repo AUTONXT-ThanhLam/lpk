@@ -258,7 +258,7 @@ test('R1 R2: an injection is counted by what it carries, and a line that only qu
   assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 2, skillInjectBytes: skill.length * 2, cardLines: 2, cardBytes: card.length * 2, mainTranscriptBytes: readFileSync(file, 'utf8').length });
 });
 
-test('output larger than a pipe buffer reaches a reader that starts late, with the exit code of the command', async () => {
+test('R3: output larger than a pipe buffer reaches a reader that starts late, with the exit code of the command', async () => {
   const lib = join(ROOT, 'lib', 'out.mjs');
   const child = spawn('node', ['--input-type=module', '-e', `import { finish } from ${JSON.stringify(lib)}; console.log('x'.repeat(300000)); await finish(3);`], { stdio: ['ignore', 'pipe', 'inherit'] });
   await new Promise((r) => setTimeout(r, 300));
