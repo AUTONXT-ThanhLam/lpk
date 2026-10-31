@@ -31,7 +31,14 @@ jobs:
         with:
           node-version: 24
       - run: npm i -g @ast-grep/cli@0.51.0 && ast-grep --version
-      - run: which bash && node --test tests/*.test.mjs
+      - run: |
+          which ast-grep || true
+          where ast-grep || true
+          node -e "const r=require('child_process').spawnSync('ast-grep',['--version'],{encoding:'utf8'});console.log('SPAWN',JSON.stringify({e:r.error&&[r.error.code,r.error.message],s:r.status,o:r.stdout}))"
+          node -e "const r=require('child_process').spawnSync('ast-grep.cmd',['--version'],{encoding:'utf8',shell:true});console.log('SPAWNCMD',JSON.stringify({e:r.error&&[r.error.code,r.error.message],s:r.status,o:r.stdout}))"
+          node -e "console.log('NPMBIN',require('child_process').execSync('npm prefix -g',{encoding:'utf8'}))"
+          ls "$(npm prefix -g)" | head -30
+          node --test tests/bench.test.mjs 2>&1 | head -60
   draw:
     runs-on: ubuntu-latest
     defaults:
