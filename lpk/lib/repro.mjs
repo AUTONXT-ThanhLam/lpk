@@ -4,10 +4,10 @@
 // checkout's `node_modules` is never made: in a workspace monorepo it resolves to the checkout's code.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, createWriteStream } from 'node:fs';
-import { homedir, constants } from 'node:os';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { takeLock, release } from './flock.mjs';
-import { killGroup, spawnGroup } from './proc.mjs';
+import { killGroup, signalOf, spawnGroup } from './proc.mjs';
 import { git } from './git.mjs';
 
 export const reproRoot = () => join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'repro');
@@ -79,8 +79,7 @@ export function runIn(cwd, cmd, timeoutS, log) {
     child.on('close', (code, signal) => {
       clearTimeout(timer);
       kill();
-      const byShell = code > 128 && code < 160 ? Object.keys(constants.signals).find((k) => constants.signals[k] === code - 128) : null;
-      const sig = timedOut ? null : signal || byShell;
+      const sig = timedOut ? null : signalOf(code, signal);
       const r = { exit: code ?? -1, signal: sig || null, crash: Boolean(sig), timedOut, ms: Date.now() - t0, tail: tail.trimEnd() };
       out.end(() => done(r));
     });

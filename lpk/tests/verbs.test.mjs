@@ -2,9 +2,11 @@
 // together, and whether the target already holds a fix.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
+import { once } from 'node:events';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { commit, ENV, lpk, repoWith, ROOT, sh, write } from './verbs-env.mjs';
+import { commit, ENV, lpk, lpkAsync, repoWith, ROOT, sh, write } from './verbs-env.mjs';
 
 const lines = (n, f = (i) => `line ${i}`) => `${Array.from({ length: n }, (_, i) => f(i + 1)).join('\n')}\n`;
 
@@ -70,7 +72,7 @@ test('lpk facts --about names the commits on the target that HEAD lacks touching
   assert.match(r.stdout, /Open PRs touching these files: unknown \(.+\)/, 'a gh that cannot answer is named, not read as no PRs');
 });
 
-test('mutate refuses an unknown argument, a missing patch and a run without --test', () => {
+test('mutate refuses an unknown argument, a missing patch and a run without --test', async () => {
   const repo = repoWith('mutate-args', { 'a.js': 'export const a = 1;\n' });
   write(repo, 'a.diff', '');
   for (const args of [['--patch a.diff --patch b.diff'], ['--patch', 'missing.diff'], ['--patch', 'a.diff', 'b.diff'], ['--patch', '.'], ['--patches', 'a.diff']]) {
@@ -88,9 +90,19 @@ test('mutate refuses an unknown argument, a missing patch and a run without --te
     const r = lpk(repo, 'mutate', '--base', 'main', '--test', 'true', '--patch', 'a.diff', ...args);
     assert.doesNotMatch(r.stderr, /unknown|usage: lpk mutate/, args.join(' '));
   }
-  // A patch piped through process substitution is a /dev/fd path, not a regular file; it is applied.
   commit(repo, 'two', { 'a.js': 'export const a = 2;\n' });
-  write(repo, 'm.diff', '--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-export const a = 2;\n+export const a = 3;\n');
-  const piped = spawnSync('bash', ['-c', `node '${join(ROOT, 'bin', 'lpk')}' mutate --base main --test 'grep -q "= 2" a.js' --patch <(cat m.diff)`], { cwd: repo, env: ENV, encoding: 'utf8' });
-  assert.match(piped.stdout, /\(mutant\): tests fail/, piped.stdout + piped.stderr);
+  const diff = '--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-export const a = 2;\n+export const a = 3;\n';
+  write(repo, 'm.diff', diff);
+  const mutate = ['mutate', '--base', 'main', '--test', 'grep -q "= 2" a.js'];
+  let piped;
+  if (process.platform === 'win32') {
+    const pipe = `\\\\.\\pipe\\lpk-patch-${process.pid}`;
+    const server = createServer((c) => c.end(diff)).listen(pipe);
+    await once(server, 'listening');
+    try { piped = await lpkAsync(repo, ...mutate, '--patch', pipe); } finally { server.close(); }
+  } else {
+    const r = spawnSync('bash', ['-c', `node '${join(ROOT, 'bin', 'lpk')}' mutate --base main --test 'grep -q "= 2" a.js' --patch <(cat m.diff)`], { cwd: repo, env: ENV, encoding: 'utf8' });
+    piped = { out: r.stdout + r.stderr };
+  }
+  assert.match(piped.out, /\(mutant\): tests fail/, piped.out);
 });

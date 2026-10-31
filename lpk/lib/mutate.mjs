@@ -2,7 +2,7 @@
 // source file at a time and run the test command. A file whose undo leaves the tests green is
 // not proved by them. The developer's checkout, index and stash are never touched.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { git } from './git.mjs';
@@ -79,9 +79,10 @@ function runTests(dir, cmd, timeout) {
 // removes this repo's mutate and compare worktrees whose owning process is gone.
 export function removeOrphans(repo, root) {
   const alive = (pid) => { try { process.kill(Number(pid), 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const canon = (p) => (existsSync(p) ? realpathSync.native(p) : p).replaceAll('\\', '/');
   for (const line of git(['worktree', 'list', '--porcelain'], repo).split('\n')) {
     const wt = line.startsWith('worktree ') ? line.slice(9) : '';
-    if (!wt.startsWith(`${root.replaceAll('\\', '/')}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
+    if (!wt || !canon(wt).startsWith(`${canon(root)}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
     const scratch = dirname(wt);
     let pid = '';
     try { pid = readFileSync(join(scratch, 'pid'), 'utf8').trim(); } catch { /* no owner recorded: leave it */ }

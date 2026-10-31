@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { killGroup } from '../lib/proc.mjs';
 
 const PARTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'ui-craft', 'parts.md');
 const URL_IN_BLOCK = 'https://github.com/emilkowalski/skills.git';
@@ -96,7 +97,7 @@ test('a run whose shell is killed mid-fetch does not stall the next run, and a l
     for (let i = 0; i < 100 && !existsSync(fetchLog); i++) await new Promise((r) => setTimeout(r, 50));
     assert.ok(existsSync(fetchLog));
   } finally {
-    process.kill(-victim.pid, 'SIGKILL');
+    killGroup(victim.pid);
     await exited;
   }
   const started = Date.now();
