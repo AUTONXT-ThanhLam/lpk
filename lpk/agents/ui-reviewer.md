@@ -16,9 +16,10 @@ does, and report what is wrong.
 
 - **Respond on press.** A control answers a touch in the same frame it lands; what a person holds,
   drags or opens follows the finger and can be interrupted halfway.
-- **The frequency gate comes before any motion.** What a person does all day, or from the
-  keyboard, does not move: zero motion can be the right answer. Motion is for what is rare,
-  spatial or hard to follow, and it names its purpose.
+- **Every control answers; frequency picks what else moves.** Press, hover and focus answer on
+  every control, and an overlay, a row arriving or leaving and an optimistic state change move
+  (`SKILL.md` section 6). A tab switch, a route change or a keyboard action is instant, and a
+  working screen never plays a page-load sequence.
 - **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
   destructive; what looks the same behaves the same, in the same place; the screen holds under
   zoom, with a finger, in dark, in high contrast and with reduced motion.
@@ -39,14 +40,22 @@ does, and report what is wrong.
 ## The generated-UI tells (each one is a finding)
 
 A side-stripe accent border on a card. Gradient text and glows. Cards nested in cards. Tiny
-uppercase eyebrow labels above headings. A hero metric row of big numbers with small labels.
-Entrances that grow from nothing. Ease-in curves. A transition on every property. Bounce on
-ordinary UI. Em dashes in UI copy. Generic claims ("supercharge", "seamless"). A row of big-number
-cards above a chart above a table. Demo or placeholder copy, round numbers and identical rows.
+uppercase eyebrow labels above headings. Metric tiles of equal weight with a generic label and a
+trend footer, none of them the answer to the job (a tile whose number is the result, coloured by
+its state, is the bar's version, as on Datadog). Entrances that grow from nothing. Ease-in curves.
+A transition on every property. Bounce on ordinary UI. Em dashes in UI copy. Generic claims
+("supercharge", "seamless"). Demo or placeholder copy, round numbers and identical rows.
 Components drawn by hand that the app's own system already has. A pale tinted ground with one
 warm accent that no reference from the reader's own category shows.
 These are a check on a finished screen, never the reason a screen is good: the research and the
-references decide taste.
+references decide taste. Taking a tell away is half the fix; every screen also has:
+- one place the eye lands first, larger, heavier or more saturated than anything else on it, and
+  it is the job's result or its primary action;
+- state read by colour before a word is read: a filled chip, dot or icon on every row, each hue
+  meaning one thing;
+- the product's own entities as themselves at real size: people as avatars, services and sources
+  as their icons, a trend as its line.
+Black text on white with one grey icon per row fails the first two however correct it is.
 
 ## Critic mode
 
@@ -108,9 +117,9 @@ bundle's `proof/` directory and check:
 5. the rubric of section 7 of `lpk:ui-craft`, judged from the screenshots and from doing the
    primary job yourself in the browser: a flat, system-font or half-empty screen is an
    `important` finding;
-6. motion, in the order of `review-animations`: delete first. An animation on a frequent or
-   keyboard-started action is the finding; a frequent action with no motion is correct and never
-   a finding. For what does move, read its `frames.mjs` frames against the standards: purpose,
+6. motion, in the order of `review-animations`: delete first. Beyond the floor of override 2
+   (press, hover, focus, overlays, rows arriving and leaving), an animation on a frequent or
+   keyboard-started action is the finding, and a frequent action with no further motion is correct. For what does move, read its `frames.mjs` frames against the standards: purpose,
    origin, curve, interruptibility by a second action mid-flight, exit, reduced motion;
 7. what a person touches responds on press and can be interrupted, an action that cannot be
    undone is guarded and names its consequence, an error or required action is never in a

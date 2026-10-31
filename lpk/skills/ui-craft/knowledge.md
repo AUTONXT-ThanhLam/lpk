@@ -13,9 +13,13 @@ sign-in is skipped and listed.
   API reference, changelog, status, a list, a detail, settings, an empty state, an error page.
   Worked well: Vercel, Stripe, Linear, Cloudflare, Supabase, Sentry, Resend, Clerk, Raycast, Figma,
   Atlassian, Datadog, Snowflake, Docker, Zed, GitHub (issues, Actions runs, diff, repo home).
+- **The bar is the best-made screen of this page type, from any category.** The references a build
+  is laid next to are the ones a buyer of high-end software would pay for: Linear, Attio, Stripe,
+  Datadog, Ramp, Resend. Each spends colour on state, puts one element first and shows its people
+  and objects as themselves. A plain screen of the reader's own category is not the bar.
 - **Public working screens.** Plausible's public dashboard, GitHub's own lists and diffs, Grafana
   Play, Cal.com booking pages. A team had to make these work with real data, so they carry the long
-  text, the states and the density a concept shot hides.
+  text, the states and the density a concept shot hides; read them for that, not for the look.
 - **Design-system sites, for the rule in a sentence.** Primer, Carbon, GOV.UK Design System: each
   states what a table, a wait or an empty state owes before it shows the example.
 - **Galleries, with a lower weight.** Dribbble opens only in the browser, by reading the source of a
@@ -37,36 +41,39 @@ shown to a new visitor is designed with them on.
 
 ## 3. What several good pages share
 
-- **Hierarchy comes from type and space.** Left-aligned, tight, a few sizes. The price is the
-  biggest thing after the headline; a changelog's date is its index; a list row has a 16px title and
-  one grey 12px meta line. Centred lists read as a brand and scan slower.
-- **Colour is spent on one meaning.** The filled button is the plan or action the page wants chosen;
-  red is the failed row, green the passed one, blue the link and the hunk header. Status also has a
-  shape (a glyph, a dot, a ring), never colour alone.
-- **Containers are replaced by rules and space.** Plans sit in one bordered tray split by hairlines;
-  rows are separated by a 1px rule; cards are rare and flat (a border, not a shadow).
-- **The first screen answers the question.** A status page opens with "is anything wrong" and
-  colours only the answer; a dashboard puts one chosen metric into the chart.
-- **Information sits where its object is.** Prose and the code it explains share a row (Stripe
-  docs); the overage price sits under the plan price (Supabase); bars sit inside table rows (Plausible);
-  a control that makes the price personal sits above the price (Figma seats, a volume slider).
-- **Metadata goes to a rail or behind a click.** A main column and a 280px rail of counts, labels
-  and participants (GitHub); counts are numbers in pills, not lists.
-- **Settings are a two-column form.** Label and one grey help line left, the control right, a rule
-  between sections.
-- **States are designed.** Primer's table docs list loading, empty, sort, density and pagination;
-  shipped Dribbble shots show an empty table and a 380-row table.
-- **The product's own voice carries the page.** Zed sets its docs in a serif and mono, PostHog turns
-  the site into a desktop, GitHub's 404 stays in its joke and keeps the nav and one search box.
-  Each is one idea carried through every page, and the page around it is calm.
-- **Narrow width is rebuilt, not shrunk.** Pricing goes to one column and drops the code column;
-  nav becomes a select; incidents become tappable cards; a sticky bottom bar appears only where the
-  job is a status.
+Read from shipped screens of Linear (Insights, filters), Attio (deals, companies), Datadog (On-Call
+pages), Ramp (spend briefing), Stripe (payments, billing) and Resend (metrics), the screens a buyer
+of high-end software holds up as the bar. Sizes are about, read from screenshots.
+
+- **One thing is first, and it is big.** A sentence that states the finding as the section title
+  ("$884K spent this week, averaging $126K per day", Ramp), one number set far above everything
+  else ("58m", Linear Insights), or a filled band that holds the actions (Datadog's next steps).
+  The title or number is two to three times the body size; nothing else competes with it.
+- **Colour is spent generously on categories and states, one meaning per hue.** Attio gives each
+  deal type its own soft-tinted pill with dark text of the same hue (green recurring, blue
+  one-time, pink exclusive, purple referral); Datadog fills a red HIGH and an amber LOW chip on
+  every row; Stripe and Resend colour each series. With the words covered, the rows still sort by
+  colour. Chrome (nav, headers, borders) stays neutral, so the data carries all the colour.
+- **Entities appear as themselves.** A company row starts with its logo, a person with an avatar,
+  a service or a field with its icon (Attio, Datadog, Linear's filter pills). A list of names in
+  plain text is the generated look.
+- **Type is real-sized and rows breathe.** Row text about 14-15 px, rows about 40-48 px, column
+  headers with an icon each (Attio). Small grey type is for one meta line, not for the content.
+- **Titles say what happened.** "Firing for 23 min", "$884K spent this week": the heading carries
+  the fact, so the person reads one line and knows.
+- **The data closes.** A sum or count row under a table (Attio "2,813 count", "$83,560,165 sum"),
+  a chart that marks its key moments (Ramp), a total that equals its parts.
+- **Status also has a shape** (a glyph, a dot, a filled chip), never colour alone.
+- **Metadata goes to a rail or behind a click,** and settings are a two-column form: label and help
+  left, the control right.
+- **States are designed:** empty, loading, error, long text, many rows, each with a look.
+- **Narrow width is rebuilt, not shrunk:** one column, the first thing still first, the primary
+  action in reach.
 
 ## 4. Where good pages differ on purpose
 
 Density runs from 28px rows to a near-black page with 40px thin headings: the dense ones are read
-all day, the calm ones once. Dark or light, serif or grotesque, one tray or three cards: each is
+all day, the open ones once. Dark or light, serif or grotesque, one tray or three cards: each is
 chosen for the reader and the product, so a choice needs its reason in `pick.md`, and the same
 choice twice in a row needs a better one.
 
@@ -77,13 +84,15 @@ Each is a finding when you see it in your own screens.
 
 1. One accent on a pale tinted ground, with the same card on it.
 2. Components drawn by hand (a select, an input, a stepper, toasts) in place of the system's.
-3. Low density: one big number in a card, a list with no header, columns or sort, a dead right
-   column. A real row carries many facts: a GitHub issue row shows title, labels, number, author,
+3. Low density: a list with no header, columns or sort, a dead right column, a card holding one
+   number and nothing else. A real row carries many facts: a GitHub issue row shows title, labels, number, author,
    date and comments.
 4. No architecture: no navigation, no nouns of the product, no breadcrumbs, no saved views.
 5. Placeholder copy: "Trending up this month", "Steady performance increase". Real products name
    the person's own objects and the next action.
-6. A row of KPI cards (big number, small label, trend footer) above an area chart above a table.
+6. A row of equal KPI cards (big number, small label, trend footer) above an area chart above a
+   table, where no tile is the answer and every tile weighs the same. Datadog's tiles pass: each
+   number is a result, set far above the rest and filled with its state.
 7. Missing states: empty, loading, error, partial, long text, many rows.
 8. Decoration standing in for product: a terminal dump, serif display type or a hero with no
    product in it, where the references show the product at once.
@@ -91,6 +100,11 @@ Each is a finding when you see it in your own screens.
 10. Fake or generic data: round numbers, repeated names, identical rows.
 11. Mobile as an afterthought: a bar over the form, a small link as the only secondary action.
 12. Every screen decided from memory with no real reference beside it, so the model's average wins.
+13. Restraint with nothing in its place. tasteskill (github.com/leonxlnx/taste-skill) recorded its
+    own clean, quiet app screens losing blind to richer ones, for these reasons: a thin first
+    screen, no product name or mark, one grey for a good and a bad change, no control for the job,
+    and a screen any product could own. Take a tell away and put the product in its place: its
+    people, its objects, its numbers and the one thing to do next.
 
 ## 6. Starting from nothing
 

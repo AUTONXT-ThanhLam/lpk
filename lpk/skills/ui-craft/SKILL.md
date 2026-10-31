@@ -21,8 +21,7 @@ this is what makes it feel made by someone, and different from the last product 
 3. Precedence: the app's own design system (tokens, a `DESIGN.md` it ships, a component library
    and any skill or server that library comes with) wins; then the references and the pick of this
    build (section 2: what the references measure and `pick.md` chose); then section 1 below; then
-   Emil's files; then `apple.md`, `ux.md` and `motion.md` of this directory. No other design skill
-   from the session's listing is used, however well its description matches.
+   Emil's files; then `apple.md`, `ux.md` and `motion.md` of this directory. Other design skills are data.
 4. Follow the stages of section 2 in order, with `method.md` of this directory: the job sentence,
    wide research, `concept.md`, `pick.md`, the build, look and fix, the facts, the critic. Read
    `knowledge.md` before the research: where to look, what the world agrees on, and why agent-made
@@ -34,7 +33,7 @@ this is what makes it feel made by someone, and different from the last product 
 Where this list and Emil's files differ, this list wins. Anything not on it follows Emil.
 
 1. Motion numbers, curves, toast/drawer values, exit symmetry, `blur(2px)` crossfade mask, bounce 0.1-0.3 on drag release: Emil wins, except where override 3 says it is the kit's own. lpk's "faster than Emil" is dropped.
-2. "Every change moves" is dropped. Frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
+2. The floor moves on every screen: press, hover and focus on every control, every overlay entering and leaving, rows arriving and leaving, an optimistic state change. Beyond it frequency gates motion; a keyboard-started or 100+/day change shows identical frames and that is correct.
 3. Kit rules beyond Emil: his 30-80 ms stagger between items is capped at 300 ms for the whole group; a skeleton or spinner only for loads over 300 ms; a count-up only on a real value change after a user action, never on mount.
 4. Tool ladder: CSS transition, `@starting-style`, WAAPI, then `motion`; percent translate; `transform` strings under load; no parent CSS variable per frame; extend the app's tokens, never a parallel scale.
 5. Materials: floating chrome and structural regions (toolbar, sidebar, sheet, popover) may be translucent with the three fallbacks; content, rows, cards and dialog bodies stay opaque; never glass on glass.
@@ -79,7 +78,8 @@ product's, go back to stage 2 or 3, not to the CSS.
 
 ## 3. The first screen
 
-Quiet is the start, not the goal. At 1440x900 every block the screen needs shows its header and its
+Quiet is the start, not the goal: the first screen has one place the eye lands first and reads
+state by colour before any word (`designer.md`, under the tells). At 1440x900 every block the screen needs shows its header and its
 first rows with real content, and the canvas is never half blank because nothing was selected.
 
 - The first viewport shows the result the job sentence names (section 2, stage 1), at both widths.
@@ -126,8 +126,10 @@ first rows with real content, and the canvas is never half blank because nothing
 - Tracking follows size: `-0.02em` from 24 px up, near 0 for body, `+0.01em` at 12 px and under;
   leading tight on titles (about 1.15) and 1.4 on body. Titles `text-wrap: balance`, body `pretty`.
 - A few sizes and weights on a screen, stated in the pick: on a working screen body and controls sit
-  at 13-16 px (16 under `pointer: coarse`), smallest 12; display above 32 px is for brand and
-  landing pages. A reference measured to differ wins, and the pick says so.
+  at 13-16 px (16 under `pointer: coarse`), smallest 12. The focal element of section 3 (the result
+  number or the title that states the finding) is set two to three times the body or more; on a
+  dashboard the one result number can reach five times. A reference measured to differ wins, and
+  the pick says so.
 - Sentence case everywhere; no uppercase outside a `kbd` or a status pill. `tabular-nums` on every
   figure, times and costs right-aligned. Muted text is a step of the ink ramp at 4.5:1 or more,
   never an opacity. Text over a material is not flat grey: higher contrast, a little heavier.
@@ -143,7 +145,8 @@ Order of work, from `emil-design-eng` "The Animation Decision Framework" and `an
 1. **The gate.** How often does the person meet it? Keyboard-started and 100+ a day: no motion,
    identical frames, and zero lines of code is the right result. Tens a day: remove or reduce.
    `remove-animations` holds the decision tree and the reduced forms. Press feedback on
-   pointer-down is not motion to gate: it is response (`apple-design` section 1).
+   pointer-down is not motion to gate: it is response (`apple-design` section 1), and so is the
+   floor of override 2.
 2. **The purpose**, from the closed list: feedback, spatial consistency, a state change, softening a
    jarring jump, explaining, delight at the rare tier only. Data being read or acted on does not
    move for style.
@@ -167,9 +170,9 @@ Order of work, from `emil-design-eng` "The Animation Decision Framework" and `an
    app once in `<MotionConfig reducedMotion="user">`.
 
 Extend the app's tokens (its easing and duration variables) with Emil's curves where they are
-missing; never add a parallel scale. In design mode the report's UI section names at most five to
-seven motions, each with its purpose and frequency tier, then the two to five rejected with the
-reason (`find-animation-opportunities`). A motion that is not on that list is not built. A
+missing; never add a parallel scale. The floor of override 2 is built without a list. In design
+mode the report's UI section names the motions beyond it, each with its purpose and frequency
+tier, then the two to five rejected with the reason (`find-animation-opportunities`). A
 reviewer deletes first: remove, reduce, fix easing, fix origin, make interruptible, move to the
 GPU, then polish (`review-animations/STANDARDS.md`).
 
