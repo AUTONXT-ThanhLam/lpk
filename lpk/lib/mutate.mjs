@@ -2,7 +2,7 @@
 // source file at a time and run the test command. A file whose undo leaves the tests green is
 // not proved by them. The developer's checkout, index and stash are never touched.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { git } from './git.mjs';
@@ -79,7 +79,7 @@ function runTests(dir, cmd, timeout) {
 // removes this repo's mutate and compare worktrees whose owning process is gone.
 export function removeOrphans(repo, root) {
   const alive = (pid) => { try { process.kill(Number(pid), 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-  const canon = (p) => (existsSync(p) ? realpathSync.native(p) : p).replaceAll('\\', '/');
+  const canon = (p) => { try { return realpathSync.native(p).replaceAll('\\', '/'); } catch { return p.replaceAll('\\', '/'); } };
   for (const line of git(['worktree', 'list', '--porcelain'], repo).split('\n')) {
     const wt = line.startsWith('worktree ') ? line.slice(9) : '';
     if (!wt || !canon(wt).startsWith(`${canon(root)}/run-`) || !/\/(wt|base)$/.test(wt)) continue;
@@ -91,7 +91,7 @@ export function removeOrphans(repo, root) {
     unlinkShared(repo, wt);
     git(['worktree', 'remove', '--force', wt], repo);
     if (['wt', 'base'].some((d) => existsSync(join(scratch, d)))) continue; // compare's other tree is next
-    for (const f of ['index', 'pid']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
+    for (const f of ['index', 'pid']) rmSync(join(scratch, f), { force: true });
     try { rmdirSync(scratch); } catch { /* something else is in it; leave it */ }
   }
   git(['worktree', 'prune'], repo);

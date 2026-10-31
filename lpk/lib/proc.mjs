@@ -36,7 +36,9 @@ export function recordGroup(scratch, child) {
 }
 
 export function killRecorded(scratch) {
-  for (const f of readdirSync(scratch).filter((n) => n.startsWith('group-'))) {
+  let names = [];
+  try { names = readdirSync(scratch); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+  for (const f of names.filter((n) => n.startsWith('group-'))) {
     try { killGroup(Number(readFileSync(join(scratch, f), 'utf8'))); } catch { continue; }
     rmSync(join(scratch, f), { force: true });
   }

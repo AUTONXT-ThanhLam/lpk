@@ -11,8 +11,8 @@ Claude Code plugins from one marketplace:
 ```
 
 **Windows (experimental).** lpk needs Git for Windows (its `bash`) and Node 24. Process groups, locks and
-junctions have Windows paths, but only part of the suite is green on `windows-latest` (the CI job is
-informational), so expect rough edges and report them with the output of `lpk doctor`.
+junctions have Windows paths, and the whole suite runs on `windows-latest` in CI, where a red test fails
+the build. Windows is proved only there, so report rough edges with the output of `lpk doctor`.
 
 The `lpk` designer builds screens on Emil Kowalski's `apple-design` and `emil-design-eng`, read in
 full before every design, plus a small kit (`lpk/skills/ui-craft`) for what they leave open: the
