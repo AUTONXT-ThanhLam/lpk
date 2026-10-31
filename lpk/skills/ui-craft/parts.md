@@ -25,7 +25,9 @@ at_pin || {
     mv "$C" "$K/" 2>/dev/null
   test -n "$T" && rm -rf "${T:?}"
 }
-at_pin && test -f "$E/skills/apple-design/SKILL.md" && echo "pinned $PIN" || echo "not confirmed"
+if at_pin && test -f "$E/skills/apple-design/SKILL.md"; then echo "pinned $PIN"
+elif test -e "$E"; then echo "not confirmed: $E is not a clean clone at the pin; delete it and run again"
+else echo "not confirmed"; fi
 ```
 
 A rename onto a non-empty directory fails, so only one run puts its clone in place; the others
@@ -35,10 +37,10 @@ hand. A run killed mid-fetch leaves only an unreferenced `.pin.*` directory, whi
 removes once it is an hour old, even a run that finds the pin in place.
 
 Run it first, every time; never fetch a branch or any other commit. When it prints `not confirmed`
-(no network, no git, the pin missing) stop and report `not confirmed` with the reason: you never
-design from memory of these files, and a paraphrase of them is how the rules came to contradict
-his. Read in full, before any design: `skills/apple-design/SKILL.md` and
-`skills/emil-design-eng/SKILL.md`. Read when the task needs it, under
+(no network, no git, the pin missing, or a clone edited by hand, which it names) stop and report
+`not confirmed` with the reason: you never design from memory of these files, and a paraphrase of
+them is how the rules came to contradict his. Read in full, before any design:
+`skills/apple-design/SKILL.md` and `skills/emil-design-eng/SKILL.md`. Read when the task needs it, under
 `~/.local/share/lpk/design-kit/emilkowalski-skills@a81dbca07f2217b7103e510c0f13f8d5b017afc9`:
 
 - `skills/animate/RECIPES.md`: the motion of an overlay (popover, menu, dialog, toast, drawer), next

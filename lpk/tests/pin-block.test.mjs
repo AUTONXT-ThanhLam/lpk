@@ -94,6 +94,16 @@ test('the pin block run from an empty home pins, and does nothing the second tim
   assert.equal(readdirSync(clone, { recursive: true }).length, before);
 });
 
+test('a pinned directory edited by hand to another commit is left as it is, and the run names it', async () => {
+  const { home, clone } = freshHome('edited', false);
+  mkdirSync(clone);
+  git(clone, 'init', '-q');
+  git(clone, 'fetch', '-q', bare, staleSha);
+  git(clone, 'checkout', '-q', '-f', 'FETCH_HEAD');
+  assert.match((await run('sh', home)).out, new RegExp(`^not confirmed: .*/emilkowalski-skills@${pin} is not a clean clone at the pin; delete it and run again$`));
+  assert.equal(git(clone, 'rev-parse', 'HEAD'), staleSha);
+});
+
 test('a run whose shell is killed mid-fetch does not stall the next run, and a later run sweeps what it left', async () => {
   const { home, kit } = freshHome('killed', false);
   rmSync(fetchLog, { force: true });
