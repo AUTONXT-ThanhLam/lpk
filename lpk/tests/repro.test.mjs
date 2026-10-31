@@ -30,8 +30,8 @@ test('lpk repro runs a command at the reviewed commit and at its base, each in i
   const atCommit = lpk(repo, 'repro', '--cmd', cmd, '--at', 'commit');
   assert.equal(atCommit.status, 0, atCommit.stderr);
   const tree = join(ENV.XDG_CACHE_HOME, 'lpk', 'repro', 'run1', head.slice(0, 12));
-  assert.match(atCommit.stdout, new RegExp(`commit ${head.slice(0, 12)} tree ${tree}: installed with \`npm ci --prefer-offline --no-audit --no-fund\``));
-  assert.match(atCommit.stdout, new RegExp(`exit 0 in \\d+s\\n {2}\\| dep is commit ${realpathSync(tree)}/dep/index\\.js`));
+  assert.ok(atCommit.stdout.includes(`commit ${head.slice(0, 12)} tree ${tree}: installed with \`npm ci --prefer-offline --no-audit --no-fund\``), atCommit.stdout);
+  assert.match(atCommit.stdout, new RegExp(`exit 0 in \\d+s\\n {2}\\| dep is commit ${join(realpathSync(tree), 'dep', 'index.js').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   const atBase = lpk(repo, 'repro', '--cmd', cmd, '--at', 'base');
   assert.match(atBase.stdout, /\| dep is base /);
   // The second verifier on the same commit shares the tree and its install.

@@ -2,7 +2,7 @@
 // hook commands hooks.json registers, fed the JSON Claude Code sends, in real git repos.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { context, ENV, hook, lpk, reason, repoWith, sh, tmp, write } from './hooks-env.mjs';
 
@@ -57,9 +57,9 @@ test('worktrees of one repo hold runs side by side, and a builder\'s worktree wo
   ok(lpk(builder, 'lead', 'verify'));
   assert.deepEqual([status(one).verified?.green, status(two).verified], [true, null]);
   const stamped = hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_list', session_id: 'lead', cwd: builder, tool_input: {} }).hookSpecificOutput.updatedInput;
-  assert.deepEqual(stamped, { repo: one, run: idOne });
+  assert.deepEqual({ ...stamped, repo: resolve(stamped.repo) }, { repo: one, run: idOne });
   start(repo, 'main');
-  assert.equal(JSON.parse(readFileSync(runFile(repo), 'utf8')).repo, repo, 'the main checkout keeps its run where it always did');
+  assert.equal(resolve(JSON.parse(readFileSync(runFile(repo), 'utf8')).repo), repo, 'the main checkout keeps its run where it always did');
   ok(lpk(repo, 'main', 'run', 'end'));
   writeFileSync(runFile(repo), JSON.stringify({ v: 2, id: 'before', repo: old, session: 'old', started: Date.now(), branches: [], scenarios: [], verify: ['true'], granted: {} }));
   assert.match(start(old, 'old'), /lpk run before amended/, 'a run started from a worktree before runs moved there is still its run');

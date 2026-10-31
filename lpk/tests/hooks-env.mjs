@@ -2,7 +2,7 @@
 // hook run exactly as hooks.json registers it, with the event JSON Claude Code sends on stdin.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after } from 'node:test';
@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
-export const tmp = mkdtempSync(join(tmpdir(), 'lpk-hooks-'));
+export const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-hooks-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
 export const HOME = join(tmp, 'home');
