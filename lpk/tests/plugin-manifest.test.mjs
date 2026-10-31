@@ -248,7 +248,7 @@ test('the lpk marketplace entry claims no dependency on a particular CLI', () =>
 
 test('and names its review lenses by role, each one a shipped agent', () => {
   const entry = json(MARKETPLACE).plugins.find((p) => p.name === 'lpk');
-  const roles = { architect: 'architect', 'design critic': 'design-critic', verifier: 'verifier', security: 'security', performance: 'perf', accessibility: 'a11y', regression: 'regression', 'bug hunt': 'bug-hunter' };
+  const roles = { architect: 'architect', 'design critic': 'design-critic', verifier: 'verifier', security: 'security', regression: 'regression', 'bug hunt': 'bug-hunter' };
   const agents = readdirSync(join(ROOT, 'agents')).map((f) => basename(f, '.md'));
   for (const [phrase, file] of Object.entries(roles)) {
     assert.match(entry.description.toLowerCase(), new RegExp(phrase.replace(/[ *-]/g, '[ -]?')), `the description no longer names the ${phrase} lens`);

@@ -1,9 +1,7 @@
 # Language and file-type traps
 
-Defect classes from OpenCodeReview's per-language checklists that the catalog does not name. The
-`lpk:ocr` reviewers get the full checklists from `ocr delegate rule` at review time; these rules
-put the literal ones on the line as it is written. Each loads only when a file of its kind
-changes.
+Defect classes from OpenCodeReview's per-language checklists that the catalog does not name, put
+on the line as it is written. Each loads only when a file of its kind changes.
 
 ## Delivery
 

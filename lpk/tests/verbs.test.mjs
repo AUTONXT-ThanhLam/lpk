@@ -37,9 +37,9 @@ test('lpk floor says a one-file change owes nothing more, and names each fact th
   assert.equal(full.full, true);
   for (const why of ['6 files changed (more than 3)', 'migration db/migrations/002_add.sql', 'billing/plan.go matches SENSITIVE.md `billing/**`', 'auth marker `login` in the path src/login.js', 'auth marker `Session` at src/login.js:1'])
     assert.ok(full.why.includes(why), `${why} in ${JSON.stringify(full.why)}`);
-  assert.deepEqual(full.lenses, ['security', 'mutant', 'regression', 'ui-reviewer', 'a11y', 'perf']);
+  assert.deepEqual(full.lenses, ['security', 'mutant', 'regression', 'ui-reviewer']);
   assert.equal(full.lensWhy.security, 'billing/plan.go matches SENSITIVE.md');
-  assert.equal(full.lensWhy.perf, 'render at src/Cart.tsx:1');
+  assert.equal(full.lensWhy['ui-reviewer'], 'screen file src/Cart.tsx');
 });
 
 test('lpk cochange names the files that change with a file but not in this change, fixes on its lines, and moved dependencies', () => {

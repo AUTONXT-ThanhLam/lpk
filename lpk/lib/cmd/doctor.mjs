@@ -11,7 +11,7 @@ import { readRun } from '../run.mjs';
 import { remapWarning } from '../safety.mjs';
 
 const USAGE = 'usage: lpk doctor [--repo <dir>]';
-const TOOLS = [['git', 'required'], ['node', 'required'], ['gh', 'PR, CI and escape facts'], ['flock', '`lpk slot` and shared repro installs'], ['npx', 'OpenCodeReview'], ['pnpm', 'repro installs in pnpm repos'], ['npm', 'repro installs in npm repos'], ['yarn', 'repro installs in yarn repos']];
+const TOOLS = [['git', 'required'], ['node', 'required'], ['gh', 'PR, CI and escape facts'], ['flock', '`lpk slot` and shared repro installs'], ['npx', 'the Chrome DevTools server'], ['pnpm', 'repro installs in pnpm repos'], ['npm', 'repro installs in npm repos'], ['yarn', 'repro installs in yarn repos']];
 
 // The settings files Claude Code reads, user first, the project's local one last.
 function settings(repo) {

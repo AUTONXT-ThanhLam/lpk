@@ -16,7 +16,7 @@ import { CODE, TEST } from './rules.mjs';
 import { readRun, runDir } from './run.mjs';
 import { findingCount, lensRuns } from './transcripts.mjs';
 
-export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer' }, { key: 'bug-hunter' }, { key: 'regression' }, { key: 'claims' }, { key: 'prover' }];
+export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer' }, { key: 'bug-hunter' }, { key: 'claims' }, { key: 'prover' }];
 export const DOCS = [{ key: 'techlead' }, { key: 'claims' }];
 export const QUICK = [{ key: 'code-reviewer' }, { key: 'bug-hunter' }];
 // A lens by the name the lpk:review workflow takes in args.lenses (`techlead`, `code-reviewer`).

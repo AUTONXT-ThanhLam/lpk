@@ -6,15 +6,12 @@
 const TITLES = {
   architect: 'Architect', builder: 'Builder', techlead: 'Tech lead', verifier: 'Verifier', prover: 'Prover', 'design-critic': 'Design critic',
   'bug-hunter': 'Bug hunter', security: 'Security reviewer',
-  regression: 'Regression reviewer', claims: 'Claims checker', ocr: 'OpenCodeReview', mutant: 'Mutation tester',
-  designer: 'Designer', 'ui-reviewer': 'UI reviewer', a11y: 'Accessibility reviewer', perf: 'Performance reviewer',
+  regression: 'Regression reviewer', claims: 'Claims checker', mutant: 'Mutation tester',
+  designer: 'Designer', 'ui-reviewer': 'UI reviewer',
   env: 'Environment', Explore: 'Explorer', Plan: 'Planner', 'general-purpose': 'Helper', 'claude-code-guide': 'Guide',
 };
-// A workflow agent started without a type is a relay that runs one lens through the CLI; its label names it.
-const RELAYS = [[/^ocr/, 'OpenCodeReview']];
-
-export function titleOf(type, label = '') {
-  if (type === 'workflow-subagent' || !type) return RELAYS.find(([re]) => re.test(label))?.[1] || 'Workflow agent';
+export function titleOf(type) {
+  if (type === 'workflow-subagent' || !type) return 'Workflow agent';
   const key = type.split(':').pop();
   if (TITLES[key]) return TITLES[key];
   const words = key.replace(/[-_]+/g, ' ').trim();
@@ -79,7 +76,7 @@ export function crew(scan, { since = 0, now = Date.now(), slices = [] } = {}) {
     const end = state === 'running' ? now : ms(a.st.last);
     const note = scan.main?.notes?.[a.id];
     const reason = state === 'failed' ? a.st.error || `ended ${note}` : '';
-    rows.push({ id: a.id, title: titleOf(type, label), type, ...whatOf({ type, label, prompt: a.st.prompt }, slices),
+    rows.push({ id: a.id, title: titleOf(type), type, ...whatOf({ type, label, prompt: a.st.prompt }, slices),
       ...(a.workflow ? { workflow: a.workflow, workflowPhase: a.meta.workflowPhase || '' } : {}),
       state, ...(reason ? { reason } : {}), ...(state === 'running' ? stall(a.st.last, now) : {}),
       startedAt: a.st.first, elapsedMs: Math.max(0, end - started), action: a.st.action, lastAt: a.st.last });

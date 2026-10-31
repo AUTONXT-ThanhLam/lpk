@@ -12,7 +12,7 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 const TABLE = {
   architect: { effort: 'high', readOnly: false },
   'design-critic': { effort: 'high', readOnly: true },
-  builder: { effort: 'high', readOnly: false },
+  builder: { effort: 'medium', readOnly: false },
   techlead: { effort: 'high', readOnly: true },
   'code-reviewer': { effort: 'high', readOnly: true },
   'bug-hunter': { effort: 'high', readOnly: true },
@@ -20,9 +20,6 @@ const TABLE = {
   verifier: { effort: 'high', readOnly: true },
   regression: { effort: 'medium', readOnly: true },
   claims: { effort: 'medium', readOnly: true },
-  ocr: { effort: 'low', readOnly: true },
-  a11y: { effort: 'medium', readOnly: true },
-  perf: { effort: 'medium', readOnly: true },
   mutant: { effort: 'medium', readOnly: true },
   designer: { effort: 'high', readOnly: false },
   'ui-reviewer': { effort: 'high', readOnly: true },
@@ -47,7 +44,7 @@ test('every agent the plugin ships has a row in the role table, and every row ha
 });
 
 const MODELS = ['sonnet', 'haiku', 'opus'];
-const OPUS = ['designer'];
+const OPUS = ['designer', 'builder'];
 test('every agent pins a model alias, never a full model id or Fable, and names its role effort', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;
@@ -70,7 +67,7 @@ test('the reviewing roles cannot edit files, and the roles that write code or te
 // The roles that drive the lpk Chrome, the verifier among them because it reproduces what the
 // browser lenses saw on a page. Every other role carries no browser tool definitions, and no role
 // publishes a page, so none carries the Artifact tools.
-const BROWSER = new Set(['a11y', 'designer', 'ui-reviewer', 'prover', 'env', 'perf', 'verifier']);
+const BROWSER = new Set(['designer', 'ui-reviewer', 'prover', 'env', 'verifier']);
 test('only the roles that drive a browser carry its tools, and no role carries the Artifact tools', () => {
   for (const [name, { fm }] of Object.entries(agents)) {
     const denied = (fm.disallowedTools || '').split(',').map((t) => t.trim());

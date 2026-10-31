@@ -90,7 +90,7 @@ export function dockerTrip(input) {
 
 // The roles that review and never edit a checkout. The verifier writes its repro tests in the
 // shared repro worktrees under ~/.cache/lpk/repro/ and nowhere else inside a checkout.
-export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|prover|mutant|ocr|regression|bug-hunter|security|perf|a11y|ui-reviewer)$/;
+export const READ_ONLY = /^(lpk:)?(techlead|claims|verifier|design-critic|prover|mutant|regression|bug-hunter|security|ui-reviewer)$/;
 export const REPRO = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'lpk', 'repro');
 const WRITES = /^(Edit|Write|MultiEdit|NotebookEdit)$/;
 

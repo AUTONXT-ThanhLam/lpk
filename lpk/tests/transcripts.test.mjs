@@ -13,7 +13,7 @@ test('a lens ran when its transcript ends in structured output or end_turn; an A
   agent(s, 'aa1', 'lpk:techlead', [user(`Review ${range} as the tech lead.`), assistant([{ type: 'tool_use', name: 'StructuredOutput', input: { findings: [{ claim: 'x' }] } }], 'tool_use'), user([{ type: 'tool_result', content: 'Structured output provided successfully' }])]);
   agent(s, 'aa2', 'lpk:bug-hunter', [user([{ type: 'text', text: `Hunt bugs in ${range}.` }]), assistant([{ type: 'text', text: 'done' }], 'end_turn')]);
   agent(s, 'aa3', 'lpk:claims', [user(`Check claims in ${range}.`), assistant([{ type: 'text', text: 'API Error: overloaded' }], 'stop_sequence', { isApiErrorMessage: true })]);
-  agent(s, 'aa4', 'lpk:ocr', [user(`Review ${range}.`), assistant([{ type: 'tool_use', name: 'Bash', input: {} }], 'tool_use')]);
+  agent(s, 'aa4', 'lpk:claims', [user(`Review ${range}.`), assistant([{ type: 'tool_use', name: 'Bash', input: {} }], 'tool_use')]);
   writeFileSync(join(s, 'agent-aa4.jsonl'), '{"type":"assistant","message":{"content":[', { flag: 'a' });
   // A workflow agent: the relayed request comes first and names nothing; the computed task names the range.
   agent(join(s, 'workflows', 'wf_1'), 'bb1', 'lpk:prover', [
