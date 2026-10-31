@@ -6,7 +6,7 @@ import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSy
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { git } from './git.mjs';
-import { killGroup, spawnGroup } from './proc.mjs';
+import { killGroup, killRecorded, recordGroup, spawnGroup } from './proc.mjs';
 import { CODE, TEST } from './rules.mjs';
 
 const SHARED = ['node_modules', '.venv', 'venv', '.env', '.env.local', '.env.test', '.env.development'];
@@ -53,14 +53,14 @@ export function unlinkShared(repo, wt) {
 
 // The test command runs in its own process group, so a timeout or an interrupt stops the
 // runner together with its workers and servers.
-let current = null, groupFile = '';
+let current = null, runScratch = '';
 
 function runTests(dir, cmd, timeout) {
   const t0 = Date.now();
   return new Promise((done) => {
     const child = spawnGroup(cmd, { survive: true, cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
     current = child;
-    if (groupFile) writeFileSync(groupFile, String(child.pid));
+    if (runScratch) recordGroup(runScratch, child);
     let out = '', timedOut = false;
     const keep = (b) => { out = (out + b).slice(-65536); };
     child.stdout.on('data', keep);
@@ -87,11 +87,11 @@ export function removeOrphans(repo, root) {
     let pid = '';
     try { pid = readFileSync(join(scratch, 'pid'), 'utf8').trim(); } catch { /* no owner recorded: leave it */ }
     if (!pid || alive(pid)) continue;
-    try { killGroup(Number(readFileSync(join(scratch, 'group'), 'utf8'))); } catch { /* no test command left running */ }
+    killRecorded(scratch);
     unlinkShared(repo, wt);
     git(['worktree', 'remove', '--force', wt], repo);
     if (['wt', 'base'].some((d) => existsSync(join(scratch, d)))) continue; // compare's other tree is next
-    for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
+    for (const f of ['index', 'pid']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
     try { rmdirSync(scratch); } catch { /* something else is in it; leave it */ }
   }
   git(['worktree', 'prune'], repo);
@@ -107,9 +107,10 @@ export function scratchRun(repo, trees, stop) {
   writeFileSync(join(scratch, 'pid'), String(process.pid));
   const cleanup = () => {
     stop();
+    killRecorded(scratch);
     for (const t of trees) if (existsSync(join(scratch, t))) { unlinkShared(repo, join(scratch, t)); git(['worktree', 'remove', '--force', join(scratch, t)], repo); }
     git(['worktree', 'prune'], repo);
-    for (const f of ['index', 'pid', 'group']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
+    for (const f of ['index', 'pid']) if (existsSync(join(scratch, f))) unlinkSync(join(scratch, f));
     try { rmdirSync(scratch); } catch { /* not empty: left for the next run's orphan check */ }
   };
   const onSignal = (sig) => { cleanup(); process.exit(sig === 'SIGINT' ? 130 : 143); };
@@ -139,7 +140,7 @@ function hunkUndos(repo, base, snap, c) {
 // against the change, applied alone; a mutant the tests still pass on is a defect they miss.
 export async function mutate({ repo, base, cmd, sub = '', only = [], timeout = 600, hunks = false, maxRuns = 40, patches = [] }) {
   const { scratch, end } = scratchRun(repo, ['wt'], () => current && killGroup(current.pid));
-  groupFile = join(scratch, 'group');
+  runScratch = scratch;
   const wt = join(scratch, 'wt');
   try {
     const snap = snapshot(repo, scratch);

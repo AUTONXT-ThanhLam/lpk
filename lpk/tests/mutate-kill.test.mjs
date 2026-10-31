@@ -29,8 +29,8 @@ function repoWith(name) {
 }
 
 const SLEEPER = join(tmp, 'sleeper.mjs');
-writeFileSync(SLEEPER, "import { writeFileSync } from 'node:fs';\nwriteFileSync(process.argv[2], String(process.pid));\nsetTimeout(() => {}, Number(process.argv[3]) * 1000);\n");
-const sleeper = (name, seconds) => ({ file: join(tmp, `${name}.pid`), cmd: `node ${inBash(SLEEPER)} ${inBash(join(tmp, `${name}.pid`))} ${seconds}` });
+writeFileSync(SLEEPER, "import { basename } from 'node:path';\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(`${process.argv[2]}.${basename(process.cwd())}`, String(process.pid));\nsetTimeout(() => {}, Number(process.argv[3]) * 1000);\n");
+const sleeper = (name, seconds) => ({ file: (tree) => join(tmp, `${name}.pid.${tree}`), cmd: `node ${inBash(SLEEPER)} ${inBash(join(tmp, `${name}.pid`))} ${seconds}` });
 
 async function pidOf(file) {
   for (let i = 0; i < 300 && !existsSync(file); i++) await pause(100);
@@ -53,7 +53,7 @@ test('an interrupted lpk mutate stops its tests and removes its worktree', async
   const args = ['mutate', '--base', 'main', '--test', t.cmd];
   const child = WIN ? spawn('node', [INTERRUPTER, LPK, t.file, ...args], { cwd: repo, env: ENV }) : spawn('node', [LPK, ...args], { cwd: repo, env: ENV });
   const childClosed = new Promise((r) => child.on('close', r));
-  const testPid = await pidOf(t.file);
+  const testPid = await pidOf(t.file('wt'));
   if (!WIN) child.kill('SIGTERM');
   await childClosed;
   assert.equal(worktrees(repo), 1);
@@ -65,7 +65,7 @@ test('a run killed outright is cleaned up by the next lpk mutate', async () => {
   const t = sleeper('orphan', 30);
   const child = spawn('node', [LPK, 'mutate', '--base', 'main', '--test', t.cmd], { cwd: repo, env: ENV });
   const childClosed = new Promise((r) => child.on('close', r));
-  const testPid = await pidOf(t.file);
+  const testPid = await pidOf(t.file('wt'));
   child.kill('SIGKILL');
   await childClosed;
   assert.equal(worktrees(repo), 2, 'SIGKILL leaves the worktree behind');
@@ -75,13 +75,14 @@ test('a run killed outright is cleaned up by the next lpk mutate', async () => {
   assert.equal(await gone(testPid), true, `the orphaned test command ${testPid} still runs:\n${processes()}`);
   mkdirSync(join(tmp, 'orphan-in'), { recursive: true });
   writeFileSync(join(tmp, 'orphan-in', 'a'), '1\n');
-  const c = sleeper('orphan-compare', 3);
+  const c = sleeper('orphan-compare', 30);
   const cmp = spawn('node', [LPK, 'compare', '--base', 'main', '--run', c.cmd, '--inputs', join(tmp, 'orphan-in')], { cwd: repo, env: ENV });
   const cmpClosed = new Promise((r) => cmp.on('close', r));
-  await pidOf(c.file);
+  const cmpPids = [await pidOf(c.file('base')), await pidOf(c.file('wt'))];
   cmp.kill('SIGKILL');
   await cmpClosed;
   assert.equal(worktrees(repo), 3, 'SIGKILL leaves both worktrees behind');
   assert.equal(lpk(repo, ['mutate', '--base', 'main', '--test', 'true']).status, 0);
   assert.equal(worktrees(repo), 1);
+  for (const pid of cmpPids) assert.equal(await gone(pid), true, `the orphaned compare command ${pid} still runs:\n${processes()}`);
 });

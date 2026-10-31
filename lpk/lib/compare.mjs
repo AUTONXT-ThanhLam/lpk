@@ -6,16 +6,17 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { git } from './git.mjs';
 import { linkShared, scratchRun, snapshot } from './mutate.mjs';
-import { killGroup, spawnGroup } from './proc.mjs';
+import { killGroup, recordGroup, spawnGroup } from './proc.mjs';
 
 const live = new Set();
 
 // The input arrives on stdin and as $LPK_INPUT. The command runs in its own process group, so a
 // timeout stops it together with whatever it started.
-function runOne(dir, cmd, input, timeout) {
+function runOne(dir, cmd, input, timeout, scratch) {
   return new Promise((done) => {
     const child = spawnGroup(cmd, { survive: true, cwd: dir, env: { ...process.env, LPK_INPUT: input }, stdio: ['pipe', 'pipe', 'pipe'] });
     live.add(child);
+    recordGroup(scratch, child);
     let out = '', err = '', timedOut = false;
     child.stdout.on('data', (b) => { out = (out + b).slice(-(1 << 20)); });
     child.stderr.on('data', (b) => { err = (err + b).slice(-16384); });
@@ -56,7 +57,7 @@ export async function compare({ repo, base, cmd, inputs, sub = '', timeout = 30,
     let next = 0;
     const worker = async () => {
       for (let i = next++; i < files.length; i = next++) {
-        const [m, c] = await Promise.all([runOne(join(trees.main, sub), cmd, files[i], timeout), runOne(join(trees.change, sub), cmd, files[i], timeout)]);
+        const [m, c] = await Promise.all([runOne(join(trees.main, sub), cmd, files[i], timeout, scratch), runOne(join(trees.change, sub), cmd, files[i], timeout, scratch)]);
         const head = readFileSync(files[i], 'utf8').slice(0, 200).split('\n')[0];
         rows[i] = { input: relative(inputs, files[i]), head: head.includes('\0') ? '' : head, main: m, change: c, same: m.exit === c.exit && m.out === c.out };
       }

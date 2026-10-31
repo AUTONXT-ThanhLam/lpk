@@ -87,6 +87,10 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     const deferred = await call('fixed', { id: 'F1', closedBy: 'owner', evidence: 'owner: skip what users cannot reach' });
     assert.match(deferred.result.content[0].text, /^F1 deferred: owner: skip what users cannot reach$/);
   } finally {
-    proc.kill();
+    if (proc.exitCode === null && proc.signalCode === null) {
+      const closed = new Promise((r) => proc.on('close', r));
+      proc.kill();
+      await closed;
+    }
   }
 });

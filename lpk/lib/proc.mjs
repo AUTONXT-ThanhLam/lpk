@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { constants } from 'node:os';
 
 const WIN = process.platform === 'win32';
@@ -25,4 +26,18 @@ export function signalOf(code, signal) {
   if (signal) return signal;
   const n = code > 128 && code < 160 ? code - 128 : WIN && code >= 256 && code % 256 === 0 ? code / 256 : 0;
   return Object.keys(constants.signals).find((k) => constants.signals[k] === n) || null;
+}
+
+export function recordGroup(scratch, child) {
+  if (!child.pid) return;
+  const file = join(scratch, `group-${child.pid}`);
+  writeFileSync(file, String(child.pid));
+  child.on('close', () => rmSync(file, { force: true }));
+}
+
+export function killRecorded(scratch) {
+  for (const f of readdirSync(scratch).filter((n) => n.startsWith('group-'))) {
+    try { killGroup(Number(readFileSync(join(scratch, f), 'utf8'))); } catch { continue; }
+    rmSync(join(scratch, f), { force: true });
+  }
 }
