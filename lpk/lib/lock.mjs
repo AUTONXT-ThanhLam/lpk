@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 const STALE_MS = 30_000;
 const WAIT_MS = 10_000;
 const EMPTY_MS = 5_000;
+const WIN = process.platform === 'win32';
 
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
@@ -24,6 +25,7 @@ export function acquire(lock, { waitMs = WAIT_MS, staleMs = STALE_MS } = {}) {
       closeSync(fd);
       return { release: () => { try { unlinkSync(lock); } catch { /* already gone */ } } };
     } catch (e) {
+      if (e.code === 'EPERM' && WIN && Date.now() <= until) { pause(15); continue; }
       if (e.code !== 'EEXIST') throw e;
     }
     let seen = '';
