@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { killRecorded } from '../lib/proc.mjs';
 
 const WIN = process.platform === 'win32';
 const LPK = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'lpk');
@@ -85,4 +86,8 @@ test('a run killed outright is cleaned up by the next lpk mutate', async () => {
   assert.equal(lpk(repo, ['mutate', '--base', 'main', '--test', 'true']).status, 0);
   assert.equal(worktrees(repo), 1);
   for (const pid of cmpPids) assert.equal(await gone(pid), true, `the orphaned compare command ${pid} still runs:\n${processes()}`);
+});
+
+test('a run sweeping a killed run that a sibling run already swept goes on', () => {
+  assert.doesNotThrow(() => killRecorded(join(tmp, 'scratch-a-sibling-removed')));
 });
