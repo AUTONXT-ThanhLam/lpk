@@ -25,6 +25,7 @@ function around it and the callers of what it changes (`lpk map <the function or
   something the caller still uses, a resource opened and not closed on every path;
 - errors: a swallowed or ignored error, an error path that leaves state half written, a retry
   that repeats a side effect, a `null`, `None`, empty or missing input that crashes;
+- state across commands: for each record, cache or marker the change writes and a later command reads, list the orders the user can run those commands in (the same command twice, a failing or partial run between two good ones, a narrower run such as an `--only` or a filter, then the full one) and run the real CLI on each order; the newest real result decides, and an older one that outlives a later failure is a defect;
 - concurrency and order: an `await` that lets another call change what was just checked, two
   writers of one record, events handled out of order;
 - a check made on a proxy (a file's mtime, a cached flag, a self-report, an exit code) where the
