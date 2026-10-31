@@ -86,6 +86,7 @@ test('a reviewing role cannot write in a checkout, a verifier writes in the repr
   assert.equal(edit('general-purpose', join(repo, 'src/a.ts')), null);
   assert.equal(edit('lpk:architect', join(repo, 'src/a.ts')).hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(edit('lpk:architect', join(repo, '.git', 'lpk', 'duel', 'small', 'brief.md')), null);
+  assert.equal(edit('lpk:architect', `${repo}/.git/../src/a.ts`).hookSpecificOutput.permissionDecision, 'deny');
   const sub = repoWith('sub', { 'a.ts': 'a\n' });
   const gitDir = join(tmp, 'super', '.git', 'modules', 'sub');
   mkdirSync(dirname(gitDir), { recursive: true });
