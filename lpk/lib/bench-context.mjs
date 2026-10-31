@@ -44,19 +44,50 @@ export function context(root) {
   out.onInvokeBytes = out.onInvoke.skillBodies + out.onInvoke.agentBodies;
   // The advice a hook hands back is resident once it lands: measured from the transcripts, not from
   // the strings in lib/hooks.mjs, so a hook that never fires costs nothing here.
-  out.measured = { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, cardLines: 0, cardBytes: 0, mainTranscriptBytes: 0 };
+  out.measured = { adviceLines: 0, adviceBytes: 0, skillInjectLines: 0, skillInjectBytes: 0, mainTranscriptBytes: 0 };
   return out;
 }
 
+const SKILL_MARK = 'Base directory for this skill';
+
+function userBlocks(entry) {
+  const c = entry.message?.content;
+  if (typeof c === 'string') return [c];
+  return Array.isArray(c) ? c.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text) : [];
+}
+
+function injectionOf(entry) {
+  if (entry.type === 'attachment') {
+    const a = entry.attachment ?? {};
+    if (a.type === 'hook_additional_context') {
+      const text = [].concat(a.content ?? []).join('\n');
+      return text.startsWith('lpk') ? ['advice', text.length] : null;
+    }
+    if (a.type === 'invoked_skills') {
+      const bytes = [].concat(a.skills ?? []).reduce((x, k) => x + (typeof k?.content === 'string' ? k.content.length : 0), 0);
+      return bytes ? ['skillInject', bytes] : null;
+    }
+    return null;
+  }
+  if (entry.type !== 'user' || entry.toolUseResult) return null;
+  const blocks = userBlocks(entry);
+  const skill = blocks.find((t) => t.startsWith(SKILL_MARK));
+  return skill ? ['skillInject', skill.length] : null;
+}
+
 export function measureInjections(ctx, files) {
+  const m = ctx.measured;
   for (const f of files) {
     const text = read(f);
-    ctx.measured.mainTranscriptBytes += text.length;
+    m.mainTranscriptBytes += text.length;
     for (const line of text.split('\n')) {
       if (!line.trim()) continue;
-      if (line.includes('hook additional context: lpk')) { ctx.measured.adviceLines++; ctx.measured.adviceBytes += line.length; }
-      else if (line.includes('Base directory for this skill')) { ctx.measured.skillInjectLines++; ctx.measured.skillInjectBytes += line.length; }
-      else if (line.includes('# lpk state card')) { ctx.measured.cardLines++; ctx.measured.cardBytes += line.length; }
+      let entry;
+      try { entry = JSON.parse(line); } catch { continue; }
+      const hit = injectionOf(entry);
+      if (!hit) continue;
+      m[`${hit[0]}Lines`]++;
+      m[`${hit[0]}Bytes`] += hit[1];
     }
   }
 }

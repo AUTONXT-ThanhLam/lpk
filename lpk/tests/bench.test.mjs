@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { ENV, lpk, tmp, write } from './verbs-env.mjs';
+import { spawn } from 'node:child_process';
+import { context, measureInjections } from '../lib/bench-context.mjs';
+import { ENV, ROOT, lpk, tmp, write } from './verbs-env.mjs';
 
 const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
 const DATA = join(ENV.XDG_DATA_HOME, 'lpk');
@@ -227,4 +229,39 @@ test('a run\'s idle time is the waits the owner closed, apart from the time agen
   assert.equal(j.wall.runs.find((x) => x.id === RUN3).ownerIdleMs, null, 'a run with no transcript has no idle figure, not 0');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).ownerIdleMs, 0, 'agents working end to end leave no idle gap');
   assert.equal(j.wall.runs.find((x) => x.id === RUN1).criticalPathMs, 30000, 'the critical path is untouched');
+});
+
+test('an injection is counted by what it carries, and a line that only quotes its marker is counted in no bucket', () => {
+  const advice = 'lpk check, on lines you just added: x';
+  const skill = 'Base directory for this skill: /p\nbody';
+  const toolResult = (text) => ({ type: 'user', toolUseResult: { stdout: text }, message: { content: [{ type: 'tool_result', content: text }] } });
+  const rows = [
+    { type: 'attachment', attachment: { type: 'hook_additional_context', content: [advice], hookEvent: 'PostToolUse' }, rendered: [{ content: `hook additional context: ${advice}` }] },
+    { type: 'attachment', attachment: { type: 'hook_additional_context', content: ['another plugin says hi'] } },
+    { type: 'user', isMeta: true, message: { content: [{ type: 'text', text: skill }] } },
+    { type: 'user', isMeta: true, message: { content: [{ type: 'text', text: '<command-message>x</command-message>\n<skill-format>true</skill-format>' }, { type: 'text', text: skill }] } },
+    toolResult(`hook additional context: ${advice} ${'x'.repeat(5000)}`),
+    toolResult(skill),
+    { type: 'attachment', attachment: { type: 'invoked_skills', skills: [{ name: 'a', content: skill }, { name: 'b', content: skill }] } },
+    { type: 'api-request-blob', content: [{ type: 'text', text: `${skill} hook additional context: ${advice}` }] },
+  ];
+  const file = join(tmp, 'injections.jsonl');
+  writeFileSync(file, rows.map((r) => JSON.stringify(r)).join('\n') + '\n{"half');
+  const ctx = context(ROOT);
+  measureInjections(ctx, [file]);
+  assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 3, skillInjectBytes: skill.length * 4, mainTranscriptBytes: readFileSync(file, 'utf8').length });
+});
+
+test('lpk bench --json larger than a pipe buffer reaches a reader that starts late, whole', async () => {
+  const repo = plant('bench-pipe');
+  const rows = Array.from({ length: 600 }, (_, i) => JSON.stringify({ id: `20261022100000-p${i}`, repo: 'work-repo', path: tmp, session: `s-${i}`, lane: 'full', started: '2026-10-22T10:00:00.000Z', recorded: '2026-10-22T10:05:00.000Z', wallMs: 300000, yield: {}, agents: {}, lenses: {}, files: [] })).join('\n');
+  writeFileSync(join(DATA, 'runs.jsonl'), `${readFileSync(join(DATA, 'runs.jsonl'), 'utf8')}${rows}\n`);
+  const child = spawn('node', [join(ROOT, 'bin', 'lpk'), 'bench', '--json'], { cwd: repo, env: ENV, stdio: ['ignore', 'pipe', 'inherit'] });
+  await new Promise((r) => setTimeout(r, 400));
+  let text = '';
+  child.stdout.on('data', (b) => { text += b; });
+  const code = await new Promise((r) => child.on('close', r));
+  assert.equal(code, 0);
+  assert.ok(text.length > 65536, `the fixture must exceed one pipe buffer, got ${text.length}`);
+  assert.ok(JSON.parse(text).wall.runs.length >= 600);
 });
