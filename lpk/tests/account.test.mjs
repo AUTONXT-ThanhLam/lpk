@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { after, test } from 'node:test';
 import { launchAs } from '../lib/account.mjs';
 import { runChild } from '../lib/codereview.mjs';
 
 const SKIP = { skip: process.platform === 'win32' && 'cc-switch is bash only' };
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tmp = mkdtempSync(join(tmpdir(), 'lpk-account-'));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -68,6 +71,38 @@ test('claude is not started when cc-switch is missing or fails', SKIP, async () 
   writeFileSync(join(failing, 'cc-switch'), '#!/bin/sh\necho broken >&2\nexit 1\n');
   chmodSync(join(failing, 'cc-switch'), 0o755);
   assert.match(launchAs('claude', [], { ...missing, PATH: failing }).error, /cc-switch did not run \(broken\)/);
+});
+
+function sessionShell(name, active) {
+  const env = ccSwitch(`${name}-switch`, active);
+  const envFile = join(tmp, `${name}.env`);
+  writeFileSync(envFile, '');
+  const hook = spawnSync('node', [join(ROOT, 'lib', 'cmd', 'hook.mjs'), 'account'], { input: '{}', env: { ...env, CLAUDE_ENV_FILE: envFile }, encoding: 'utf8' });
+  assert.equal(hook.status, 0, hook.stderr);
+  const real = join(tmp, `${name}-real`);
+  mkdirSync(real, { recursive: true });
+  writeFileSync(join(real, 'claude'), `#!/bin/sh\necho "$LPK_ACCOUNT token=\${CLAUDE_CODE_OAUTH_TOKEN:-none} key=\${ANTHROPIC_API_KEY:+placeholder}" >> ${real}/ran\n`);
+  chmodSync(join(real, 'claude'), 0o755);
+  const run = (cmd) => spawnSync('sh', ['-c', `. '${envFile}'; ${cmd}`], { env: { ...env, PATH: `${env.PATH.split(':')[0]}:${real}:${process.env.PATH}` }, encoding: 'utf8' });
+  const ran = () => { try { return readFileSync(join(real, 'ran'), 'utf8').trim().split('\n'); } catch { return []; } };
+  return { run, ran, real };
+}
+
+test('in a session running as an lpk account, claude runs as that account through cc-switch run, or does not log in at all', SKIP, () => {
+  const s = sessionShell('same', 'cc2');
+  assert.equal(s.run('sh -c "claude -p x"').status, 0);
+  assert.deepEqual(s.ran(), ['cc2 token=token-of-cc2 key=']);
+  assert.equal(s.run(`c='${s.real}'; "$c/claude" -p y`).status, 0);
+  assert.equal(s.ran()[1], 'cc2 token=none key=placeholder', 'a claude reached past the shim gets the placeholder key, which claude prefers over the stored login');
+  const other = sessionShell('other-active', 'cc1');
+  const r = other.run('claude -p x');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /runs as cc2 but the active account is cc1/);
+  assert.deepEqual(other.ran(), []);
+  const plain = join(tmp, 'plain.env');
+  writeFileSync(plain, '');
+  spawnSync('node', [join(ROOT, 'lib', 'cmd', 'hook.mjs'), 'account'], { input: '{}', env: { PATH: process.env.PATH, CLAUDE_ENV_FILE: plain } });
+  assert.equal(readFileSync(plain, 'utf8'), '', 'a session without an lpk account gets nothing');
 });
 
 test('a session without an account, or with a token in its shell, starts claude as before', () => {
