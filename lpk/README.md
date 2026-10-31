@@ -11,9 +11,8 @@ in three layers, cheapest first:
   writes the tests that prove its slice with the code;
 - **the review net**: every lens runs at once on the frozen commit (the tech lead, a review of
   the diff itself, the bug hunter, regression, claims, the security reviewer when the change touches
-  credentials, auth, a migration or a sensitive path, OpenCodeReview
-  on a change of more than ten files, mutants, and the screen
-  lenses when screens change), a verifier reproduces each finding, and the Prover uses the change
+  credentials, auth, a migration or a sensitive path, mutants, and the
+  UI reviewer when screens change), a verifier reproduces each finding, and the Prover uses the change
   on its real surface.
 
 Delivery gates read only what the CLI itself ran or computed: a verified tree, the findings ledger,
@@ -37,8 +36,8 @@ Node 24, git, the GitHub CLI `gh` (signed in) and Google Chrome or Chromium — 
 Code to run it in. lpk needs no model CLI of its own: each agent runs on the model its file
 names (`model:` in `agents/`); your session's model is the captain's.
 The rest comes with the plugin: the first session fetches gitleaks (pinned, checked against its
-release checksums) into `~/.local/share/lpk/bin` for the push guard, and OpenCodeReview and the
-Chrome DevTools server run through `npx` at pinned versions. `node <plugin>/bin/lpk setup` does
+release checksums) into `~/.local/share/lpk/bin` for the push guard, and the Chrome DevTools server
+runs through `npx` at a pinned version. `node <plugin>/bin/lpk setup` does
 the same on demand and prints which tool is missing. The browser is a Chrome with remote debugging
 on port 9333; a run without one proves through the HTTP API and the CLI only.
 

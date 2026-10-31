@@ -4,7 +4,7 @@ import { readLedger } from './findings.mjs';
 import { readRecords } from './records.mjs';
 import { runDir } from './run.mjs';
 
-// A lens name as the ledger and the transcripts both write it: `code-review:sonnet`, `lpk:ocr`.
+// A lens name as the ledger and the transcripts both write it: `code-review:sonnet`, `lpk:claims`.
 const lensOf = (from) => String(from || 'unknown');
 
 // The CLI children, from the run records: what each headless lens ran, what it returned, how long it

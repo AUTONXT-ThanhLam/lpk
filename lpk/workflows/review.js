@@ -1,6 +1,6 @@
 export const meta = {
   name: 'review',
-  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, bug hunter, security, regression, claims, OpenCodeReview, the prover and the rest), one verifier per finding as each lens returns',
+  description: 'Review a frozen lpk commit: every lens the lane owes at once (tech lead, /code-review, bug hunter, security, regression, claims, the prover and the rest), one verifier per finding as each lens returns',
   whenToUse: 'Step 4 of the lpk skill, on the committed and verified change after `lpk review start`; with args.delta, the one review of a fix round',
   phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per finding, as each lens returns' }],
 }
@@ -37,12 +37,10 @@ const FINDING = { type: 'object', properties: { id: S, file: S, line: { type: 'i
 const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: FINDING } }, required: ['findings'] }
 const MUTANTS = { type: 'object', properties: { findings: { type: 'array', items: { ...FINDING, properties: { ...FINDING.properties, kind: { type: 'string', enum: ['test-gap', 'defect'] } } } } }, required: ['findings'] }
 const covered = (key, item) => ({ type: 'object', properties: { findings: FINDINGS.properties.findings, [key]: { type: 'array', items: item } }, required: ['findings', key] })
-const BATCH = covered('files', { type: 'object', properties: { path: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, reason: S }, required: ['path', 'status'] })
 const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, changes: S }, required: ['id', 'status'] })
 // The prover's findings are its FAIL and NOT PROVED results, each carrying its ledger id: no second list.
 const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: S, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
 const RECORD = { type: 'object', properties: { record: { type: 'string' }, ids: { type: 'array', items: { type: 'string' } }, error: { type: 'string' } }, required: ['record', 'ids'] }
-const PATHS = { type: 'object', properties: { paths: { type: 'array', items: S }, error: S }, required: ['paths'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
   evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S, reach: { type: 'string', enum: ['user', 'merge', 'neither'] } }, required: ['verdict', 'evidence'] }
 
@@ -80,33 +78,6 @@ const codeReview = (lens) => (label) => {
     .then((o) => o && { findings: o.ids.map((id) => ({ id })), record: o.record, error: o.error })
 }
 const skippedOf = (rows, key, why) => rows.filter((r) => r.status === 'skipped').map((r) => `did not review ${r[key]}${r[why] ? `: ${r[why]}` : ''}`)
-
-// Split an array into groups of at most size items. Returns [] when input is empty.
-const batchFiles = (paths, size) => {
-  if (!paths.length) return []
-  const n = Math.ceil(paths.length / size)
-  return Array.from({ length: n }, (_, i) => paths.slice(i * size, (i + 1) * size))
-}
-
-// OpenCodeReview's split: ocr picks the reviewable files, each batch of at most ten (four batches
-// at most) gets its own reviewer, and a file no batch accounts for comes back as not reviewed.
-const ocr = (lens) => async (label) => {
-  const p = await call(`Run \`npx -y -p @alibaba-group/open-code-review@1.13.0 ocr delegate preview --format json --repo ${a.repo} --from ${a.base} --to ${commit}\` and return the \`path\` of every entry in \`reviewable_files\`. If the command fails, return no paths and its error.`,
-    { label: `${label}:preview`, phase: 'Review', schema: PATHS, model: 'haiku', effort: 'low', bashCommandClamp: ['Bash(npx -y -p @alibaba-group/open-code-review@1.13.0 ocr delegate preview *)'] })
-  if (!p || p.error) return { error: `ocr delegate preview failed: ${p ? p.error : 'no answer'}` }
-  const paths = [...new Set(p.paths)].sort()
-  if (!paths.length) return { findings: [], missed: [] }
-  const n = Math.min(4, Math.ceil(paths.length / 10))
-  const batchSize = Math.ceil(paths.length / n)
-  const batches = batchFiles(paths, batchSize)
-  const outs = await parallel(batches.map((b, i) => () =>
-    call(`${change}\nReview these files of the commit, each one on its own:\n${b.join('\n')}`, { label: `${label}:${i + 1}`, phase: 'Review', agentType: 'lpk:ocr', schema: BATCH, stallMs: stall(lens) })))
-  // A batch that did not answer leaves its files in the not-reviewed list, like a file it skipped.
-  const files = outs.flatMap((o) => (o ? o.files : []))
-  const done = new Set(files.filter((f) => f.status === 'reviewed').map((f) => f.path))
-  const why = new Map(files.filter((f) => f.status === 'skipped').map((f) => [f.path, f.reason]))
-  return { findings: outs.flatMap((o) => (o ? o.findings : [])), missed: paths.filter((x) => !done.has(x)).map((x) => `did not review ${x}${why.get(x) ? `: ${why.get(x)}` : ''}`) }
-}
 
 // The prover's FAIL and NOT PROVED scenarios are ledger findings. With args.mutantAfterProver it
 // runs before the mutant, because they share a database or a port.
@@ -155,10 +126,7 @@ const LENSES = {
   regression: (lens) => (label) => typed('regression', GROUPS, 'Find what this commit breaks for what already worked on the base, here and in sibling repos.')(lens)(label)
     .then((o) => o && { findings: o.findings, missed: skippedOf(o.groups, 'id', 'changes') }),
   claims: typed('claims', FINDINGS, `Check every claim in words this change makes against its code, the drafted PR body included (in ${a.bundle}).`),
-  ocr,
-  perf: typed('perf', FINDINGS, `Find what this commit makes slower or hungrier than the base.${a.surface ? `\nRunning app: ${a.surface}` : ''}`),
   'ui-reviewer': ui('ui-reviewer', 'Review mode: what a person meets on each screen this commit changes.'),
-  a11y: ui('a11y', 'Check that the screens this commit touches work by keyboard, screen reader, large text, high contrast and reduced motion.'),
   prover,
   mutant: waitsForProver(typed('mutant', MUTANTS, `Command that runs the tests related to the changed files: ${a.testCmd || '(none given: find it in the repo)'}\nAdd each mutant no test catches to the ledger as kind test-gap. If those tests fail or flake on the change itself, add that to the ledger as one defect and return it with kind defect.`)),
 }

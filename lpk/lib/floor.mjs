@@ -19,8 +19,6 @@ const DOC_PATH = /\.(md|mdx|rst|adoc|txt)$|(^|\/)docs?\//i;
 export const COMMENT = /^\s*(\/\/|\/\*|\*|#(?!include|!|\[)|--\s|<!--|""")/;
 const MESSAGE = /new \w*Error\(|console\.(log|warn|error|info)\(|\blogger?\.(debug|info|warn|warning|error|fatal)\(|\braise \w+\(|\bpanic\(|fmt\.Errorf\(|errors\.New\(|\blog\.(Print|Fatal)|\btoast\b|\balert\(|usage:/;
 const SCREEN = /\.(tsx|jsx|vue|svelte|html?|css|scss|sass|less|astro)$|(^|\/)(components|pages|screens|views|layouts|templates)\/[^/]+\.[cm]?[jt]s$/;
-const QUERY = /\bSELECT\b|\bINSERT INTO\b|\bDELETE FROM\b|\bUPDATE\s+\w+\s+SET\b|\.(find|findOne|findMany|findAll|aggregate|query|raw|where|whereIn|join|populate)\(|\bprisma\.|\bknex\b|\.objects\./;
-const RENDER = /\buse(Effect|Memo|Callback|State|Selector|LayoutEffect)\(|\.map\(|\bv-for\b|\{#each\b|\*ngFor|\brender\(/;
 
 const words = (t) => t.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
 
@@ -69,7 +67,6 @@ export function floor(repo, base) {
   const lens = (name, fact) => { lensWhy[name] ||= fact; };
   if (files.length > 3) why.push(`${files.length} files changed (more than 3)`);
   const counted = why.length;
-  if (files.length > 10) lens('ocr', `${files.length} files changed (more than 10)`);
   const globs = sensitiveGlobs(repo, base);
   for (const f of files) {
     const p = f.path;
@@ -86,18 +83,16 @@ export function floor(repo, base) {
     const where = (l) => `${p}:${l.n}${l.side === '-' ? ' (removed)' : ''}`;
     if (TEST.test(p)) { lens('mutant', `test file ${p}`); continue; }
     let l;
-    if ((l = at(ROUTE))) { lens('regression', `route at ${where(l)}`); lens('perf', `route at ${where(l)}`); }
+    if ((l = at(ROUTE))) lens('regression', `route at ${where(l)}`);
     if ((l = at(EXPORT))) lens('regression', `export at ${where(l)}`);
     if (SCHEMA_PATH.test(p) || MIGRATION.test(p)) lens('regression', `schema file ${p}`);
     else if ((l = at(SCHEMA_LINE))) lens('regression', `schema at ${where(l)}`);
     if (DOC_PATH.test(p)) lens('claims', `doc ${p}`);
     else if ((l = at(COMMENT))) lens('claims', `comment at ${where(l)}`);
     if ((l = at(MESSAGE))) lens('claims', `message at ${where(l)}`);
-    if (SCREEN.test(p)) { lens('ui-reviewer', `screen file ${p}`); lens('a11y', `screen file ${p}`); }
-    if ((l = at(QUERY))) lens('perf', `query at ${where(l)}`);
-    if (SCREEN.test(p) && (l = at(RENDER))) lens('perf', `render at ${where(l)}`);
+    if (SCREEN.test(p)) lens('ui-reviewer', `screen file ${p}`);
   }
-  const order = ['security', 'mutant', 'regression', 'claims', 'ocr', 'ui-reviewer', 'a11y', 'perf'];
+  const order = ['security', 'mutant', 'regression', 'claims', 'ui-reviewer'];
   const docsOnly = files.length > 0 && why.length === counted && files.every((f) => DOC_PATH.test(f.path) && !CODE.test(f.path));
   return { full: why.length > 0, docsOnly, why, lenses: order.filter((k) => lensWhy[k]), lensWhy, files: files.map((f) => f.path) };
 }

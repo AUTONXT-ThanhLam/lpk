@@ -227,7 +227,6 @@ test('the lenses `lpk reviews owed` lists are the workflow\'s own names, a lens 
   assert.deepEqual(known.sort(), oweable(), 'the workflow\'s LENSES are exactly the lenses the net can owe');
   const { out, calls } = await run({ ...ARGS, lenses }, (p, o) => {
     if (o.agentType === 'lpk:verifier') return confirm;
-    if (o.label === 'ocr:preview') return { paths: [] };
     if (o.agentType === 'lpk:prover') return { results: [] };
     if (o.agentType === 'lpk:regression') return { findings: [], groups: [] };
     if (o.bashCommandClamp) return { record: '/out/code-review.json', ids: [] };
@@ -245,24 +244,6 @@ test('the workflow refuses a lens it does not know instead of skipping it', asyn
   const { out, calls } = await run({ ...ARGS, lenses: ['techlead', 'linter'] }, () => found());
   assert.match(out.error, /unknown lens linter/);
   assert.equal(calls.length, 0);
-});
-
-test('OpenCodeReview splits the files into batches and reports each file no batch reviewed', async () => {
-  const paths = Array.from({ length: 23 }, (_, i) => `src/f${String(i).padStart(2, '0')}.ts`);
-  const batches = [];
-  const { out, calls } = await run({ ...ARGS, lenses: ['ocr'] }, (prompt, o) => {
-    if (o.label === 'ocr:preview') return { paths };
-    const mine = paths.filter((p) => prompt.includes(p));
-    batches.push(mine);
-    if (batches.length === 2) return null;
-    return { findings: [], files: mine.filter((p) => p !== 'src/f00.ts').map((p) => (p === 'src/f01.ts' ? { path: p, status: 'skipped', reason: 'generated' } : { path: p, status: 'reviewed' })) };
-  });
-  assert.deepEqual(calls[0].opts.bashCommandClamp, ['Bash(npx -y -p @alibaba-group/open-code-review@1.13.0 ocr delegate preview *)']);
-  assert.deepEqual(batches.map((b) => b.length).sort(), [7, 8, 8]);
-  assert.deepEqual(batches.flat().sort(), paths);
-  assert.ok(out.notCovered.includes('ocr: did not review src/f00.ts'));
-  assert.ok(out.notCovered.includes('ocr: did not review src/f01.ts: generated'));
-  assert.equal(out.notCovered.length, 2 + batches[1].length);
 });
 
 test('reviewers see the failure table, and a finding the verifier could not settle comes back unsettled', async () => {
