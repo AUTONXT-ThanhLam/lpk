@@ -30,8 +30,11 @@ before(() => {
   pin = git(work, 'rev-parse', 'HEAD');
   git(root, 'clone', '-q', '--bare', work, bare);
   git(bare, 'config', 'uploadpack.allowAnySHA1InWant', 'true');
-  const block = /```sh\n([\s\S]*?)```/.exec(readFileSync(PARTS, 'utf8'))[1];
-  assert.match(block, /^PIN=[0-9a-f]{40}$/m);
+  const parts = readFileSync(PARTS, 'utf8');
+  const block = /```sh\n([\s\S]*?)```/.exec(parts)[1];
+  const realPin = /^PIN=([0-9a-f]{40})$/m.exec(block)[1];
+  const named = parts.match(/design-kit\/emilkowalski-skills[^`\s]*/g);
+  assert.deepEqual([...new Set(named)], [`design-kit/emilkowalski-skills@${realPin}`]);
   script = join(root, 'block.sh');
   writeFileSync(script, block.replace(/^PIN=[0-9a-f]{40}$/m, `PIN=${pin}`));
   wrapperDir = join(root, 'bin');
@@ -44,16 +47,18 @@ before(() => {
 
 after(() => rmSync(root, { recursive: true, force: true }));
 
-const freshHome = (name, stale) => {
+const freshHome = (name, earlier) => {
   const home = join(root, name);
-  const clone = join(home, '.local', 'share', 'lpk', 'design-kit', 'emilkowalski-skills');
-  mkdirSync(clone, { recursive: true });
-  if (stale) {
-    git(clone, 'init', '-q');
-    git(clone, 'fetch', '-q', bare, staleSha);
-    git(clone, 'checkout', '-q', '-f', 'FETCH_HEAD');
-  } else rmSync(clone, { recursive: true });
-  return { home, clone, kit: dirname(clone) };
+  const kit = join(home, '.local', 'share', 'lpk', 'design-kit');
+  mkdirSync(kit, { recursive: true });
+  const old = join(kit, 'emilkowalski-skills');
+  if (earlier) {
+    mkdirSync(old);
+    git(old, 'init', '-q');
+    git(old, 'fetch', '-q', bare, staleSha);
+    git(old, 'checkout', '-q', '-f', 'FETCH_HEAD');
+  }
+  return { home, kit, old, clone: join(kit, `emilkowalski-skills@${pin}`) };
 };
 
 const env = (home) => ({
@@ -69,12 +74,13 @@ const run = (shell, home) => new Promise((resolve) => {
 });
 
 for (const shell of ['sh', 'bash']) {
-  test(`the pin block run by ${shell} six times at once moves a stale clone to the pin and leaves no temp directory`, async () => {
-    const { home, clone, kit } = freshHome(`stale-${shell}`, true);
+  test(`the pin block run by ${shell} six times at once beside an earlier pin's clone pins, leaves that clone where it is, and leaves no temp directory`, async () => {
+    const { home, clone, kit, old } = freshHome(`earlier-${shell}`, true);
     const results = await Promise.all(Array.from({ length: 6 }, () => run(shell, home)));
     assert.deepEqual(results.map((r) => r.out), Array(6).fill(`pinned ${pin}`));
     assert.equal(git(clone, 'rev-parse', 'HEAD'), pin);
-    assert.deepEqual(readdirSync(kit), ['emilkowalski-skills']);
+    assert.equal(git(old, 'rev-parse', 'HEAD'), staleSha);
+    assert.deepEqual(readdirSync(kit).sort(), ['emilkowalski-skills', `emilkowalski-skills@${pin}`]);
   });
 }
 
@@ -109,5 +115,5 @@ test('a run whose shell is killed mid-fetch does not stall the next run, and a l
   const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000);
   utimesSync(join(kit, orphans[0]), twoHoursAgo, twoHoursAgo);
   assert.equal(spawnSync('sh', [script], { env: env(home), encoding: 'utf8' }).stdout.trim(), `pinned ${pin}`);
-  assert.deepEqual(readdirSync(kit), ['emilkowalski-skills']);
+  assert.deepEqual(readdirSync(kit), [`emilkowalski-skills@${pin}`]);
 });
