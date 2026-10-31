@@ -12,7 +12,7 @@ import { context, measureInjections } from '../bench-context.mjs';
 import { cliLensRuns, ledgers, STATES, yieldOf } from '../bench-data.mjs';
 import { readStores } from '../bench-hosts.mjs';
 import { render } from '../bench-text.mjs';
-import { idle, inWindow, ownerTimes, sum, union } from '../bench-time.mjs';
+import { idle, inWindow, ownerTimes, sum, union, weighted } from '../bench-time.mjs';
 import { readRuns, runsFile } from '../runs.mjs';
 import { scanSession } from '../scan.mjs';
 
@@ -163,6 +163,8 @@ export async function main(argv) {
     ? `${Object.entries(born).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(', ')} of ${bornCount} ruled finding(s) in ${led.byRun.size} reachable ledger(s)`
     : `none of the ${led.byRun.size} reachable ledger(s) holds a ruled finding, so no defect has a birth step recorded yet`;
 
+  for (const x of [...lenses, ...agentRows.values()]) x.weighted = weighted(x.fresh, x.cacheRead);
+
   const out = {
     v: 1,
     runs: {
@@ -174,10 +176,10 @@ export async function main(argv) {
       thin: runs.length < 20 ? `only ${runs.length} runs read; per-lens rows below are counts, not rates` : '',
     },
     hosts: hostsOut,
-    lenses: lenses.sort((x, y) => y.raised - x.raised || (y.fresh || 0) - (x.fresh || 0)),
+    lenses: lenses.sort((x, y) => y.raised - x.raised || (y.weighted || 0) - (x.weighted || 0)),
     cliLensRuns: cliTable.sort((x, y) => y.runs - x.runs),
     born: { counts: born, ruled: bornCount, note: bornNote },
-    agents: [...agentRows.values()].sort((x, y) => y.fresh - x.fresh),
+    agents: [...agentRows.values()].sort((x, y) => y.weighted - x.weighted),
     wall: { runs: runRows.map(({ lenses: _l, ...r }) => r), sessionsScanned: scanned, note: 'criticalPathMs is the union of the agents\' working spans inside the run window; lensMsSum is their sum. ownerIdleMs is the wall time the session waited for the owner (the gaps in all the transcripts work that an owner message closed); workingMs is wallMs without it. A lens running beside another is on neither critical path.' },
     context: ctx,
     missing: { ledger: led.absent, transcripts: runRows.filter((r) => r.fresh === null).map((r) => `${r.id}: ${r.note || 'host writes no token counts'}`), tokensUnavailableFor: hostsOut.filter((h) => !h.tokensAvailable).map((h) => h.host) },
