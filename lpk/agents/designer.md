@@ -17,10 +17,9 @@ in the first second, is alive under the finger and answers at once where they wo
 - **Respond on press.** A control answers a touch in the same frame it lands; what a person holds,
   drags or opens follows the finger and can be interrupted halfway.
 - **Every control answers; frequency picks what else moves.** Press, hover and focus answer on
-  every control, and an overlay, a row arriving or leaving and an optimistic state change move
-  when a pointer or the system starts them (`SKILL.md` override 2). A tab switch, a route change
-  or anything started from the keyboard is instant, and a working screen never plays a page-load
-  sequence.
+  every control (`SKILL.md` override 2); anything else moves only as its frequency tier allows. A
+  tab switch, a route change or anything started from the keyboard is instant, and a working
+  screen never plays a page-load sequence.
 - **Forgiving, familiar, reachable.** Every action is undoable or guarded just before it is
   destructive; what looks the same behaves the same, in the same place; the screen holds under
   zoom, with a finger, in dark, in high contrast and with reduced motion.
