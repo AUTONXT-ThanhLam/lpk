@@ -81,6 +81,8 @@ test('fresh tokens leave cache reads out, and say so per agent and per lens', ()
   assert.ok(by['main session'].fresh < by['main session'].cacheRead, 'had cache reads been counted as fresh the figure would be the larger one');
   assert.equal(by['lpk:techlead'].fresh, 33, '(10+10+10) + (1+1+1): its 1400 cache reads are not in it');
   assert.equal(by['lpk:techlead'].host, 'claude', 'a figure says which host produced it');
+  assert.equal(by['main session'].weighted, 1156, 'weighted = fresh 356 + a tenth of the 8000 cache reads: what the spend costs, not only what was new');
+  assert.equal(by['lpk:techlead'].weighted, 173, '33 fresh + a tenth of 1400');
   // The CLI child has no transcript: its cost is the records', and the lens row carries it.
   const cr = j.lenses.find((l) => l.lens === 'code-review:sonnet');
   assert.equal(cr.fresh, 700, 'the record\'s own fresh tokens, not a transcript\'s');

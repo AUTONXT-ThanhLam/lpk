@@ -47,3 +47,5 @@ export function idle(spans, owner, from = -Infinity, to = Infinity) {
   }
   return total;
 }
+
+export const weighted = (fresh, cacheRead) => (fresh === null || fresh === undefined ? null : Math.round(fresh + 0.1 * (cacheRead || 0)));
