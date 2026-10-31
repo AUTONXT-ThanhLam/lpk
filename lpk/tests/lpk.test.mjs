@@ -2,16 +2,18 @@
 // commands, agents and workflows the plugin really ships.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { touched } from '../lib/facts.mjs';
+import { gitPath } from '../lib/git.mjs';
+import { stubBin } from './stub.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LPK = join(ROOT, 'bin', 'lpk');
-const tmp = mkdtempSync(join(tmpdir(), 'lpk-test-'));
+const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-test-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 
 const ENV = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
@@ -164,9 +166,9 @@ test('the push guard runs the gitleaks lpk setup fetched when none is on PATH', 
   const repo = fixture('own-gitleaks');
   const data = join(tmp, 'own-gitleaks-data');
   // A stand-in for the fetched binary that reports one secret, as `gitleaks git --exit-code 3` does.
-  write(data, 'lpk/bin/gitleaks', '#!/bin/sh\nprintf \'[{"Commit":"abc","File":"a.env","StartLine":1,"RuleID":"generic-api-key"}]\'\nexit 3\n');
-  execFileSync('chmod', ['+x', join(data, 'lpk/bin/gitleaks')]);
-  const PATH = ENV.PATH.split(delimiter).filter((d) => !existsSync(join(d, 'gitleaks'))).join(delimiter);
+  mkdirSync(join(data, 'lpk', 'bin'), { recursive: true });
+  stubBin(join(data, 'lpk', 'bin'), 'gitleaks', `process.stdout.write(${JSON.stringify('[{"Commit":"abc","File":"a.env","StartLine":1,"RuleID":"generic-api-key"}]')});\nprocess.exitCode = 3;\n`);
+  const PATH = process.env.PATH.split(delimiter).filter((d) => !['gitleaks', 'gitleaks.exe'].some((n) => existsSync(join(d, n)))).join(delimiter);
   const out = execFileSync('node', [LPK, 'push-check'], { cwd: repo, env: { ...ENV, PATH, XDG_DATA_HOME: data }, encoding: 'utf8', input: JSON.stringify({ tool_input: { command: 'git push' }, cwd: repo }) });
   assert.match(JSON.parse(out).hookSpecificOutput.permissionDecisionReason, /gitleaks found 1 secret.*\n.*a\.env:1 generic-api-key/);
 });
@@ -201,8 +203,8 @@ test('lpk compare tables the inputs on which main and the uncommitted change dis
   const inputs = join(tmp, 'compare-in');
   for (const [name, n] of [['a', '7'], ['b', '80'], ['c', '-1']]) write(inputs, name, n);
   const harness = join(tmp, 'cap.mjs');
-  writeFileSync(harness, "import { readFileSync } from 'node:fs';\nconst { cap } = await import(`${process.cwd()}/src/size.mjs`);\nconsole.log(cap(Number(readFileSync(0, 'utf8'))));\n");
-  const out = lpk(repo, ['compare', '--run', `node ${harness}`, '--inputs', inputs, '--base', 'main']);
+  writeFileSync(harness, "import { readFileSync } from 'node:fs';\nimport { join } from 'node:path';\nimport { pathToFileURL } from 'node:url';\nconst { cap } = await import(pathToFileURL(join(process.cwd(), 'src', 'size.mjs')).href);\nconsole.log(cap(Number(readFileSync(0, 'utf8'))));\n");
+  const out = lpk(repo, ['compare', '--run', `node ${gitPath(harness)}`, '--inputs', inputs, '--base', 'main']);
   assert.match(out, /3 inputs: 1 same, 2 differ/);
   assert.match(out, /\| b `80` \| exit 0: 80 \| exit 0: 50 \|/);
   assert.match(out, /\| c `-1` \| exit 0: -1 \| exit 1: \(stderr below\) \|/);

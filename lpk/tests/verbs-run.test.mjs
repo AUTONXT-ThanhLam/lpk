@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { gitPath } from '../lib/git.mjs';
 import { commit, ENV, lpk, lpkAsync, repoWith, sh, tmp, write } from './verbs-env.mjs';
 import { listening } from '../lib/spawn.mjs';
 import { modelLanes, slotCount, width } from '../lib/cmd/slot.mjs';
@@ -106,7 +107,7 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
   const h = lpk(repo, 'handoff', 'api');
   assert.equal(h.status, 0, h.stderr);
   assert.match(h.stdout, /slice api: owns a\.js/);
-  assert.match(h.stdout, new RegExp(`worktree: ${wt} on slice-api`));
+  assert.ok(h.stdout.includes(`worktree: ${gitPath(wt)} on slice-api`), h.stdout);
   assert.match(h.stdout, /commits since base: 1\n {2}[0-9a-f]+ Start the api slice/);
   assert.match(h.stdout, /uncommitted: 1 path\(s\)\n {2} M b\.js/);
   assert.match(h.stdout, /changed beyond the slice's files: b\.js/);
@@ -125,7 +126,7 @@ test('a worktree named for its slice lives in the git directory and `lpk run end
   const made = lpk(repo, 'run', 'worktree', 'api', 'HEAD', '--branch', 'slice-api');
   assert.equal(made.status, 0, made.stderr);
   const dir = made.stdout.match(/^worktree (\S+)/)[1];
-  assert.match(dir, /\.git\/lpk\/wt\/[^/]+\/api$/);
+  assert.match(gitPath(dir), /\.git\/lpk\/wt\/[^/]+\/api$/);
   assert.equal(sh(repo, 'status', '--short').trim(), '', 'the main checkout sees nothing of it');
   const kept = lpk(repo, 'run', 'worktree', 'wip', 'HEAD', '--branch', 'slice-wip').stdout.match(/^worktree (\S+)/)[1];
   write(kept, 'a.js', 'unsaved\n');

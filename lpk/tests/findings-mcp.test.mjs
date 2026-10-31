@@ -2,16 +2,16 @@
 // server records the call against the session's run.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLedger, VERIFIER } from '../lib/findings.mjs';
 import { stampFinding, stampHookOutput } from '../lib/stamp.mjs';
 
 const MCP = join(dirname(fileURLToPath(import.meta.url)), '..', 'mcp', 'lpk.mjs');
-const tmp = mkdtempSync(join(tmpdir(), 'lpk-findings-mcp-'));
+const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-findings-mcp-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 const ENV = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
 const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -38,7 +38,8 @@ test('the hook stamps run, raiser, agent id and the reviewed range over whatever
   assert.deepEqual(stampHookOutput(hook(dir, 'list', {})), { hookSpecificOutput: { hookEventName: 'PreToolUse', updatedInput: { repo: dir, run: 'run7' } } });
   assert.equal(stampFinding({ ...hook(dir, 'add', {}), tool_name: 'Bash' }), null);
   // Another session's run is not this session's: nothing but the repo is stamped.
-  assert.deepEqual(stampFinding({ ...hook(dir, 'add', { claim: 'c', from: 'lpk:verifier' }), session_id: 's2' }), { claim: 'c', repo: dir });
+  const foreign = stampFinding({ ...hook(dir, 'add', { claim: 'c', from: 'lpk:verifier' }), session_id: 's2' });
+  assert.deepEqual({ ...foreign, repo: resolve(foreign.repo) }, { claim: 'c', repo: dir });
 });
 
 // One request and the one reply it gets, over the server's stdin and stdout.

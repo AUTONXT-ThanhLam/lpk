@@ -3,11 +3,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
+import { gitPath } from '../lib/git.mjs';
 import { context, ENV, hook, lpk, reason, repoWith, ROOT, sh, startRun, tmp, write } from './hooks-env.mjs';
 
+const inPlace = (o) => (o.repo ? { ...o, repo: resolve(o.repo) } : o);
 const records = (dir) => (existsSync(join(dir, 'records.jsonl')) ? readFileSync(join(dir, 'records.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : []);
 
 test('inside a run a gate that cannot read the run denies, naming the error and the waiver; another repo is left alone', () => {
@@ -166,12 +168,12 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, reviewRange: 'main..feat' }));
   const call = { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'stamp', cwd: outer, agent_type: 'lpk:bug-hunter', agent_id: 'a1', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } };
   const stamped = hook('PreToolUse', 'stamp', call).hookSpecificOutput.updatedInput;
-  assert.deepEqual([stamped.repo, stamped.run, stamped.from, stamped.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
+  assert.deepEqual([resolve(stamped.repo), stamped.run, stamped.from, stamped.at], [inner, run.id, 'lpk:bug-hunter', 'main..feat']);
   // Before `lpk review start`, a builder's own review still records the range it read.
   writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, base: 'abcdef1234567890' }));
   const early = hook('PreToolUse', 'stamp', { ...call, tool_input: { ...call.tool_input, at: 'what-the-agent-said' } }).hookSpecificOutput.updatedInput;
   assert.equal(early.at, 'abcdef123456..staged');
-  assert.equal(early.repo, inner);
+  assert.equal(resolve(early.repo), inner);
   writeFileSync(join(dir, 'run.json'), JSON.stringify({ ...run, reviewRange: 'main..feat' }));
   const { addFinding, readLedger } = await import('../lib/findings.mjs');
   const { repo, ...args } = stamped;
@@ -179,10 +181,12 @@ test('a finding raised from outside the run\'s checkout, as from a superproject,
   assert.deepEqual(readLedger(inner).findings.map((f) => [f.run, f.from]), [[run.id, 'lpk:bug-hunter']]);
   // A new session continuing the run of one that exited is told to take it, and then records.
   const verdict = { ...call, tool_name: 'mcp__plugin_lpk_lpk__finding_verdict', session_id: 'other', agent_type: 'lpk:verifier', tool_input: { id: 'F1', verdict: 'dropped' } };
-  assert.match(reason(hook('PreToolUse', 'stamp', verdict)), new RegExp(`session other holds no open lpk run .*Open runs whose session has exited: ${inner} \\(session stamp\\)\\. The main session continues one with \`lpk run take --repo <dir>\``));
+  const exited = reason(hook('PreToolUse', 'stamp', verdict));
+  assert.match(exited, /session other holds no open lpk run /);
+  assert.ok(exited.includes(`Open runs whose session has exited: ${gitPath(inner)} (session stamp). The main session continues one with \`lpk run take --repo <dir>\``), exited);
   assert.match(JSON.parse(lpk(inner, 'other', 'run', 'status').stdout).heldBy, /session stamp, which has exited: `lpk run take`/);
   assert.equal(lpk(inner, 'other', 'run', 'take').status, 0);
-  assert.deepEqual(hook('PreToolUse', 'stamp', verdict).hookSpecificOutput.updatedInput, { id: 'F1', verdict: 'dropped', repo: inner, run: run.id, by: 'lpk:verifier' });
+  assert.deepEqual(inPlace(hook('PreToolUse', 'stamp', verdict).hookSpecificOutput.updatedInput), { id: 'F1', verdict: 'dropped', repo: inner, run: run.id, by: 'lpk:verifier' });
 });
 
 test('the finding hook keeps the run of the repo the call runs in, else the only run its session holds, and guesses between two never', () => {
@@ -200,13 +204,13 @@ test('the finding hook keeps the run of the repo the call runs in, else the only
   const looseDir = startRun(loose, '');
   // One unreadable entry in the index of live runs is skipped, not a failed hook.
   mkdirSync(join(tmp, 'state', 'lpk', 'active', 'unreadable'), { recursive: true });
-  assert.deepEqual([stamp(here, 'two').repo, stamp(here, 'two').run], [here, hereRun], 'the cwd repo\'s own run wins over a newer one elsewhere');
+  assert.deepEqual([resolve(stamp(here, 'two').repo), stamp(here, 'two').run], [here, hereRun], 'the cwd repo\'s own run wins over a newer one elsewhere');
   assert.equal(stamp(plain, 'two').run, undefined, 'outside any repo, two runs held leave the call unstamped');
-  assert.deepEqual(stamp(foreign, 'two'), { repo: foreign }, 'from a repo with another session\'s run, two held runs are not guessed between');
+  assert.deepEqual(inPlace(stamp(foreign, 'two')), { repo: foreign }, 'from a repo with another session\'s run, two held runs are not guessed between');
   const add = (cwd) => hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd, agent_type: 'lpk:bug-hunter', tool_input: { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } });
   const denied = reason(add(foreign));
   assert.match(denied, /holds 2 open lpk runs/);
-  assert.ok(denied.includes(`${here} (run ${hereRun})`) && denied.includes(`${there} (run ${thereRun})`) && denied.includes('with `repo` set to the repo of the run'));
+  assert.ok(denied.includes(`${gitPath(here)} (run ${hereRun})`) && denied.includes(`${gitPath(there)} (run ${thereRun})`) && denied.includes('with `repo` set to the repo of the run'));
   assert.equal(hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd: foreign, agent_type: 'lpk:bug-hunter', tool_input: { repo: here, claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } }).hookSpecificOutput.updatedInput.run, hereRun, 'a call naming the repo of one held run lands there');
   assert.match(reason(hook('PreToolUse', 'stamp', { tool_name: 'mcp__plugin_lpk_lpk__finding_add', session_id: 'two', cwd: foreign, tool_input: { repo: foreign, claim: 'c' } })), /holds 2 open lpk runs/, 'a repo that is none of them is not taken');
   assert.equal(add(there).hookSpecificOutput.updatedInput.run, thereRun, 'from inside one of them, that run');
@@ -215,8 +219,8 @@ test('the finding hook keeps the run of the repo the call runs in, else the only
   assert.equal(named(there, `${here}/`), hereRun, 'a trailing slash names the same repo');
   const lone = repoWith('stamp-lone', { 'a.mjs': '1\n' });
   const loneRun = runId(startRun(lone, 'solo'));
-  assert.deepEqual([stamp(plain, 'solo').repo, stamp(plain, 'solo').run], [lone, loneRun], 'outside any repo, the one run the session holds');
-  assert.deepEqual(stamp(foreign, 'nobody'), { repo: foreign }, 'a session with no run gets none');
+  assert.deepEqual([resolve(stamp(plain, 'solo').repo), stamp(plain, 'solo').run], [lone, loneRun], 'outside any repo, the one run the session holds');
+  assert.deepEqual(inPlace(stamp(foreign, 'nobody')), { repo: foreign }, 'a session with no run gets none');
   assert.equal(stamp(loose, 'two').run, runId(looseDir), 'an unbound run in the cwd repo is used');
   assert.equal(stamp(plain, 'three').run, undefined, 'an unbound run elsewhere is not taken');
   assert.equal(JSON.parse(readFileSync(join(looseDir, 'run.json'), 'utf8')).session, undefined, 'and is not bound by a finding call');

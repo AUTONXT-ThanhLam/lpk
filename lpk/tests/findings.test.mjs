@@ -2,16 +2,16 @@
 // closes with its evidence, and which rulings the owner reads.
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { after, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { SCOPE } from '../lib/reach.mjs';
 import { addFinding, archiveLedger, counts, ledgerFile, markFixed, needsOwner, readLedger, resetLedger, ruleOn, VERIFIER } from '../lib/findings.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const tmp = mkdtempSync(join(tmpdir(), 'lpk-findings-'));
+const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-findings-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
 
 const ENV = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
@@ -175,19 +175,19 @@ test('a new run archives the old ledger under its run id and never deletes one',
   assert.equal(archived, join(dir, '.git', 'lpk', 'runs', 'run1', 'findings.jsonl'));
   assert.deepEqual(readLedger(dir).findings, []);
   raise(dir, head);
-  assert.match(archiveLedger(dir, 'run1').archived, /runs\/run1\/findings\.1\.jsonl$/);
+  assert.equal(archiveLedger(dir, 'run1').archived, join(dir, '.git', 'lpk', 'runs', 'run1', 'findings.1.jsonl'));
   assert.match(archiveLedger(dir, '../x').error, /cannot name a directory/);
   raise(dir, head);
   resetLedger(ledgerFile(dir));
   assert.equal(existsSync(ledgerFile(dir)), false);
-  assert.match(execFileSync('find', [join(dir, '.git', 'lpk', 'runs'), '-name', 'findings.jsonl'], { encoding: 'utf8' }), /before-\d+\/findings\.jsonl/);
+  assert.ok(readdirSync(join(dir, '.git', 'lpk', 'runs'), { recursive: true }).some((p) => new RegExp(`^before-\\d+\\${sep}findings\\.jsonl$`).test(p)));
 });
 
 test('findings added by many processes at once all land, each with its own id', async () => {
   const { dir, head } = repoWithRun('lock');
   // A lock left by a process that died is taken over, not waited on forever.
   writeFileSync(join(dir, '.git', 'lpk', 'findings.lock'), `999999999 ${(await import('node:os')).hostname()} ${Date.now()}`);
-  const script = `import { addFinding } from ${JSON.stringify(join(ROOT, 'lib', 'findings.mjs'))};
+  const script = `import { addFinding } from ${JSON.stringify(pathToFileURL(join(ROOT, 'lib', 'findings.mjs')).href)};
 for (let i = 0; i < 10; i++) { const r = addFinding(process.argv[1], { from: 'p', at: '${head}', claim: 'c' + i, repro: 'r', kind: 'defect', severity: 'nit' }); if (r.error) throw new Error(r.error); }`;
   await Promise.all(Array.from({ length: 6 }, () => new Promise((done, fail) => {
     spawn('node', ['--input-type=module', '-e', script, dir], { stdio: 'inherit' }).on('exit', (code) => (code === 0 ? done() : fail(new Error(`exit ${code}`))));
