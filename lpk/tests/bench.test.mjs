@@ -92,6 +92,9 @@ test('fresh tokens leave cache reads out, and say so per agent and per lens', ()
   assert.equal(cr.fixed, 1);
   assert.equal(cr.weighted, Math.round(cr.fresh + 0.1 * cr.cacheRead), 'a lens row carries weighted too');
   assert.ok(cr.cacheRead > 0);
+  const idle0 = j.lenses.filter((l) => l.raised === 0 && l.weighted !== null).map((l) => l.weighted);
+  assert.deepEqual(idle0, [...idle0].sort((x, y) => y - x), 'lenses that raised the same number of findings are ordered by weighted');
+  assert.ok(idle0.length >= 3);
   assert.equal(cr.tokensPerFixed, 700, 'tokens per finding fixed = the lens cost over what it fixed');
   const missing = j.lenses.find((l) => l.lens === 'security-review:sonnet');
   assert.equal(missing.raised, 0, 'a lens that ran and raised nothing is a row of 0, not a missing row');
