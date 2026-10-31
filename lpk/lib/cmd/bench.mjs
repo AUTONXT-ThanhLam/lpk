@@ -179,7 +179,7 @@ export async function main(argv) {
     lenses: lenses.sort((x, y) => y.raised - x.raised || (y.weighted || 0) - (x.weighted || 0)),
     cliLensRuns: cliTable.sort((x, y) => y.runs - x.runs),
     born: { counts: born, ruled: bornCount, note: bornNote },
-    agents: [...agentRows.values()].sort((x, y) => y.fresh - x.fresh),
+    agents: [...agentRows.values()].sort((x, y) => y.weighted - x.weighted),
     wall: { runs: runRows.map(({ lenses: _l, ...r }) => r), sessionsScanned: scanned, note: 'criticalPathMs is the union of the agents\' working spans inside the run window; lensMsSum is their sum. ownerIdleMs is the wall time the session waited for the owner (the gaps in all the transcripts work that an owner message closed); workingMs is wallMs without it. A lens running beside another is on neither critical path.' },
     context: ctx,
     missing: { ledger: led.absent, transcripts: runRows.filter((r) => r.fresh === null).map((r) => `${r.id}: ${r.note || 'host writes no token counts'}`), tokensUnavailableFor: hostsOut.filter((h) => !h.tokensAvailable).map((h) => h.host) },
