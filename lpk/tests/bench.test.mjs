@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
 import { context, measureInjections } from '../lib/bench-context.mjs';
+import { hostOf } from '../lib/host.mjs';
 import { ENV, ROOT, lpk, tmp, write } from './verbs-env.mjs';
 
 const CLAUDE = ENV.CLAUDE_CONFIG_DIR;
@@ -158,6 +159,12 @@ test('a finding only one lens raised counts once, and a shared file does not cou
   assert.equal(by['lpk:bug-hunter'].dropped, 1, 'a contested finding is not counted as a fixed one');
   assert.equal(by['lpk:techlead'].confirmed, 1);
   assert.equal(by['lpk:techlead'].fixed, 0);
+});
+
+test('a transcript under a store whose paths use backslashes is still that host\'s', () => {
+  const env = { CLAUDE_CONFIG_DIR: 'D:\\a\\claude' };
+  assert.equal(hostOf('D:\\a\\claude\\projects\\p\\s.jsonl', env), 'claude');
+  assert.equal(hostOf('D:\\a\\claude-other\\projects', env), '');
 });
 
 test('work a session does after its run ended is no part of the run\'s window', () => {
