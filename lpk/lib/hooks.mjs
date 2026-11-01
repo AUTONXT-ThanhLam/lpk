@@ -10,6 +10,7 @@ import { commits, git, gitPath, mergeBase, runsGit, siblings, top } from './git.
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
 import { readRecords } from './records.mjs';
+import { touchPointer } from './stale-runs.mjs';
 import { activeRun, markerOf, notePrompt, runFor, runState, treeOf, writeRun } from './run.mjs';
 
 export { writeGuard as beforeWrite } from './safety.mjs';
@@ -21,8 +22,9 @@ export function runOf(input, claim = true) {
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
   const repo = top(file ? dirname(file) : input.cwd || '.');
   const run = repo && runFor(repo, input.session_id, claim);
-  if (run) return { repo, run };
+  if (run) { touchPointer(run); return { repo, run }; }
   const other = activeRun(input.session_id, claim, input.cwd);
+  if (other) touchPointer(other);
   return other ? { repo: other.repo, run: other } : {};
 }
 

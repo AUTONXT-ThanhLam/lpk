@@ -30,32 +30,44 @@ function alive(session) {
   write(join(HOME, '.claude', 'sessions'), `${process.pid}.json`, JSON.stringify({ sessionId: session, pid: process.pid }));
 }
 
+function age(repo, ms) {
+  const marker = join(sh(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'run.json');
+  const name = readdirSync(ACTIVE).find((n) => readFileSync(join(ACTIVE, n), 'utf8').trim() === marker);
+  const at = new Date(Date.now() - ms);
+  utimesSync(join(ACTIVE, name), at, at);
+}
+
+const markerOf = (repo) => join(sh(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'run.json');
+
 test('a run whose session is long gone stops switching every hook guard on, and a resumed session switches its own back on', () => {
   rmSync(ACTIVE, { recursive: true, force: true });
   const stale = repoWith('sweep-stale', { 'src/a.mjs': 'export const a = 1;\n' });
   const live = repoWith('sweep-live', { 'src/a.mjs': 'export const a = 1;\n' });
+  const otherAccount = repoWith('sweep-account', { 'src/a.mjs': 'export const a = 1;\n' });
   const elsewhere = repoWith('sweep-elsewhere', { 'src/a.mjs': 'export const a = 1;\n' });
   startRun(stale, 'gone-session');
   startRun(live, 'live-session');
+  startRun(otherAccount, 'account-session');
   transcript('gone-session', 10 * DAY);
-  transcript('live-session', 10 * DAY);
+  age(stale, 10 * DAY);
   alive('live-session');
-  assert.equal(readdirSync(ACTIVE).length, 2);
+  assert.equal(readdirSync(ACTIVE).length, 3);
   assert.equal(guardSpawns('PreToolUse', 'commit'), true, 'with a run registered the guard runs');
 
   hook('SessionStart', 'start', { session_id: 'new-session', cwd: elsewhere });
-  assert.equal(readdirSync(ACTIVE).length, 1, 'only the run whose session lives is still registered');
-  assert.equal(readFileSync(join(ACTIVE, readdirSync(ACTIVE)[0]), 'utf8').trim(), join(sh(live, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'run.json'));
+  assert.deepEqual(readdirSync(ACTIVE).map((n) => readFileSync(join(ACTIVE, n), 'utf8').trim()).sort(), [markerOf(live), markerOf(otherAccount)].sort(), 'only the stale run lost its pointer; a session another account runs is not judged by this one');
 
   rmSync(join(HOME, '.claude', 'sessions'), { recursive: true, force: true });
-  transcript('live-session', 60 * 1000);
+  age(otherAccount, 10 * DAY);
+  hook('PostToolUse', 'post', { tool_name: 'Edit', session_id: 'account-session', cwd: otherAccount, tool_input: { file_path: join(otherAccount, 'src/a.mjs') } });
+  age(live, 10 * DAY);
   hook('SessionStart', 'start', { session_id: 'new-session', cwd: elsewhere });
-  assert.equal(readdirSync(ACTIVE).length, 1, 'the run of a session with no process file but a transcript touched a minute ago stays registered');
+  assert.equal(readdirSync(ACTIVE).length, 1, 'with no process and no use for ten days the pointer of a run goes, one a hook used a minute ago stays');
 
   alive('gone-session');
   hook('SessionStart', 'start', { session_id: 'gone-session', cwd: stale });
   assert.equal(readdirSync(ACTIVE).length, 2, 'the resumed session registers its run again');
-  assert.ok(existsSync(join(sh(stale, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'run.json')), 'the run itself was never touched');
+  assert.ok(existsSync(markerOf(stale)), 'the run itself was never touched');
   rmSync(join(HOME, '.claude', 'sessions'), { recursive: true, force: true });
   rmSync(ACTIVE, { recursive: true, force: true });
   assert.equal(guardSpawns('PreToolUse', 'commit'), false, 'with no run registered the guard costs no node spawn');
@@ -80,7 +92,8 @@ test('a comment is raised once, when the code is committed, and not after every 
 
 test('a run card is a few lines: where the base and brief are, the role limits, and how to ask for the rest', () => {
   const repo = repoWith('card-small', { 'src/a.mjs': 'export const a = 1;\n' });
-  startRun(repo, 'card-small');
+  const dir = startRun(repo, 'card-small');
+  write(dir, 'brief.md', '# brief\n');
   for (const type of ['lpk:builder', 'lpk:techlead', 'lpk:verifier']) {
     const card = context(hook('SubagentStart', 'card', { session_id: 'card-small', cwd: repo, agent_id: 'a1', agent_type: type }));
     assert.ok(card.length > 0 && card.length < 600, `${type} card is ${card.length} characters`);

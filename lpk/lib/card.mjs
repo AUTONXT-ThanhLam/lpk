@@ -17,7 +17,7 @@ import { ensureRegistered, sweepStale } from './stale-runs.mjs';
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
 export const LEDGER_TOOLS = ['add', 'list', 'get', 'verdict', 'fixed'].map((t) => `mcp__plugin_lpk_lpk__finding_${t}`);
-const ledgerHint = () => `- Ledger tools are deferred; load them first with ToolSearch \`select:${LEDGER_TOOLS.join(',')}\`.`;
+const ledgerHint = () => `- Load the ledger tools with ToolSearch \`select:${LEDGER_TOOLS.join(',')}\`.`;
 
 // What an agent of this type may not touch; the hooks refuse the credentials, the git commands and
 // the container removals themselves, so the card names the rule and not each case.
@@ -40,9 +40,9 @@ export function runCard(input) {
   const rules = base ? triggered(loadRules(repo), changeOf(repo, base)).length : 0;
   const brief = ['brief.md', 'brief.json'].map((f) => join(dir, f)).find(existsSync);
   const text = [
-    `lpk run card for ${type} (run in ${repo}):`,
+    `lpk run card, run in ${repo}:`,
     `- Base: ${base ? base.slice(0, 12) : 'not resolved'}${run.reviewRange ? `; range under review: ${run.reviewRange}` : ''}${brief ? `; Design Brief: ${brief}` : ''}.`,
-    `- Rules that apply to the change so far: ${rules} (\`lpk rules\`).`,
+    `- Rules that apply so far: ${rules} (\`lpk rules\`).`,
     `- ${limits(type)}`,
     ledgerHint(),
   ].join('\n');
