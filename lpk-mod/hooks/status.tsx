@@ -20,10 +20,13 @@ let busy = false
 let due = true
 let last = 0
 let armed = false
+let closed = 0
+const CLOSED_EVERY_MS = 10_000
+const CLOSED_POLLS = 3
 
 async function refresh($: Host, options: PluginOptions): Promise<void> {
   const now = await $.clock.now()
-  if (busy || (!due && now - last < EVERY_MS)) return
+  if (busy || (!due && now - last < EVERY_MS) || (closed > 0 && now - last < CLOSED_EVERY_MS)) return
   busy = true
   try {
     const paneOpen = (await $.ui.panes()).some((p) => p.id === PANE)
@@ -36,7 +39,8 @@ async function refresh($: Host, options: PluginOptions): Promise<void> {
     const gates = paneOpen ? ['--gates'] : []
     const r = await runLpk($, root, ['status', '--json', ...gates, '--session', await $.session.id(), '--repo', cwd], { cwd, timeoutMs: 20_000 })
     const s = JSON.parse(r.stdout) as LpkStatus
-    if (!s.open) armed = false
+    closed = s.open ? 0 : closed + 1
+    if (closed >= CLOSED_POLLS) armed = false
     await update($, full, () => (s.open ? s : null))
   } catch (err) {
     $.ui.log(`lpk status skipped: ${String(err)}`, { to: 'debug' })
@@ -52,6 +56,7 @@ export function markDue(): void {
 
 export function arm(): void {
   armed = true
+  closed = 0
   due = true
 }
 

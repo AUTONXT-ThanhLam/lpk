@@ -37,3 +37,12 @@ test('the report lists the owner\'s words verbatim beside the requirements, and 
   assert.match(out, /\n1\. Show the total in a tile\.\n {3}Make it blue\.\n2\. Also export it as CSV, see v0\.5\.0\n/);
   assert.match(out, /\| R1 \| The KPI tile shows the total \|/);
 });
+
+test('after the run ended the report says its words are not listed, not that none were recorded', () => {
+  const S = 'pane-ended';
+  const repo = buildRun('pane-ended', S);
+  notePrompt(readRun(repo), 'Show the total in a tile.');
+  ok(lpk(repo, S, 'run', 'end', '--why', 'test'));
+  const out = lpk(repo, S, 'report').stdout;
+  assert.match(out, /Owner words during the run: not listed, the run has ended/);
+});

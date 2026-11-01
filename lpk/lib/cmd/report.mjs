@@ -12,7 +12,7 @@ import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { proofsOf, trace } from '../proof.mjs';
 import { readDecisions, readRecords } from '../records.mjs';
-import { promptsOf } from '../run.mjs';
+import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
 import { runHere } from './gates.mjs';
 
@@ -25,7 +25,8 @@ const ruling = (f) => (f.state === 'fixed'
 const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
 
 const CLIP = 600;
-function ownerWords(run) {
+function ownerWords(repo, run) {
+  if (readRun(repo)?.id !== run.id) return 'Owner words during the run: not listed, the run has ended (`lpk run end` named the file of them)';
   const file = promptsOf(run.marker);
   const rows = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).flatMap((l) => { try { return [String(JSON.parse(l).prompt || '').trim()]; } catch { return []; } }).filter(Boolean) : [];
   if (!rows.length) return 'Owner words during the run: none recorded';
@@ -80,7 +81,7 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Proof |', '|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
-  facts.push(ownerWords(run));
+  facts.push(ownerWords(repo, run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {
     const row = run.ended ? null : runRow(repo);

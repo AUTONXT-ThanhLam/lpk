@@ -87,13 +87,26 @@ test('a spawned agent starts the band above the prompt, which shows doing, done 
   expect(await band.find({ type: 'Text', text: /^→ gate reviews: .* · then Fix › Prove › Deliver/ })).toBeTruthy()
   await band.unmount()
   open = false
-  await clock.advance(3000)
+  await clock.advance(30_000)
   const quiet = await $.ui.mount(BAND)
   expect(await quiet.find({ type: 'Text', text: /▶/ })).toBeFalsy()
   await quiet.unmount()
   const calls = state.ran.filter((a) => a[2] === 'status').length
   await clock.advance(20_000)
   expect(state.ran.filter((a) => a[2] === 'status').length).toBe(calls)
+})
+
+test('a run that opens after /lpk was submitted still gets its band', async ($, on) => {
+  let open = false
+  on('prompt.submit', (_, e) => e)
+  const { clock } = await started($, on, () => (open ? STATUS : { open: false }))
+  await $.prompt.submit({ text: '/lpk go', command: { name: 'lpk', args: 'go' } } as never)
+  await clock.advance(1000)
+  open = true
+  await clock.advance(10_000)
+  const band = await $.ui.mount(BAND)
+  expect(await band.find({ type: 'Text', text: /^▶ Review/ })).toBeTruthy()
+  await band.unmount()
 })
 
 test('with the pane closed lpk is never started', async ($, on) => {
