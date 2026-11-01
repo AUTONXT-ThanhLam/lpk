@@ -14,10 +14,11 @@ Each task is a directory with `fixture.sh` (builds the repo), `prompt.txt` and `
 
 ## Run
 
-Needs GNU `timeout` (Linux; on macOS install coreutils).
+Needs GNU timeout (Linux; on macOS install coreutils).
 
 From the repository root, on the account `cc-switch` has active. The script drops
-`ANTHROPIC_API_KEY` from every child, because it outranks the OAuth token.
+`ANTHROPIC_API_KEY` from every child, because it outranks the OAuth token. The agent under test runs with your OAuth token in its
+environment, the same as in an ordinary session. Each run is capped at the budget left.
 
 ```sh
 cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs \
@@ -36,11 +37,11 @@ committed, so read these as direction, not as measurements.
 - `with` mostly did not start a run: on a task of one file plus a test the agent judged the flow
   unnecessary, so no gate or review applied. It cost about 1.6 to 1.9 times `without`.
 - `flow` started a run every time and cost many times `without` (up to about 16), in 70 to 230
-  seconds against 15 to 30.
+  seconds against 13 to 28.
 - All arms passed the five specified-behaviour tests. A sixth hidden test, added afterwards, grades a
   percent coupon that is a cent low in floating point (`applyCoupon(375, 18.4%)` returns 307, not
   306). Regraded on the kept workspaces it passed in 2 of 2 `flow` runs, 1 of 3 `with` runs and 0
-  of 4 `without` runs.
+  of 3 `without` runs.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is
 solved by every arm, so a task earns its place only where the plain agent sometimes fails.

@@ -8,13 +8,14 @@ const here = dirname(fileURLToPath(import.meta.url));
 const plugin = resolve(here, '..');
 const args = process.argv.slice(2);
 const usage = (why) => { console.error(`${why}\nrun it as: cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs [--task name] [--arms with,without,flow] [--runs n] [--max-turns n] [--max-cost-usd n] [--out file] [--keep]`); process.exit(2); };
-const flag = (name, fallback) => {
-  const i = args.indexOf(name);
-  if (i < 0) return fallback;
-  const value = args[i + 1];
-  if (!value || value.startsWith('--')) usage(`${name} needs a value`);
-  return value;
-};
+const valued = ['--task', '--arms', '--runs', '--max-turns', '--max-cost-usd', '--out'];
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--keep') continue;
+  if (!valued.includes(args[i])) usage(`unknown argument ${args[i]}`);
+  const value = args[++i];
+  if (!value || value.startsWith('--')) usage(`${args[i - 1]} needs a value`);
+}
+const flag = (name, fallback) => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
 const only = flag('--task', '');
 const arms = flag('--arms', 'with,without').split(',');
 const runs = Number(flag('--runs', '1'));
@@ -32,6 +33,7 @@ if (!Number.isInteger(runs) || runs < 1) usage('--runs needs a whole number of 1
 if (!Number.isFinite(budget) || budget <= 0) usage('--max-cost-usd needs a positive number');
 if (!/^\d+$/.test(maxTurns)) usage('--max-turns needs a whole number');
 if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) usage('CLAUDE_CODE_OAUTH_TOKEN is not set');
+try { writeFileSync(out, '', { flag: 'a' }); } catch (e) { usage(`--out is not writable: ${e.message}`); }
 
 const sh = (cmd, argv, opts = {}) => {
   const { limit, ...rest } = opts;
@@ -73,15 +75,15 @@ function attempt(root, task, arm, n) {
   const sha = sh('git', ['rev-parse', 'HEAD'], { cwd: dir, env: plain }).stdout.trim();
   const text = readFileSync(join(here, task, 'prompt.txt'), 'utf8').trim();
   const prompt = arm === 'with' ? `/lpk:lpk ${text}` : arm === 'flow' ? `/lpk:lpk ${text} Run \`lpk run start\` before the first edit and follow every step of the lpk skill, including the reviews it owes.` : text;
-  const argv = ['-p', prompt, '--output-format', 'json', '--model', 'sonnet', '--permission-mode', 'bypassPermissions', '--max-turns', maxTurns];
+  const argv = ['-p', prompt, '--output-format', 'json', '--model', 'sonnet', '--permission-mode', 'bypassPermissions', '--max-turns', maxTurns, '--max-budget-usd', (budget - spent).toFixed(4)];
   if (arm !== 'without') argv.push('--plugin-dir', plugin);
   const t0 = Date.now();
   const r = sh(claudeBin, argv, { cwd: dir, env: base, limit: 2400, maxBuffer: 64 * 1024 * 1024 });
   let res = {};
-  try { res = JSON.parse(r.stdout); } catch { res = { parseError: r.timedOut ? 'timeout' : `exit ${r.status}: ${(r.stdout || r.stderr || '').slice(0, 300)}` }; }
+  try { res = JSON.parse(r.stdout); if (!res || typeof res !== 'object') throw new Error('not an object'); } catch { res = { parseError: r.timedOut ? 'timeout' : `exit ${r.status}: ${(r.stdout || r.stderr || '').slice(0, 300)}` }; }
   const seconds = Math.round((Date.now() - t0) / 1000);
-  if (res.is_error) return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, error: `claude reported an error (${res.subtype}): ${String(res.result ?? '').slice(0, 300)}` };
-  return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || res.parseError || null, ...grade(dir, task, sha, plain) };
+  if (res.is_error || res.parseError) return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, error: res.parseError ? `claude failed: ${res.parseError}` : `claude reported an error (${res.subtype}): ${String(res.result ?? '').slice(0, 300)}` };
+  return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || null, ...grade(dir, task, sha, plain) };
 }
 
 function once(task, arm, n) {
