@@ -17,7 +17,7 @@ export function briefHash(repo) {
 export function briefUnchecked(repo, run) {
   const now = run.lane === 'full' ? briefHash(repo) : null;
   if (!now || waived(repo, run.id, 'gate:brief-check')) return null;
-  const rounds = designRounds(readDecisions(repo, { run: run.id }));
+  const rounds = designRounds(readDecisions(repo).filter((d) => d.run === run.id || d.run === null));
   if (rounds.some((r) => PASSED.has(r.verdict.toLowerCase()) && r.brief === now)) return null;
   const last = rounds.at(-1);
   const seen = last ? `the last round (${last.round}: ${last.verdict}) ${last.brief && last.brief !== now ? 'was recorded before the brief changed after it' : 'did not pass'}` : 'no round is recorded';
