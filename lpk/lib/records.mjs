@@ -36,9 +36,9 @@ export function readRecords(repo, { run } = {}) {
 }
 
 // A choice taken without the owner, with its reason; the report lists them.
-export function appendDecision(repo, { what, why }) {
+export function appendDecision(repo, { what, why, ...more }) {
   if (!String(what ?? '').trim() || !String(why ?? '').trim()) throw new Error('a decision names what was decided and why');
-  return append(repo, 'decisions.jsonl', { what: String(what).trim(), why: String(why).trim() });
+  return append(repo, 'decisions.jsonl', { what: String(what).trim(), why: String(why).trim(), ...more });
 }
 
 export function readDecisions(repo, { run } = {}) {

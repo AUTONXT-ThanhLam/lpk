@@ -138,6 +138,7 @@ test('a Full-lane run spawns no builder before `lpk go`, and no session spawns a
   assert.match(reason(spawn(full)), /no `lpk go`/);
   assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');
   assert.equal(spawn(quick), null);
+  assert.equal(lpk(full, 'go', 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered').status, 0);
   assert.equal(lpk(full, 'go', 'go').status, 0);
   assert.equal(spawn(full), null);
   assert.match(reason(spawn(full, 'general-purpose')), /lpk:staff/);

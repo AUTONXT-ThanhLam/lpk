@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { lpk, repoWith, write } from './gates-env.mjs';
 
 const BRIEF = JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }], scenarios: [{ id: 'S1', text: 'call a twice', cmd: 'true', proves: ['R1'] }] });
@@ -65,9 +63,4 @@ test('the owner can waive the brief check, an agent cannot, and a run with no br
   const quick = repoWith('brief-none', { 'src/a.mjs': 'export const a = 1;\n' });
   assert.equal(lpk(quick, T, 'run', 'start', '--verify', 'false', '--lane', 'quick', '--req', 'a', '--scenario', 'true', '--proves', 'R1').status, 0);
   assert.equal(go(quick, T).status, 0);
-});
-
-test('the design review workflow asks the critic what the brief leaves the builder to decide', () => {
-  const body = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'workflows', 'design-review.js'), 'utf8');
-  assert.match(body, /^\s+unsaid: /m);
 });

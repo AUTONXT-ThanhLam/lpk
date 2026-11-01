@@ -33,7 +33,7 @@ const answers = (by) => (o) => ({ findings: [], ...(by[o.label] || by[o.agentTyp
 test('round 1 starts one design critic on the whole brief with every focus and the sources, and passes only with no High', async () => {
   const { out, calls } = await run(ARGS, answers({ 'lpk:design-critic': { findings: [finding('Medium', [4])] } }));
   assert.deepEqual(calls.map((c) => [c.opts.label, c.opts.agentType]), [['design-critic', 'lpk:design-critic']]);
-  for (const focus of ['state', 'failures', 'main', 'proof', 'sources', 'reuse']) assert.match(calls[0].prompt, new RegExp(`- ${focus}: `));
+  for (const focus of ['state', 'failures', 'main', 'proof', 'sources', 'reuse', 'unsaid']) assert.match(calls[0].prompt, new RegExp(`- ${focus}: `));
   assert.match(calls[0].prompt, /Review the whole brief\./);
   assert.match(calls[0].prompt, /\/r\/\.git\/lpk\/sources\/request\.md/);
   assert.equal(out.verdict, 'pass');
