@@ -77,6 +77,7 @@ async function laneSet(repo, run, base, list) {
 
 const covers = (repo, item, sha) => commitsOf(repo, item.range).includes(sha);
 const fits = (item, q) => item.key === q.key;
+const lone = (items, q) => { const mine = items.filter((x) => fits(x, q)); const one = mine.filter((x) => !/\.\./.test(x.range)); return mine.length && one.length === mine.length ? `its runs so far covered single commits (${one.map((x) => x.range).join(', ')}); a run over this commit starts its prompt with <from>..<to>` : ''; };
 
 export async function owed(repo, run = readRun(repo)) {
   if (!run) throw new Error('no lpk run in this repo');
@@ -102,7 +103,7 @@ export async function owed(repo, run = readRun(repo)) {
       if (have >= (q.need || 1)) continue;
       const note = notes.find((n) => n.key === q.key && commitsOf(repo, n.range).includes(sha));
       owe(q, sha, [fixed.length ? 'fix delta' : pair && !pair.same && q.delta ? 'changed by the rebase' : laneWhy,
-        have ? `ran ${have} of ${q.need} times` : note ? note.why : 'has not run on it'].filter(Boolean).join('; '), (q.need || 1) - have);
+        have ? `ran ${have} of ${q.need} times` : note ? note.why : lone(items, q) || 'has not run on it'].filter(Boolean).join('; '), (q.need || 1) - have);
     }
   }
   return [...rows].flatMap(([k, shas]) => { const [lens, why] = k.split('\0'); return rangesOf(p, shas).map((range) => ({ lens, range, why })); });
