@@ -68,7 +68,8 @@ test('R3: no verb and no transition makes an item done without a proof exiting 0
   const item = { id: 'P1', status: 'todo' };
   const plan = { name: 'x', items: [item] };
   assert.ok(move(plan, 'P1', 'done').error);
-  assert.ok(move(plan, 'P1', 'done', '', { exit: 1 }).error);
+  move(plan, 'P1', 'done', '', { exit: 1 });
+  assert.equal(item.status, 'todo');
   assert.ok(move(plan, 'P1', 'todo', '', { exit: 0 }).error);
   assert.equal(item.status, 'todo');
   assert.equal(move(plan, 'P1', 'done', '', { exit: 0 }).error, undefined);
@@ -95,8 +96,9 @@ test('R3: hold and pause need a reason, move only an open item, and the hook the
   assert.equal(stop(repo, 's-r3c').decision, 'block');
 });
 
-test('R4: ten stops with no item done block, the tenth says it is the last, the eleventh passes; only an item proved done renews the budget', () => {
-  const repo = seeded('r4', 's-r4', [['stuck', 'exit 1'], ['easy', 'true']]);
+test('R4: ten stops with no item done block, the tenth says it is the last, the eleventh passes; only an item newly proved done renews the budget', () => {
+  const repo = seeded('r4', 's-r4', [['stuck', 'exit 1'], ['easy', 'true'], ['flaky', 'test ! -e broken']]);
+  must(run(repo, 's-r4', 'prove', 'P3'));
   const between = [
     () => { must(run(repo, 's-r4', 'hold', 'P1', '--why', 'asking')); must(run(repo, 's-r4', 'open', 'P1')); },
     () => must(run(repo, 's-r4', 'add', 'more', '--proof', 'exit 1', '--source', 'owner')),
@@ -109,6 +111,12 @@ test('R4: ten stops with no item done block, the tenth says it is the last, the 
     assert.equal(out.reason.includes('PushNotification'), n === 10, `stop ${n}`);
     between[n % between.length]();
   }
+  assert.equal(stop(repo, 's-r4'), null);
+  write(repo, 'broken', 'x\n');
+  assert.equal(run(repo, 's-r4', 'prove', 'P3').status, 1);
+  assert.equal(stop(repo, 's-r4'), null);
+  rmSync(join(repo, 'broken'));
+  must(run(repo, 's-r4', 'prove', 'P3'));
   assert.equal(stop(repo, 's-r4'), null);
   must(run(repo, 's-r4', 'prove', 'P2'));
   const again = stop(repo, 's-r4');
@@ -196,7 +204,7 @@ test('R3: lpk plan prints each item with its status, proof and source, and the n
   assert.match(text, /next: P2 beta/);
 });
 
-test('R3: a failing proof reopens only a done item; a held or paused item keeps its status and its question', () => {
+test('R3: a failing proof records its exit and changes no status: a done item stays done, a held or paused item keeps its question', () => {
   const repo = seeded('r3d', 's-r3d', [['ask', 'exit 1'], ['gate', 'exit 1'], ['ok', 'true']]);
   must(run(repo, 's-r3d', 'hold', 'P1', '--why', 'which database?'));
   must(run(repo, 's-r3d', 'pause', 'P2', '--why', 'later'));
@@ -210,7 +218,8 @@ test('R3: a failing proof reopens only a done item; a held or paused item keeps 
   edit.items[2].proof = 'exit 4';
   writeFileSync(join(plans, 'r3d.json'), JSON.stringify(edit));
   assert.equal(run(repo, 's-r3d', 'prove', 'P3').status, 1);
-  assert.equal(planOf('r3d').items[2].status, 'todo');
+  assert.deepEqual([planOf('r3d').items[2].status, planOf('r3d').items[2].proved.exit], ['done', 4]);
+  assert.match(must(run(repo, 's-r3d')).stdout, /last proof: exit 4/);
   assert.equal(run(repo, 's-r3d', 'open', 'P3').status, 2);
 });
 

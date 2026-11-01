@@ -48,13 +48,14 @@ export function move(plan, id, to, why = '', proved = null) {
   const item = plan.items.find((i) => i.id === id);
   if (!item) return { error: `no item ${id} in plan ${plan.name}` };
   if (!STATUS.includes(to)) return { error: `unknown status ${to}` };
-  if (to === 'done' ? proved?.exit !== 0 : proved && (proved.exit === 0 || to !== 'todo')) return { error: `${id} becomes done only when its proof exits 0: run \`lpk plan prove ${id}\`` };
+  if (proved && to !== 'done') return { error: `a proof only ever makes ${id} done` };
+  if (proved) item.proved = proved;
+  if (proved && proved.exit !== 0) return { item };
+  if (to === 'done' && proved?.exit !== 0) return { error: `${id} becomes done only when its proof exits 0: run \`lpk plan prove ${id}\`` };
   if ((to === 'held' || to === 'paused') && (item.status !== 'todo' || !String(why).trim())) {
     return { error: item.status !== 'todo' ? `${id} is ${item.status}: only an open item can be ${to}` : `${to} needs a reason: --why "<what the owner must answer or decide>"` };
   }
-  if (!proved && to === 'todo' && item.status !== 'held' && item.status !== 'paused') return { error: `${id} is ${item.status}: only a held or paused item is opened` };
-  if (proved) item.proved = proved;
-  if (proved && to === 'todo' && item.status !== 'done') return { item };
+  if (to === 'todo' && item.status !== 'held' && item.status !== 'paused') return { error: `${id} is ${item.status}: only a held or paused item is opened` };
   item.status = to;
   item.why = to === 'held' || to === 'paused' ? String(why).trim() : '';
   return { item };

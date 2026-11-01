@@ -109,10 +109,10 @@ async function prove(a) {
   rmSync(scratch, { recursive: true, force: true });
   const fresh = readPlan(planFile(t.plan.name));
   if (!fresh.plan) return fail(`${planFile(t.plan.name)} changed while the proof ran and is not a readable plan`);
-  const r = move(fresh.plan, id, proved.exit === 0 ? 'done' : 'todo', '', proved);
+  const r = move(fresh.plan, id, 'done', '', proved);
   if (r.error) return fail(r.error);
   writeAtomic(planFile(fresh.plan.name), fresh.plan);
-  console.log(`${id} ${proved.exit === 0 ? 'done' : `stays open: \`${item.proof}\` exited ${proved.exit}`}${proved.tail ? `\n${proved.tail}` : ''}`);
+  console.log(`${id} ${proved.exit === 0 ? 'done' : `stays ${r.item.status === 'todo' ? 'open' : r.item.status}${r.item.status === 'done' ? ', its proof now failing' : ''}: \`${item.proof}\` exited ${proved.exit}`}${proved.tail ? `\n${proved.tail}` : ''}`);
   if (fresh.plan.items.every((i) => i.status === 'done')) {
     mkdirSync(join(plansDir(), 'done'), { recursive: true });
     renameSync(planFile(fresh.plan.name), join(plansDir(), 'done', `${fresh.plan.name}.json`));
