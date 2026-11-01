@@ -22,14 +22,14 @@ export const PHASES = ['understand', 'design', 'build', 'review', 'fix', 'prove'
 const LENSES = new Set(['techlead', 'bug-hunter', 'security', 'regression', 'claims', 'prover', 'mutant', 'verifier', 'ui-reviewer']);
 const keyOf = (type) => String(type || '').split(':').pop();
 const isNet = (r) => r.id !== 'main' && (['Review', 'Verify'].includes(r.workflowPhase) || LENSES.has(keyOf(r.type)) || /^(Code|Security) reviewer$/.test(r.title));
-const ROUND = /^design review round (\d+): (\w+), (\d+)\/(\d+)\/(\d+)/i;
+export const ROUND = /^design review round (\d+): (\w+), (\d+)\/(\d+)\/(\d+)/i;
 
 // Every design review round recorded with `lpk decide "design review round <n>: <verdict>,
 // <High>/<Medium>/<Low>"`, as design.md tells the Captain to record it, oldest first.
 export function designRounds(decisions) {
   return decisions.flatMap((d) => {
     const m = ROUND.exec(d.what || '');
-    return m ? [{ round: Number(m[1]), verdict: m[2], high: Number(m[3]), medium: Number(m[4]), low: Number(m[5]), at: d.at }] : [];
+    return m ? [{ round: Number(m[1]), verdict: m[2], high: Number(m[3]), medium: Number(m[4]), low: Number(m[5]), at: d.at, brief: d.brief ?? null }] : [];
   });
 }
 

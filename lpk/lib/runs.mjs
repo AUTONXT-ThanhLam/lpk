@@ -70,7 +70,7 @@ export function runRow(repo, extra = {}) {
   let version = '';
   try { version = JSON.parse(readFileSync(pluginManifest(), 'utf8')).version; } catch { /* no manifest */ }
   const reviewStarts = records.filter((r) => r.kind === 'review-start');
-  const designReviews = designRounds(readDecisions(repo, { run: run.id })).map(({ at: _at, ...round }) => round);
+  const designReviews = designRounds(readDecisions(repo, { run: run.id })).map(({ at: _at, brief: _brief, ...round }) => round);
   // Where the run's own files sit, named in the row: the ledger this run wrote its findings into, and
   // the repo's `.git/lpk` record directory that holds it (and, once a later run archives it, the
   // ledger under `runs/<id>/`). Without them a row says nothing about where to read the run again.

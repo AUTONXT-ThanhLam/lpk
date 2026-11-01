@@ -95,17 +95,17 @@ Prover PASS or a new test naming it with `lpk verify` green proves each requirem
 
 ## Check it
 
-Create the branch, named the way the repo names them. A brief you wrote yourself is checked by you:
-list the requirement ids no row proves (the `jq` below), map each sentence of the owner's to a
-requirement, give each scenario its route to proof, run what each mechanism relies on, then consult the
-advisor once with the brief and fix what it finds. When the change touches a screen, start `lpk:designer`
-in the background in design mode, whether the brief is yours or a duel's: its UI section joins the brief.
-A duel's brief also goes to the design review:
+Create the branch, named the way the repo names them. Check the brief yourself first: list the
+requirement ids no row proves (the `jq` below), map each sentence of the owner's to a requirement, give
+each scenario its route to proof and run what each mechanism relies on. Then every brief, yours included,
+goes to a fresh reader: a brief only its writer checked leaves the builder to decide what it never said. When the change touches a screen, start `lpk:designer` in the background in design
+mode, whether the brief is yours or a duel's: its UI section joins the brief.
 - the `lpk:design-review` workflow for round 1, with `repo`, `base`, `brief`, `briefJson`,
   `words` (`wc -w` of the brief), `sources` (those files), `precedent` (the path of the
-  `lpk precedent` output) and `round: 1`. One design critic checks the brief on six focuses (state,
-  failures, main, proof, sources, reuse) and returns its findings rated High, Medium or Low; a High
-  that rests only on inference counts as Medium.
+  `lpk precedent` output) and `round: 1`. One design critic checks the brief on seven focuses (state,
+  failures, main, proof, sources, reuse, unsaid) and returns its findings rated High, Medium or Low; a High
+  that rests only on inference counts as Medium. Record each round as step 1 below says: `lpk go` refuses a
+  brief that no recorded `pass` or `last` round covers as it stands, so a brief edited after its pass goes to round 1 again.
 
 A duel's design is reviewed in rounds, at most three. Before each round list the requirement ids no scenario or failure row
 `proves` (`jq -r '([.scenarios[]?,.failures[]?]|map(.proves[]?)) as $p|.requirements[]|select(.id as $i|$p|index($i)|not)|.id'
@@ -145,5 +145,5 @@ skill's directory), then run `lpk go`: it records the brief's checks, so `lpk ga
 changed after go. A hook refuses an `lpk:builder` before `lpk go`, because code built on a brief
 still under review is thrown away.
 
-**Done when** the brief passed your check (for a duel's brief, a design review round returned `pass` or `last`), every requirement has a scenario or
-failure row that proves it, every scenario has a test or a command that shows it, and `lpk go` ran.
+**Done when** the brief passed your check and a design review round returned `pass` or `last` on it, every requirement has a
+scenario or failure row that proves it, every scenario has a test or command that shows it, and `lpk go` ran.

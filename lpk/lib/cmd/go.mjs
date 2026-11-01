@@ -1,5 +1,6 @@
 // `lpk go`: records, when the owner says go, the checks the run then names, so `lpk gates` can print
 // that the checks changed after go.
+import { briefUnchecked } from '../briefcheck.mjs';
 import { parseArgs, repoOf } from '../out.mjs';
 import { appendRecord } from '../records.mjs';
 import { readRun } from '../run.mjs';
@@ -10,6 +11,8 @@ export function main(argv) {
   const repo = repoOf(a.opt('--repo'));
   const run = repo && readRun(repo);
   if (!run) { console.error('lpk: no lpk run in this repo'); return 1; }
+  const unchecked = briefUnchecked(repo, run);
+  if (unchecked) { console.error(`lpk: ${unchecked}`); return 1; }
   appendRecord(repo, { kind: 'go', run: run.id, verify: run.verify, verifyFinal: run.verifyFinal || [], scenarios: run.scenarios.map((s) => s.id), exit: 0 });
   console.log(`go recorded for run ${run.id}; checks: ${run.verify.map((c) => `\`${c}\``).join(', ')}${run.verifyFinal?.length ? `; final checks: ${run.verifyFinal.map((c) => `\`${c}\``).join(', ')}` : ''}`);
   return 0;

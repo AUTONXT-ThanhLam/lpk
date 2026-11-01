@@ -1,6 +1,6 @@
 export const meta = {
   name: 'design-review',
-  description: 'One round of the Design Brief review: one design critic checks the whole brief on six focuses; a later round checks that its open Highs are closed, on the changed lines',
+  description: 'One round of the Design Brief review: one design critic checks the whole brief on seven focuses; a later round checks that its open Highs are closed, on the changed lines',
   whenToUse: 'Step 2 of the lpk skill, once per round, at most three rounds',
   phases: [{ title: 'Review', detail: 'the angles of this round at once' }],
 }
@@ -57,6 +57,7 @@ const FOCUS = {
   proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; and whether a different design is clearly more correct or less risky.',
   sources: `every sentence of the request, the tickets and documents it links and the owner's answers, each read whole (${a.sources.join(', ')}): which requirement or scenario carries it; list what the brief drops, changes or adds without a source.${a.coverage ? ` The brief's scenario and failure rows prove none of these requirement ids (a fact, not a finding: do not spend a finding on it; check that the brief's other rows are right): ${a.coverage.split('\n').filter(Boolean).join(', ')}.` : ''}`,
   reuse: 'each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table, script, component), including those taken from the owner\'s or the tech lead\'s design: does the repo, the public API of an installed dependency at its installed version, the standard library or the platform already do it? Read the dependency\'s types or docs where it is installed and run the replacement before you say so. Name rule `reuse-first` on each such finding.',
+  unsaid: 'each thing the builder must decide that the brief does not: who writes each file, row and value, the key of each cache or lock, each flag and default, each name two parts must agree on, the unit and the empty, missing or repeated input of each field, and each "the X" the brief uses without saying which X when there are two. List each as a question the brief should answer, with the line that leaves it open and the two readings a builder could take.'
 }
 const critic = { name: 'design-critic', type: 'design-critic', schema: CRITIC,
   ask: `Check the brief against the code and its real behaviour, running what the design relies on.${a.precedent ? ` The \`lpk precedent\` output is in ${a.precedent}.` : ''}\nYour focuses, each answered as deep as it goes:\n${Object.entries(FOCUS).map(([focus, questions]) => `- ${focus}: ${questions}`).join('\n')}` }
