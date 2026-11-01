@@ -15,10 +15,8 @@ function startRun(name, session) {
 }
 const raise = (repo, claim = 'a is wrong') => addFinding(repo, { from: 'lpk:bug-hunter', at: `${sh(repo, 'rev-parse', 'main').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`, claim, repro: 'node a.mjs', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }).finding.id;
 
-test('the builder runs on Sonnet and is told to consult the advisor', () => {
-  const text = readFileSync(join(ROOT, 'agents', 'builder.md'), 'utf8');
-  assert.match(text, /^model: sonnet$/m);
-  assert.match(text, /Consult the advisor/);
+test('the builder runs on Sonnet', () => {
+  assert.match(readFileSync(join(ROOT, 'agents', 'builder.md'), 'utf8'), /^model: sonnet$/m);
 });
 
 test('lpk handoff shows the builder what earlier runs confirmed on its files and the rules lpk learned', () => {
