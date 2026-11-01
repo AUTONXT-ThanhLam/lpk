@@ -95,24 +95,25 @@ test('R3: hold and pause need a reason, move only an open item, and the hook the
   assert.equal(stop(repo, 's-r3c').decision, 'block');
 });
 
-test('R4: the fifth stop with no commit and no item changed says it is the last, the sixth passes; failing proofs do not renew it, a commit does', () => {
-  const repo = seeded('r4', 's-r4', [['stuck', 'exit 1']]);
-  for (let n = 1; n <= 5; n++) {
+test('R4: ten stops with no item done block, the tenth says it is the last, the eleventh passes; only an item proved done renews the budget', () => {
+  const repo = seeded('r4', 's-r4', [['stuck', 'exit 1'], ['easy', 'true']]);
+  const between = [
+    () => { must(run(repo, 's-r4', 'hold', 'P1', '--why', 'asking')); must(run(repo, 's-r4', 'open', 'P1')); },
+    () => must(run(repo, 's-r4', 'add', 'more', '--proof', 'exit 1', '--source', 'owner')),
+    () => assert.equal(run(repo, 's-r4', 'prove', 'P1').status, 1),
+    () => { write(repo, `c${Date.now()}.txt`, 'c\n'); sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'progress'); },
+  ];
+  for (let n = 1; n <= 10; n++) {
     const out = stop(repo, 's-r4');
     assert.equal(out.decision, 'block', `stop ${n}`);
-    assert.equal(out.reason.includes('PushNotification'), n === 5, `stop ${n}`);
-    assert.equal(run(repo, 's-r4', 'prove', 'P1').status, 1);
+    assert.equal(out.reason.includes('PushNotification'), n === 10, `stop ${n}`);
+    between[n % between.length]();
   }
   assert.equal(stop(repo, 's-r4'), null);
-  assert.equal(stop(repo, 's-r4'), null);
-  write(repo, 'b.txt', 'b\n');
-  sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'progress');
+  must(run(repo, 's-r4', 'prove', 'P2'));
   const again = stop(repo, 's-r4');
   assert.equal(again.decision, 'block');
   assert.ok(!again.reason.includes('PushNotification'));
-  must(run(repo, 's-r4', 'hold', 'P1', '--why', 'needs the owner'));
-  must(run(repo, 's-r4', 'open', 'P1'));
-  assert.equal(stop(repo, 's-r4').decision, 'block');
 });
 
 test('R5: a new or compacted session sees its plan; a session whose holder exited is told to take it, and take refuses while the holder lives', () => {
@@ -213,43 +214,6 @@ test('R3: a failing proof reopens only a done item; a held or paused item keeps 
   assert.equal(run(repo, 's-r3d', 'open', 'P3').status, 2);
 });
 
-test('R4: holding and reopening an item between stops does not renew the nudge budget', () => {
-  const repo = seeded('r4b', 's-r4b', [['loop', 'exit 1'], ['other', 'exit 1']]);
-  let blocks = 0;
-  for (let n = 0; n < 6; n++) {
-    if (stop(repo, 's-r4b')?.decision === 'block') blocks++;
-    must(run(repo, 's-r4b', 'hold', 'P1', '--why', 'asking'));
-    if (stop(repo, 's-r4b')?.decision === 'block') blocks++;
-    must(run(repo, 's-r4b', 'open', 'P1'));
-  }
-  assert.equal(blocks, 5);
-});
-
-test('R4: a commit on a detached worktree counts as progress, a new worktree or branch at an existing commit does not', () => {
-  const repo = seeded('r4c', 's-r4c', [['stuck', 'exit 1']]);
-  const wt = join(tmp, 'wt-r4c');
-  sh(repo, 'worktree', 'add', '-q', '--detach', wt);
-  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4c').decision, 'block');
-  assert.equal(stop(repo, 's-r4c'), null);
-  sh(repo, 'worktree', 'add', '-q', '--detach', join(tmp, 'wt-r4c-2'));
-  sh(repo, 'branch', 'r4c-same-commit');
-  assert.equal(stop(repo, 's-r4c'), null);
-  write(wt, 'c.txt', 'c\n');
-  sh(wt, 'add', '.'); sh(wt, 'commit', '-qm', 'detached progress');
-  assert.equal(stop(repo, 's-r4c').decision, 'block');
-});
-
-test('R4: add does not renew the spent budget; a message from the owner does', () => {
-  const repo = seeded('r4d', 's-r4d', [['stuck', 'exit 1']]);
-  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4d').decision, 'block');
-  must(run(repo, 's-r4d', 'add', 'more', '--proof', 'true', '--source', 'owner'));
-  assert.equal(stop(repo, 's-r4d'), null);
-  assert.equal(hook('UserPromptSubmit', 'plan', { cwd: repo, session_id: 's-r4d-other', prompt: 'hi' }), null);
-  assert.equal(stop(repo, 's-r4d'), null);
-  assert.equal(hook('UserPromptSubmit', 'plan', { cwd: repo, session_id: 's-r4d', prompt: 'carry on' }), null);
-  assert.equal(stop(repo, 's-r4d').decision, 'block');
-});
-
 test('R4: a question held again after a nudge is announced again', () => {
   const repo = seeded('r4e', 's-r4e', [['ask', 'exit 1']]);
   must(run(repo, 's-r4e', 'hold', 'P1', '--why', 'which database?'));
@@ -262,7 +226,7 @@ test('R4: a question held again after a nudge is announced again', () => {
 
 test('R5: the nudge budget a holder spent is not the session\'s that takes the plan over', () => {
   const repo = seeded('r5b', 's-r5b-old', [['stuck', 'exit 1']]);
-  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r5b-old').decision, 'block');
+  for (let n = 0; n < 10; n++) assert.equal(stop(repo, 's-r5b-old').decision, 'block');
   assert.equal(stop(repo, 's-r5b-old'), null);
   must(run(repo, 's-r5b-new', 'take', 'r5b'));
   const first = stop(repo, 's-r5b-new');

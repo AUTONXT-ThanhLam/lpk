@@ -190,15 +190,6 @@
             "timeout": 10
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/lpk/plans/\"*.json >/dev/null 2>&1 || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" plan",
-            "timeout": 15
-          }
-        ]
       }
     ]
   }

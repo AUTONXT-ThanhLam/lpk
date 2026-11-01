@@ -1,11 +1,10 @@
-import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { git, within } from './git.mjs';
+import { within } from './git.mjs';
 import { sessionPid } from './sessions.mjs';
 
-export const NUDGES = 5;
+export const NUDGES = 10;
 export const NAME = /^[a-z0-9][a-z0-9-]*$/;
 const STATUS = ['todo', 'done', 'held', 'paused'];
 
@@ -61,13 +60,7 @@ export function move(plan, id, to, why = '', proved = null) {
   return { item };
 }
 
-export function fingerprint(plan) {
-  const tips = git(['for-each-ref', '--format=%(objectname)', 'refs/heads'], plan.repo).split('\n');
-  const heads = git(['worktree', 'list', '--porcelain'], plan.repo).split('\n').filter((l) => l.startsWith('HEAD ')).map((l) => l.slice(5));
-  const commits = [...new Set([...tips, ...heads].filter(Boolean))].sort().join(',');
-  const done = plan.items.filter((i) => i.status === 'done').map((i) => i.id).join(',');
-  return createHash('sha1').update(`${done}\n${commits}`).digest('hex');
-}
+const doneIds = (plan) => plan.items.filter((i) => i.status === 'done').map((i) => i.id).join(',');
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
@@ -90,12 +83,12 @@ function readNudge(name) {
 const reasonFor = (plan, item) => `lpk plan ${plan.name}: ${item.id} is open: ${item.title}. It is done when \`${item.proof}\` exits 0; run \`lpk plan prove ${item.id}\` then. Work on it now. A finding, a side fix or another repo is not on the plan: a finding outside this item goes in its PR body as a known limit. If it needs the owner, run \`lpk plan hold ${item.id} --why "<question>"\`, ask, and go on to the next item. If you are waiting on something that will wake you, say so and stop. A proof that runs longer than a few minutes goes through Bash with run_in_background.`;
 
 function nudge(plan, item) {
-  const fp = fingerprint(plan);
+  const done = doneIds(plan);
   const was = readNudge(plan.name);
-  const seen = was.fp === fp && was.session === plan.session ? Number(was.count) || 0 : 0;
+  const seen = was.done === done && was.session === plan.session ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;
-  writeAtomic(nudgeFile(plan.name), { fp, session: plan.session, count: seen + 1 });
-  const last = seen + 1 === NUDGES ? ` This is the last nudge: no commit, no item done and no message from the owner in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${item.id}, then stop.` : '';
+  writeAtomic(nudgeFile(plan.name), { done, session: plan.session, count: seen + 1 });
+  const last = seen + 1 === NUDGES ? ` This is the last nudge: no item done in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${item.id}, then stop.` : '';
   return { decision: 'block', reason: reasonFor(plan, item) + last };
 }
 
@@ -122,11 +115,6 @@ function onStop(input, me) {
   return notes.length ? { systemMessage: notes.join('\n') } : null;
 }
 
-function onPrompt(me) {
-  for (const p of listPlans(me).plans.filter((x) => x.session === me)) rmSync(nudgeFile(p.name), { force: true });
-  return null;
-}
-
 function onStart(input, me) {
   const { plans } = listPlans(me);
   const mine = plans.filter((p) => p.session === me);
@@ -144,7 +132,6 @@ export function planHook(input) {
     if (!me) return null;
     if (input.hook_event_name === 'Stop') return onStop(input, me);
     if (input.hook_event_name === 'SessionStart') return onStart(input, me);
-    if (input.hook_event_name === 'UserPromptSubmit') return onPrompt(me);
   } catch { return null; }
   return null;
 }
