@@ -54,6 +54,7 @@ const HOOKS = {
   card: { run: async (i) => (await lib('card')).runCard(i) },
   prompt: { run: async (i) => (await lib('hooks')).onPrompt(i) },
   ask: { run: async (i) => unattended(i) },
+  plan: { silent: true, run: async (i) => (await lib('plan')).planHook(i) },
   waive: {
     run: async (i) => {
       const w = await lib('waiver');
@@ -70,8 +71,9 @@ const HOOKS = {
 const CONTEXT_EVENTS = new Set(['PreToolUse', 'PostToolUse', 'SessionStart', 'SubagentStart', 'UserPromptSubmit', 'Stop']);
 
 // What a failed hook answers: a deny for a gate inside a run (unless the owner waived that hook in
-// this run), else a note to the model that the hook's work is missing this time.
+// this run), else a note to the model that the hook's work is missing this time (a silent hook: nothing).
 async function failed(name, input, e) {
+  if (HOOKS[name].silent) return null;
   const err = String(e?.message || e).split('\n')[0].slice(0, 300);
   if (HOOKS[name].gate) {
     let run = null, inside = true;
