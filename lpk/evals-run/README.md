@@ -45,15 +45,15 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
 | `csv` | 5/5, 0.05 USD, 16 s | 5/5, 0.10 USD, 22 s | 5/5, 0.46 USD, 222 s |
 
 - `with` started an lpk run in 1 of 25 runs, so it behaves like `without` at twice the cost. Only
-  `flow` runs the gates and reviews, always, at 9 to 13 times the cost and 9 to 22 times the time.
-- `coupon` is the one task where the flow clearly paid: the reviews caught the floating-point
-  cent (`applyCoupon(375, 18.4%)`) in 5 of 5 runs against 0 of 10 in the other two arms.
+  `flow` runs the gates and reviews, always, at about 8.5 to 13 times the cost and 8.5 to 21 times the time.
+- `coupon` is the one task where `flow` clearly won: it passed the floating-point cent trap
+  (`applyCoupon(375, 18.4%)`) in 5 of 5 runs against 0 of 10 in the other two arms. The rows do not
+  show which step of the flow caught it.
 - `cancel` and `csv` are solved by every arm; they show the flow's price, not its worth.
 - `reopen` differs by one run (3, 3, 4 of 5), which is noise.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
-  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included; its reviewers
-  raised nits and fixed them. A catalog rule for that class (`path-identity`) was loaded in the
-  diff and changed nothing in 5 more runs of each task (`results/*-with-path-rule.jsonl`), so it was
+  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included. A catalog rule for that class (`path-identity`) was loaded in the
+  diff and changed nothing in 4 more runs of `listed` and 5 of `contained` (`results/*-with-path-rule.jsonl`), so it was
   not kept: prose in front of a reviewer did not move this class.
 
 ## What this sample cannot show
@@ -66,7 +66,6 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
 - Pilot rows from before the harness wrote `results/` were not kept and are not counted.
 - Not measured: the real CLI's behaviour at `--max-budget-usd` and at `error_max_turns`, and
   whether dropping a review lens costs correctness.
-- The agent under test holds your OAuth token in its environment, as in an ordinary session.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by
 every arm, so a task earns its place only where the plain agent sometimes fails.

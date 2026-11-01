@@ -27,8 +27,8 @@ test('a sibling that only shares the name prefix is outside', () => {
 });
 
 test('dot-dot segments are resolved before judging', () => {
-  assert.equal(inside(root, join(root, 'sub', '..', '..', 'outside', 'secret.txt')), false);
-  assert.equal(inside(root, join(root, 'sub', '..', 'sub', 'a.txt')), true);
+  assert.equal(inside(root, `${root}/sub/../../outside/secret.txt`), false);
+  assert.equal(inside(root, `${root}/sub/../sub/a.txt`), true);
 });
 
 test('a path that goes through a link out of the root is outside', () => {
