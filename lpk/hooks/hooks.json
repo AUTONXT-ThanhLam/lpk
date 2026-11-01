@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "i=$(cat); case \"$i\" in *'gh '*|*push*) printf '%s' \"$i\" | node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" push-check ;; esac",
+            "command": "i=$(cat); case \"$i\" in *'gh '*|*push*) printf '%s' \"$i\" | node \"${CLAUDE_PLUGIN_ROOT}/bin/lpk\" push-check || { echo 'lpk: push guard could not run, so this command is refused; fix the guard or run it yourself' >&2; exit 2; } ;; esac",
             "timeout": 120
           }
         ]
