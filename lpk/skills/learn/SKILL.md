@@ -26,7 +26,7 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
      born in (`born`: request, design, build or fix). One born in the build should have been
      caught by a rule as the line was written. One born in the request, the design or a fix is
      first a lesson about that step (below): name the check there that should have caught it;
-   - **escapes**: `lpk escapes` joins the PRs lpk delivered to the tech lead's later comments, by
+   - **escapes**: `lpk dev escapes` joins the PRs lpk delivered to the tech lead's later comments, by
      file and finding class: a defect every layer missed, weighing most after a revert;
    - **CI failures** (`gh pr checks`, `gh run view --log-failed`): a check red after the push names
      a command `lpk verify` should have run; add it to `~/.local/share/lpk/profiles/<repo>.md`;
@@ -79,7 +79,7 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
    each rule by state over the repo's run ledgers. Then `lpk rules --prune --repo <checkout>` moves
    to `disabled/` each learned ast rule with 3 or more dropped findings and none confirmed: a
    pattern that only draws false alarms costs every run. A rule with no confirmed finding and no
-   escape in its class (`lpk escapes`) goes on a retire list in the report; the owner decides.
+   escape in its class (`lpk dev escapes`) goes on a retire list in the report; the owner decides.
 
 A defect no rule on lines can catch (a step done out of order, a check skipped, a wait that cost
 an hour, a question the owner had to ask twice) is a lesson about the process. Prefer a form a

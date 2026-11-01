@@ -27,7 +27,7 @@ const inBin = new Set([...binSource.matchAll(/cmd === '([a-z-]+)'/g)].map((m) =>
 const cmdFile = (verb) => join(ROOT, 'lib', 'cmd', `${verb}.mjs`);
 const shipped = (verb) => inBin.has(verb) || existsSync(cmdFile(verb));
 // The commands the lpk 2.0 plan gives the prompts, each built as `lib/cmd/<verb>.mjs`.
-const PLANNED = ['ci', 'cochange', 'doctor', 'escapes', 'fixlines', 'floor', 'gates', 'go', 'handoff', 'meter', 'prove',
+const PLANNED = ['ci', 'cochange', 'doctor', 'fixlines', 'floor', 'gates', 'go', 'handoff', 'prove',
   'reap', 'repeat', 'repro', 'report', 'review', 'slot', 'spawn', 'watch'];
 
 // Every `lpk <verb> [<word or --flag>]` a prompt writes in backticks, with the file that writes it.

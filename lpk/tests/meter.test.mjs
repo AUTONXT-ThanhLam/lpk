@@ -25,19 +25,19 @@ function session(id) {
   write(dir, `${id}/subagents/workflows/wf_1/agent-w1.meta.json`, JSON.stringify({ agentType: 'workflow-subagent', description: 'verify:1' }));
 }
 
-test('lpk meter gives each agent its fresh tokens and cache reads apart, counting every API message once', () => {
+test('lpk dev meter gives each agent its fresh tokens and cache reads apart, counting every API message once', () => {
   session('sess-1');
-  const r = lpk(tmp, 'meter', '--session', 'sess-1', '--json');
+  const r = lpk(tmp, 'dev', 'meter', '--session', 'sess-1', '--json');
   assert.equal(r.status, 0, r.stderr);
   const m = JSON.parse(r.stdout);
   const by = Object.fromEntries(m.agents.map((a) => [a.agent, a]));
   assert.deepEqual([by['main session'].fresh, by['main session'].cacheRead, by['main session'].messages], [1365, 11000, 2]);
   assert.deepEqual([by['lpk:techlead'].fresh, by['lpk:techlead'].cacheRead], [333, 0]);
   assert.deepEqual([by['main session'].peakContext, by['lpk:techlead'].peakContext], [6105, 303]);
-  assert.match(lpk(tmp, 'meter', '--session', 'sess-1').stdout, /2 msgs, 0 tool calls \(0\.00 per msg\), peak context 6,105/);
+  assert.match(lpk(tmp, 'dev', 'meter', '--session', 'sess-1').stdout, /2 msgs, 0 tool calls \(0\.00 per msg\), peak context 6,105/);
   assert.deepEqual([by['workflow-subagent'].fresh, by['workflow-subagent'].label, by['workflow-subagent'].messages], [16, 'verify:1', 1], 'a message already counted elsewhere is not counted again');
   assert.deepEqual(m.total, { fresh: 1714, cacheRead: 11100, messages: 4, recorded: true });
-  assert.match(lpk(tmp, 'meter', '--session', 'sess-1').stdout, /fresh tokens 1,714 \(input \+ cache write \+ output\), cache reads 11,100/);
+  assert.match(lpk(tmp, 'dev', 'meter', '--session', 'sess-1').stdout, /fresh tokens 1,714 \(input \+ cache write \+ output\), cache reads 11,100/);
 });
 
 test('the run\'s row in runs.jsonl holds its lane, each lens\'s yield, the files it changed and its tokens', () => {

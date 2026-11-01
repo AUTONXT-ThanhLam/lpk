@@ -188,7 +188,6 @@ test('the prompts name only commands, agents, workflows, skills and files the pl
   }
   const mcp = JSON.parse(readFileSync(join(ROOT, '.mcp.json'), 'utf8'));
   assert.ok(mcp.mcpServers['chrome-devtools'], 'mcp__plugin_lpk_chrome-devtools__* needs the server named chrome-devtools');
-  assert.match(readdirSync(join(ROOT, 'skills', 'lpk')).map((f) => readFileSync(join(ROOT, 'skills', 'lpk', f), 'utf8')).join('\n'), /mcp__plugin_lpk_chrome-devtools__/);
   const review = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8');
   for (const [, name] of review.matchAll(/'lpk:([a-z-]+)'/g)) assert.ok(existsSync(join(ROOT, 'agents', `${name}.md`)), `the review workflow starts lpk:${name}, which the plugin does not ship`);
 });

@@ -100,7 +100,7 @@ test('the band and lpk meter name an unrecorded token figure instead of printing
   const band = ok(lpk(repo, S, 'status'));
   assert.match(band, /· worked \d+m · tokens not recorded by this host\n/);
   assert.doesNotMatch(band, /\d[\d.,kM]* tokens/, 'no token number is printed for a host that recorded none');
-  const m = ok(lpk(repo, S, 'meter', '--session', S));
+  const m = ok(lpk(repo, S, 'dev', 'meter', '--session', S));
   assert.match(m, /status-words: \d+ transcript\(s\), \d+ API messages; tokens not recorded by this host/);
   assert.doesNotMatch(m, /fresh tokens 0/, 'and not the 0 its transcripts full of zeros add up to');
   // The other side of the rule, in its own session and repo: a host that did write counts gets the
@@ -113,7 +113,7 @@ test('the band and lpk meter name an unrecorded token figure instead of printing
   assert.deepEqual(json(other, T).tokens, { fresh: 130, cacheRead: 1000, recorded: true });
   assert.match(ok(lpk(other, T, 'status')), /· 130 tokens\n/);
   assert.doesNotMatch(ok(lpk(other, T, 'status')), /not recorded/);
-  const f = ok(lpk(other, T, 'meter', '--session', T));
+  const f = ok(lpk(other, T, 'dev', 'meter', '--session', T));
   assert.match(f, /fresh tokens 130 \(input \+ cache write \+ output\), cache reads 1,000/);
   assert.doesNotMatch(f, /not recorded/);
 });

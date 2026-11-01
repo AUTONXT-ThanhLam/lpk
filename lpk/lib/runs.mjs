@@ -1,6 +1,6 @@
 // One row per lpk run in the user's `runs.jsonl`, written from facts on disk (run.json, the ledger,
 // the records, the session's transcripts), never from what an agent says: what `lpk report`, the
-// measurement batch and `lpk escapes` read.
+// measurement batch and `lpk dev escapes` read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';

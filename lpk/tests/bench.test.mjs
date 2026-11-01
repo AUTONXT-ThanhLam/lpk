@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { spawn } from 'node:child_process';
-import { context, measureInjections } from '../lib/bench-context.mjs';
+import { context, measureInjections } from '../lib/dev/bench-context.mjs';
 import { hostOf } from '../lib/host.mjs';
 import { ENV, ROOT, lpk, tmp, write } from './verbs-env.mjs';
 
@@ -59,7 +59,7 @@ function plant(name) {
   return repo;
 }
 
-const bench = (cwd, ...args) => lpk(cwd, 'bench', ...args);
+const bench = (cwd, ...args) => lpk(cwd, 'dev', 'bench', ...args);
 const out = (cwd, ...args) => { const r = bench(cwd, '--json', ...args); assert.equal(r.status, 0, r.stderr); return JSON.parse(r.stdout); };
 
 // The row that decides whether the next spend goes before the build or into it. A ruled finding with
@@ -225,7 +225,7 @@ test('absence is printed as an empty verdict, and every key the gates read is th
   assert.equal(out(repo, '--lane', 'quick').runs.distinct, 1);
 });
 
-test('bad arguments are refused, and the command is reachable as lpk bench', () => {
+test('bad arguments are refused, and the command is reachable as lpk dev bench', () => {
   plant('bench-args');
   const r = bench(tmp, '--nonsense');
   assert.equal(r.status, 2);
@@ -281,11 +281,11 @@ test('an injection is counted by what it carries, and a line that only quotes it
   assert.deepEqual(ctx.measured, { adviceLines: 1, adviceBytes: advice.length, skillInjectLines: 3, skillInjectBytes: skill.length * 4, mainTranscriptBytes: readFileSync(file, 'utf8').length });
 });
 
-test('lpk bench --json larger than a pipe buffer reaches a reader that starts late, whole', async () => {
+test('lpk dev bench --json larger than a pipe buffer reaches a reader that starts late, whole', async () => {
   const repo = plant('bench-pipe');
   const rows = Array.from({ length: 600 }, (_, i) => JSON.stringify({ id: `20261022100000-p${i}`, repo: 'work-repo', path: tmp, session: `s-${i}`, lane: 'full', started: '2026-10-22T10:00:00.000Z', recorded: '2026-10-22T10:05:00.000Z', wallMs: 300000, yield: {}, agents: {}, lenses: {}, files: [] })).join('\n');
   writeFileSync(join(DATA, 'runs.jsonl'), `${readFileSync(join(DATA, 'runs.jsonl'), 'utf8')}${rows}\n`);
-  const child = spawn('node', [join(ROOT, 'bin', 'lpk'), 'bench', '--json'], { cwd: repo, env: ENV, stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn('node', [join(ROOT, 'bin', 'lpk'), 'dev', 'bench', '--json'], { cwd: repo, env: ENV, stdio: ['ignore', 'pipe', 'inherit'] });
   await new Promise((r) => setTimeout(r, 400));
   let text = '';
   child.stdout.on('data', (b) => { text += b; });

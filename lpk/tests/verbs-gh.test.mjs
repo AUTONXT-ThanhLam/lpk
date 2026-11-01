@@ -43,12 +43,12 @@ test('lpk escapes keeps the reviewer\'s comments made after delivery, joined by 
     'pr list --head feat --state all --json number,url,author --limit 5': [{ number: 4, url: 'pr', author: { login: 'me' } }],
     'api --paginate --slurp repos/{owner}/{repo}/pulls/4/comments': [[c(1, 'a.js', 'lead', '2026-10-02T00:00:00Z'), c(2, 'b.js', 'lead', '2026-10-03T00:00:00Z')], [c(3, 'c.js', 'lead', '2026-10-03T00:00:00Z'), c(4, 'a.js', 'lead', '2026-09-30T00:00:00Z'), c(5, 'a.js', 'me', '2026-10-03T00:00:00Z')]],
   });
-  const r = lpk(repo, 'escapes', '--reviewer', 'lead');
+  const r = lpk(repo, 'dev', 'escapes', '--reviewer', 'lead');
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /^3 comment\(s\) after delivery by lead on .*; 3 new/);
   assert.match(r.stdout, /escapes#4 a\.js:3 by lead 2026-10-02: file in the change, ledger had a finding on it \| comment 1\n/);
   assert.match(r.stdout, /escapes#4 b\.js:3 by lead 2026-10-03: file in the change, NO ledger finding on it/);
   assert.match(r.stdout, /escapes#4 c\.js:3 by lead 2026-10-03: file NOT in the change/);
-  assert.match(lpk(repo, 'escapes', '--reviewer', 'lead').stdout, /; 0 new/, 'a comment is kept once');
+  assert.match(lpk(repo, 'dev', 'escapes', '--reviewer', 'lead').stdout, /; 0 new/, 'a comment is kept once');
   assert.equal(readFileSync(join(ENV.XDG_DATA_HOME, 'lpk', 'escapes.jsonl'), 'utf8').trim().split('\n').length, 3);
 });

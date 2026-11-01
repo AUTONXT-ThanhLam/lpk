@@ -1,4 +1,4 @@
-import { capped } from './out.mjs';
+import { capped } from '../out.mjs';
 import { est } from './bench-context.mjs';
 
 const n = (x) => (x === null || x === undefined ? 'n/a' : Math.round(x).toLocaleString('en-US'));

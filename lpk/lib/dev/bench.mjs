@@ -1,4 +1,4 @@
-// `lpk bench`: what the recorded runs actually cost and actually found, read from files that already
+// `lpk dev bench`: what the recorded runs actually cost and actually found, read from files that already
 // exist (runs.jsonl, the ledgers, the records, the transcripts) and from no model.
 // Yield per lens, fresh tokens per lens and per role, wall time on the critical path, and the bytes
 // lpk keeps resident in every session. Absence is said out loud: a host whose transcripts write
@@ -7,15 +7,15 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from '../out.mjs';
 import { pluginRoot } from '../host.mjs';
 import { BORN } from '../findings.mjs';
-import { context, measureInjections } from '../bench-context.mjs';
-import { cliLensRuns, ledgers, STATES, yieldOf } from '../bench-data.mjs';
-import { readStores } from '../bench-hosts.mjs';
-import { render } from '../bench-text.mjs';
-import { sessionRows } from '../bench-sessions.mjs';
-import { priced } from '../bench-tokens.mjs';
+import { context, measureInjections } from './bench-context.mjs';
+import { cliLensRuns, ledgers, STATES, yieldOf } from './bench-data.mjs';
+import { readStores } from './bench-hosts.mjs';
+import { render } from './bench-text.mjs';
+import { sessionRows } from './bench-sessions.mjs';
+import { priced } from './bench-tokens.mjs';
 import { readRuns, runsFile } from '../runs.mjs';
 
-const USAGE = 'usage: lpk bench [--json] [--lane <full|quick>] [--runs <n>] [--repo <dir>] [--no-transcripts]';
+const USAGE = 'usage: lpk dev bench [--json] [--lane <full|quick>] [--runs <n>] [--repo <dir>] [--no-transcripts]';
 
 export async function main(argv) {
   const a = parseArgs(argv, ['--lane', '--runs', '--repo'], ['--json', '--no-transcripts']);

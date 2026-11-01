@@ -5,9 +5,10 @@ import { test } from 'node:test';
 import { ENV, lpk, repoWith, tmp } from './verbs-env.mjs';
 
 const DATA = join(ENV.XDG_DATA_HOME, 'lpk');
+let worlds = 0;
 
 function oneRun() {
-  const repo = repoWith('dev-repo', { 'a.txt': 'a\n' });
+  const repo = repoWith(`dev-repo-${worlds++}`, { 'a.txt': 'a\n' });
   mkdirSync(DATA, { recursive: true });
   writeFileSync(join(DATA, 'runs.jsonl'), `${JSON.stringify({ id: '20261021100000-d1', repo: 'dev-repo', path: repo, lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T11:00:00.000Z', wallMs: 1000, yield: {}, agents: {}, lenses: {}, files: [] })}\n`);
 }
@@ -20,7 +21,7 @@ test('lpk dev runs bench, meter and escapes, the commands only a developer of lp
   assert.equal(lpk(tmp, 'dev', 'meter', '--session', 'nope').status, 1, 'meter reaches its own check');
   const escapes = lpk(tmp, 'dev', 'escapes', 'stray');
   assert.equal(escapes.status, 2, 'escapes reaches its own usage');
-  assert.match(escapes.stderr, /usage: lpk escapes/);
+  assert.match(escapes.stderr, /usage: lpk dev escapes/);
 });
 
 test('lpk dev alone, or with a name it does not have, says which names it has and exits 2', () => {

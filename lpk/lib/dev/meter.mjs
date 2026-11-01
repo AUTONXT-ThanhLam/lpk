@@ -1,4 +1,4 @@
-// `lpk meter [--session <id>]`: tokens per agent of one session (the run's, else the newest of this
+// `lpk dev meter [--session <id>]`: tokens per agent of one session (the run's, else the newest of this
 // directory), from its transcripts, each API message once. Fresh = input + cache write + output;
 // cache reads apart.
 import { capped, parseArgs, repoOf } from '../out.mjs';
@@ -6,7 +6,7 @@ import { tokenFigure } from '../host.mjs';
 import { latestSession, meter, total } from '../meter.mjs';
 import { readRun } from '../run.mjs';
 
-const USAGE = 'usage: lpk meter [--session <id>] [--json]';
+const USAGE = 'usage: lpk dev meter [--session <id>] [--json]';
 const n = (x) => x.toLocaleString('en-US');
 
 export async function main(argv) {

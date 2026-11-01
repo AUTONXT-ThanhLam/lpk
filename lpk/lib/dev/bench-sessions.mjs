@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { add, attribute, priced, tally } from './bench-tokens.mjs';
 import { idle, ownerTimes, sum, union } from './bench-time.mjs';
-import { scanSession } from './scan.mjs';
+import { scanSession } from '../scan.mjs';
 
 const row = (agent, host) => ({ agent, host, runs: 0, spanMs: 0, ...tally() });
 const addRow = (to, t, spanMs) => { to.runs++; add(to, t); to.spanMs += spanMs; };

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { configCandidates, slugOf, TOKENS_UNMEASURED } from './host.mjs';
-import { meter, sessionFiles, total } from './meter.mjs';
+import { configCandidates, slugOf, TOKENS_UNMEASURED } from '../host.mjs';
+import { meter, sessionFiles, total } from '../meter.mjs';
 
 export function readStores(runs, skipTranscripts) {
   const hostsOut = [];

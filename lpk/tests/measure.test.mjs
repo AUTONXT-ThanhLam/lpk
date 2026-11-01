@@ -33,7 +33,7 @@ function world({ main = [], agents = {}, wallMs = 600000, records = [] }) {
   writeFileSync(join(DATA, 'runs.jsonl'), jsonl([{ id: RUN, repo: 'work-repo', path: repo, session: 's1', lane: 'full', started: '2026-10-21T10:00:00.000Z', recorded: '2026-10-21T11:00:00.000Z', wallMs, yield: {}, agents: {}, lenses: {}, files: [] }]));
   return repo;
 }
-const bench = (...args) => { const r = lpk(tmp, 'bench', ...args); assert.equal(r.status, 0, r.stderr); return r.stdout; };
+const bench = (...args) => { const r = lpk(tmp, 'dev', 'bench', ...args); assert.equal(r.status, 0, r.stderr); return r.stdout; };
 const json = () => JSON.parse(bench('--json'));
 
 test('the tokens inside the run windows and the ones outside them add up to what the host says the session used', () => {

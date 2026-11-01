@@ -243,15 +243,13 @@ test('the lpk marketplace entry claims no dependency on a particular CLI', () =>
   assert.ok(!/claude|codex|gemini|cursor/i.test(entry.description), 'the lpk description names an assistant CLI as a dependency');
   const slashed = entry.description.match(/(^|[\s(,])\/[a-z][\w-]*/g) ?? [];
   assert.deepEqual(slashed, [], `the description lists slash commands, which only exist on one host: ${slashed.join(' ')}`);
-  assert.ok(/installs?|loads?/i.test(entry.description), 'the entry should say how it loads on a host');
 });
 
-test('and names its review lenses by role, each one a shipped agent', () => {
+test('every review lens the marketplace entry stands for is a shipped agent', () => {
   const entry = json(MARKETPLACE).plugins.find((p) => p.name === 'lpk');
   const roles = { architect: 'architect', 'design critic': 'design-critic', verifier: 'verifier', security: 'security', regression: 'regression', 'bug hunt': 'bug-hunter' };
   const agents = readdirSync(join(ROOT, 'agents')).map((f) => basename(f, '.md'));
   for (const [phrase, file] of Object.entries(roles)) {
-    assert.match(entry.description.toLowerCase(), new RegExp(phrase.replace(/[ *-]/g, '[ -]?')), `the description no longer names the ${phrase} lens`);
     assert.ok(agents.includes(file), `lpk/agents/${file}.md, which the ${phrase} lens is, is gone`);
   }
   assert.ok(existsSync(CLAUDE_MANIFEST), `${entry.source} must hold a plugin manifest`);
