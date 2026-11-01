@@ -224,11 +224,11 @@ test('a session\'s live process is looked for in the Claude Code store', () => {
   assert.equal(withEnv({}, () => sessionPid('gone')), 0, 'a session no file names has no process');
 });
 
-test('lpk meter measures an all-zero run end to end and reports its tokens as unmeasured', () => {
+test('lpk dev meter measures an all-zero run end to end and reports its tokens as unmeasured', () => {
   plantZeroUsage();
   plantClaude();
   const cli = (session) => {
-    const r = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'meter', '--session', session, '--json'], { cwd: REPO, env: childEnv(), encoding: 'utf8' });
+    const r = spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'dev', 'meter', '--session', session, '--json'], { cwd: REPO, env: childEnv(), encoding: 'utf8' });
     assert.equal(r.status, 0, `${r.stderr}\n${r.stdout}`);
     return JSON.parse(r.stdout);
   };

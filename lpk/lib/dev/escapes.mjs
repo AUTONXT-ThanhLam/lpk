@@ -1,9 +1,9 @@
-// `lpk escapes [--reviewer <login>]`: review comments that reached PRs lpk delivered after the run,
+// `lpk dev escapes [--reviewer <login>]`: review comments that reached PRs lpk delivered after the run,
 // joined by file to what the run changed and what its ledger held; new ones are kept in escapes.jsonl.
 import { escapes, escapesFile, recordEscapes } from '../escapes.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 
-const USAGE = 'usage: lpk escapes [--reviewer <login>] [--repo <dir> | --all]';
+const USAGE = 'usage: lpk dev escapes [--reviewer <login>] [--repo <dir> | --all]';
 
 export async function main(argv) {
   const a = parseArgs(argv, ['--reviewer', '--repo'], ['--all']);

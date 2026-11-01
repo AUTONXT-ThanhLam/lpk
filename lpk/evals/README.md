@@ -45,4 +45,4 @@ jq -rn --slurpfile a /tmp/eval-before.json --slurpfile b /tmp/eval-after.json '
 Columns: case, score before and after, cost, turns, seconds. A drop in score is the first thing to
 read. A case at 1 on both sides says only that no regression showed. Cost moves smaller than the
 spread of three runs mean nothing, and seconds vary most. The cases cannot measure whole-run time,
-gates or fix rounds: `lpk bench` reads those from recorded runs.
+gates or fix rounds: `lpk dev bench` reads those from recorded runs.
