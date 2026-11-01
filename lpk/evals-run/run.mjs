@@ -75,10 +75,10 @@ for (const task of tasks) {
     for (const arm of arms) {
       if (spent >= budget) { console.error(`budget ${budget} USD reached; stopping`); process.exit(2); }
       const row = once(task, arm, n);
-      spent += row.costUsd || 0;
       writeFileSync(out, `${JSON.stringify(row)}\n`, { flag: 'a' });
       console.log(JSON.stringify(row));
       if (row.costUsd == null) { console.error('a run reported no cost, so the spend is unknown; stopping'); process.exit(2); }
+      spent += row.costUsd;
     }
   }
 }
