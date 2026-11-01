@@ -116,6 +116,15 @@
             "timeout": 120
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/lpk/plans/\"*.json >/dev/null 2>&1 || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" plan",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -146,6 +155,16 @@
             "type": "command",
             "command": "{ git rev-parse --git-dir --git-common-dir 2>/dev/null | while IFS= read -r d; do [ -d \"$d/lpk\" ] && echo y; done; ls -A \"${XDG_STATE_HOME:-$HOME/.local/state}/lpk/active\" 2>/dev/null; } | grep -q . || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" start",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls \"${XDG_DATA_HOME:-$HOME/.local/share}/lpk/plans/\"*.json >/dev/null 2>&1 || exit 0; exec node \"${CLAUDE_PLUGIN_ROOT}/lib/cmd/hook.mjs\" plan",
+            "timeout": 15
           }
         ]
       }

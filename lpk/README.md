@@ -47,6 +47,9 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
   a PR with review comments runs the feedback flow.
 - `/lpk:learn` turns defects found late (review comments, a run's confirmed findings, CI failures)
   into rules, saved at once.
+- `node <plugin>/bin/lpk plan` keeps a checklist for a long goal: each item is done only when its proof
+  command exits 0, and at the end of a turn with nothing in flight the session is sent on to the next
+  open item; with no item done in 10 turns, the stop passes and the owner is told.
 - `node <plugin>/bin/lpk` with no arguments prints every command.
 
 ## Roles
