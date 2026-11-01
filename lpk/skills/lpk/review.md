@@ -124,15 +124,13 @@ other.
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
-8. `unsettled` findings and the ones you ruled on yourself go in the report with their evidence
-   (`lpk report` lists them for the owner to read; they do not block); so do `preexisting` ones
-   and the deferred ones.
-   Surviving mutants (`test-gap`) are listed in the report.
+8. `unsettled` findings, the ones you ruled on yourself, `preexisting` and deferred ones, and
+   surviving mutants (`test-gap`) go in the report with their evidence (`lpk report` lists them
+   for the owner to read; they do not block).
 9. A refactor a finding seems to call for is a separate PR, named in the report.
 
 Then one delta review: rerun the self-check on the files the fixes touched,
-`lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background,
-and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
+`lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background, and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
 code review on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed findings, in
 parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
 no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines.
@@ -145,8 +143,7 @@ to be reverted or redesigned there, or taken into a new run. The loop of review,
 never runs a third time.
 
 A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
-naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens
-that raised it re-checks the body. It never waits for a waiver.
+naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens that raised it re-checks the body. It never waits for a waiver.
 
 **Done when** `lpk reviews owed` is empty and the ledger holds no open finding and no confirmed
 finding that is not fixed or pre-existing.
