@@ -9,6 +9,7 @@ import { git } from '../git.mjs';
 import { baseOf, capped, parseArgs, repoOf } from '../out.mjs';
 import { readRecords } from '../records.mjs';
 import { readRun, runDir } from '../run.mjs';
+import { pastLines } from '../past.mjs';
 import { briefSections, readFirst, sliceBrief } from '../slicepacket.mjs';
 
 const USAGE = 'usage: lpk handoff <slice name or number> [--worktree <dir>] [--repo <dir>]';
@@ -71,6 +72,7 @@ export async function main(argv) {
   try { findings = readLedger(repo).findings; } catch { /* no ledger yet */ }
   const mine = findings.filter((f) => !files.length || files.includes(f.file)).filter((f) => !['dropped', 'duplicate', 'fixed', 'deferred', 'preexisting'].includes(f.state));
   rows.push(`findings still to act on${files.length ? ' on these files' : ''}: ${mine.length}`, ...mine.map((f) => `  ${f.id} ${f.state} ${f.file}:${f.line} ${String(f.claim || '').split('\n')[0].slice(0, 120)}`));
+  rows.push(...pastLines(repo, files));
   console.log(capped(repo, `handoff-${want.replace(/[^\w.-]/g, '-')}`, head, rows));
   return 0;
 }

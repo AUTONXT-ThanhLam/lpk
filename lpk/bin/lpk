@@ -46,6 +46,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
  measuring what the run cost
   lpk bench [--json] [--lane quick|full] [--runs <n>] [--repo <dir>] [--no-transcripts]
  delivery
+  lpk learn [--rule <id>]...   (records that lpk:learn ran on the run's findings)
   lpk gates  |  lpk report  |  lpk records [--kind <kind>] [--all]  |  lpk ci <pr>  |  lpk waive <id>... --why "<the owner's words>"
  the machine
   lpk plan [show] | new <name> | add "<title>" --proof "<cmd>" --source "<words>" | prove <id> | hold|pause <id> --why "<why>" | open <id> | take <name>   (a checklist the Stop hook pursues)

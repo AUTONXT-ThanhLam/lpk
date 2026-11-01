@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
-model: opus
+model: sonnet
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Edit, Write, SendMessage
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
@@ -42,6 +42,11 @@ a fresh builder from `lpk handoff` with a short context.
 - `lpk precedent <your files>`: what the tech lead said before on them.
 
 ## Build with its tests
+
+Test first: the first commit of your slice holds the test that fails for the behaviour you were given
+(run it and see it fail), and the code that makes it pass follows. The `tests-first` gate reads the
+commit order. `lpk handoff` also lists what earlier runs confirmed on your files and the rules lpk
+learned: read them before the first edit.
 
 1. Read the whole function or component you change, its callers and the base version. For each
    function, field, status, output shape or default you change, run `lpk map <name>` and read every

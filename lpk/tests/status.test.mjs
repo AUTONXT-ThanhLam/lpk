@@ -199,8 +199,9 @@ test('the step follows the run\'s records from understanding to delivery, and th
   assert.deepEqual(step(), ['prove', { scenarios: { passed: 0, total: 1 }, requirements: { proved: 0, total: 0 } }]);
   ok(lpk(repo, S, 'verify'));
   ok(lpk(repo, S, 'prove', '--all'));
+  ok(lpk(repo, S, 'learn'));
   const s = json(repo, S);
-  assert.deepEqual([s.phase, s.phaseDetail], ['deliver', { holding: 5, total: 5, firstDeny: null }]);
+  assert.deepEqual([s.phase, s.phaseDetail], ['deliver', { holding: 7, total: 7, firstDeny: null }]);
   assert.deepEqual(s.phasesVisited, ['understand', 'design', 'build', 'review', 'fix', 'prove', 'deliver']);
 });
 

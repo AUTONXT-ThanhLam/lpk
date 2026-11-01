@@ -7,7 +7,7 @@ import { checkout, runDir } from './where.mjs';
 const COLS = ['confirmed', 'fixed', 'deferred', 'dropped', 'duplicate', 'preexisting', 'open'];
 const ls = (dir) => { try { return readdirSync(dir); } catch { return []; } };
 
-function ledgers(repo) {
+export function ledgers(repo) {
   const at = checkout(repo);
   if (!at) return [];
   const dirs = new Set([runDir(repo), join(at.common, 'lpk'), ...ls(join(at.common, 'worktrees')).map((w) => join(at.common, 'worktrees', w, 'lpk'))]);

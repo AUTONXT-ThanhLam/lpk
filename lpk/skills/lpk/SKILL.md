@@ -56,7 +56,7 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
 - **Spawn `lpk:` agents as their files define them.** Never pass `model`: the role's file sets it
   and a hook drops one named on the spawn. Paste the owner's standing constraints, in their words, into every agent prompt. Drafts and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`, which works without lpk's rules.
-- **The advisor**, where the host has one (a Sonnet session with an Opus `advisorModel`; each consult
+- **The advisor**, where the host has one (the lead and `lpk:builder` run on Sonnet, with an Opus `advisorModel`; each consult
   rereads the whole transcript at Opus price): consult it before choosing the design approach, before
   `lpk go`, after a second failed attempt, and before the final report. Without an advisor model, ask
   `lpk:staff` once with the request, the diff and the draft report, for what the run claims but did not do.
