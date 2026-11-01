@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const TS = /\.(ts|tsx|mts|cts)$/;
-export const TIMEOUT_MS = 20000;
+const limitMs = () => Number(process.env.LPK_TYPECHECK_MS) || 5000;
 const MAX_LINES = 30;
 
 function climb(from, found) {
@@ -23,10 +25,11 @@ export function afterTsEdit(input) {
   if (!project) return null;
   const tsc = climb(project, (d) => existsSync(join(d, 'node_modules', 'typescript', 'bin', 'tsc')) && join(d, 'node_modules', 'typescript', 'bin', 'tsc'));
   if (!tsc) return null;
-  const ran = spawnSync(process.execPath, [tsc, '--noEmit', '--pretty', 'false', '-p', join(project, 'tsconfig.json')], { cwd: project, encoding: 'utf8', timeout: TIMEOUT_MS });
+  const cache = join(tmpdir(), 'lpk-tsc', `${createHash('sha1').update(project).digest('hex').slice(0, 12)}.tsbuildinfo`);
+  const ran = spawnSync(process.execPath, [tsc, '--noEmit', '--incremental', '--tsBuildInfoFile', cache, '--pretty', 'false', '-p', join(project, 'tsconfig.json')], { cwd: project, encoding: 'utf8', timeout: limitMs(), killSignal: 'SIGKILL' });
   const name = relative(input.cwd || '.', file);
   const say = (text) => ({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } });
-  if (ran.error?.code === 'ETIMEDOUT') return say(`lpk: \`tsc --noEmit -p ${relative(input.cwd || '.', join(project, 'tsconfig.json'))}\` did not finish in ${TIMEOUT_MS / 1000}s, so ${name} was not type-checked this time.`);
+  if (ran.error?.code === 'ETIMEDOUT') return say(`lpk: \`tsc --noEmit -p ${relative(input.cwd || '.', join(project, 'tsconfig.json'))}\` did not finish in ${limitMs() / 1000}s, so ${name} was not type-checked this time.`);
   if (ran.error) return null;
   const lines = [];
   let mine = false;

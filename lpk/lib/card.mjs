@@ -7,25 +7,26 @@ import { dirname, join } from 'node:path';
 import { pluginRoot } from './host.mjs';
 import { baseOf, runOf } from './hooks.mjs';
 import { changeOf, loadRules, triggered } from './rules.mjs';
-import { CREDENTIALS, GIT_TRIPS, READ_ONLY, REPRO } from './safety.mjs';
+import { READ_ONLY, REPRO } from './safety.mjs';
 import { top } from './git.mjs';
 import { endedHere } from './reopen.mjs';
 import { currentBranch, treeOf } from './run.mjs';
 import { heirs } from './sessions.mjs';
+import { ensureRegistered, sweepStale } from './stale-runs.mjs';
 
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
 export const LEDGER_TOOLS = ['add', 'list', 'get', 'verdict', 'fixed'].map((t) => `mcp__plugin_lpk_lpk__finding_${t}`);
-const ledgerHint = () => `- The findings ledger tools are deferred: load them before the first call with ToolSearch, query \`select:${LEDGER_TOOLS.join(',')}\`.`;
-const RULES_SHOWN = 25;
+const ledgerHint = () => `- Load the ledger tools with ToolSearch \`select:${LEDGER_TOOLS.join(',')}\`.`;
 
-// What an agent of this type may not touch; the first line is every lpk agent's.
+// What an agent of this type may not touch; the hooks refuse the credentials, the git commands and
+// the container removals themselves, so the card names the rule and not each case.
 function limits(type) {
-  const all = `Never read the owner's tokens (${CREDENTIALS.map((c) => `\`${c}\``).join(', ')}) and never run git ${GIT_TRIPS.map((t) => `\`${t.id}\``).join(', ')}. Remove a docker container only by its exact name or id, or by a label you set on it; never from a command substitution, xargs or a prune.`;
-  const role = READ_ONLY.test(type) ? `You never edit a checkout; scratch files go under /tmp.${/verifier$/.test(type) ? ` Repro tests go in the repro worktrees under ${REPRO}/.` : ''}`
-    : /(builder|designer)$/.test(type) ? 'Edit only the files of your slice, in your own worktree: not the main checkout, not another slice\'s files.'
+  const all = "Never read the owner's tokens or run a git command the hooks refuse.";
+  const role = READ_ONLY.test(type) ? `Never edit a checkout; scratch files go under /tmp${/verifier$/.test(type) ? `, repro tests under ${REPRO}/` : ''}.`
+    : /(builder|designer)$/.test(type) ? 'Edit only the files of your slice, in your own worktree.'
       : /env$/.test(type) ? 'Never edit tracked files; stop only what you started.' : '';
-  return [all, role].filter(Boolean).join(' ');
+  return [role, all].filter(Boolean).join(' ');
 }
 
 // The run card for one `lpk:*` agent, or null outside a run.
@@ -36,12 +37,12 @@ export function runCard(input) {
   if (!run) return null;
   const base = baseOf(repo, run);
   const dir = dirname(run.marker);
-  const rules = base ? triggered(loadRules(repo), changeOf(repo, base)).map((t) => t.rule.id) : [];
+  const rules = base ? triggered(loadRules(repo), changeOf(repo, base)).length : 0;
+  const brief = ['brief.md', 'brief.json'].map((f) => join(dir, f)).find(existsSync);
   const text = [
-    `lpk run card for ${type}, from the run in ${repo}:`,
-    `- Base: ${base ? base.slice(0, 12) : 'not resolved'}${run.reviewRange ? `; range under review: ${run.reviewRange}` : ''}.`,
-    ...['brief.md', 'brief.json'].filter((f) => existsSync(join(dir, f))).map((f) => `- Design Brief: ${join(dir, f)}`),
-    rules.length ? `- Rules that apply to the change so far (\`lpk rules --id <id>\` prints one): ${rules.slice(0, RULES_SHOWN).join(', ')}${rules.length > RULES_SHOWN ? `, and ${rules.length - RULES_SHOWN} more (\`lpk rules\`)` : ''}.` : '- No rule applies to the change so far.',
+    `lpk run card, run in ${repo}:`,
+    `- Base: ${base ? base.slice(0, 12) : 'not resolved'}${run.reviewRange ? `; range under review: ${run.reviewRange}` : ''}${brief ? `; Design Brief: ${brief}` : ''}.`,
+    `- Rules that apply so far: ${rules} (\`lpk rules\`).`,
     `- ${limits(type)}`,
     ledgerHint(),
   ].join('\n');
@@ -90,6 +91,8 @@ function idleCard(input) {
 }
 
 export async function resumeCard(input) {
+  sweepStale();
+  ensureRegistered(input);
   const { repo, run } = runOf(input, false);
   if (!run) return idleCard(input);
   const v = run.verified;

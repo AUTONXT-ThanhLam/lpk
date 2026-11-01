@@ -72,11 +72,11 @@ test('an lpk agent starts with the run card: base, brief, rules, what it may not
   const card = context(start('lpk:builder'));
   assert.match(card, new RegExp(`Base: ${base.slice(0, 12)}`));
   assert.ok(card.includes(`Design Brief: ${join(dir, 'brief.md')}`));
-  assert.match(card, /rule applies to the change so far|Rules that apply to the change so far/);
+  assert.match(card, /rule applies to the change so far|Rules that apply so far/);
   assert.match(card, /Edit only the files of your slice/);
   assert.ok(card.includes('select:mcp__plugin_lpk_lpk__finding_add,mcp__plugin_lpk_lpk__finding_list,mcp__plugin_lpk_lpk__finding_get,mcp__plugin_lpk_lpk__finding_verdict,mcp__plugin_lpk_lpk__finding_fixed'));
   assert.match(context(start('lpk:designer')), /Edit only the files of your slice/);
-  assert.match(context(start('lpk:techlead')), /You never edit a checkout/);
+  assert.match(context(start('lpk:techlead')), /never edit a checkout/i);
 });
 
 test('after a resume the session learns the last workflow run, the open findings and the apps still running', () => {
