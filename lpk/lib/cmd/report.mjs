@@ -9,7 +9,7 @@ import { git } from '../git.mjs';
 import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
-import { proofsOf, trace } from '../proof.mjs';
+import { named, proofsOf, proverResults, trace } from '../proof.mjs';
 import { readDecisions, readRecords } from '../records.mjs';
 import { runRow } from '../runs.mjs';
 import { runHere } from './gates.mjs';
@@ -58,9 +58,18 @@ export async function main(argv) {
     facts.push(`Lenses that ran: ${Object.entries(ran).map(([k, n]) => `${k} ×${n}`).join(', ') || 'none'}`);
   } catch (e) { facts.push(`Findings and lenses could not be read: ${e.message}`); }
   const recs = readRecords(repo, { run: run.id });
-  for (const s of run.scenarios || []) {
-    const last = proofsOf(recs, s).at(-1);
-    facts.push(`Scenario ${s.id}: ${s.cmd ? `\`${s.cmd}\` ${last ? `${last.pass ? 'pass' : 'FAIL'} on ${String(last.tree).slice(0, 12)}` : 'never proved'}` : `(agent-judged) ${s.agentJudged}`}`);
+  if ((run.scenarios || []).length) {
+    let judged;
+    try { judged = proverResults(repo, run).results; } catch { judged = []; }
+    const tree = git(['rev-parse', 'HEAD^{tree}'], repo).trim();
+    const cell = (x) => String(x).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    const status = (s) => {
+      if (s.cmd) { const last = proofsOf(recs, s).filter((r) => r.tree === tree).at(-1); return last ? (last.pass ? 'PASS' : 'FAIL') : 'NOT PROVED'; }
+      const r = named(judged, s);
+      return r && ['PASS', 'FAIL'].includes(r.status) ? r.status : 'NOT PROVED';
+    };
+    facts.push(['Scenarios:', '| S | Scenario | Status on HEAD |', '|---|---|---|',
+      ...run.scenarios.map((s) => `| ${s.id} | ${s.cmd ? `\`${cell(s.cmd)}\`` : `${cell(s.agentJudged)} (agent-judged)`} | ${status(s)} |`)].join('\n'));
   }
   // R -> proof as a Markdown table, so the PR body can carry it as it stands.
   try {

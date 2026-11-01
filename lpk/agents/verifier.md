@@ -54,7 +54,8 @@ Rule from what the runs showed:
   or permissions, a red CI job or gate, a test that cannot fail on the behaviour it claims to
   prove, a claim in the PR text or docs that the code contradicts, an undisclosed behaviour
   change); `neither` when it is real but no user reaches it and nothing blocks the merge (style,
-  naming, structure, a case no caller produces, a cleanup). A `neither` finding is deferred at
+  naming, structure, a case no caller produces, a cleanup, a broken rule marked below `blocks: high`
+  outside the protected areas). A `neither` finding is deferred at
   once and listed as a known limit, so name the caller or input you looked for and did not find.
   When in doubt between `neither` and the other two, it is not `neither`. `area`: set it when the
   defect touches security, auth, data, concurrency, migration or permissions and the finding names
