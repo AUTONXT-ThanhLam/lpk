@@ -26,6 +26,7 @@ const priceOf = (model, prompt) => {
 export function usdOf([input, cacheWrite, cacheRead, output, , model, hourWrite]) {
   const p = priceOf(model, input + cacheWrite + cacheRead);
   if (!p) return null;
-  const writes = (cacheWrite - hourWrite) * FIVE_MINUTE_WRITE + hourWrite * ONE_HOUR_WRITE;
+  const hour = Math.min(hourWrite, cacheWrite);
+  const writes = (cacheWrite - hour) * FIVE_MINUTE_WRITE + hour * ONE_HOUR_WRITE;
   return ((input + writes) * p.input + cacheRead * p.cacheRead + output * p.output) / PER_MTOK;
 }
