@@ -10,7 +10,7 @@ import { basename, dirname, join } from 'node:path';
 import { agentFile, agentIdOf, projectsDirs, TOKEN_KEYS, usageRecorded } from './host.mjs';
 import { sessionFiles } from './meter.mjs';
 
-const V = 5;
+const V = 6;
 const PROMPT_MAX = 2000;
 const RELAY = '[Workflow harness — user request]';
 const ACTION_MAX = 70;
@@ -52,13 +52,15 @@ const fresh = () => ({ spans: [], waiting: false, error: '', offset: 0, first: '
 
 // Each API message's usage by its id, the largest of each count over its lines: a transcript writes
 // one line per content block, each carrying the same usage. The fifth number is when the message was
-// first written, so a run counts only its own messages. `recorded` says the host wrote a count at
+// first written, so a run counts only its own messages; the sixth is its model and the seventh the part of
+// its cache write held for an hour, which the price of a message depends on. `recorded` says the host wrote a count at
 // all; a transcript of only zeros measured nothing.
 function usage(st, m, at) {
   if (!m?.usage || !m.id || m.model === '<synthetic>') return;
   if (usageRecorded(m.usage)) st.recorded = true;
-  const prev = st.usage[m.id] || [0, 0, 0, 0, Date.parse(at || '') || 0];
-  st.usage[m.id] = [...TOKEN_KEYS.map((k, i) => Math.max(prev[i], m.usage[k] || 0)), prev[4]];
+  const prev = st.usage[m.id] || [0, 0, 0, 0, Date.parse(at || '') || 0, '', 0];
+  const hour = m.usage.cache_creation?.ephemeral_1h_input_tokens || 0;
+  st.usage[m.id] = [...TOKEN_KEYS.map((k, i) => Math.max(prev[i], m.usage[k] || 0)), prev[4], prev[5] || m.model || '', Math.max(prev[6], hour)];
 }
 
 const NOTE = /<task-id>([^<]+)<\/task-id>[\s\S]*?<status>([a-z_]+)<\/status>/g;

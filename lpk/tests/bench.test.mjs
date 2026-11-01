@@ -84,18 +84,15 @@ test('fresh tokens leave cache reads out, and say so per agent and per lens', ()
   assert.ok(by['main session'].fresh < by['main session'].cacheRead, 'had cache reads been counted as fresh the figure would be the larger one');
   assert.equal(by['lpk:techlead'].fresh, 33, '(10+10+10) + (1+1+1): its 1400 cache reads are not in it');
   assert.equal(by['lpk:techlead'].host, 'claude', 'a figure says which host produced it');
-  assert.equal(by['main session'].weighted, 1156, 'weighted = fresh 356 + a tenth of the 8000 cache reads: what the spend costs, not only what was new');
-  assert.equal(by['lpk:techlead'].weighted, 173, '33 fresh + a tenth of 1400');
-  assert.deepEqual(j.agents.map((a) => a.agent).slice(0, 2), ['lpk:cachey', 'main session'], 'agents are ordered by weighted: 3 fresh with 100000 reads outranks 356 fresh with 8000');
+  assert.deepEqual(j.agents.map((a) => a.agent).slice(0, 2), ['lpk:cachey', 'main session'], 'agents are ordered by cost: 3 fresh with 100000 reads outranks 356 fresh with 8000');
   // The CLI child has no transcript: its cost is the records', and the lens row carries it.
   const cr = j.lenses.find((l) => l.lens === 'code-review:sonnet');
   assert.equal(cr.fresh, 700, 'the record\'s own fresh tokens, not a transcript\'s');
   assert.equal(cr.fixed, 1);
-  assert.equal(cr.weighted, Math.round(cr.fresh + 0.1 * cr.cacheRead), 'a lens row carries weighted too');
   assert.ok(cr.cacheRead > 0);
-  const idle0 = j.lenses.filter((l) => l.raised === 0 && l.weighted !== null).map((l) => l.weighted);
-  assert.deepEqual(idle0, [...idle0].sort((x, y) => y - x), 'lenses that raised the same number of findings are ordered by weighted');
-  assert.ok(idle0.length >= 3);
+  const idle0 = j.lenses.filter((l) => l.raised === 0 && l.usd !== null).map((l) => l.usd);
+  assert.deepEqual(idle0, [...idle0].sort((x, y) => y - x), 'lenses that raised the same number of findings are ordered by cost');
+  assert.ok(idle0.length >= 2);
   assert.equal(cr.tokensPerFixed, 700, 'tokens per finding fixed = the lens cost over what it fixed');
   const missing = j.lenses.find((l) => l.lens === 'security-review:sonnet');
   assert.equal(missing.raised, 0, 'a lens that ran and raised nothing is a row of 0, not a missing row');

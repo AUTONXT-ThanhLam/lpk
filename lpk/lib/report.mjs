@@ -105,7 +105,7 @@ export function precedentText({ repo, paths }) {
   const p = precedent(repo, paths);
   if (!p.slug) return 'lpk precedent: the repo has no GitHub origin, so there are no past reviews to match.';
   if (!p.count) return `lpk precedent: no reviews stored for ${p.slug}; fetch them with \`lpk reviews fetch --reviewer <login>\`.`;
-  const one = (c) => `- #${c.pr} ${c.path}${c.line ? `:${c.line}` : ''}  ${c.body.replace(/\s+/g, ' ').slice(0, 280)}\n  ${c.url}`;
+  const one = (c) => `- #${c.pr}${c.author ? ` by ${c.author}` : ''} ${c.path}${c.line ? `:${c.line}` : ''}  ${c.body.replace(/\s+/g, ' ').slice(0, 280)}\n  ${c.url}`;
   return [
     `${p.count} stored review comments for ${p.slug}. On the files of this change (${paths.length}): ${p.same.length}.`,
     ...p.same.map(one),

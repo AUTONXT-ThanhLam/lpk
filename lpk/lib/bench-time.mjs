@@ -8,16 +8,6 @@ export function union(spans, from = -Infinity, to = Infinity) {
 }
 export const sum = (spans, from = -Infinity, to = Infinity) => spans.reduce((t, [a, b]) => t + Math.max(0, Math.min(b, to) - Math.max(a, from)), 0);
 
-// One transcript's fresh tokens and cache reads written inside the window, its own messages only.
-export function inWindow(st, from, to) {
-  const t = { fresh: 0, cacheRead: 0, messages: 0 };
-  for (const [i, cw, cr, o, at] of Object.values(st.usage)) {
-    if (!(at >= from && at < to)) continue;
-    t.fresh += i + cw + o; t.cacheRead += cr; t.messages++;
-  }
-  return t;
-}
-
 const NOT_THE_OWNER = /^\s*(<task-notification>|<local-command|\[Request interrupted by user)/;
 const textOf = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter((b) => b?.type === 'text').map((b) => b.text).join('\n') : '');
 
@@ -47,5 +37,3 @@ export function idle(spans, owner, from = -Infinity, to = Infinity) {
   }
   return total;
 }
-
-export const weighted = (fresh, cacheRead) => (fresh === null || fresh === undefined ? null : Math.round(fresh + 0.1 * (cacheRead || 0)));

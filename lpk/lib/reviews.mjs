@@ -32,7 +32,7 @@ export function fetchReviews(repo, reviewer) {
   const slug = slugOf(repo);
   if (!slug) return { error: 'the repo has no GitHub origin' };
   mkdirSync(REVIEWS, { recursive: true });
-  const cursorFile = `${fileOf(slug)}.since`;
+  const cursorFile = `${fileOf(slug)}.${reviewer.replace(/[^\w.-]/g, '_')}.since`;
   const since = existsSync(cursorFile) ? readFileSync(cursorFile, 'utf8').trim() : '2000-01-01T00:00:00Z';
   const now = new Date().toISOString();
   const known = new Set(readReviews(slug).map((c) => c.id));
@@ -42,7 +42,7 @@ export function fetchReviews(repo, reviewer) {
   const inline = [];
   for (const c of gh([`repos/${slug}/pulls/comments?since=${since}&per_page=100`]))
     if (c.user?.login === reviewer && !known.has(c.id))
-      inline.push({ id: c.id, pr: Number(c.pull_request_url.split('/').pop()), url: c.html_url, path: c.path, line: c.line ?? c.original_line, hunk: (c.diff_hunk || '').split('\n').slice(-6).join('\n'), body: c.body, at: c.created_at });
+      inline.push({ id: c.id, pr: Number(c.pull_request_url.split('/').pop()), url: c.html_url, path: c.path, line: c.line ?? c.original_line, hunk: (c.diff_hunk || '').split('\n').slice(-6).join('\n'), body: c.body, author: reviewer, at: c.created_at });
   save(inline);
   // Pull requests newest-updated first, page by page, until one was last updated before `since`.
   const prs = [];
@@ -54,7 +54,7 @@ export function fetchReviews(repo, reviewer) {
   prs.forEach((n, k) => {
     if (k % 50 === 0) process.stderr.write(`lpk: reading reviews of ${prs.length} pull requests on ${slug}: ${k} done\n`);
     save(gh([`repos/${slug}/pulls/${n}/reviews?per_page=100`]).filter((r) => r.user?.login === reviewer && r.body?.trim() && !known.has(r.id))
-      .map((r) => ({ id: r.id, pr: n, url: r.html_url, path: '', line: null, hunk: '', body: r.body, state: r.state, at: r.submitted_at })));
+      .map((r) => ({ id: r.id, pr: n, url: r.html_url, path: '', line: null, hunk: '', body: r.body, author: reviewer, state: r.state, at: r.submitted_at })));
   });
   writeFileSync(cursorFile, now);
   return { slug, fresh, total: known.size + fresh.length, file: fileOf(slug) };
