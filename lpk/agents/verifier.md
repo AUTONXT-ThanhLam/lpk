@@ -72,7 +72,7 @@ Record the verdict with `finding_verdict` (load it with ToolSearch if your tool 
 `cause` and `reach` for CONFIRMED, `basis` for DROPPED and `primary` for DUPLICATE. When you are asked to rule
 on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
 docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with ToolSearch if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
-`closedBy` `verifier` or `repro`, and the evidence.
+`closedBy` `verifier` or `repro`, the evidence, and for a finding with a file `sweep`, a `git grep -E` pattern for the form of the defect (it must hit on the fix's parent and on no line the change adds).
 
 Do not consult the advisor: the lead checks your answer.
 

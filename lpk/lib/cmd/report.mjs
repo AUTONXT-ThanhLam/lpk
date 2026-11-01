@@ -18,7 +18,7 @@ import { runHere } from './gates.mjs';
 // the protected area that kept it open), who made it, the claim and the evidence.
 const asked = (f) => [f.asked && `asked ${f.asked}${f.basis ? `: ${f.basis}` : ''}`, f.area && `area ${f.area}`].filter(Boolean).join(', ');
 const ruling = (f) => (f.state === 'fixed'
-  ? `- ${f.id} fixed by ${f.fixedBy}: ${f.claim} — ${f.fixEvidence}`
+  ? `- ${f.id} fixed by ${f.fixedBy}: ${f.claim} — ${f.fixEvidence}${f.sweep ? ` (swept for ${f.sweep.pattern}: ${f.sweep.before} before the fix${f.sweep.preexisting.length ? `, still on older lines ${f.sweep.preexisting.join(', ')}` : ''})` : ''}`
   : `- ${f.id} ${f.state === 'duplicate' ? `duplicate of ${f.primary}` : f.state}${f.state === 'unsettled' && asked(f) ? ` (${asked(f)})` : ''}${f.by ? ` by ${f.by}` : ''}: ${f.claim} — ${f.evidence}`);
 const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
 

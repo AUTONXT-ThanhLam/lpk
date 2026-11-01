@@ -55,7 +55,7 @@ export function readLedger(repo, file = ledgerFile(repo)) {
       for (const k of ['by', 'evidence', 'basis', 'primary', 'asked', 'born', 'cause', 'reach']) delete f[k];
       Object.assign(f, rest, { state, ruledAt: time });
     } else if (e.ev === 'fixed') {
-      Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time });
+      Object.assign(byId.get(e.id), { state: 'fixed', fixedCommit: e.commit, fix: e.fix, closedBy: e.closedBy, fixEvidence: e.evidence, fixedBy: e.by, fixedAt: e.time, sweep: e.sweep });
     } else if (e.ev === 'deferred') {
       Object.assign(byId.get(e.id), { state: 'deferred', deferEvidence: e.evidence, deferredBy: e.by, deferredAt: e.time });
     } else throw new Error(`${file}: unknown event ${JSON.stringify(e.ev)}`);

@@ -113,6 +113,9 @@ other.
    changes the SHA, and `lpk reviews owed` knows a fix only by the SHA it was closed with. Give
    `finding_fixed` (loaded with ToolSearch if your tool list does not hold it yet) the id, `commit` the fix's SHA
    now on your branch (a finding closed early on a builder's SHA is closed again on the picked one),
+   `sweep` a `git grep -E` pattern for the form of the defect (not of its fix): `lpk` runs it over the files
+   the change touches and refuses the close unless it hits on `fix^` and on no line the change adds at `fix`, so
+   the same class is fixed everywhere in this one round (a finding with no file takes none),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
@@ -130,12 +133,12 @@ code review on `<reviewed commit>..<fix head>` plus the lenses that raised the f
 parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
 no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines.
 
-The delta review is the last review. A finding it confirms that a user meets or that blocks the merge
-gets one fix commit, closed with its own test or repro, and `lpk reviews owed` lists what that commit
-owes (a code review of it, and the lens that raised the finding): run those, and start no further
-fix round on what they raise. One that no user reaches is deferred into the PR body as a known
-limit. Whatever is still open after that goes to the owner in the report with its evidence; the loop
-of review, fix and review never runs a third time.
+The delta review is the last review. A finding it confirms is on a range that holds a fix of this
+run, so closing it with a patch is a second fix round and `finding_fixed` refuses it, naming the fix.
+One that no user reaches or the merge would not block is deferred into the PR body as a known limit.
+One that a user meets or that blocks the merge goes to the owner in the report with its evidence,
+to be reverted or redesigned there, or taken into a new run. The loop of review, fix and review
+never runs a third time.
 
 A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
 naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens
