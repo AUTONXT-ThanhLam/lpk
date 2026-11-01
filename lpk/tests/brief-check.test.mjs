@@ -64,3 +64,14 @@ test('the owner can waive the brief check, an agent cannot, and a run with no br
   assert.equal(lpk(quick, T, 'run', 'start', '--verify', 'false', '--lane', 'quick', '--req', 'a', '--scenario', 'true', '--proves', 'R1').status, 0);
   assert.equal(go(quick, T).status, 0);
 });
+
+test('a round recorded before the run started counts, as the order in design.md has it', () => {
+  const S = 'brief-check-early';
+  const repo = repoWith('brief-early', { 'src/a.mjs': 'export const a = 1;\n' });
+  write(dir(repo), 'brief.md', '# Brief\nA is doubled.\n');
+  write(dir(repo), 'brief.json', BRIEF);
+  decide(repo, S, 'design review round 1: pass, 0/0/0');
+  assert.equal(lpk(repo, S, 'run', 'start', '--verify', 'false', '--lane', 'full').status, 0);
+  const r = go(repo, S);
+  assert.equal(r.status, 0, r.stderr);
+});
