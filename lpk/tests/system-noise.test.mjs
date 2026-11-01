@@ -48,8 +48,9 @@ test('a run whose session is long gone stops switching every hook guard on, and 
   assert.equal(readFileSync(join(ACTIVE, readdirSync(ACTIVE)[0]), 'utf8').trim(), join(sh(live, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'run.json'));
 
   rmSync(join(HOME, '.claude', 'sessions'), { recursive: true, force: true });
+  transcript('live-session', 60 * 1000);
   hook('SessionStart', 'start', { session_id: 'new-session', cwd: elsewhere });
-  assert.equal(readdirSync(ACTIVE).length, 1, 'the run of a session that is not idle yet stays registered');
+  assert.equal(readdirSync(ACTIVE).length, 1, 'the run of a session with no process file but a transcript touched a minute ago stays registered');
 
   alive('gone-session');
   hook('SessionStart', 'start', { session_id: 'gone-session', cwd: stale });

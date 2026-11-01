@@ -30,7 +30,7 @@ export function exitedRuns(session, repo) {
 
 export const IDLE = 6 * 3600 * 1000;
 
-function lastSeen(session) {
+export function lastSeen(session) {
   let at = 0;
   for (const projects of projectsDirs()) {
     let names = [];

@@ -12,6 +12,7 @@ import { top } from './git.mjs';
 import { endedHere } from './reopen.mjs';
 import { currentBranch, treeOf } from './run.mjs';
 import { heirs } from './sessions.mjs';
+import { ensureRegistered, sweepStale } from './stale-runs.mjs';
 
 // The skill the resume card sends the model back to, in the plugin the host launched.
 const SKILL = join(pluginRoot(), 'skills', 'lpk', 'SKILL.md');
@@ -90,6 +91,8 @@ function idleCard(input) {
 }
 
 export async function resumeCard(input) {
+  sweepStale();
+  ensureRegistered(input);
   const { repo, run } = runOf(input, false);
   if (!run) return idleCard(input);
   const v = run.verified;
