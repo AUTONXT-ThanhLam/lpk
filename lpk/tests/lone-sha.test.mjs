@@ -24,4 +24,13 @@ test('a lens whose prompt began with one sha says so in the owed row, and one th
   const hunter = rows(repo, S).filter((r) => r.startsWith('- bug-hunter'));
   assert.ok(hunter.length > 0);
   assert.ok(hunter.some((r) => r.includes(tip.slice(0, 12)) && !r.includes('has not run on it')), hunter.join('\n'));
+  assert.ok(rows(repo, S).filter((r) => r.startsWith('- code-review')).every((r) => r.includes('has not run on it')));
+
+  write(repo, 'src/c.mjs', 'export const c = 1;\n');
+  ok(lpk(repo, S, 'verify'));
+  sh(repo, 'add', '-A');
+  sh(repo, 'commit', '-qm', 'Add c');
+  lens(S, 'range1', 'lpk:bug-hunter', `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD~2').trim()}`, { findings: [] });
+  const after = rows(repo, S).filter((r) => r.startsWith('- bug-hunter'));
+  assert.ok(after.length > 0 && after.every((r) => r.includes('has not run on it')), after.join('\n'));
 });
