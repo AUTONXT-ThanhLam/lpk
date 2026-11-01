@@ -6,7 +6,7 @@
 import { top } from './git.mjs';
 import { records } from './hooks.mjs';
 import { WAIVE_SOURCE } from './records.mjs';
-import { sessionRuns } from './run.mjs';
+import { endedRuns, sessionRuns } from './run.mjs';
 
 export { WAIVE_SOURCE };
 
@@ -27,11 +27,14 @@ export function picks(toolInput, toolResponse) {
   });
 }
 
-// The run a waiver belongs to: the one in the repo the call runs in, else the session's only run.
+// The run a waiver belongs to: the one in the repo the call runs in, else the session's only run,
+// else the newest run this session ended in that repo, whose gates stay on its branches.
 export function waiverRun(input) {
   const held = sessionRuns(input.session_id);
   const here = input.cwd ? held.find((r) => r.repo === top(input.cwd)) : null;
-  return here || (held.length === 1 ? held[0] : null);
+  if (here || held.length) return here || (held.length === 1 ? held[0] : null);
+  const repo = input.cwd && top(input.cwd);
+  return (repo && endedRuns(repo).find((r) => r.session === input.session_id)) || null;
 }
 
 // Records the picks against the session's run; returns how many were recorded.

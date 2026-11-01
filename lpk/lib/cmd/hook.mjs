@@ -62,7 +62,7 @@ const HOOKS = {
       const run = w.waiverRun(i) || (repo ? (await lib('run')).runHere(repo) : null);
       const got = w.picks(i.tool_input, i.tool_response);
       const n = await w.recordWaiver(i, run);
-      if (!n && got.length && !run && (await lib('run')).sessionRuns(i.session_id).length > 1) return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: "lpk: the owner's waiver was NOT recorded: this session holds several runs and the question was asked outside the repo of the run it belongs to. Ask again from inside that repo." } };
+      if (!n && got.length && !run) return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: "lpk: the owner's waiver was NOT recorded: this session has no run open or ended in the repo the question was asked from (several open runs: ask again from inside the repo of the run it belongs to; none: `lpk run take` reopens the run that delivered the branch). Ask again once that holds." } };
       return n ? { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `lpk: recorded the owner's waiver of ${got.map((p) => `\`${p.what}\``).join(', ')} for this run.` } } : null;
     },
   },
