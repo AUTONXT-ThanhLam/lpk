@@ -16,7 +16,7 @@ execution:
     File README.md after the change:
     1  # config
     2
-    3  loadConfig(path) reads the JSON file at path and returns the parsed object.
+    3  loadConfig(path) reads the JSON file at path and returns the parsed JSON value.
     4  It throws when the file is missing or is not valid JSON.
     
     File src/config.mjs after the change:

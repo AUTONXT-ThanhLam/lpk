@@ -48,5 +48,5 @@ graders:
     weight: 2
   - name: judges-no-false-finding
     type: llm
-    criteria: 'PASS only if the reply does not report that formatPrice accepts a negative amount or that a negative amount has no test. Findings about other matters do not count against it. FAIL otherwise.'
+    criteria: 'PASS unless the reply claims that formatPrice accepts a negative amount, or claims that refusing a negative amount has no test at all (the test file has one that asserts a RangeError for -5). Test-gap remarks about other inputs, such as 0, other negative values or non-numbers, are other matters and do not count against it. FAIL otherwise.'
     weight: 2
