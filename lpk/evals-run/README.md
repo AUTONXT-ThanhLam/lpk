@@ -35,9 +35,10 @@ committed, so read these as direction, not as measurements.
   unnecessary, so no gate or review applied. It cost about 1.6 to 1.9 times `without`.
 - `flow` started a run every time and cost many times `without` (up to about 16), in 70 to 230
   seconds against 15 to 30.
-- All arms passed the specified behaviour. Only `flow` produced code that also passes the
-  fractional-percent hidden test: a percent coupon that is a cent low in floating point
-  (`applyCoupon(375, 18.4%)` returns 307, not 306).
+- All arms passed the five specified-behaviour tests. A sixth hidden test, added afterwards, grades a
+  percent coupon that is a cent low in floating point (`applyCoupon(375, 18.4%)` returns 307, not
+  306). Regraded on the kept workspaces it passed in 2 of 2 `flow` runs, 1 of 3 `with` runs and 0
+  of 4 `without` runs.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is
 solved by every arm, so a task earns its place only where the plain agent sometimes fails.
