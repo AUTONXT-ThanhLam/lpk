@@ -111,4 +111,7 @@ reached, because a scenario missing from the list is not proved:
   path, a status with a body excerpt, or a command and its output), and `proves`, the requirement
   ids the brief gives that scenario or row (empty when it names none). Give each FAIL and NOT PROVED
   result the id `finding_add` returned, as its `id`; there is no separate findings list;
+- `results` is the proof status table of the assembled system: prove each scenario on the
+  checkout the brief names, which holds every slice merged, never on one builder's worktree, and
+  name that commit in each line's evidence;
 - `noticed`: anything a user would notice that no scenario covered, and the first-time user notes.

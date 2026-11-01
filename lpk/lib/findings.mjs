@@ -5,6 +5,7 @@
 // records exact and says which rulings the owner should read.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { belowHigh, belowHighError } from './blocks.mjs';
 import { git } from './git.mjs';
 import { locked } from './lock.mjs';
 import { REACH } from './reach.mjs';
@@ -135,6 +136,8 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
     const within = area ?? f.area;
     if (verdict === 'confirmed' && reach === 'neither' && PROTECTED.includes(within)) return { error: `${f.id} is in the ${within} area: it reaches the merge, so reach is merge` };
     if (verdict === 'confirmed' && reach === 'neither' && f.kind === 'scenario') return { error: `${f.id} is an acceptance scenario that fails: a user meets it, so reach is user` };
+    const soft = verdict === 'confirmed' && reach !== 'neither' && belowHigh(repo, f, within);
+    if (soft) return { error: belowHighError(f, soft) };
     if (f.state === 'fixed') return { error: `${f.id} is fixed in ${f.fixedCommit}` };
     if (f.state !== 'open' && f.state !== 'unsettled' && f.by === VERIFIER) return { error: `${f.id} is already ${f.state} by the verifier (${f.evidence})` };
     const e = { ev: 'verdict', id: f.id, state: verdict, by: text(by), evidence: why };

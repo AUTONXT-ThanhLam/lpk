@@ -52,7 +52,10 @@ The net runs the lenses the lane owes, all at once, and one `lpk:verifier` per f
 arrives. The code review is `lpk code-review` (`/code-review` with the code-reviewer
 role, a headless Sonnet child that adds its findings to the ledger; a Bash timeout of 600000 ms when
 you run it yourself). `lpk reviews owed` names any lens
-still owed and why. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
+still owed and why. Before you pass `lenses`, read `lpk rules --yield`: its last table line names the
+lenses that raised no finding in any run ledger of this repo. Drop a silent extra lens (security,
+regression, mutant, ui-reviewer) from a change that does not touch what it checks; never drop one
+the lane owes, since `lpk reviews owed` keeps listing it. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
 
 ## Check yourself while it runs
 
@@ -76,7 +79,8 @@ the report for the owner to read.
 Only a confirmed finding that a user meets or that blocks the merge is fixed: the verifier records
 it as `reach` `user` or `merge`. One with `reach` `neither` is real but no user reaches it and
 nothing blocks the merge, so the ledger defers it at once and the PR body lists it as a known limit;
-it never starts a fix, a delta review or another round. A finding in a protected area or a failing
+it never starts a fix, a delta review or another round. A finding that cites a rule below `blocks: high` is `neither` too unless its area is protected;
+the ledger refuses `user` or `merge` for it. A finding in a protected area or a failing
 scenario is never `neither`. The reviewers are told the same scope, so they raise few of those.
 Everything else is fixed at its root, whatever its stated severity, all in one round. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
