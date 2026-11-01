@@ -68,4 +68,5 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
   whether dropping a review lens costs correctness.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by
-every arm, so a task earns its place only where the plain agent sometimes fails.
+every arm, so a task earns its place only where some arm sometimes fails. `cancel` and `csv` are
+kept as the price baseline; `listed` and `contained` are kept as the limit no arm has passed yet.
