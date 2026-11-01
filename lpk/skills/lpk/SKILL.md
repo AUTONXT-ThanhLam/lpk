@@ -36,8 +36,8 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
 
 ## How you work, in every step
 
-- **The clock.** Run `date +%s` first and keep it. As each step starts, post what, the minutes from
-  `echo $(( ($(date +%s) - <start>) / 60 ))` and what is next. An estimate sums what is left, each
+- **The clock.** Run `date +%s` first and keep it. As each step starts, post one plain update: what is done, what
+  starts now, the minutes from `echo $(( ($(date +%s) - <start>) / 60 ))` and what is next. An estimate sums what is left, each
   stage at what it or its like took in this run, as a range; an untimed stage is named unmeasured.
 - **A question stops the team**: nothing new starts while it is open. A technical choice and what a command,
   the code or the ticket answers are yours: decide, log it (`lpk decide "<what>" --why "<why>"`, the report

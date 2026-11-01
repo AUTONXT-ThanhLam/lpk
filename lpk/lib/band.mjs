@@ -41,6 +41,32 @@ export function runningRows(team) {
     : g)), ...failed];
 }
 
+const firstLine = (t) => String(t || '').split('\n')[0];
+const ahead = (s) => s.track.slice(s.track.indexOf(s.phase) + 1);
+
+export function progressOf(s) {
+  const f = s.findings || {};
+  const landed = (s.slices || []).filter((x) => x.state === 'landed');
+  const idle = (s.slices || []).filter((x) => x.state === 'waiting');
+  const denied = (s.gates?.rows || []).filter((g) => g.gate !== 'plan' && !g.holds);
+  const agents = runningRows(s.team).map((r) => [r.title, r.what, r.state === 'failed' ? `failed: ${r.reason || 'no reason given'}` : r.stalledMs ? `stalled ${mins(r.stalledMs)}` : r.action].filter(Boolean).join(' · '));
+  return {
+    doing: [[`${NAMES[s.phase]}`, detailText(s)].filter(Boolean).join(': '), ...agents],
+    done: [
+      ...(s.phasesVisited.filter((p) => p !== s.phase).length ? [`steps: ${s.phasesVisited.filter((p) => p !== s.phase).map((p) => NAMES[p]).join(', ')}`] : []),
+      ...(landed.length ? [`slices landed ${landed.length}/${s.slices.length}: ${landed.map((x) => x.name).join(', ')}`] : []),
+      ...(s.gates?.holding ? [`gates holding ${s.gates.holding}/${s.gates.total}`] : []),
+      ...(f.fixed || f.dropped ? [`findings: ${f.fixed || 0} fixed, ${f.dropped || 0} dropped`] : []),
+    ],
+    next: [
+      ...s.waits.map((w) => `you: ${w.what} (${firstLine(w.why)})`),
+      ...(idle.length ? [`slices waiting: ${idle.map((x) => x.name).join(', ')}`] : []),
+      ...denied.slice(0, 3).map((g) => `gate ${g.gate}: ${firstLine(g.why) || firstLine(g.read)}`),
+      ...(ahead(s).length ? [`then ${ahead(s).map((p) => NAMES[p]).join(' › ')}`] : []),
+    ],
+  };
+}
+
 // The band's wording, so the mod only draws: the track with each step's state, the head line, the
 // step's own line, one row per agent the owner needs to see and what waits on the owner.
 export function viewOf(s) {
@@ -51,7 +77,7 @@ export function viewOf(s) {
     track: s.track.map((p, i) => ({ name: NAMES[p], state: i === at ? 'current' : s.phasesVisited.includes(p) ? 'visited' : 'next' })),
     quiet: s.stuck ? `nothing moved for ${mins(s.quietMs)}` : '',
     head: `worked ${mins(s.activeMs)} · ${tokenText(s.tokens)}`,
-    detail: detailText(s), rows,
+    detail: detailText(s), rows, ...progressOf(s),
     waits: s.waits.map((w) => w.what).join(', '),
     line: `lpk ${NAMES[s.phase]}${s.stuck ? ' · quiet' : ''} · ${mins(s.activeMs)}${s.waits.length ? ' · waits on you' : ''}`,
   };
@@ -63,6 +89,7 @@ export function statusText(s) {
   const track = v.track.map((p) => (p.state === 'current' ? `[${p.name}]` : p.name)).join(' › ');
   const lines = [[track, v.quiet, v.head].filter(Boolean).join(' · '), v.detail];
   for (const r of v.rows) lines.push(`  ${[r.title, r.what, r.note, r.elapsed].filter(Boolean).join('  ')}`);
+  for (const [label, list] of [['done', v.done], ['next', v.next]]) if (list.length) lines.push(`${label}: ${list.join(' · ')}`);
   if (s.waits.length) lines.push(`waits on you: ${s.waits.map((w) => `${w.what} (${w.why})`).join('; ')}`);
   if (s.error) lines.push(`error: ${s.error}`);
   return lines.join('\n');

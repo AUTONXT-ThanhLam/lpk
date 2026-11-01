@@ -7,7 +7,7 @@ import type { Register } from 'claude-code'
 
 import { compactInstructions } from './compact'
 import { type HintMemory, spawnHint } from './spawn-hint'
-import { markDue, registerStatus, startStatus } from './status'
+import { arm, markDue, registerStatus, startStatus } from './status'
 import { lpkSwitch } from './switch'
 import { waive } from './waive'
 
@@ -40,6 +40,7 @@ export const register: Register = (on, options) => {
   const memory: HintMemory = { workflowStarts: [], lastSaid: {} }
   on('agent.spawn', async ($, e, next) => {
     markDue()
+    arm()
     await spawnHint($, e, options, memory).catch((err: unknown) => $.ui.log(`spawn hint skipped: ${String(err)}`, { to: 'debug' }))
     return next(e)
   }).catch(($, e, next) => next(e))

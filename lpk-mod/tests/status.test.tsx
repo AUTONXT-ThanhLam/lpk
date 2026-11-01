@@ -14,8 +14,14 @@ const STATUS = {
   gates: { holding: 1, total: 2, rows: [{ gate: 'verify', holds: true, read: 'HEAD^{tree} abc', why: '' }, { gate: 'reviews', holds: false, read: 'owed lenses', why: 'techlead on a..b (has not run on it)' }] },
   findings: { total: 3, open: 1, confirmed: 1, fixed: 0, dropped: 1, unsettled: 0, needsOwner: 0 },
   waits: [], team: [{ id: 't1', title: 'Tech lead', what: 'techlead', state: 'running', elapsedMs: 180_000, action: 'Read kpi.tsx' }],
-  view: { track: [{ name: 'Understand', state: 'visited' }, { name: 'Review', state: 'current' }], quiet: '', head: 'worked 18m · 1.2M tokens', detail: '', rows: [], waits: '', line: '' },
+  view: { track: [{ name: 'Understand', state: 'visited' }, { name: 'Review', state: 'current' }], quiet: '', head: 'worked 18m · 1.2M tokens', detail: '', rows: [], waits: '', line: '',
+    doing: ['Review: lenses 0/2', 'Tech lead · techlead · Read kpi.tsx'], done: ['steps: Understand, Design, Build', 'slices landed 1/2: api'], next: ['gate reviews: techlead on a..b (has not run on it)', 'then Fix › Prove › Deliver'] },
 }
+
+const BAND = {
+  plugin: 'lpk-mod', component: 'AbovePrompt', surface: 'terminal',
+  props: { hasSurvey: false, isWorking: false, maxRows: 6, bodyColumns: 100, scroll: { offset: 0, bodyRows: 6 }, view: {} },
+} as const
 
 // A session in a repo, lpk installed, `lpk status` answering `answer`, the pane open or not.
 function host(on: On, answer: () => unknown) {
@@ -60,7 +66,47 @@ test('/lpk-status opens the pane, which shows the steps, slices, gates, team and
   expect(await pane.find({ type: 'Text', text: /DENY  reviews {6}techlead on a\.\.b/ })).toBeTruthy()
   expect(await pane.find({ type: 'Text', text: /Tech lead {2}techlead {2}running {2}Read kpi\.tsx {2}3m/ })).toBeTruthy()
   expect(await pane.find({ type: 'Text', text: /3 raised · 1 open · 1 confirmed/ })).toBeTruthy()
+  expect(await pane.find({ type: 'Text', text: /slices landed 1\/2: api/ })).toBeTruthy()
+  expect(await pane.find({ type: 'Text', text: /then Fix › Prove › Deliver/ })).toBeTruthy()
   await pane.unmount()
+})
+
+test('a spawned agent starts the band above the prompt, which shows doing, done and next and goes quiet with the run', async ($, on) => {
+  let open = true
+  on('agent.spawn', () => ({ model: 'claude-sonnet-5', agentId: 'a1' }))
+  const { state, clock } = await started($, on, () => (open ? STATUS : { open: false }))
+  await clock.advance(5000)
+  expect(state.ran.some((a) => a[2] === 'status')).toBe(false)
+  await $.agent.spawn({ tool_use_id: 'toolu_1', prompt: 'p', description: 'Build slice ui', subagent_type: 'lpk:builder' } as never)
+  await clock.advance(1000)
+  const status = state.ran.find((a) => a[2] === 'status')
+  expect(status).toEqual(['node', `${LPK}/bin/lpk`, 'status', '--json', '--session', 'session-1', '--repo', CWD])
+  const band = await $.ui.mount(BAND)
+  expect(await band.find({ type: 'Text', text: /^▶ Review: lenses 0\/2 · Tech lead/ })).toBeTruthy()
+  expect(await band.find({ type: 'Text', text: /^✓ steps: Understand, Design, Build · slices landed 1\/2: api/ })).toBeTruthy()
+  expect(await band.find({ type: 'Text', text: /^→ gate reviews: .* · then Fix › Prove › Deliver/ })).toBeTruthy()
+  await band.unmount()
+  open = false
+  await clock.advance(30_000)
+  const quiet = await $.ui.mount(BAND)
+  expect(await quiet.find({ type: 'Text', text: /▶/ })).toBeFalsy()
+  await quiet.unmount()
+  const calls = state.ran.filter((a) => a[2] === 'status').length
+  await clock.advance(20_000)
+  expect(state.ran.filter((a) => a[2] === 'status').length).toBe(calls)
+})
+
+test('a run that opens after /lpk was submitted still gets its band', async ($, on) => {
+  let open = false
+  on('prompt.submit', (_, e) => e)
+  const { clock } = await started($, on, () => (open ? STATUS : { open: false }))
+  await $.prompt.submit({ text: '/lpk go', command: { name: 'lpk', args: 'go' } } as never)
+  await clock.advance(1000)
+  open = true
+  await clock.advance(10_000)
+  const band = await $.ui.mount(BAND)
+  expect(await band.find({ type: 'Text', text: /^▶ Review/ })).toBeTruthy()
+  await band.unmount()
 })
 
 test('with the pane closed lpk is never started', async ($, on) => {

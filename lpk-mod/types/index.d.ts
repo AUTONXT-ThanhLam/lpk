@@ -19,7 +19,7 @@ export type LpkStatus = {
   waits: { what: string; why: string }[]
   team: TeamRow[]
   error?: string
-  view: { track: TrackStep[]; quiet: string; head: string; detail: string; rows: BandRow[]; waits: string; line: string }
+  view: { track: TrackStep[]; quiet: string; head: string; detail: string; rows: BandRow[]; waits: string; line: string; doing: string[]; done: string[]; next: string[] }
 }
 
 declare module 'claude-code' {
