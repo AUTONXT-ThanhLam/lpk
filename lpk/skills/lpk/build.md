@@ -52,8 +52,8 @@ requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover j
    `lpk verify`.
    A refactor, rename or move starts with a characterization test (or an `lpk compare` harness)
    green on the base and green after; a rename also greps strings and prose for the old name.
-2. Read the whole function you change. A defect in it that your users will meet is fixed too, or
-   named in the report.
+2. Read the whole function you change. A defect in it that your users will meet but your change does
+   not touch is named in the report, not fixed here.
 3. Build for the system, not the diff: before you change a function, field, status, output shape or
    default, run `lpk map <name>` and read every writer, reader and consumer. The change is done when
    each of them still holds.

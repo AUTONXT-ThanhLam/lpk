@@ -46,9 +46,9 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
   recommendation and no finding or requirement ids, and send that line with `PushNotification` (the owner is often away).
 - **Spend few turns on a small context**: each of your tool calls rereads your whole context. Put independent commands in one call, wait for
   notifications instead of polling, give an agent a command's output file, and send reading or any
-  work no lpk role owns to `lpk:staff` (a hook refuses general agents). One session leads one PR.
+  work no lpk role owns to `lpk:staff` (a hook refuses general agents).
 - **Fix where the cause starts.** A finding, a red gate or an owner's correction is a symptom: fix
-  it where it first went wrong (the line, the brief, the request as read) and wherever that reaches.
+  it where it first went wrong (the line, the brief, the request as read); the same cause outside this change is a known limit in the PR body.
 - **Findings live in the ledger** (lpk MCP tools `finding_add`, `finding_list`; load them with ToolSearch if your tool list does not hold them); only a verifier rules, so never add a finding a reviewer already recorded under its id and never rule on one yourself. One ruled on goes in the report with its evidence.
 - **Heavy jobs share the machine.** Start a suite, a build or an app through `lpk slot -- <command>`
   (it waits for free memory). Never `sleep`: agents notify you, long waits run under Monitor, and
@@ -92,7 +92,7 @@ Read each step's file when the step starts; each file states its goal and how it
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
   contract. It skips the brief and the design check, records its numbered requirements and the
   scenarios that prove them at `lpk run start`, and owes the Code reviewer and the Bug hunter.
-- **Full**: everything else: the whole review net and the Prover (documentation only: Tech lead, Claims).
+- **Full**: everything else: the brief, the design check and the lenses `lenses.md` in this skill's directory lists.
 
 ## The bar
 
