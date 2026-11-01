@@ -43,7 +43,8 @@ test('lpk rules --yield lists what each lens raised and the lenses the lanes use
   assert.match(text, /^lpk:bug-hunter +0 +0 +0 +1 +0 +0 +0$/m);
   assert.match(text, /^lenses that raised no finding in \d+ run ledger\(s\): .*regression/m);
   assert.doesNotMatch(text, /^lenses that raised no finding.*bug-hunter/m);
-  assert.equal(yieldText(repo), text.trimEnd());
+  const afterHead = (t) => t.split('\n').slice(1).join('\n');
+  assert.equal(afterHead(yieldText(repo)), afterHead(text.trimEnd()), 'the tables are the same; only the first line names the directory, which Windows spells two ways');
 });
 
 test('lpk report sets every scenario beside its status on HEAD: PASS, FAIL or NOT PROVED', () => {
