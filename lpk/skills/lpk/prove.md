@@ -15,8 +15,8 @@ meets, with evidence a reader can check. A scenario with no evidence is NOT PROV
 
 ## How the Prover gets its surface
 
-In the Full lane the net starts the Prover on the frozen tree. In the Quick lane, start it yourself
-when a scenario is agent-judged, with the scenarios, the failure table, the commit, the surface and
+When the lenses the run owes include the Prover (`lenses.md`; `lpk reviews owed` lists them), the net starts it on the frozen tree. Otherwise start it yourself when a scenario is
+agent-judged, with the scenarios, the failure table, the commit, the surface and
 the proof directory (`<bundle>/proof`).
 - A request that names an environment to host or show the result on (a shared environment, a host
   name) is answered on that environment, by the profile's deploy procedure; a local preview or a
