@@ -53,11 +53,6 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
 - `reopen` differs by one run (3, 3, 4 of 5), which is noise.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
   what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included.
-  A catalog rule for that class was tried: a `learned.md` entry, loaded for any diff that touches path
-  functions, saying that two spellings of one file are one identity and that a containment check
-  compares resolved whole segments. It was loaded in the diff and changed nothing in 4 more runs of
-  `listed` and 5 of `contained` (`results/*-with-path-rule.jsonl`; the rows do not record the rule,
-  and it was not committed), so it was not kept: prose in front of a reviewer did not move this class.
 
 ## What this sample cannot show
 

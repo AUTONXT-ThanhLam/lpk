@@ -1,4 +1,0 @@
-{"task":"listed","arm":"flow","n":1,"costUsd":0.5469429,"seconds":179,"turns":20,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
-{"task":"listed","arm":"flow","n":2,"costUsd":0.7480861000000001,"seconds":181,"turns":16,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
-{"task":"listed","arm":"flow","n":3,"costUsd":0.7822795999999997,"seconds":179,"turns":2,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true}
-{"task":"listed","arm":"flow","n":4,"costUsd":1.0476366000000001,"seconds":267,"turns":17,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":4,"dirty":0,"lpkRun":true}
