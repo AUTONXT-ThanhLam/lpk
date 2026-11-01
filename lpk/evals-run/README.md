@@ -52,17 +52,20 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
 - `cancel` and `csv` are solved by every arm; they show the flow's price, not its worth.
 - `reopen` differs by one run (3, 3, 4 of 5), which is noise.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
-  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included. A catalog rule for that class (`path-identity`) was loaded in the
-  diff and changed nothing in 4 more runs of `listed` and 5 of `contained` (`results/*-with-path-rule.jsonl`), so it was
-  not kept: prose in front of a reviewer did not move this class.
+  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included.
+  A catalog rule for that class was tried: a `learned.md` entry, loaded for any diff that touches path
+  functions, saying that two spellings of one file are one identity and that a containment check
+  compares resolved whole segments. It was loaded in the diff and changed nothing in 4 more runs of
+  `listed` and 5 of `contained` (`results/*-with-path-rule.jsonl`; the rows do not record the rule,
+  and it was not committed), so it was not kept: prose in front of a reviewer did not move this class.
 
 ## What this sample cannot show
 
 - Small n: 4 or 5 runs per cell. A difference of one run is not a difference.
 - Sonnet only, one prompt per task, the agent's own reading of "follow REVIEW.md".
 - The fixtures are invented, modelled on defects found in lpk's own code; the hidden tests were
-  checked to fail on the base and pass with a reference solution. `reopen`'s grader was loosened
-  once, after a kept run showed it demanded one of two valid answers.
+  checked to fail on the base and pass with a reference solution. `reopen`'s grader accepts either a throw
+  or an untouched item when a held item gets a proof, and every `reopen` row was graded with it.
 - Pilot rows from before the harness wrote `results/` were not kept and are not counted.
 - Not measured: the real CLI's behaviour at `--max-budget-usd` and at `error_max_turns`, and
   whether dropping a review lens costs correctness.
