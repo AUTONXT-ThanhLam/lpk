@@ -45,9 +45,11 @@ look and what the world already agrees on; this stage is yours to do at the dept
 
 ## 4. `pick.md`
 
-Choose one direction and write why. Name the directions you considered and dropped, including the
-default of the category, and say what each would have cost this reader. Several directions are
-offered only when the owner asked for a choice, as full-size screens that differ on one named axis.
+First write, in three lines, the screen you would make for any product of this kind: the generic
+default. Then choose one direction and write how it differs from that default and where its one
+bold move is spent. Name the directions you considered and dropped, and say what each would have
+cost this reader. Several directions are offered only when the owner asked for a choice, as
+full-size screens that differ on one named axis.
 
 ## 5. Build
 
@@ -60,11 +62,31 @@ build is reported.
 ## 6. Look and fix
 
 After each build step, take screenshots at 1440x900 and 390x844 (both colour schemes when the app
-has both), lay them next to three real pages of the same type from `refs/`, and fix everything a
-person would call plain, cheap, crowded, misaligned, generic or template-like. At least six rounds
-for a page or a set of screens (fewer is a `shortcut:` in the report); each is a line in
-`research/rounds.md`: what you saw, what you changed. Spend your effort on the looking: a round that
-changes nothing means you did not look hard enough.
+has both) and lay them next to three real pages of the same type from `refs/`. At least six rounds
+for a page or a set of screens (fewer is a `shortcut:` in the report); each is a block in
+`research/rounds.md` that opens with these four lines, each answered from the screenshot and the
+data and never from memory, and then lists what else you saw and changed:
+
+- **Focal point:** in the 1440 and 390 first-viewport shots, the one element the eye lands on and
+  whether it is the stage 1 result or the primary action; with the words covered, whether colour
+  tells the states apart; the y of the primary action at 390. No single element, the wrong one, or
+  the action below the fold is the round's first fix.
+- **Numbers:** every total, count and percentage on the screen recomputed from its parts (write the
+  sums), and every label or sentence that appears twice on one screen. A mismatch or a repeat is
+  fixed in the data, not by rewording.
+- **Colours:** each hue and tint on the screen with the one meaning it carries. One tint with two
+  meanings, or selected, open and hover sharing a tone, is fixed.
+- **Own object:** the one idea of `concept.md`, named by what is on screen in the first-viewport
+  shot. Absent, the round builds it before anything else.
+
+One round, before the others, lays the 1440 shot next to the single best reference at the same
+scale and writes the three largest measured differences (the focal element's size and weight, the
+face, how colour, entities and surfaces are spent); those three are fixed first. One round is the
+bolder round: take the element that should be first and raise it until it is
+clearly first (size, weight, a fill), then quiet what competes with it. If everything got louder,
+the screen got flatter. Then fix everything a person would call plain, cheap, crowded, misaligned,
+generic or template-like. Spend your effort on the looking: a round that changes nothing means you did not
+look hard enough.
 
 ## 7. Facts, then screenshots for the critic
 

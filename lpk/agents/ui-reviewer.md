@@ -39,14 +39,22 @@ does, and report what is wrong.
 ## The generated-UI tells (each one is a finding)
 
 A side-stripe accent border on a card. Gradient text and glows. Cards nested in cards. Tiny
-uppercase eyebrow labels above headings. A hero metric row of big numbers with small labels.
-Entrances that grow from nothing. Ease-in curves. A transition on every property. Bounce on
-ordinary UI. Em dashes in UI copy. Generic claims ("supercharge", "seamless"). A row of big-number
-cards above a chart above a table. Demo or placeholder copy, round numbers and identical rows.
+uppercase eyebrow labels above headings. Metric tiles of equal weight with a generic label and a
+trend footer, none of them the answer to the job (a tile whose number is the result, coloured by
+its state, is the bar's version, as on Datadog). Entrances that grow from nothing. Ease-in curves.
+A transition on every property. Bounce on ordinary UI. Em dashes in UI copy. Generic claims
+("supercharge", "seamless"). Demo or placeholder copy, round numbers and identical rows.
 Components drawn by hand that the app's own system already has. A pale tinted ground with one
 warm accent that no reference from the reader's own category shows.
 These are a check on a finished screen, never the reason a screen is good: the research and the
-references decide taste.
+references decide taste. Taking a tell away is half the fix; every screen also has:
+- one place the eye lands first, larger, heavier or more saturated than anything else on it, and
+  it is the job's result or its primary action;
+- state read by colour before a word is read: a filled chip, dot or icon on every row, each hue
+  meaning one thing;
+- the product's own entities as themselves at real size: people as avatars, services and sources
+  as their icons, a trend as its line.
+Black text on white with one grey icon per row fails the first two however correct it is.
 
 ## Critic mode
 
