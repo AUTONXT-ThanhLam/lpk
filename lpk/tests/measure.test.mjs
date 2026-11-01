@@ -89,6 +89,11 @@ test('cost follows the model and the kind of token, and an unpriced model has no
   assert.equal(order.at(-1), 'role:other', 'a row with no cost figure sorts after the priced ones');
 });
 
+test('a cache write held an hour is never priced above the cache write the message recorded', () => {
+  world({ main: [msg('odd', SONNET, [0, 100, 0, 0], '2026-10-21T10:01:00Z', { cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 1000000 } })] });
+  assert.ok(json().tokens.inRuns.usd < 0.001, 'a hundred cache-write tokens cost less than a tenth of a cent');
+});
+
 test('a lens run by the CLI has tokens but no cost figure, because its record carries no model split', () => {
   world({
     main: [msg('lead', SONNET, [1, 0, 0, 1], '2026-10-21T10:01:00Z')],
@@ -120,4 +125,17 @@ test('a stored review says who wrote it, and fetching one reviewer does not hide
   assert.equal(lpk(repo, 'reviews', 'fetch', '--reviewer', 'other').status, 0);
   const rows = readFileSync(join(ENV.XDG_DATA_HOME, 'lpk', 'reviews', 'acme__app.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
   assert.deepEqual(rows.map((r) => [r.id, r.author]).sort((x, y) => x[0] - y[0]), [[1, 'lead'], [2, 'other'], [9, 'lead']]);
+});
+
+test('a review stored before authors were recorded gets its author when its reviewer fetches again', () => {
+  const repo = repoWith('measure-legacy', { 'a.txt': 'a\n' });
+  sh(repo, 'config', 'lpk.slug', 'acme/app');
+  stubBin(join(tmp, 'bin'), 'gh', ghStub);
+  const file = join(ENV.XDG_DATA_HOME, 'lpk', 'reviews', 'acme__app.jsonl');
+  rmSync(join(ENV.XDG_DATA_HOME, 'lpk', 'reviews'), { recursive: true, force: true });
+  mkdirSync(join(ENV.XDG_DATA_HOME, 'lpk', 'reviews'), { recursive: true });
+  writeFileSync(file, `${JSON.stringify({ id: 1, pr: 7, url: 'u', path: 'a.txt', line: 1, hunk: '', body: 'note 1', at: '2026-10-01T00:00:00Z' })}\n`);
+  assert.equal(lpk(repo, 'reviews', 'fetch', '--reviewer', 'lead').status, 0);
+  const rows = readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  assert.deepEqual(rows.filter((r) => r.id === 1).map((r) => r.author), ['lead'], 'the one stored row, now with its author');
 });
