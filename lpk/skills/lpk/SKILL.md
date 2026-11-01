@@ -83,7 +83,7 @@ Read each step's file when the step starts; each file states its goal and how it
    directory, and in the Full lane `slices.md` in this skill's directory, because builders build it, and the designer builds its screens.
 4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:
    `review.md` in this skill's directory.
-5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory (the Prover runs inside the review net).
+5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory (the Prover runs inside the review net when `lenses.md` owes it).
 6. **Deliver**: gates, CI, the PR, the report, the lessons: `deliver.md` in this skill's directory.
 
 ## The two lanes
