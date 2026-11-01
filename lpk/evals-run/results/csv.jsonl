@@ -1,0 +1,15 @@
+{"task":"csv","arm":"without","n":1,"costUsd":0.0527218,"seconds":14,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"with","n":1,"costUsd":0.0940409,"seconds":20,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"flow","n":1,"costUsd":0.4208817,"seconds":94,"turns":3,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}
+{"task":"csv","arm":"without","n":2,"costUsd":0.0533741,"seconds":15,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"with","n":2,"costUsd":0.0991654,"seconds":22,"turns":5,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"flow","n":2,"costUsd":0.3302817999999999,"seconds":76,"turns":2,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}
+{"task":"csv","arm":"without","n":3,"costUsd":0.0546546,"seconds":18,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"with","n":3,"costUsd":0.1017297,"seconds":23,"turns":5,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"flow","n":3,"costUsd":0.42138110000000006,"seconds":679,"turns":1,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"csv","arm":"without","n":4,"costUsd":0.0546711,"seconds":17,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"with","n":4,"costUsd":0.1028191,"seconds":24,"turns":5,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"flow","n":4,"costUsd":0.6986378,"seconds":165,"turns":12,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"csv","arm":"without","n":5,"costUsd":0.052521700000000004,"seconds":16,"turns":4,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"with","n":5,"costUsd":0.09711850000000001,"seconds":20,"turns":5,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"csv","arm":"flow","n":5,"costUsd":0.4174537,"seconds":98,"turns":10,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}

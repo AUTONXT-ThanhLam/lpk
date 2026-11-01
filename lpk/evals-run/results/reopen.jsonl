@@ -1,0 +1,15 @@
+{"task":"reopen","arm":"without","n":1,"costUsd":0.0537537,"seconds":22,"turns":4,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"with","n":1,"costUsd":0.1113868,"seconds":20,"turns":4,"stop":"success","hiddenPass":4,"hiddenFail":2,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"flow","n":1,"costUsd":0.5693531,"seconds":137,"turns":7,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"reopen","arm":"without","n":2,"costUsd":0.0522238,"seconds":16,"turns":4,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"with","n":2,"costUsd":0.0948088,"seconds":19,"turns":4,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"flow","n":2,"costUsd":0.6454604100000002,"seconds":161,"turns":2,"stop":"success","hiddenPass":4,"hiddenFail":2,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"reopen","arm":"without","n":3,"costUsd":0.0491543,"seconds":14,"turns":4,"stop":"success","hiddenPass":4,"hiddenFail":2,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"with","n":3,"costUsd":0.0889295,"seconds":17,"turns":4,"stop":"success","hiddenPass":4,"hiddenFail":2,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"flow","n":3,"costUsd":0.867221,"seconds":259,"turns":4,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true}
+{"task":"reopen","arm":"without","n":4,"costUsd":0.057637999999999995,"seconds":16,"turns":6,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"with","n":4,"costUsd":0.0949933,"seconds":20,"turns":4,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}
+{"task":"reopen","arm":"flow","n":4,"costUsd":0.5653207999999998,"seconds":162,"turns":2,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"reopen","arm":"without","n":5,"costUsd":0.0542096,"seconds":17,"turns":5,"stop":"success","hiddenPass":4,"hiddenFail":2,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"with","n":5,"costUsd":0.11821600000000002,"seconds":25,"turns":6,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"reopen","arm":"flow","n":5,"costUsd":0.33424550000000014,"seconds":78,"turns":3,"stop":"success","hiddenPass":6,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}

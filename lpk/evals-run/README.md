@@ -31,17 +31,42 @@ exists). `--keep` leaves the workspaces in `/tmp` for reading the transcripts un
 
 ## What it showed
 
-A pilot of 2 to 3 runs per arm on three tasks (coupon, cancel, csv), Sonnet. The rows were not
-committed, so read these as direction, not as measurements.
+Sonnet, `results/<task>.jsonl`, one row per run. Pass means the hidden test passed in full; cost
+and seconds are means per run (subagents included). `listed` has 4 `flow` rows and `contained` has
+4 rows per arm and no `with` arm; every other cell has 5.
 
-- `with` mostly did not start a run: on a task of one file plus a test the agent judged the flow
-  unnecessary, so no gate or review applied. It cost about 1.6 to 1.9 times `without`.
-- `flow` started a run every time and cost many times `without` (up to about 16), in 70 to 230
-  seconds against 13 to 28.
-- All arms passed the five specified-behaviour tests. A sixth hidden test, added afterwards, grades a
-  percent coupon that is a cent low in floating point (`applyCoupon(375, 18.4%)` returns 307, not
-  306). Regraded on the kept workspaces it passed in 2 of 2 `flow` runs, 1 of 3 `with` runs and 0
-  of 3 `without` runs.
+| Task | `without` | `with` | `flow` |
+| --- | --- | --- | --- |
+| `coupon` | 0/5, 0.07 USD, 19 s | 0/5, 0.11 USD, 24 s | 5/5, 0.82 USD, 283 s |
+| `reopen` | 3/5, 0.05 USD, 17 s | 3/5, 0.10 USD, 20 s | 4/5, 0.60 USD, 159 s |
+| `listed` | 0/5, 0.05 USD, 15 s | 0/5, 0.09 USD, 19 s | 0/4, 0.58 USD, 151 s |
+| `contained` | 0/4, 0.05 USD, 17 s | not run | 0/4, 0.63 USD, 367 s |
+| `cancel` | 5/5, 0.06 USD, 15 s | 5/5, 0.10 USD, 18 s | 5/5, 0.54 USD, 132 s |
+| `csv` | 5/5, 0.05 USD, 16 s | 5/5, 0.10 USD, 22 s | 5/5, 0.46 USD, 222 s |
 
-A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is
-solved by every arm, so a task earns its place only where the plain agent sometimes fails.
+- `with` started an lpk run in 1 of 25 runs, so it behaves like `without` at twice the cost. Only
+  `flow` runs the gates and reviews, always, at 9 to 13 times the cost and 9 to 22 times the time.
+- `coupon` is the one task where the flow clearly paid: the reviews caught the floating-point
+  cent (`applyCoupon(375, 18.4%)`) in 5 of 5 runs against 0 of 10 in the other two arms.
+- `cancel` and `csv` are solved by every arm; they show the flow's price, not its worth.
+- `reopen` differs by one run (3, 3, 4 of 5), which is noise.
+- `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
+  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included; its reviewers
+  raised nits and fixed them. A catalog rule for that class (`path-identity`) was loaded in the
+  diff and changed nothing in 5 more runs of each task (`results/*-with-path-rule.jsonl`), so it was
+  not kept: prose in front of a reviewer did not move this class.
+
+## What this sample cannot show
+
+- Small n: 4 or 5 runs per cell. A difference of one run is not a difference.
+- Sonnet only, one prompt per task, the agent's own reading of "follow REVIEW.md".
+- The fixtures are invented, modelled on defects found in lpk's own code; the hidden tests were
+  checked to fail on the base and pass with a reference solution. `reopen`'s grader was loosened
+  once, after a kept run showed it demanded one of two valid answers.
+- Pilot rows from before the harness wrote `results/` were not kept and are not counted.
+- Not measured: the real CLI's behaviour at `--max-budget-usd` and at `error_max_turns`, and
+  whether dropping a review lens costs correctness.
+- The agent under test holds your OAuth token in its environment, as in an ordinary session.
+
+A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by
+every arm, so a task earns its place only where the plain agent sometimes fails.

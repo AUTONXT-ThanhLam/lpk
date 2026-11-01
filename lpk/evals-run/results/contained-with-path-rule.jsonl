@@ -1,0 +1,5 @@
+{"task":"contained","arm":"flow","n":1,"costUsd":0.6294913000000001,"seconds":148,"turns":7,"stop":"success","hiddenPass":6,"hiddenFail":1,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true}
+{"task":"contained","arm":"flow","n":2,"costUsd":0.49044100000000007,"seconds":151,"turns":3,"stop":"success","hiddenPass":6,"hiddenFail":1,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
+{"task":"contained","arm":"flow","n":3,"costUsd":0.3570265,"seconds":99,"turns":3,"stop":"success","hiddenPass":6,"hiddenFail":1,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}
+{"task":"contained","arm":"flow","n":4,"costUsd":0.3058196000000001,"seconds":107,"turns":18,"stop":"success","hiddenPass":6,"hiddenFail":1,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true}
+{"task":"contained","arm":"flow","n":5,"costUsd":0.8316131000000002,"seconds":516,"turns":22,"stop":"success","hiddenPass":6,"hiddenFail":1,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true}

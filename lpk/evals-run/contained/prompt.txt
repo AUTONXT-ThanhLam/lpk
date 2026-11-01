@@ -1,0 +1,1 @@
+In src/inside.mjs add inside(root, file). root is a directory and file is a path, each absolute or relative to the working directory. It returns true when file is root itself or something under it, otherwise false. Follow the repo's own rules in REVIEW.md. Work until the change is committed on a branch with its tests passing. Do not push and do not open a PR: there is no remote.
