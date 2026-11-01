@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { hookBash, lpk, repoWith, sh, tmp, write } from './gates-env.mjs';
 import { readRun } from '../lib/run.mjs';
-import { recordWaiver } from '../lib/waiver.mjs';
+import { recordWaiver, waiverRun } from '../lib/waiver.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 
@@ -39,5 +39,22 @@ test('the handover deny names the options of the waiver question, and the owner\
   const question = 'Release these?';
   const input = { session_id: S, tool_input: { questions: [{ question, multiSelect: true, options: labels.map((label) => ({ label, description: '' })) }], metadata: { source: 'lpk:waive' } }, tool_response: { answers: { [question]: labels.join(', ') } } };
   assert.equal(await recordWaiver(input, readRun(repo, S)), labels.length);
+  assert.equal(hookBash(repo, S, create), null);
+});
+
+test('a waiver asked after the run ended still releases the gates that stay on its branch', async () => {
+  const S = 'ended-session';
+  const repo = quickRun('ended', S);
+  sh(repo, 'checkout', '-q', '-b', 'ended-work');
+  write(repo, 'src/a.mjs', 'export const a = 3;\n');
+  ok(lpk(repo, S, 'verify'));
+  sh(repo, 'commit', '-qam', 'Set a to 3');
+  ok(lpk(repo, S, 'run', 'end', '--abandon', 'the work moved on'));
+  const create = 'gh pr create --title "Set a" --body x';
+  const labels = [...new Set([...hookBash(repo, S, create).matchAll(/`(gate:\w+)`/g)].map((m) => m[1]))];
+  assert.ok(labels.length > 0, 'the ended run still holds the branch\'s gates');
+  const question = 'Release these?';
+  const input = { session_id: S, cwd: repo, tool_input: { questions: [{ question, multiSelect: true, options: labels.map((label) => ({ label, description: '' })) }], metadata: { source: 'lpk:waive' } }, tool_response: { answers: { [question]: labels.join(', ') } } };
+  assert.equal(await recordWaiver(input, waiverRun(input)), labels.length);
   assert.equal(hookBash(repo, S, create), null);
 });
