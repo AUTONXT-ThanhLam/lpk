@@ -5,6 +5,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { allCandidates } from './ast.mjs';
+import { COMMENT_ID, commentsAtCommit } from './comments.mjs';
 import { commits, git, gitPath, mergeBase, runsGit, siblings, top } from './git.mjs';
 import { MAX_SUBJECT, pushRange } from './push.mjs';
 import { changeOf, CODE, envWiring, loadRules, TEST } from './rules.mjs';
@@ -56,10 +57,10 @@ export function testLoss(files) {
 // Returns the text it reads, at most SHOW of them ('' when none is new), and `seen` with the shown
 // ones added, so the rest come back on the next call.
 const SHOW = 15;
-export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), only) {
+export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), only, quiet = false) {
   const files = changeOf(repo, base);
   const found = [
-    ...allCandidates(repo, loadRules(repo), files, only).cands.map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
+    ...allCandidates(repo, loadRules(repo), files, only).cands.filter((c) => !(quiet && COMMENT_ID.test(c.id))).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
     ...envWiring(repo, files, sibs).filter((e) => !e.seen.length)
       .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
     ...testLoss(files),
@@ -83,7 +84,7 @@ export function afterTool(input) {
   if (!run) return null;
   const file = input.tool_input?.file_path || input.tool_input?.notebook_path;
   const edited = file ? [gitPath(relative(repo, resolve(input.cwd || '.', file)))] : undefined;
-  const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen, siblings(repo), edited);
+  const { text, seen } = freshCandidates(repo, baseOf(repo, run), run.seen, siblings(repo), edited, true);
   if (!text) return null;
   run.seen = seen;
   writeRun(run);
@@ -162,6 +163,8 @@ export function beforeCommit(input) {
   if (branch && (branch === target || ['main', 'master'].includes(branch))) {
     return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `lpk: commit refused, this run delivers a branch and ${branch} is the base it merges into. Create the change's branch first (\`git switch -c <type>/<name>\`), commit there, and \`lpk verify\` there so the run names it.` } };
   }
+  const comments = commentsAtCommit(repo, run, baseOf(repo, run));
+  if (comments) return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: comments } };
   // Staged tests alone commit only through a bare `git commit -m <msg>`: a pathspec, -a, -i or a
   // `git add` in the same command would commit source the staged list does not show.
   const staged = BARE_COMMIT.test(cmd) ? git(['diff', '--cached', '--name-only'], repo).split('\n').filter(Boolean) : [];
