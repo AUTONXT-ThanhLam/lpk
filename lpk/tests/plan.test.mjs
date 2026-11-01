@@ -225,15 +225,39 @@ test('R4: holding and reopening an item between stops does not renew the nudge b
   assert.equal(blocks, 5);
 });
 
-test('R4: a commit on a detached worktree of the plan repo counts as progress', () => {
+test('R4: a commit on a detached worktree counts as progress, a new worktree or branch at an existing commit does not', () => {
   const repo = seeded('r4c', 's-r4c', [['stuck', 'exit 1']]);
-  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4c').decision, 'block');
-  assert.equal(stop(repo, 's-r4c'), null);
   const wt = join(tmp, 'wt-r4c');
   sh(repo, 'worktree', 'add', '-q', '--detach', wt);
+  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4c').decision, 'block');
+  assert.equal(stop(repo, 's-r4c'), null);
+  sh(repo, 'worktree', 'add', '-q', '--detach', join(tmp, 'wt-r4c-2'));
+  sh(repo, 'branch', 'r4c-same-commit');
+  assert.equal(stop(repo, 's-r4c'), null);
   write(wt, 'c.txt', 'c\n');
   sh(wt, 'add', '.'); sh(wt, 'commit', '-qm', 'detached progress');
   assert.equal(stop(repo, 's-r4c').decision, 'block');
+});
+
+test('R4: add does not renew the spent budget; a message from the owner does', () => {
+  const repo = seeded('r4d', 's-r4d', [['stuck', 'exit 1']]);
+  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4d').decision, 'block');
+  must(run(repo, 's-r4d', 'add', 'more', '--proof', 'true', '--source', 'owner'));
+  assert.equal(stop(repo, 's-r4d'), null);
+  assert.equal(hook('UserPromptSubmit', 'plan', { cwd: repo, session_id: 's-r4d-other', prompt: 'hi' }), null);
+  assert.equal(stop(repo, 's-r4d'), null);
+  assert.equal(hook('UserPromptSubmit', 'plan', { cwd: repo, session_id: 's-r4d', prompt: 'carry on' }), null);
+  assert.equal(stop(repo, 's-r4d').decision, 'block');
+});
+
+test('R4: a question held again after a nudge is announced again', () => {
+  const repo = seeded('r4e', 's-r4e', [['ask', 'exit 1']]);
+  must(run(repo, 's-r4e', 'hold', 'P1', '--why', 'which database?'));
+  assert.match(stop(repo, 's-r4e').systemMessage, /which database\?/);
+  must(run(repo, 's-r4e', 'open', 'P1'));
+  assert.equal(stop(repo, 's-r4e').decision, 'block');
+  must(run(repo, 's-r4e', 'hold', 'P1', '--why', 'which database?'));
+  assert.match(stop(repo, 's-r4e').systemMessage, /which database\?/);
 });
 
 test('R5: the nudge budget a holder spent is not the session\'s that takes the plan over', () => {

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { git, within } from './git.mjs';
@@ -62,10 +62,11 @@ export function move(plan, id, to, why = '', proved = null) {
 }
 
 export function fingerprint(plan) {
-  const refs = git(['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads'], plan.repo);
-  const heads = git(['worktree', 'list', '--porcelain'], plan.repo).split('\n').filter((l) => l.startsWith('HEAD ')).join('\n');
+  const tips = git(['for-each-ref', '--format=%(objectname)', 'refs/heads'], plan.repo).split('\n');
+  const heads = git(['worktree', 'list', '--porcelain'], plan.repo).split('\n').filter((l) => l.startsWith('HEAD ')).map((l) => l.slice(5));
+  const commits = [...new Set([...tips, ...heads].filter(Boolean))].sort().join(',');
   const done = plan.items.filter((i) => i.status === 'done').map((i) => i.id).join(',');
-  return createHash('sha1').update(`${done}\n${refs}\n${heads}`).digest('hex');
+  return createHash('sha1').update(`${done}\n${commits}`).digest('hex');
 }
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
@@ -93,8 +94,8 @@ function nudge(plan, item) {
   const was = readNudge(plan.name);
   const seen = was.fp === fp && was.session === plan.session ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;
-  writeAtomic(nudgeFile(plan.name), { ...was, fp, session: plan.session, count: seen + 1 });
-  const last = seen + 1 === NUDGES ? ` This is the last nudge: no commit and no item changed in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${item.id}, then stop.` : '';
+  writeAtomic(nudgeFile(plan.name), { fp, session: plan.session, count: seen + 1 });
+  const last = seen + 1 === NUDGES ? ` This is the last nudge: no commit, no item done and no message from the owner in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${item.id}, then stop.` : '';
   return { decision: 'block', reason: reasonFor(plan, item) + last };
 }
 
@@ -121,6 +122,11 @@ function onStop(input, me) {
   return notes.length ? { systemMessage: notes.join('\n') } : null;
 }
 
+function onPrompt(me) {
+  for (const p of listPlans(me).plans.filter((x) => x.session === me)) rmSync(nudgeFile(p.name), { force: true });
+  return null;
+}
+
 function onStart(input, me) {
   const { plans } = listPlans(me);
   const mine = plans.filter((p) => p.session === me);
@@ -138,6 +144,7 @@ export function planHook(input) {
     if (!me) return null;
     if (input.hook_event_name === 'Stop') return onStop(input, me);
     if (input.hook_event_name === 'SessionStart') return onStart(input, me);
+    if (input.hook_event_name === 'UserPromptSubmit') return onPrompt(me);
   } catch { return null; }
   return null;
 }

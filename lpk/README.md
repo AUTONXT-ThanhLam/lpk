@@ -49,7 +49,7 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
   into rules, saved at once.
 - `node <plugin>/bin/lpk plan` keeps a checklist for a long goal: each item is done only when its proof
   command exits 0, and at the end of a turn with nothing in flight the session is sent on to the next
-  open item, until five nudges pass with no commit and no item changed.
+  open item, until five nudges pass with no commit, no item done and no message from the owner.
 - `node <plugin>/bin/lpk` with no arguments prints every command.
 
 ## Roles
