@@ -14,6 +14,8 @@ Each task is a directory with `fixture.sh` (builds the repo), `prompt.txt` and `
 
 ## Run
 
+Needs GNU `timeout` (Linux; on macOS install coreutils).
+
 From the repository root, on the account `cc-switch` has active. The script drops
 `ANTHROPIC_API_KEY` from every child, because it outranks the OAuth token.
 

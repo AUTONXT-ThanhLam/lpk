@@ -7,7 +7,14 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const plugin = resolve(here, '..');
 const args = process.argv.slice(2);
-const flag = (name, fallback) => { const i = args.indexOf(name); return i < 0 ? fallback : (args[i + 1] ?? ''); };
+const usage = (why) => { console.error(`${why}\nrun it as: cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs [--task name] [--arms with,without,flow] [--runs n] [--max-turns n] [--max-cost-usd n] [--out file] [--keep]`); process.exit(2); };
+const flag = (name, fallback) => {
+  const i = args.indexOf(name);
+  if (i < 0) return fallback;
+  const value = args[i + 1];
+  if (!value || value.startsWith('--')) usage(`${name} needs a value`);
+  return value;
+};
 const only = flag('--task', '');
 const arms = flag('--arms', 'with,without').split(',');
 const runs = Number(flag('--runs', '1'));
@@ -16,7 +23,6 @@ const budget = Number(flag('--max-cost-usd', '10'));
 const out = flag('--out', join(tmpdir(), `lpk-flow-${Date.now()}.jsonl`));
 const keep = args.includes('--keep');
 
-const usage = (why) => { console.error(`${why}\nrun it as: cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs [--task name] [--arms with,without,flow] [--runs n] [--max-turns n] [--max-cost-usd n] [--out file] [--keep]`); process.exit(2); };
 const needed = ['prompt.txt', 'fixture.sh', 'hidden.test.mjs'];
 const tasks = readdirSync(here, { withFileTypes: true }).filter((d) => d.isDirectory() && needed.every((f) => existsSync(join(here, d.name, f))) && (!only || d.name === only)).map((d) => d.name);
 if (!tasks.length) usage(`no task${only ? ` named ${only}` : ''} holding ${needed.join(', ')} in ${here}`);
@@ -73,7 +79,9 @@ function attempt(root, task, arm, n) {
   const r = sh(claudeBin, argv, { cwd: dir, env: base, limit: 2400, maxBuffer: 64 * 1024 * 1024 });
   let res = {};
   try { res = JSON.parse(r.stdout); } catch { res = { parseError: r.timedOut ? 'timeout' : `exit ${r.status}: ${(r.stdout || r.stderr || '').slice(0, 300)}` }; }
-  return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds: Math.round((Date.now() - t0) / 1000), turns: res.num_turns ?? null, stop: res.subtype || res.parseError || null, ...grade(dir, task, sha, plain) };
+  const seconds = Math.round((Date.now() - t0) / 1000);
+  if (res.is_error) return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, error: `claude reported an error (${res.subtype}): ${String(res.result ?? '').slice(0, 300)}` };
+  return { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || res.parseError || null, ...grade(dir, task, sha, plain) };
 }
 
 function once(task, arm, n) {
@@ -96,9 +104,9 @@ for (const task of tasks) {
       const row = once(task, arm, n);
       writeFileSync(out, `${JSON.stringify(row)}\n`, { flag: 'a' });
       console.log(JSON.stringify(row));
-      if (row.error) continue;
+      spent += row.costUsd ?? 0;
+      if (row.error) stop(row.error);
       if (row.costUsd == null) stop('a run reported no cost, so the spend is unknown; stopping');
-      spent += row.costUsd;
     }
   }
 }
