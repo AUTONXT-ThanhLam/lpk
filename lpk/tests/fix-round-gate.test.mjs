@@ -86,3 +86,26 @@ test('lpk finding fixed takes --sweep', () => {
   const out = execFileSync('node', [join(ROOT, 'bin', 'lpk'), 'finding', 'fixed', id, '--commit', fix, '--closed-by', 'test', '--evidence', 'fails on fix^, passes on fix', '--sweep', 'risky\\(', '--repo', dir], { cwd: dir, env: ENV, encoding: 'utf8' });
   assert.match(out, new RegExp(`${id} fixed in ${fix}`));
 });
+
+test('the sweep follows a file name with a space under diff.noprefix', () => {
+  const { dir, base } = change();
+  sh(dir, 'mv', 'a.js', 'my file.js');
+  sh(dir, 'commit', '-qam', 'rename');
+  const id = raise(dir, `${base}..${head(dir)}`, 2);
+  sh(dir, 'config', 'diff.noprefix', 'true');
+  writeFileSync(join(dir, 'my file.js'), 'const ok = 1;\nguard(1);\nrisky(2);\n');
+  sh(dir, 'commit', '-qam', 'guard one');
+  assert.match(close(dir, id, head(dir), { sweep: 'risky\\(' }).error, /my file\.js:3/);
+  writeFileSync(join(dir, 'my file.js'), 'const ok = 1;\nguard(1);\nguard(2);\n');
+  sh(dir, 'commit', '-qam', 'guard both');
+  assert.equal(close(dir, id, head(dir), { sweep: 'risky\\(' }).finding.state, 'fixed');
+});
+
+test('a fix that renames the file holding the defect is swept on the old name too', () => {
+  const { dir, base, reviewed } = change();
+  const id = raise(dir, `${base}..${reviewed}`, 2);
+  sh(dir, 'mv', 'a.js', 'b.js');
+  writeFileSync(join(dir, 'b.js'), 'const ok = 1;\nguard(1);\nguard(2);\n');
+  sh(dir, 'add', '.'); sh(dir, 'commit', '-qm', 'guard both and rename');
+  assert.equal(close(dir, id, head(dir), { sweep: 'risky\\(' }).finding.state, 'fixed');
+});

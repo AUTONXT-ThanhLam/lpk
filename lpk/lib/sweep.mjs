@@ -16,25 +16,18 @@ export function lateFixError(finding, late) {
     + 'The ways out: revert or redesign that fix (`lpk fixlines` names what it rewrote), have the owner defer it (closedBy owner) or waive the findings gate, or take it into a new run.';
 }
 
-function addedLines(repo, base, sha) {
-  const added = new Set();
-  let path = '';
-  for (const l of git(['diff', '-U0', '--no-color', base, sha], repo).split('\n')) {
-    if (l.startsWith('+++ ')) path = l === '+++ /dev/null' ? '' : l.slice(6);
-    const m = l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
-    if (!m || !path) continue;
-    const from = Number(m[1]);
-    for (let n = from; n < from + (m[2] === undefined ? 1 : Number(m[2])); n++) added.add(`${path}:${n}`);
-  }
-  return added;
-}
-
 function hitsAt(repo, rev, pattern, files) {
   if (!files.length) return [];
-  return lines(git(['grep', '-n', '-I', '-E', '-e', pattern, rev, '--', ...files], repo)).flatMap((l) => {
-    const m = l.slice(rev.length + 1).match(/^(.+?):(\d+):/);
-    return m ? [`${m[1]}:${m[2]}`] : [];
+  return lines(git(['--literal-pathspecs', 'grep', '-z', '-n', '-I', '-E', '-e', pattern, rev, '--', ...files], repo)).flatMap((l) => {
+    const [head, num = ''] = l.split('\0');
+    const n = num.match(/^\d+$/);
+    return n ? [{ path: head.slice(rev.length + 1), line: Number(n[0]) }] : [];
   });
+}
+
+function writtenByChange(repo, sha, hit, ours) {
+  const out = git(['blame', '--porcelain', '-L', `${hit.line},${hit.line}`, sha, '--', hit.path], repo);
+  return ours.has(out.slice(0, 40));
 }
 
 export function sweepOf(repo, finding, sha, pattern) {
@@ -44,12 +37,13 @@ export function sweepOf(repo, finding, sha, pattern) {
   }
   const base = baseOf(repo);
   if (!base) return { error: 'sweep: no run target and no default branch to take the change from' };
-  const files = lines(git(['diff', '--name-only', base, sha], repo));
+  const files = git(['diff', '--name-only', '--no-renames', '-z', base, sha], repo).split('\0').filter(Boolean);
   const before = hitsAt(repo, `${sha}^`, text, files);
   if (!before.length) return { error: `sweep: no hit before the fix, in ${files.length} file(s) of the change, for ${text} (an invalid extended regex also hits nothing): a pattern that finds nothing before the fix proves nothing about its class` };
-  const added = addedLines(repo, base, sha);
+  const ours = new Set(lines(git(['rev-list', `${base}..${sha}`], repo)));
   const after = hitsAt(repo, sha, text, files);
-  const left = after.filter((h) => added.has(h));
+  const written = after.map((h) => writtenByChange(repo, sha, h, ours));
+  const left = after.filter((h, i) => written[i]).map((h) => `${h.path}:${h.line}`);
   if (left.length) return { error: `sweep: ${left.length} more place(s) of the same class are on lines this change adds, fix them in the same commit: ${left.slice(0, 12).join(', ')}${left.length > 12 ? ` and ${left.length - 12} more` : ''}` };
-  return { sweep: { pattern: text, before: before.length, preexisting: after.filter((h) => !added.has(h)).slice(0, 12) } };
+  return { sweep: { pattern: text, before: before.length, preexisting: after.filter((h, i) => !written[i]).map((h) => `${h.path}:${h.line}`).slice(0, 12) } };
 }
