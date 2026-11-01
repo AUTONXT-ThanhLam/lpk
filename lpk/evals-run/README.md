@@ -14,8 +14,8 @@ Each task is a directory with `fixture.sh` (builds the repo), `prompt.txt` and `
 
 ## Run
 
-From the repository root, on the account `cc-switch` has active. `ANTHROPIC_API_KEY` is removed
-because it outranks the OAuth token.
+From the repository root, on the account `cc-switch` has active. The script drops
+`ANTHROPIC_API_KEY` from every child, because it outranks the OAuth token.
 
 ```sh
 cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs \
@@ -28,16 +28,16 @@ exists). `--keep` leaves the workspaces in `/tmp` for reading the transcripts un
 
 ## What it showed
 
-Sonnet, 3 runs per arm on three tasks (coupon, cancel, csv).
+A pilot of 2 to 3 runs per arm on three tasks (coupon, cancel, csv), Sonnet. The rows were not
+committed, so read these as direction, not as measurements.
 
-- `with` never started a run: on a task of one file plus a test the agent judged the flow
-  unnecessary, so no gate or review applied and the cost was about 1.7 times `without`.
-- `flow` started a run every time and cost 5 to 15 times `without`, in 70 to 230 seconds
-  against 15 to 30.
-- All arms passed the specified behaviour. The review net's bug hunter found, in `flow` only,
-  a percent coupon that is a cent low in floating point (`applyCoupon(375, 18.4%)` returns 307,
-  not 306) and a cancel that marks the order cancelled before the refund can fail. The
-  fractional-percent hidden test now grades the first one.
+- `with` mostly did not start a run: on a task of one file plus a test the agent judged the flow
+  unnecessary, so no gate or review applied. It cost about 1.6 to 1.9 times `without`.
+- `flow` started a run every time and cost many times `without` (up to about 16), in 70 to 230
+  seconds against 15 to 30.
+- All arms passed the specified behaviour. Only `flow` produced code that also passes the
+  fractional-percent hidden test: a percent coupon that is a cent low in floating point
+  (`applyCoupon(375, 18.4%)` returns 307, not 306).
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is
 solved by every arm, so a task earns its place only where the plain agent sometimes fails.
