@@ -125,7 +125,7 @@ function planGate(repo, run, recs) {
     if (slices.length && beyond.length) facts.push(`files beyond every slice: ${list(beyond)}`);
   }
   const quick = run.lane === 'quick' ? floor(repo, patchesOf(repo, run.target).base) : null;
-  if (quick?.full) facts.push(`quick lane (${run.laneWhy || 'no reason given'}), and the floor calls this change full: ${quick.why.join('; ')}`);
+  if (quick?.full) facts.push(`quick lane (${run.laneWhy || 'no reason given'}), and the floor calls this change full: ${list(quick.why)}`);
   const go = recs.filter((r) => r.kind === 'go').at(-1);
   if (go?.verify && go.verify.join('\n') !== (run.verify || []).join('\n')) facts.push(`checks changed after go: ${list(go.verify)} → ${list(run.verify || [])}`);
   if (go?.verify && (go.verifyFinal || []).join('\n') !== (run.verifyFinal || []).join('\n')) facts.push(`final checks changed after go: ${list(go.verifyFinal || []) || 'none'} → ${list(run.verifyFinal || []) || 'none'}`);

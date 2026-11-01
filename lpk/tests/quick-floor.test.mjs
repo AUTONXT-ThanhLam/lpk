@@ -14,7 +14,7 @@ test('a quick run whose change the floor calls full says so in the plan row, and
   const small = quick('quick-small', 'qf-small');
   write(small, 'src/a.mjs', 'export const a = 2;\n');
   sh(small, 'commit', '-qam', 'Set a to 2');
-  assert.doesNotMatch(gates(small, 'qf-small'), /floor/);
+  assert.match(gates(small, 'qf-small'), /^plan\s+print\s+no brief\.json$/m);
 
   const wide = quick('quick-wide', 'qf-wide');
   for (const n of ['b', 'c', 'd']) write(wide, `src/${n}.mjs`, `export const ${n} = 1;\n`);
@@ -24,5 +24,5 @@ test('a quick run whose change the floor calls full says so in the plan row, and
   assert.match(gates(wide, 'qf-wide'), /floor.*4 files changed/);
 
   ok(lpk(wide, 'qf-wide', 'run', 'lane', 'full', '--why', 'wider than quick'));
-  assert.doesNotMatch(gates(wide, 'qf-wide'), /floor/);
+  assert.match(gates(wide, 'qf-wide'), /^plan\s+print\s+no brief\.json$/m);
 });
