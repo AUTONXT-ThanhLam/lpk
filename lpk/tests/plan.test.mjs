@@ -194,3 +194,54 @@ test('R3: lpk plan prints each item with its status, proof and source, and the n
   assert.ok(text.includes('echo beta-proof') && text.includes('the owner said so'));
   assert.match(text, /next: P2 beta/);
 });
+
+test('R3: a failing proof reopens only a done item; a held or paused item keeps its status and its question', () => {
+  const repo = seeded('r3d', 's-r3d', [['ask', 'exit 1'], ['gate', 'exit 1'], ['ok', 'true']]);
+  must(run(repo, 's-r3d', 'hold', 'P1', '--why', 'which database?'));
+  must(run(repo, 's-r3d', 'pause', 'P2', '--why', 'later'));
+  assert.equal(run(repo, 's-r3d', 'prove', 'P1').status, 1);
+  assert.equal(run(repo, 's-r3d', 'prove', 'P2').status, 1);
+  const [p1, p2] = planOf('r3d').items;
+  assert.deepEqual([p1.status, p1.why, p1.proved.exit], ['held', 'which database?', 1]);
+  assert.deepEqual([p2.status, p2.why], ['paused', 'later']);
+  must(run(repo, 's-r3d', 'prove', 'P3'));
+  const edit = planOf('r3d');
+  edit.items[2].proof = 'exit 4';
+  writeFileSync(join(plans, 'r3d.json'), JSON.stringify(edit));
+  assert.equal(run(repo, 's-r3d', 'prove', 'P3').status, 1);
+  assert.equal(planOf('r3d').items[2].status, 'todo');
+  assert.equal(run(repo, 's-r3d', 'open', 'P3').status, 2);
+});
+
+test('R4: holding and reopening an item between stops does not renew the nudge budget', () => {
+  const repo = seeded('r4b', 's-r4b', [['loop', 'exit 1'], ['other', 'exit 1']]);
+  let blocks = 0;
+  for (let n = 0; n < 6; n++) {
+    if (stop(repo, 's-r4b')?.decision === 'block') blocks++;
+    must(run(repo, 's-r4b', 'hold', 'P1', '--why', 'asking'));
+    if (stop(repo, 's-r4b')?.decision === 'block') blocks++;
+    must(run(repo, 's-r4b', 'open', 'P1'));
+  }
+  assert.equal(blocks, 5);
+});
+
+test('R4: a commit on a detached worktree of the plan repo counts as progress', () => {
+  const repo = seeded('r4c', 's-r4c', [['stuck', 'exit 1']]);
+  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r4c').decision, 'block');
+  assert.equal(stop(repo, 's-r4c'), null);
+  const wt = join(tmp, 'wt-r4c');
+  sh(repo, 'worktree', 'add', '-q', '--detach', wt);
+  write(wt, 'c.txt', 'c\n');
+  sh(wt, 'add', '.'); sh(wt, 'commit', '-qm', 'detached progress');
+  assert.equal(stop(repo, 's-r4c').decision, 'block');
+});
+
+test('R5: the nudge budget a holder spent is not the session\'s that takes the plan over', () => {
+  const repo = seeded('r5b', 's-r5b-old', [['stuck', 'exit 1']]);
+  for (let n = 0; n < 5; n++) assert.equal(stop(repo, 's-r5b-old').decision, 'block');
+  assert.equal(stop(repo, 's-r5b-old'), null);
+  must(run(repo, 's-r5b-new', 'take', 'r5b'));
+  const first = stop(repo, 's-r5b-new');
+  assert.equal(first.decision, 'block');
+  assert.ok(!first.reason.includes('PushNotification'));
+});

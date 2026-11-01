@@ -1,7 +1,7 @@
 // `lpk hook <name>`: every hook of the plugin, fed the hook's JSON on stdin, answering on stdout.
 // A gate hook whose own code fails inside a run denies, naming the error and the owner's waiver as
 // the way out, so a broken gate never passes what it guards; outside a run, and for every hint
-// hook, a failure lets the call go on and says what is missing.
+// hook, a failure lets the call go on and says what is missing, except for a silent hook, which says nothing.
 import { readFileSync, realpathSync, writeSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 

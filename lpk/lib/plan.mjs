@@ -53,15 +53,19 @@ export function move(plan, id, to, why = '', proved = null) {
   if ((to === 'held' || to === 'paused') && (item.status !== 'todo' || !String(why).trim())) {
     return { error: item.status !== 'todo' ? `${id} is ${item.status}: only an open item can be ${to}` : `${to} needs a reason: --why "<what the owner must answer or decide>"` };
   }
+  if (!proved && to === 'todo' && item.status !== 'held' && item.status !== 'paused') return { error: `${id} is ${item.status}: only a held or paused item is opened` };
+  if (proved) item.proved = proved;
+  if (proved && to === 'todo' && item.status !== 'done') return { item };
   item.status = to;
   item.why = to === 'held' || to === 'paused' ? String(why).trim() : '';
-  if (proved) item.proved = proved;
   return { item };
 }
 
 export function fingerprint(plan) {
   const refs = git(['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads'], plan.repo);
-  return createHash('sha1').update(plan.items.map((i) => `${i.id}:${i.status}`).join('\n')).update('\n').update(refs).digest('hex');
+  const heads = git(['worktree', 'list', '--porcelain'], plan.repo).split('\n').filter((l) => l.startsWith('HEAD ')).join('\n');
+  const done = plan.items.filter((i) => i.status === 'done').map((i) => i.id).join(',');
+  return createHash('sha1').update(`${done}\n${refs}\n${heads}`).digest('hex');
 }
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
@@ -87,9 +91,9 @@ const reasonFor = (plan, item) => `lpk plan ${plan.name}: ${item.id} is open: ${
 function nudge(plan, item) {
   const fp = fingerprint(plan);
   const was = readNudge(plan.name);
-  const seen = was.fp === fp ? Number(was.count) || 0 : 0;
+  const seen = was.fp === fp && was.session === plan.session ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;
-  writeAtomic(nudgeFile(plan.name), { ...was, fp, count: seen + 1 });
+  writeAtomic(nudgeFile(plan.name), { ...was, fp, session: plan.session, count: seen + 1 });
   const last = seen + 1 === NUDGES ? ` This is the last nudge: no commit and no item changed in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${item.id}, then stop.` : '';
   return { decision: 'block', reason: reasonFor(plan, item) + last };
 }
@@ -97,11 +101,11 @@ function nudge(plan, item) {
 function waitingNote(plan) {
   const waiting = plan.items.filter((i) => i.status === 'held' || i.status === 'paused');
   if (!waiting.length) return '';
-  const fp = fingerprint(plan);
+  const note = `lpk plan ${plan.name} waits on the owner: ${waiting.map((i) => `${i.id} ${i.status} (${i.why})`).join('; ')}`;
   const was = readNudge(plan.name);
-  if (was.told === fp) return '';
-  writeAtomic(nudgeFile(plan.name), { ...was, told: fp });
-  return `lpk plan ${plan.name} waits on the owner: ${waiting.map((i) => `${i.id} ${i.status} (${i.why})`).join('; ')}`;
+  if (was.told === note) return '';
+  writeAtomic(nudgeFile(plan.name), { ...was, told: note });
+  return note;
 }
 
 function onStop(input, me) {
