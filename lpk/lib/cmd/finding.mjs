@@ -9,7 +9,7 @@ const USAGE = `usage:
   lpk finding list [--state <state>] [--repo <dir>]
   lpk finding get <id> [--repo <dir>]
   lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>" --reach user|merge|neither] [--area security|auth|data|concurrency|migration|permissions] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
-  lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" [--fix "<how>"] [--repo <dir>]
+  lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" --sweep "<git grep -E pattern of the defect form>" [--fix "<how>"] [--repo <dir>]
   lpk finding fixed <id> --closed-by owner --evidence "<the owner's words>" [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
 
@@ -43,7 +43,7 @@ export async function main(argv) {
       return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
     }
     if (sub === 'fixed' && id) {
-      const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), by: 'cli' });
+      const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), sweep: opt('--sweep'), by: 'cli' });
       return done(r, closed);
     }
   } catch (e) {

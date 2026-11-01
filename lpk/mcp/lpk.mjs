@@ -71,6 +71,7 @@ const TOOLS = [
         closedBy: { type: 'string', enum: CLOSED_BY },
         evidence: str('the repro or test output, the ruling, or for closedBy owner the owner\'s words'),
         fix: str('how, in one sentence'),
+        sweep: str('for a finding with a file: a git grep -E pattern for the form of the defect. lpk runs it over the files the change touches: it must hit before the fix and on no line the change adds after it'),
         ...stamped, by: str(STAMP),
       },
       required: ['id', 'closedBy', 'evidence'],

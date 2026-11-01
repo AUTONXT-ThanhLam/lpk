@@ -199,8 +199,8 @@ for (let i = 0; i < 10; i++) { const r = addFinding(process.argv[1], { from: 'p'
 
 test('lpk finding lists, rules, closes and counts from the command line, a ruling there marked for the owner', () => {
   const { dir, head } = repoWithRun('cli');
-  raise(dir, head, { file: 'a.ts', line: 2 }); raise(dir, head);
-  assert.match(lpk(dir, 'finding', 'list'), /F1 defect\/important lpk:bug-hunter a\.ts:2 — the guard fails open \(open\)/);
+  raise(dir, head); raise(dir, head, { file: 'a.ts', line: 2 });
+  assert.match(lpk(dir, 'finding', 'list'), /F2 defect\/important lpk:bug-hunter a\.ts:2 — the guard fails open \(open\)/);
   assert.match(lpk(dir, 'finding', 'verdict', 'F1', 'confirmed', '--reach', 'user', '--born', 'design', '--cause', 'the brief never says n starts at 1', '--evidence', 'it prints 0 for n=1'), /F1 is confirmed/);
   const fix = commit(dir, 'fix');
   assert.match(lpk(dir, 'finding', 'fixed', 'F1', '--commit', fix, '--closed-by', 'repro', '--evidence', 'lpk repro F1 exit 0'), /F1 fixed in .* \(repro\)/);

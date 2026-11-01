@@ -1,6 +1,7 @@
 import { append, ledgerDir, PROTECTED, readLedger } from './findings.mjs';
 import { git } from './git.mjs';
 import { locked } from './lock.mjs';
+import { lateFix, lateFixError, sweepOf } from './sweep.mjs';
 
 export const CLOSED_BY = ['repro', 'test', 'verifier', 'owner'];
 
@@ -16,7 +17,7 @@ function defer(repo, f, words, by) {
   return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
 }
 
-export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
+export function markFixed(repo, { id, commit, fix, closedBy, evidence, by, sweep }) {
   if (!CLOSED_BY.includes(closedBy)) return { error: `closedBy is one of ${CLOSED_BY.join(', ')}` };
   const owner = closedBy === 'owner';
   const why = text(evidence);
@@ -34,7 +35,17 @@ export function markFixed(repo, { id, commit, fix, closedBy, evidence, by }) {
     } else if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is fixed` };
     const reviewed = commitOf(repo, f.at.split('..').pop());
     if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
-    append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by) });
+    let kept = f.sweep;
+    if (f.state === 'confirmed') {
+      const late = lateFix(repo, f, readLedger(repo).findings);
+      if (late) return { error: lateFixError(f, late) };
+      if (f.file) {
+        const s = sweepOf(repo, f, sha, sweep);
+        if (s.error) return s;
+        kept = s.sweep;
+      }
+    }
+    append(repo, { ev: 'fixed', id: f.id, commit: sha, fix: text(fix), closedBy, evidence: why, by: text(by), ...(kept ? { sweep: kept } : {}) });
     return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
   });
 }
