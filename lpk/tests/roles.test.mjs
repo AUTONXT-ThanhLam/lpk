@@ -44,7 +44,7 @@ test('every agent the plugin ships has a row in the role table, and every row ha
 });
 
 const MODELS = ['sonnet', 'haiku', 'opus'];
-const OPUS = ['designer', 'builder'];
+const OPUS = ['designer'];
 test('every agent pins a model alias, never a full model id or Fable, and names its role effort', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;

@@ -96,6 +96,9 @@ owner's yes: those files belong to the owner and the team.
 Never edit the plugin's own catalog here: a rule that belongs in it for everyone is a change to
 the lpk repo, delivered like any other change.
 
+When the evidence is an lpk run's findings, finish with `lpk learn [--rule <id>]...`, naming each rule
+you saved: the run's `learn` gate holds once it has run on every confirmed, fixed or deferred finding.
+
 Report to the owner in Vietnamese, following `${CLAUDE_PLUGIN_ROOT}/skills/lpk/writing.md`:
 - how many comments and findings were read, and how many were already covered;
 - each rule saved: its id, the file, and the PR, comment or finding it came from;

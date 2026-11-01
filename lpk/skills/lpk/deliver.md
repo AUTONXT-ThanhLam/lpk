@@ -69,7 +69,9 @@ and answer a repeated point in one line ("declined, see the first triage").
 
 ## Handover
 
-1. Run `lpk report`: it runs `lpk gates` and prints every number from the records.
+1. Run the `lpk:learn` skill on this run's evidence and record it with `lpk learn [--rule <id>]...`: the
+   `learn` gate holds only once every confirmed, fixed or deferred finding is covered. Then run `lpk report`:
+   it runs `lpk gates` and prints every number from the records.
 2. Ask the owner one question with `AskUserQuestion`, with `metadata.source: "lpk:waive"`: the PR
    question (draft, ready, merge, as this repo's CLAUDE files authorize), and, multi-select, only
    the gates that do not hold for a reason no agent can fix (a service that is down, a lens that
@@ -105,6 +107,5 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
 After a feedback round that fixed only small defects, the report is five lines: the verdict, what
 changed, the CI state, what is still open, the next step.
 
-Then run the `lpk:learn` skill on this run's evidence: the ledger's confirmed findings, each CI
-failure, and the owner's messages file. Close with one line: the rules it saved and the process
-changes it proposes.
+The `lpk:learn` skill already ran in Handover step 1; its saved rules and proposed process changes
+are one line of this report.

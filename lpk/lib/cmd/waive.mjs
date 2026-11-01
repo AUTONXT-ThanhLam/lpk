@@ -7,7 +7,7 @@ import { sessionId } from '../host.mjs';
 import { appendRecord } from '../records.mjs';
 import { activeRun, runHere } from '../run.mjs';
 
-const ROWS = ['verify', 'findings', 'reviews', 'scenarios', 'requirements', 'ci', 'error'];
+const ROWS = ['verify', 'findings', 'reviews', 'scenarios', 'requirements', 'ci', 'learn', 'tests-first', 'error'];
 const VIA = ['cli', '/lpk-waive', 'ask'];
 const FINDING = /^F\d+$/;
 const NOT_FINDINGS = 'a finding id is not waived; the findings gate is `gate:findings`';
