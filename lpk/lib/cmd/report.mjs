@@ -1,6 +1,7 @@
 // `lpk report`: the numbers of the run's report, every one from code, after the gates ran. The
 // verdict line says "deliverable" only when every delivery gate holds on the HEAD it names; the
 // session adds the verdict in words, the decisions it took alone and the weakest point.
+import { existsSync, readFileSync } from 'node:fs';
 import { counts } from '../findings-text.mjs';
 import { knownLimits } from '../bar.mjs';
 import { BORN, needsOwner, stateOf } from '../findings.mjs';
@@ -11,6 +12,7 @@ import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { proofsOf, trace } from '../proof.mjs';
 import { readDecisions, readRecords } from '../records.mjs';
+import { promptsOf } from '../run.mjs';
 import { runRow } from '../runs.mjs';
 import { runHere } from './gates.mjs';
 
@@ -21,6 +23,15 @@ const ruling = (f) => (f.state === 'fixed'
   ? `- ${f.id} fixed by ${f.fixedBy}: ${f.claim} — ${f.fixEvidence}`
   : `- ${f.id} ${f.state === 'duplicate' ? `duplicate of ${f.primary}` : f.state}${f.state === 'unsettled' && asked(f) ? ` (${asked(f)})` : ''}${f.by ? ` by ${f.by}` : ''}: ${f.claim} — ${f.evidence}`);
 const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
+
+const CLIP = 600;
+function ownerWords(run) {
+  const file = promptsOf(run.marker);
+  const rows = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).flatMap((l) => { try { return [String(JSON.parse(l).prompt || '').trim()]; } catch { return []; } }).filter(Boolean) : [];
+  if (!rows.length) return 'Owner words during the run: none recorded';
+  return [`Owner words during the run (${rows.length}), each to be set beside the requirement and proof that delivered it, or marked not delivered:`,
+    ...rows.map((w, i) => `${i + 1}. ${(w.length > CLIP ? `${w.slice(0, CLIP)} [+${w.length - CLIP} chars in ${file}]` : w).replace(/\n/g, '\n   ')}`)].join('\n');
+}
 
 const wallEnd = (repo, run) => run.endedAt || Math.max(0, ...readRecords(repo, { run: run.id }).map((r) => Date.parse(r.at) || 0)) || Date.now();
 
@@ -69,6 +80,7 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Proof |', '|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
+  facts.push(ownerWords(run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {
     const row = run.ended ? null : runRow(repo);

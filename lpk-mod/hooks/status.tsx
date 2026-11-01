@@ -2,7 +2,7 @@
 // through, the slices, the gates with what each read, the whole team, the findings). The run's band
 // itself is in the status line (`lpk statusline`). Every fact comes from `lpk status --json --gates`;
 // the mod only draws. It never blocks: hooks mark the pane due and a timer runs the CLI, one call at
-// a time, only while the pane is open.
+// a time, only while the pane is open or a lpk run was seen in this session.
 import { atom, read, update } from 'claude-code'
 import type { On, PluginOptions } from 'claude-code'
 
@@ -19,20 +19,24 @@ const minutes = (ms: number) => `${Math.round(ms / 60_000)}m`
 let busy = false
 let due = true
 let last = 0
+let armed = false
 
 async function refresh($: Host, options: PluginOptions): Promise<void> {
   const now = await $.clock.now()
   if (busy || (!due && now - last < EVERY_MS)) return
   busy = true
   try {
-    if (!(await $.ui.panes()).some((p) => p.id === PANE)) return
+    const paneOpen = (await $.ui.panes()).some((p) => p.id === PANE)
+    if (!paneOpen && !armed) return
     due = false
     last = now
     const cwd = await $.session.cwd()
     const root = await lpkRoot($, options)
     if (!root) return
-    const r = await runLpk($, root, ['status', '--json', '--gates', '--session', await $.session.id(), '--repo', cwd], { cwd, timeoutMs: 20_000 })
+    const gates = paneOpen ? ['--gates'] : []
+    const r = await runLpk($, root, ['status', '--json', ...gates, '--session', await $.session.id(), '--repo', cwd], { cwd, timeoutMs: 20_000 })
     const s = JSON.parse(r.stdout) as LpkStatus
+    if (!s.open) armed = false
     await update($, full, () => (s.open ? s : null))
   } catch (err) {
     $.ui.log(`lpk status skipped: ${String(err)}`, { to: 'debug' })
@@ -46,13 +50,37 @@ export function markDue(): void {
   due = true
 }
 
+export function arm(): void {
+  armed = true
+  due = true
+}
+
 // Called from the session's start: registers /lpk-status and starts the timer.
 export async function startStatus($: Host, options: PluginOptions): Promise<void> {
   await $.command.register({ name: PANE, description: "Show the lpk run's steps, slices, gates, team and findings in a pane" })
   $.clock.every(TICK_MS, () => void refresh($, options))
 }
 
+const line = (mark: string, list: string[]) => (list.length ? `${mark} ${list.join(' · ')}` : '')
+
 export function registerStatus(on: On): void {
+  on('prompt.submit', async ($, e, next) => {
+    if (e.command?.name.startsWith('lpk')) arm()
+    return next(e)
+  })
+
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const s = await read($, full)
+    if (!s?.open || e.props.hasSurvey) return next(e)
+    const { Box, Text } = $.ui.resolve(e)
+    const rows = [line('▶', s.view.doing), line('✓', s.view.done), line('→', s.view.next)].filter(Boolean)
+    return (
+      <Box flexDirection="column">
+        {rows.map((r) => <Text wrap="truncate-end" dimColor>{r}</Text>)}
+      </Box>
+    )
+  })
+
   // A tool call may move the run: the next tick reads it at once.
   on('tool.call', async ($, e, next) => {
     due = true
@@ -75,6 +103,13 @@ export function registerStatus(on: On): void {
         <Text bold>{s.view.track.map((t) => t.name).join(' › ')}</Text>
         <Text dimColor>{`went through: ${s.phasesVisited.join(', ')} · ${s.view.head}`}</Text>
         {s.view.waits ? <Text color="warning">{`waits on you: ${s.waits.map((w) => `${w.what} (${w.why})`).join('; ')}`}</Text> : null}
+        <Text> </Text>
+        <Text bold>Doing</Text>
+        {s.view.doing.map((x) => <Text wrap="truncate-end">{`  ${x}`}</Text>)}
+        <Text bold>Done</Text>
+        {s.view.done.length ? s.view.done.map((x) => <Text wrap="truncate-end">{`  ${x}`}</Text>) : <Text dimColor>  nothing yet</Text>}
+        <Text bold>Next</Text>
+        {s.view.next.length ? s.view.next.map((x) => <Text wrap="truncate-end">{`  ${x}`}</Text>) : <Text dimColor>  nothing more</Text>}
         <Text> </Text>
         <Text bold>Slices</Text>
         {s.slices.length ? s.slices.map((x) => <Text>{`  ${x.state === 'landed' ? '●' : x.state === 'building' ? '◐' : '○'} ${x.name}  `}<Text dimColor>{x.files.join(', ')}</Text></Text>) : <Text dimColor>  one slice</Text>}

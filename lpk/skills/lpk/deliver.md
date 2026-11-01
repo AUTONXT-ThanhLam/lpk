@@ -92,8 +92,9 @@ and answer a repeated point in one line ("declined, see the first triage").
 In Vietnamese, in the reply itself (never only a link), readable in ten seconds, each claim tagged
 as `writing.md` in this skill's directory says. Numbers come only from `lpk report`.
 1. The verdict: delivered, or what blocks it, and the HEAD it was built on.
-2. Each requirement with its proof (the `lpk report` table), and each acceptance scenario with its
-   evidence on that commit, or NOT PROVED and why.
+2. Each sentence the owner asked (`lpk report` lists their words numbered) set beside the requirement
+   that took it up and that requirement's proof (the `lpk report` table), or marked not delivered
+   and why; then each acceptance scenario with its evidence on that commit, or NOT PROVED and why.
 3. The decisions you took alone (`decisions.jsonl`), and the findings `lpk report` lists for the
    owner to read (unsettled, or ruled by you rather than a verifier), each with its evidence.
 4. The weakest point.
