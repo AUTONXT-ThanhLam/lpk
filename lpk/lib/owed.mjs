@@ -40,7 +40,7 @@ export function ledgerFor(repo, run) {
 
 // What ran: items that count, and notes on runs that do not (errored, still running, ungraded).
 export function evidence(repo, run, ledger) {
-  const items = [], notes = [];
+  const items = [], notes = [], ungraded = [];
   const counted = (agentId, n) => n === null || ledger.filter((f) => f.agentId === agentId).length === n;
   for (const r of readRecords(repo, { run: run.id })) {
     if (r.kind !== 'code-review' || !r.range) continue;
@@ -54,11 +54,14 @@ export function evidence(repo, run, ledger) {
       const n = findingCount(l.structured);
       if (l.ended === 'error') notes.push({ key, range: l.range, why: `agent ${l.agentId} ended on an API error` });
       else if (l.ended === 'running') notes.push({ key, range: l.range, why: `agent ${l.agentId} has not finished` });
-      else if (!counted(l.agentId, n)) notes.push({ key, range: l.range, why: `ungraded: agent ${l.agentId} returned ${n} findings, the ledger holds ${ledger.filter((f) => f.agentId === l.agentId).length}` });
+      else if (!counted(l.agentId, n)) {
+        notes.push({ key, range: l.range, why: `ungraded: agent ${l.agentId} returned ${n} findings, the ledger holds ${ledger.filter((f) => f.agentId === l.agentId).length}` });
+        ungraded.push({ key, range: l.range, agentId: l.agentId, structured: l.structured, at: l.at, started: l.started, calls: l.calls });
+      }
       else items.push({ key, range: l.range, agentId: l.agentId, structured: l.structured, at: l.at, started: l.started, calls: l.calls });
     }
   }
-  return { items, notes };
+  return { items, notes, ungraded };
 }
 
 // The lens set the lane owes on new work, and why when the floor's facts changed it.

@@ -41,8 +41,11 @@ function begin(name, specs, { files = { 'src/a.mjs': 'export const a = 1;\n' }, 
 function prover(c, id, calls, lines, startedMs = Date.now() - 60000) {
   const at = (n) => new Date(startedMs + n * 1000).toISOString();
   const so = { name: 'StructuredOutput', input: { findings: [], results: lines } };
-  const entries = [{ type: 'user', message: { role: 'user', content: `Prove ${range(c.repo)}.` }, timestamp: at(0) },
-    ...[...calls, so].map((t, i) => ({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: `t${i}`, ...t }], stop_reason: 'tool_use' }, timestamp: at(i + 1) }))];
+  const entries = [{ type: 'user', message: { role: 'user', content: `Prove ${range(c.repo)}.` }, timestamp: at(0) }];
+  [...calls, so].forEach(({ refused, ...t }, i) => {
+    entries.push({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: `t${i}`, ...t }], stop_reason: 'tool_use' }, timestamp: at(i + 1) });
+    if (refused) entries.push({ type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: `t${i}`, is_error: true, content: [{ type: 'text', text: refused }] }] }, timestamp: at(i + 1) });
+  });
   agent(join(ENV.CLAUDE_CONFIG_DIR, 'projects', '-scratch', c.S, 'subagents'), id, 'lpk:prover', entries);
 }
 
@@ -54,6 +57,7 @@ const png = (c, name, ageSec = 0) => {
   return p;
 };
 const raised = (fx, agentId) => appendFileSync(join(runDir(fx.repo, fx.S), 'findings.jsonl'), `${JSON.stringify({ ev: 'add', time: new Date().toISOString(), finding: { id: `F${agentId}`, run: readRun(fx.repo, fx.S).id, from: 'lpk:prover', agentId, at: range(fx.repo), claim: 'S1 not proved', repro: 'the screen', kind: 'scenario', severity: 'important' } })}\n`);
+const refuse = (call, refused) => ({ ...call, refused });
 const pass = (id, evidence) => ({ scenario: id, status: 'PASS', evidence });
 const UI = { text: 'the owner sees the total', surface: 'ui', entry: '/ after login' };
 
@@ -62,6 +66,7 @@ const cases = [
   { name: 'evidence path is in no tool call', calls: (c) => { png(c, 'a.png'); return [NEW, CLICK]; }, lines: (c) => [pass('S1', [join(c.dir, 'a.png')])], why: /no tool call/ },
   { name: 'evidence file is missing', calls: (c) => [NEW, CLICK, shot(join(c.dir, 'gone.png'))], lines: (c) => [pass('S1', [join(c.dir, 'gone.png')])], why: /missing|not a file/ },
   { name: 'evidence file is older than the Prover start', calls: (c) => [NEW, CLICK, shot(png(c, 'old.png', 3600))], lines: (c) => [pass('S1', [join(c.dir, 'old.png')])], why: /older than/ },
+  { name: 'screenshot refused by the Prover workspace roots', calls: (c) => [NEW, CLICK, refuse(shot(png(c, 'g.png')), 'the path is outside the allowed workspace roots')], lines: (c) => [pass('S1', [join(c.dir, 'g.png')])], why: /workspace roots/ },
   { name: 'ui scenario with no click', calls: (c) => [NEW, shot(png(c, 'b.png'))], lines: (c) => [pass('S1', [join(c.dir, 'b.png')])], why: /interact|click/ },
   { name: 'ui scenario with no page opened', calls: (c) => [CLICK, shot(png(c, 'c.png'))], lines: (c) => [pass('S1', [join(c.dir, 'c.png')])], why: /page/ },
   { name: 'a Write text file for a ui scenario', calls: (c) => { const p = join(c.dir, 'notes.txt'); mkdirSync(c.dir, { recursive: true }); writeFileSync(p, 'saw it'); return [NEW, CLICK, put(p)]; }, lines: (c) => [pass('S1', [join(c.dir, 'notes.txt')])], why: /screenshot/ },
@@ -92,6 +97,25 @@ test('S2 R3 two ui scenarios each need their own click and screenshot, and no sh
   assert.match(sharedPath.why, /S2.*another scenario/);
   const own = two((c) => [NAV, CLICK, shot(png(c, 'a.png')), CLICK, shot(png(c, 'b.png'))], (c) => [pass('S1', [join(c.dir, 'a.png')]), pass('S2', [join(c.dir, 'b.png')])]);
   assert.equal(own.holds, true, own.why);
+});
+
+test('S2 R3 two scenarios named by their text cannot share one path', () => {
+  const fx = begin('s2-text', [UI, { ...UI, text: 'the owner sees the tax' }]);
+  const a = png(fx, 'a.png');
+  prover(fx, 'p1', [NEW, CLICK, shot(a), CLICK], [pass(UI.text, [a]), pass('the owner sees the tax', [a])]);
+  const r = gate(fx.repo, fx.S, 'scenarios');
+  assert.match(r.why, /another scenario/);
+});
+
+test('S3 R4 a newer Prover FAIL with no finding filed yet still keeps scenarios denied over an older PASS', () => {
+  const fx = begin('s3-ungraded', [UI]);
+  const a = png(fx, 'a.png');
+  prover(fx, 'p1', [NEW, CLICK, shot(a)], [pass('S1', [a])], Date.now() - 120000);
+  assert.equal(gate(fx.repo, fx.S, 'scenarios').holds, true);
+  prover(fx, 'p2', [NEW, CLICK, shot(a)], [{ scenario: 'S1', status: 'FAIL', evidence: [a] }], Date.now() - 30000);
+  const r = gate(fx.repo, fx.S, 'scenarios');
+  assert.equal(r.holds, false);
+  assert.match(r.why, /S1 .*FAIL/);
 });
 
 test('S2 R3 new_page, click and a named .png pass, and a docs-only commit after the Prover keeps the PASS', () => {

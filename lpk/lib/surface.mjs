@@ -41,6 +41,8 @@ export function oldShapeWayOut(run) {
   return `${run.ended ? 'lpk run take first, then ' : ''}${how}`;
 }
 
+// The Prover's result line for scenario or failure row `s`: by its id (`S1`, `S1: ...`), or by the
+// agent-judged text itself.
 export const named = (results, s) => results.find((x) => { const t = String(x?.scenario || '').trim(); return t === s.id || t.startsWith(`${s.id}:`) || t.startsWith(`${s.id} `) || (s.agentJudged && t === s.agentJudged); });
 
 function ident(p) {
@@ -51,8 +53,6 @@ function ident(p) {
   try { d = realpathSync(d); } catch { d = resolve(d); }
   return join(d, ...tail, basename(abs));
 }
-
-const idOf = (line) => String(line?.scenario || '').trim().split(/[:\s]/)[0];
 
 function cites(call, raw, abs) {
   if (call.error) return false;
@@ -110,7 +110,7 @@ export function judgedProof(repo, run, scenario, line, agent) {
     if (!calls.some((c) => cites(c, raws[k], abs))) return no(`${abs} is named in no tool call of the Prover's transcript`);
   }
   const all = line.all || [];
-  const before = all.filter((l) => l.rank < line.rank && idOf(l) !== idOf(line));
+  const before = all.filter((l) => l.rank < line.rank && !named([l], scenario));
   const shared = paths.find((abs) => before.some((l) => Array.isArray(l.evidence) && l.evidence.some((p) => typeof p === 'string' && ident(resolve(dir, p)) === abs)));
   if (shared) return no(`${shared} is cited by another scenario too: each scenario leaves its own files`);
   if (needsUser(scenario.surface)) {
@@ -132,4 +132,11 @@ export function judgedWhy(repo, run, judged, p, list) {
     if (!j.ok) out.push(`${s.id} ${r.status === 'PASS' ? 'reads NOT PROVED: ' : ''}${j.why} (Prover ${r.agentId})`);
   }
   return out;
+}
+
+export function judgedStatus(repo, run, s, results) {
+  const r = named(results, s);
+  if (!r) return 'NOT PROVED';
+  if (r.status === 'FAIL') return 'FAIL';
+  return judgedProof(repo, run, s, r, r.agent).ok ? 'PASS' : 'NOT PROVED';
 }

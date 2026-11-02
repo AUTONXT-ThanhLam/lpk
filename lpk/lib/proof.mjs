@@ -8,7 +8,7 @@ import { git } from './git.mjs';
 import { evidence, ledgerFor } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { TEST } from './rules.mjs';
-import { judgedProof, named } from './surface.mjs';
+import { judgedProof, judgedStatus, named } from './surface.mjs';
 import { readRun, runDir } from './run.mjs';
 import { codeOfCommit, headTree } from './tree.mjs';
 
@@ -27,20 +27,22 @@ export function tiersGreen(run, recs, tree) {
 }
 export const verifiedGreen = (run, recs, tree) => { const t = tiersGreen(run, recs, tree); return t.fast && t.final; };
 
-export { named };
+export { judgedStatus, named };
 
 // The result lines of every Prover run whose reviewed commit has HEAD's code, started after the
 // run's scenarios last changed, newest run first, each with its agent id: one Prover per group of
 // scenarios proves the whole set, and a later run's line for a scenario wins over an earlier one's.
 export function proverResults(repo, run) {
   const code = codeOfCommit(repo, 'HEAD').code;
-  const runs = evidence(repo, run, ledgerFor(repo, run)).items
+  const seen = evidence(repo, run, ledgerFor(repo, run));
+  const notPassed = seen.ungraded.map((i) => ({ ...i, structured: { ...i.structured, results: (i.structured.results || []).filter((x) => x?.status !== 'PASS') } })).filter((i) => i.structured.results.length);
+  const runs = [...seen.items, ...notPassed]
     .filter((i) => i.key === 'prover' && i.structured && !(Date.parse(i.started) < (run.scenariosAt || 0)) && codeOfCommit(repo, i.range.split(/\.\.\.?/).pop()).code === code)
     .sort((a, b) => String(b.at).localeCompare(String(a.at)));
   const lines = runs.map((i) => (i.structured.results || []).map((x) => ({ ...x, agentId: i.agentId, agent: { agentId: i.agentId, calls: i.calls, started: i.started } })));
   [...lines].reverse().flat().forEach((r, k) => { r.rank = k; });
   const results = lines.flat();
-  results.forEach((r) => { r.all = results; });
+  results.forEach((r) => Object.defineProperty(r, 'all', { value: results, enumerable: false }));
   return { agents: runs.map((i) => i.agentId), results };
 }
 
