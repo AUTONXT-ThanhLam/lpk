@@ -82,3 +82,52 @@ test('the design gate holds once a round passed on the brief, denies the brief e
   const report = lpk(repo, S, 'report');
   assert.match(report.stdout + report.stderr, /^design\s+holds/m);
 });
+
+const wideRun = (name, S, files = ['b', 'c', 'd'].map((n) => `src/${n}.mjs`)) => {
+  const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  for (const f of files) write(repo, f, 'x\n');
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  sh(repo, 'add', '-A');
+  sh(repo, 'commit', '-qm', 'Widen');
+  return repo;
+};
+
+test('the design gate holds for a documentation-only change of any size', () => {
+  const repo = wideRun('design-docs', 'dg-docs', ['b', 'c', 'd', 'e'].map((n) => `docs/${n}.md`));
+  sh(repo, 'reset', '-q', '--hard', 'HEAD~1');
+  for (const n of ['a', 'b', 'c', 'd']) write(repo, `docs/${n}.md`, 'text\n');
+  sh(repo, 'add', '-A');
+  sh(repo, 'commit', '-qm', 'Docs');
+  assert.match(gates(repo, 'dg-docs'), /^design\s+holds/m);
+});
+
+test('the design row is released by the owner under its own name and by no other', () => {
+  const repo = wideRun('design-waive', 'dg-waive');
+  write(`${repo}/.git/lpk`, 'brief.md', '# Brief\n');
+  const denied = gates(repo, 'dg-waive');
+  assert.match(denied, /option `gate:design`/);
+  assert.doesNotMatch(denied, /gate:brief-check|lpk go/);
+  ok(lpk(repo, 'dg-waive', 'waive', 'gate:brief-check', '--why', 'the owner said', '--via', 'ask'));
+  assert.match(gates(repo, 'dg-waive'), /^design\s+DENY/m);
+  ok(lpk(repo, 'dg-waive', 'waive', 'design', '--why', 'the owner said', '--via', 'ask'));
+  assert.match(gates(repo, 'dg-waive'), /^design\s+holds/m);
+});
+
+test('an ended run keeps reading its own brief while a newer run is open, and the status band follows a written brief', async () => {
+  const S = 'dg-newer';
+  const repo = wideRun('design-newer', S);
+  const dir = `${repo}/.git/lpk`;
+  const band = () => JSON.parse(ok(lpk(repo, S, 'status', '--gates', '--write-cache', '--session', S, '--json'))).gates.rows.find((r) => r.gate === 'design');
+  assert.equal(band().holds, false);
+  write(dir, 'brief.md', '# Brief\nA is doubled.\n');
+  ok(lpk(repo, S, 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered'));
+  assert.equal(band().holds, true, 'a written brief and a recorded round show in the cached band');
+
+  const first = JSON.parse(ok(lpk(repo, S, 'run', 'status')));
+  ok(lpk(repo, S, 'run', 'end'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'full', '--why', 'again', '--scenario', 'true', '--verify', 'true'));
+  const { briefHash } = await import('../lib/briefcheck.mjs');
+  assert.ok(briefHash(repo, { id: first.id }), 'the ended run still has its brief');
+  assert.equal(briefHash(repo, JSON.parse(ok(lpk(repo, S, 'run', 'status')))), null, 'the open run has none');
+});
