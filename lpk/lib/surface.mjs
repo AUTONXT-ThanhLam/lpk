@@ -5,7 +5,7 @@ import { checkout } from './where.mjs';
 export const SURFACES = ['ui', 'cli', 'api', 'library', 'plugin', 'mobile', 'desktop', 'job', 'migration', 'docs', 'other'];
 export const needsUser = (s) => ['ui', 'mobile', 'desktop'].includes(s);
 export const PAGE_OPEN = ['new_page', 'navigate_page'];
-export const INTERACTION = ['click', 'click_at', 'fill', 'fill_form', 'type_text', 'press_key', 'hover', 'drag', 'upload_file'];
+export const INTERACTION = ['click', 'click_at', 'fill', 'fill_form', 'type_text', 'press_key'];
 export const SCREENSHOT = ['take_screenshot'];
 
 const bare = (name) => String(name).replace(/^mcp__(?:plugin_lpk_)?chrome-devtools__/, '');
@@ -17,6 +17,7 @@ export function checkScenario(s) {
   if (!s.surface) errors.push(`${label(s)} has no surface: --surface <${SURFACES.join('|')}>`);
   else if (!SURFACES.includes(s.surface)) errors.push(`${label(s)} surface "${s.surface}" is not one of ${SURFACES.join(', ')}`);
   if (!s.entry) errors.push(`${label(s)} has no entry: --entry "<where the user starts>"`);
+  if (s.agentJudged && !s.leaves) errors.push(`${label(s)} is judged and has no leaves: --leaves "<what the Prover leaves behind>"`);
   if (s.cmd && (needsUser(s.surface) || s.surface === 'other')) errors.push(`${label(s)} is a --scenario command with surface ${s.surface}: a shell command is not a user on a screen, state it with --judged`);
   return errors;
 }
@@ -71,7 +72,10 @@ function ownScreenshots(calls) {
     if (c.error) continue;
     if (PAGE_OPEN.includes(n)) opened = true;
     else if (INTERACTION.includes(n) && opened) acted = true;
-    else if (SCREENSHOT.includes(n) && acted && typeof c.input?.filePath === 'string') { out.push(ident(c.input.filePath)); acted = false; }
+    else if (SCREENSHOT.includes(n)) {
+      if (acted && typeof c.input?.filePath === 'string') out.push(ident(c.input.filePath));
+      acted = false;
+    }
   }
   return out;
 }

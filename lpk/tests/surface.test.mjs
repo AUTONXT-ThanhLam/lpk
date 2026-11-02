@@ -3,6 +3,7 @@ import { appendFileSync, mkdirSync, readFileSync, symlinkSync, utimesSync, write
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { agent, ENV, lpk, repoWith, sh, tmp, write } from './gates-env.mjs';
+import { proofs } from '../lib/status.mjs';
 import { runDir } from '../lib/where.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
@@ -25,7 +26,7 @@ function begin(name, specs, { files = { 'src/a.mjs': 'export const a = 1;\n' }, 
   const S = name;
   const repo = repoWith(name, files);
   const args = ['run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', ...req.flatMap((t) => ['--req', t])];
-  const flag = (sp, i, withSurface) => [sp.cmd ? '--scenario' : '--judged', sp.cmd || sp.text, ...(withSurface ? ['--surface', sp.surface, '--entry', sp.entry || '/'] : []), ...(sp.proves ? ['--proves', sp.proves] : [])];
+  const flag = (sp, i, withSurface) => [sp.cmd ? '--scenario' : '--judged', sp.cmd || sp.text, ...(withSurface ? ['--surface', sp.surface, '--entry', sp.entry || '/', ...(sp.cmd ? [] : ['--leaves', 'screenshot'])] : []), ...(sp.proves ? ['--proves', sp.proves] : [])];
   let r = lpk(repo, S, ...args, ...specs.flatMap((sp, i) => flag(sp, i, false)));
   if (r.status !== 0 && /--surface/.test(r.stderr)) r = lpk(repo, S, ...args, ...specs.flatMap((sp, i) => flag(sp, i, true)));
   ok(r);
@@ -68,6 +69,9 @@ const cases = [
   { name: 'evidence file is older than the Prover start', calls: (c) => [NEW, CLICK, shot(png(c, 'old.png', 3600))], lines: (c) => [pass('S1', [join(c.dir, 'old.png')])], why: /older than/ },
   { name: 'screenshot refused by the Prover workspace roots', calls: (c) => [NEW, CLICK, refuse(shot(png(c, 'g.png')), 'the path is outside the allowed workspace roots')], lines: (c) => [pass('S1', [join(c.dir, 'g.png')])], why: /workspace roots/ },
   { name: 'ui scenario with no click', calls: (c) => [NEW, shot(png(c, 'b.png'))], lines: (c) => [pass('S1', [join(c.dir, 'b.png')])], why: /interact|click/ },
+  { name: 'ui scenario with only a hover', calls: (c) => [NEW, { name: `${CH}hover`, input: { uid: '1_4' } }, shot(png(c, 'h.png'))], lines: (c) => [pass('S1', [join(c.dir, 'h.png')])], why: /interact|click/ },
+  { name: 'ui scenario whose click came before an inline screenshot', calls: (c) => [NEW, CLICK, { name: `${CH}take_screenshot`, input: { pageId: 1 } }, shot(png(c, 'i.png'))], lines: (c) => [pass('S1', [join(c.dir, 'i.png')])], why: /interact|click/ },
+  { name: 'evidence file is empty', calls: (c) => { const p = join(c.dir, 'z.png'); mkdirSync(c.dir, { recursive: true }); writeFileSync(p, ''); return [NEW, CLICK, shot(p)]; }, lines: (c) => [pass('S1', [join(c.dir, 'z.png')])], why: /empty/ },
   { name: 'ui scenario with no page opened', calls: (c) => [CLICK, shot(png(c, 'c.png'))], lines: (c) => [pass('S1', [join(c.dir, 'c.png')])], why: /page/ },
   { name: 'a Write text file for a ui scenario', calls: (c) => { const p = join(c.dir, 'notes.txt'); mkdirSync(c.dir, { recursive: true }); writeFileSync(p, 'saw it'); return [NEW, CLICK, put(p)]; }, lines: (c) => [pass('S1', [join(c.dir, 'notes.txt')])], why: /screenshot/ },
   { name: 'FM2 evidence is a string', calls: (c) => [NEW, CLICK, shot(png(c, 'd.png'))], lines: (c) => [pass('S1', join(c.dir, 'd.png'))], why: /array/ },
@@ -229,4 +233,14 @@ test('S7 R8 the report reads NOT PROVED for a forged PASS and PASS for a driven 
   assert.match(report((c) => [NEW], () => [pass('S1', [])]), /the owner sees the total \(agent-judged\) \| ui \| \/ after login \| none \| NOT PROVED \|/);
   const driven = report((c) => [NEW, CLICK, shot(png(c, 'a.png'))], (c) => [pass('S1', [join(c.dir, 'a.png')])]);
   assert.match(driven, /\| ui \| \/ after login \| .*a\.png \| PASS \|/);
+});
+
+test('S2 R3 lpk status counts a forged Prover PASS as not proved, as the gate does', () => {
+  const scenarios = (fx) => proofs(fx.repo, readRun(fx.repo, fx.S), []).scenarios;
+  const forged = begin('s2-status-forged', [UI]);
+  prover(forged, 'p1', [NEW], [pass('S1', [])]);
+  assert.equal(scenarios(forged).passed, 0);
+  const driven = begin('s2-status-driven', [UI]);
+  prover(driven, 'p1', [NEW, CLICK, shot(png(driven, 'a.png'))], [pass('S1', [join(driven.dir, 'a.png')])]);
+  assert.equal(scenarios(driven).passed, 1);
 });

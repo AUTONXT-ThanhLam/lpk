@@ -9,7 +9,8 @@ export function scenariosMoved(before, after) {
 
 export function scenarioLogFor(open, scenarios, now = Date.now()) {
   const log = [...(open?.scenarioLog || (open?.scenarios?.length ? [{ at: open.started, scenarios: open.scenarios }] : []))];
-  if (scenarios.length && JSON.stringify(log.at(-1)?.scenarios) !== JSON.stringify(scenarios)) log.push({ at: now, scenarios });
+  const last = log.at(-1)?.scenarios;
+  if (scenarios.length && (!last || scenarioChanges({ scenarioLog: [{ scenarios: last }], scenarios }).length)) log.push({ at: now, scenarios });
   return log;
 }
 

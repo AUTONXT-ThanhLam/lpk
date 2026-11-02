@@ -21,6 +21,14 @@ test('S1 R1 a scenario without --surface or --entry is refused and names the fla
   assert.equal(lpk(repo, 'm1', 'run', 'status').stdout.trim(), 'no lpk run in this repo');
 });
 
+test('S1 R2 a judged scenario without --leaves, and a command on surface mobile or other, are refused', () => {
+  const repo = repoWith('rec-leaves', { 'a.txt': 'a\n' });
+  const noLeaves = start(repo, 'k1', '--judged', 'the owner sees the total', '--surface', 'ui', '--entry', '/');
+  assert.equal(noLeaves.status, 2);
+  assert.match(noLeaves.stderr, /--leaves/);
+  for (const surface of ['mobile', 'other']) assert.equal(start(repo, 'k1', '--scenario', 'true', '--surface', surface, '--entry', '/').status, 2, surface);
+});
+
 test('S1 R1 a surface flag before any scenario is refused', () => {
   const repo = repoWith('rec-orphan', { 'a.txt': 'a\n' });
   const r = start(repo, 'o1', '--surface', 'ui');
@@ -73,6 +81,11 @@ test('S6 R7 the scenario log keeps the first list and each change whole, in a qu
   assert.equal(start(repo, 'l1', '--lane', 'quick', '--why', 'one file', ...CLI).status, 0);
   assert.equal(start(repo, 'l1', ...CLI).status, 0);
   assert.equal(readRun(repo).scenarioLog.length, 1, 'a restated list is no change');
+  const run = readRun(repo);
+  run.scenarioLog[0].scenarios = run.scenarioLog[0].scenarios.map(({ id, ...s }) => ({ ...s, id }));
+  writeFileSync(runFile(repo), JSON.stringify(run));
+  assert.equal(start(repo, 'l1', ...CLI).status, 0);
+  assert.equal(readRun(repo).scenarioLog.length, 1, 'the same fields in another order are no change');
   assert.equal(start(repo, 'l1', '--req', 'one', '--scenario', 'echo hi', '--surface', 'cli', '--entry', 'echo hi', '--expect', 'hi', '--proves', 'R1').status, 0);
   const { scenarioLog } = readRun(repo);
   assert.equal(scenarioLog.length, 2);

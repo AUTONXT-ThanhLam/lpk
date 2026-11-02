@@ -12,6 +12,7 @@ import { needsOwner, readLedger, stateOf } from './findings.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { proofsOf, proverResults, trace, tiersGreen } from './proof.mjs';
+import { scenarioChanges } from './scenariolog.mjs';
 import { checkScenario, judgedWhy, oldShapeWayOut } from './surface.mjs';
 import { ciFacts } from './ci.mjs';
 import { learnGate } from './learn.mjs';
@@ -66,7 +67,7 @@ async function reviewsGate(repo, run) {
 
 function scenariosGate(repo, run, recs) {
   const sc = run.scenarios || [];
-  if (!sc.length) return { holds: false, read: 'run.json scenarios', why: 'the run records no scenario', wayOut: 'record them: `lpk run start --scenario "<cmd>" [--expect "<text>"]` or `--judged "<scenario>"` (it amends the open run)' };
+  if (!sc.length) return { holds: false, read: 'run.json scenarios', why: 'the run records no scenario', wayOut: 'record them: `lpk run start --scenario "<cmd>" --surface <surface> --entry "<where the user starts>"` or `--judged "<scenario>" --surface <surface> --entry "<where the user starts>" --leaves "<what the Prover leaves behind>"` (it amends the open run)' };
   const shape = sc.flatMap(checkScenario);
   if (shape.length) return { holds: false, read: 'run.json scenarios: surface and entry', why: list(shape, 4), wayOut: oldShapeWayOut(run) };
   const tree = headTree(repo);
@@ -126,8 +127,7 @@ function planGate(repo, run, recs) {
   }
   const quick = run.lane === 'quick' ? floor(repo, patchesOf(repo, run.target).base) : null;
   if (quick?.full) facts.push(`quick lane (${run.laneWhy || 'no reason given'}), and the floor calls this change full: ${list(quick.why)}`);
-  const first = (run.scenarioLog || [])[0]?.scenarios || [];
-  const changed = first.length ? (run.scenarios || []).filter((s) => JSON.stringify(first.find((f) => f.id === s.id) ?? null) !== JSON.stringify(s)).map((s) => s.id).concat(first.filter((f) => !(run.scenarios || []).some((s) => s.id === f.id)).map((f) => f.id)) : [];
+  const changed = scenarioChanges(run);
   if (changed.length) facts.push(`scenarios changed since the first list: ${list(changed)}`);
   const go = recs.filter((r) => r.kind === 'go').at(-1);
   if (go?.verify && go.verify.join('\n') !== (run.verify || []).join('\n')) facts.push(`checks changed after go: ${list(go.verify)} → ${list(run.verify || [])}`);
