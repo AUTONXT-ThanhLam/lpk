@@ -80,6 +80,35 @@ has the need, and add the reduced-motion branch yourself where it has none.
   `animated-circular-progress-bar`. Every gradient, beam, shimmer, sparkle, meteor and particle item
   is a tell.
 
+## Registries, maps and a few more parts
+
+The app's own registry first, then shadcn's (`knowledge.md` section 6). Read each item's licence
+before copying it: a registry is not a licence.
+
+- **21st.dev**: a catalogue of 12,000+ items by many authors whose page states no licence; look
+  there for how a part is composed, install through the item's shadcn command, and read the
+  author's terms in the item. Its "Copy prompt" and MCP are tools for the app's own design system
+  only when that system has no part for the need.
+- **mapcn**: a map with markers, popups, routes and controls on MapLibre, when the screen needs
+  a map: `npx shadcn@latest add @mapcn/map`. Style it with the app's tokens, and use a map only
+  where location is the answer.
+- **Motion Primitives** (MIT, on `motion`): only when the app already ships `motion`, and each
+  part passes the frequency gate of `SKILL.md` section 6 and has a reduced-motion branch.
+
+Not taken, each for a reason a future run need not re-decide:
+
+- **Aceternity UI** and the rest of Magic UI: landing-page beams, glows and particles are the
+  tells of `designer.md`; Aceternity's licence also binds each item to its author.
+- **Anime.js**: a second animation library beside the ladder of override 4; use it only on a
+  public page whose scene needs it, next to GSAP.
+- **Uiverse**: its licence page returned 403, and per-control hover effects break the frequency
+  gate.
+- **Liquid Glass**: override 5 allows translucency on floating chrome only, with the three
+  fallbacks and never on content; write that with CSS, not a refraction package.
+- **3dicons** (CC0 on its page) and **Kitbitz** (its page states no licence): illustration and 3D
+  icons standing in for the product's own objects are the decoration of `knowledge.md` section 5,
+  bullet 8; allowed on an empty state or a public page the pick names, with the licence read.
+
 ## Public pages
 
 GSAP and scroll scenes are for public pages only. The `gsap-*` library skills are API references:

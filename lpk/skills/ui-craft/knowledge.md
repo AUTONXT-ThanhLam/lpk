@@ -27,6 +27,16 @@ sign-in is skipped and listed.
   you do not pass it. Mark each shot as shipped, shipped-looking, an agency concept or not a screen.
   Shipped and kit-built shots spend colour on state, separate rows by rules and show a table's
   states; concept shots are drawn for the thumbnail and show the happy path only. Likes do not decide.
+- **Curated galleries and style catalogues, at the same lower weight.** Minimal Gallery
+  (minimal.gallery, curated daily since 2013) for sites chosen for taste; Component Gallery
+  (component.gallery: 60 components, 95 design systems, 2,671 examples on its page) for how real
+  systems name, build and state one component before you draw it by hand; Refero Styles
+  (styles.refero.design, beta, 2,000+) and getdesign.md (550+), which publish a real product's
+  colours, type, spacing and components as a DESIGN.md. Read them like any reference: open the
+  live page behind the entry, measure it, say which kind it is. A catalogue entry is an analysis
+  by a third party, so check its numbers on the live page. "Make mine look like this site" becomes
+  a measured structure in `pick.md`; another product's DESIGN.md, name, mark, copy and images
+  never become the app's identity (`SKILL.md` section 2), and the app's own DESIGN.md still wins.
 - **A critic's words, where they exist.** A juror, an award page, a design-system statement or a
   post that analyses the page, each with its URL. A vendor blog quoting an insider is a vendor blog.
   Without one, your notes are your own measurements and say so.
@@ -129,6 +139,10 @@ Hazards met in use:
   one is the finding of section 5, bullets 5 and 10.
 
 ## 7. What could not be had
+
+AppShot Gallery, Kage, Jiro, VibePrompt, Kinetics, MicroKit and a Liquid Glass package named on a
+design-resources slide had no page that opened and showed what the slide said (a wrong domain, an
+empty page, a 403 or no result), so none is a source here. Re-check one before you cite it.
 
 Stripe Dashboard and the Linear app need a sign-in and were never seen; Salesforce and ServiceNow
 returned Access Denied; Fluent 2 pages returned 404; PostHog dashboards and the Sentry demo needed a
