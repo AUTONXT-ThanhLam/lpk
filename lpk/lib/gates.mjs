@@ -14,6 +14,7 @@ import { patchesOf } from './patches.mjs';
 import { named, proofsOf, proverResults, trace, tiersGreen } from './proof.mjs';
 import { ciFacts } from './ci.mjs';
 import { learnGate } from './learn.mjs';
+import { designGate } from './designgate.mjs';
 import { testsFirstGate } from './testfirst.mjs';
 import { readRecords, waived } from './records.mjs';
 import { readRun, runDir } from './run.mjs';
@@ -138,7 +139,7 @@ export async function gates(repo, run = readRun(repo), { ci = true } = {}) {
   if (!run) throw new Error('no lpk run in this repo');
   const recs = readRecords(repo, { run: run.id });
   const out = [];
-  const steps = { verify: () => verifyGate(repo, run, recs), findings: () => findingsGate(repo, run), reviews: () => reviewsGate(repo, run), scenarios: () => scenariosGate(repo, run, recs), requirements: () => requirementsGate(repo, run, recs), ci: () => ciGate(repo, run), learn: () => learnGate(repo, run, recs), 'tests-first': () => testsFirstGate(repo, run), plan: () => planGate(repo, run, recs) };
+  const steps = { verify: () => verifyGate(repo, run, recs), findings: () => findingsGate(repo, run), reviews: () => reviewsGate(repo, run), scenarios: () => scenariosGate(repo, run, recs), requirements: () => requirementsGate(repo, run, recs), ci: () => ciGate(repo, run), learn: () => learnGate(repo, run, recs), 'tests-first': () => testsFirstGate(repo, run), design: () => designGate(repo, run), plan: () => planGate(repo, run, recs) };
   for (const [gate, fn] of Object.entries(steps)) {
     if (gate === 'ci' && !ci) continue;
     let row;

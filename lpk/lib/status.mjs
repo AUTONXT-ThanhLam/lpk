@@ -39,7 +39,7 @@ function proofs(repo, run, recs) {
 async function gated(repo, run, team, cache) {
   const dir = runDir(repo);
   const key = createHash('sha1').update(JSON.stringify([git(['rev-parse', 'HEAD'], repo), git(['status', '--porcelain'], repo),
-    ...['run.json', 'records.jsonl', 'findings.jsonl', 'brief.json'].map((f) => stamp(join(dir, f))), team.filter((r) => r.id !== 'main').map((r) => `${r.id}:${r.state}`)])).digest('hex');
+    ...['run.json', 'records.jsonl', 'findings.jsonl', 'brief.json', 'brief.md', 'decisions.jsonl'].map((f) => stamp(join(dir, f))), team.filter((r) => r.id !== 'main').map((r) => `${r.id}:${r.state}`)])).digest('hex');
   if (cache.gates?.key === key) return cache.gates.value;
   const recs = readRecords(repo, { run: run.id });
   let rows = null, due = null, error = '';
