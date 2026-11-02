@@ -1,0 +1,1 @@
+In src/proof.mjs add recordProof(plan, id, exit). It records that the proof of item id exited with exit and returns the item. An exit of 0 marks the item done. A non-zero exit puts the item back to todo. Follow the repo's own rules in REVIEW.md. Work until the change is committed on a branch with its tests passing. Do not push and do not open a PR: there is no remote.
