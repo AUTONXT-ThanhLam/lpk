@@ -77,7 +77,7 @@ Read each step's file when the step starts; each file states its goal and how it
 
 1. **Understand** the request, with the environment coming up meanwhile: `understand.md` in this
    skill's directory. A bug also follows `diagnose.md` in this skill's directory first.
-2. **Design**: gather the facts, choose the lane, write the brief (rival architects only for a risky
+2. **Design**: gather the facts, read the lane off the floor, write the brief (rival architects only for a risky
    change) and check it: `design.md` in this skill's directory.
 3. **Build** with its tests, every line checked as it is written: `build.md` in this skill's
    directory, and in the Full lane `slices.md` in this skill's directory, because builders build it, and the designer builds its screens.
@@ -90,16 +90,16 @@ Read each step's file when the step starts; each file states its goal and how it
 
 - **Quick**: at most three changed files in one repo; no auth marker, credential path,
   `SENSITIVE.md` glob, migration or manifest in the diff; and no new route, state or cross-repo
-  contract. It skips the brief and the design check, records its numbered requirements and the
-  scenarios that prove them at `lpk run start`, and owes the Code reviewer and the Bug hunter.
+  contract. It skips the brief and owes two lenses. You do not pick it: the `design` and `reviews`
+  gates read the floor, so a change it calls full is denied without a passed Design Brief and owes the Full set.
 - **Full**: everything else: the brief, the design check and the lenses `lenses.md` in this skill's directory lists.
 
 ## The bar
 
 A run starts at the **increment** bar unless the owner asks for production (`lpk run start --bar
 production`, which never lowers): a change a person can use now. A confirmed finding outside the
-protected areas and the scenarios is a known limit, listed in the PR body. The bar does not lower
-the reviews owed: a change the floor calls full owes the Full lane's lenses at either bar.
+protected areas and the scenarios is a known limit, listed in the PR body. The bar never lowers the
+reviews a change the floor calls full owes.
 
 ## Screens
 

@@ -17,17 +17,17 @@ These are exact and cheap; run them before you design:
 - `lpk rules --list`, then the full text of the rules that touch this change (`lpk rules --all`).
 - `lpk floor`: the exact facts that make this change Full.
 
-## Choose the lane
+## Name the lane
 
-Quick or Full, as SKILL.md says, with the reason in one sentence (the lane's why). One PR carries
+`lpk floor` decides it, as SKILL.md says; give the reason in one sentence (the lane's why). A Quick
+label on a change the floor calls full changes nothing: the `design` gate wants the brief. One PR carries
 one ticket and stays under about 1,500 changed lines, because review rounds grow with both. When
 the request bundles tickets or will pass that size, tell the owner in one line what it costs and the
 split you suggest (one PR per ticket or slice, in merge order); where they want one PR, keep one run
 whose slices become commits. A plan of several PRs is a brief too (the PRs, their order, the contract between them), reviewed like one. Then
 each PR is its own lpk run in its own worktree, side by side.
 
-The Quick lane skips the rest of this file: number the requirements `R1`, `R2`… with their
-sources, write the failure table for what the change calls or stores (a few rows), then go to
+A change the floor calls small skips the rest of this file: number the requirements `R1`, `R2`… with their sources, write the failure table for what the change calls or stores (a few rows), then go to
 `build.md` in this skill's directory, which records both at `lpk run start`.
 
 ## Write the Design Brief (Full lane)

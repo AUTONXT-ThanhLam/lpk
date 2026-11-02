@@ -40,3 +40,21 @@ test('a change the floor calls full owes the full review set at the increment ba
     for (const lens of ['techlead', 'prover', 'claims']) assert.match(owed, new RegExp(`^- ${lens} on `, 'm'));
   }
 });
+
+test('the design gate denies a change the floor calls full that has no Design Brief, whatever lane it declared, and holds for a small one', () => {
+  const wide = (name, session, lane) => {
+    const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
+    ok(lpk(repo, session, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+    for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
+    write(repo, 'src/a.mjs', 'export const a = 2;\n');
+    sh(repo, 'add', '-A');
+    sh(repo, 'commit', '-qm', 'Widen');
+    return repo;
+  };
+  for (const lane of ['quick', 'full']) assert.match(gates(wide(`design-${lane}`, `dg-${lane}`, lane), `dg-${lane}`), /^design\s+DENY\s+no Design Brief/m);
+
+  const small = quick('design-small', 'dg-small');
+  write(small, 'src/a.mjs', 'export const a = 2;\n');
+  sh(small, 'commit', '-qam', 'Set a to 2');
+  assert.match(gates(small, 'dg-small'), /^design\s+holds/m);
+});

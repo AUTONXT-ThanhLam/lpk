@@ -201,7 +201,7 @@ test('the step follows the run\'s records from understanding to delivery, and th
   ok(lpk(repo, S, 'prove', '--all'));
   ok(lpk(repo, S, 'learn'));
   const s = json(repo, S);
-  assert.deepEqual([s.phase, s.phaseDetail], ['deliver', { holding: 7, total: 7, firstDeny: null }]);
+  assert.deepEqual([s.phase, s.phaseDetail], ['deliver', { holding: 8, total: 8, firstDeny: null }]);
   assert.deepEqual(s.phasesVisited, ['understand', 'design', 'build', 'review', 'fix', 'prove', 'deliver']);
 });
 
