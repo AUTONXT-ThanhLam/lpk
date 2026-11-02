@@ -13,6 +13,7 @@ and the cases and the judge both use Sonnet.
 | `claims-seeded` | `lpk:claims` reports an error message that promises a fallback the code does not make |
 | `techlead-seeded` | `lpk:techlead` blocks a cancel route that refunds again on every call |
 | `code-reviewer-seeded` | `lpk:code-reviewer` reports a negative amount the request refuses and no test covers |
+| `code-reviewer-slow-query` | `lpk:code-reviewer` reports a list route that runs one query per row, with no rule in REVIEW.md about speed |
 | `claims-clean`, `techlead-clean`, `code-reviewer-clean` | the same change without the seeded defect: the agent must not report the defect of its twin, so a reviewer that flags everything scores low |
 
 ## Run
