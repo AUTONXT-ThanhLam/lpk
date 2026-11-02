@@ -54,7 +54,11 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
   the item done and a non-zero exit puts it back to todo; the grader also requires a held item to
   stay held, a rule only `hold` and `open` in `src/items.mjs` show.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
-  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included.
+  what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included, until the
+  `path-identity` rule and the line in `build.md` that sends a builder to read a flagged rule's text.
+  With them `flow` passed `listed` 4 of 5 (0 of 4 before) and `contained` 1 of 4 (0 of 4 before; the
+  fifth run hit the 4 USD cap). With the rule alone and no `build.md` line, `listed` was 1 of 5 and
+  `contained` 0 of 5, because `lpk check` prints only a rule's id and 9 of 10 runs never read its text.
 
 ## What this sample cannot show
 
@@ -69,4 +73,4 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by
 every arm, so a task earns its place only where some arm sometimes fails. `cancel` and `csv` are
-kept as the price baseline; `listed` and `contained` are kept as the limit no arm has passed yet.
+kept as the price baseline; `listed` and `contained` are kept as the limit: `contained` passes in 1 run of 4.
