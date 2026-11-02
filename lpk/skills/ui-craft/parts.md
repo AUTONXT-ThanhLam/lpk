@@ -103,9 +103,9 @@ Not taken, each for a reason a future run need not re-decide:
   public page whose scene needs it, next to GSAP.
 - **Uiverse**: its licence page returned 403, and per-control hover effects break the frequency
   gate.
-- **Liquid Glass** (liquidglass.dev, a script of refraction web components): it also ships glass
-  switches and sliders, and override 5 allows translucency on floating chrome and structural
-  regions only, with the three fallbacks and never on content or controls; write that with CSS.
+- **Liquid Glass** (liquidglass.dev, a script of refraction web components): it styles switches,
+  sliders and toasts as glass too, and override 5 says where translucency may go; write that
+  with CSS.
 - **3dicons** (CC0 on its page) and **Kitbitz** (its page states no licence): illustration and 3D
   icons standing in for the product's own objects are the decoration of `knowledge.md` section 5,
   bullet 8; allowed on a public page the pick names, with the licence read; an empty state keeps `ux.md`
