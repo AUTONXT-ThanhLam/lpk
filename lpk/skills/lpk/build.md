@@ -95,4 +95,4 @@ a lock appears where the brief said state is unshared.
 Commit messages follow `writing.md` in this skill's directory: what changed and why, a subject of
 at most 72 characters.
 
-**Done when** the slice's tests pass, `lpk check` shows nothing you cannot defend in one line.
+**Done when** the slice's tests pass, `lpk check` shows nothing you cannot defend in one line. A candidate names a rule only by id: read its text with `lpk rules --id <id>` and run its `check` on your line before you defend it.

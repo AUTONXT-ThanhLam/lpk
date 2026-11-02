@@ -69,3 +69,11 @@ Seen: tech lead review
 - rule: A migration that may already have run anywhere is not edited to change the schema; the change goes in a new migration, so a database built fresh from the branch and one upgraded from main end with the same tables, constraints and indexes.
 - check: `git diff --name-status <base> -- '*migrations*'` lists each existing migration the change modifies (status M or R); for each, build one database from main then migrate to the branch, build another fresh from the branch, and diff the two schema dumps. Repro: the constraint or column present in one and missing in the other.
 Seen: tech lead review
+
+### path-identity: a path is compared by what it names, not by how it is spelled
+- blocks: high
+- when: added `(realpath|readlink|lstat|\.startsWith\(|path\.(relative|resolve|normalize)|\bresolve\(|\bnormalize\()`
+- find: `(\bresolve\(|\brelative\(|\.startsWith\(|\bnormalize\()`
+- rule: Two paths, or a path and a name a tool printed, are compared only after both are reduced to one identity: absolute against the directory the caller means, symlinks resolved (`realpath`), and a directory prefix tested on a path boundary, never on the string. A lookup keyed by a path that no longer exists still answers (resolve its nearest existing parent and rejoin the rest) and never throws.
+- check: for each comparison, feed it a symlink to the target, a relative spelling, a `..` segment, a sibling that only shares the prefix (`/a/bc` against `/a/b`) and a path that was deleted. Repro: the call that answers differently for two spellings of one file, or throws on the missing one.
+Seen: whole-flow eval tasks `listed` and `contained`, which no arm passed
