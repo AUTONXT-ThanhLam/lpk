@@ -62,10 +62,26 @@ every other cell has 5.
   The hook that reports a candidate now prints the flagged rule's text once per run, and `flow` then passed `listed` 10 of 10 and
   `contained` 10 of 10. These are the last 10 `flow` rows in each results file.
 
+## Other models
+
+`--model haiku` and `--model opus` on the two path-identity tasks, with the hook that prints the flagged rule's text.
+Rows carry a `model` field; the rows without one are Sonnet. n is 5 per cell.
+
+| Task | Model | `without` | `flow` |
+| --- | --- | --- | --- |
+| `contained` | haiku | 0/5, 0.00 USD, 22 s | 5/5, 0.66 USD, 1323 s |
+| `contained` | opus | 0/5, 0.14 USD, 31 s | 5/5, 1.83 USD, 333 s |
+| `listed` | haiku | 0/5, 0.00 USD, 21 s | 5/5, 0.49 USD, 494 s |
+| `listed` | opus | 2/5, 0.16 USD, 35 s | 5/5, 1.37 USD, 289 s |
+
+- The three models agree: the trap is not solved without the flow (Sonnet 0 of 5 and 0 of 4, haiku 0 of 10, opus 2 of 10), and the flow solves it.
+- Haiku `flow` is slow, not dear: three `contained` runs and one `listed` run took 1200 to 2400 s.
+- An opus `contained` batch hit its `--max-cost-usd` in the middle of a `without` run; that row was dropped and the run repeated.
+
 ## What this sample cannot show
 
 - Small n: 4 or 5 runs per cell. A difference of one run is not a difference.
-- Sonnet only, one prompt per task, the agent's own reading of "follow REVIEW.md".
+- Sonnet for most cells, haiku and opus only on `listed` and `contained`; one prompt per task, the agent's own reading of "follow REVIEW.md".
 - The fixtures are invented, modelled on defects found in lpk's own code; the hidden tests were
   checked to fail on the base and pass with a reference solution. `reopen`'s grader accepts either a throw
   or an untouched item when a held item gets a proof, and every `reopen` row was graded with it.
@@ -75,7 +91,7 @@ every other cell has 5.
 
 Three larger invented tasks (an orders API whose amount is shown in nine places, an items store with an archive filter,
 a notes store with a file format) were piloted and left out: `without` passed all 12 runs at about 0.09 USD and 5 turns,
-so a `flow` run could only tie. Stated-rule tasks of that size do not measure the flow; a task needs a rule whose
+so a `flow` run could only tie. A fourth, a digest job whose per-user failure must not stop the others, was dropped the same way once its prompt named where `now` goes: `without` passed 3 of 3. Stated-rule tasks of that size do not measure the flow; a task needs a rule whose
 application, not its discovery, is hard, as the path-identity ones are.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by

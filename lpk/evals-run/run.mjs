@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const plugin = resolve(here, '..');
 const args = process.argv.slice(2);
-const usage = (why) => { console.error(`${why}\nrun it as: cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs [--task name] [--arms with,without,flow] [--runs n] [--max-turns n] [--max-cost-usd n] [--out file] [--keep]`); process.exit(2); };
-const valued = ['--task', '--arms', '--runs', '--max-turns', '--max-cost-usd', '--out'];
+const usage = (why) => { console.error(`${why}\nrun it as: cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs [--task name] [--arms with,without,flow] [--runs n] [--max-turns n] [--max-cost-usd n] [--model name] [--out file] [--keep]`); process.exit(2); };
+const valued = ['--task', '--arms', '--runs', '--max-turns', '--max-cost-usd', '--model', '--out'];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--keep') continue;
   if (!valued.includes(args[i])) usage(`unknown argument ${args[i]}`);
@@ -21,6 +21,7 @@ const arms = flag('--arms', 'with,without').split(',');
 const runs = Number(flag('--runs', '1'));
 const maxTurns = flag('--max-turns', '60');
 const budget = Number(flag('--max-cost-usd', '10'));
+const model = flag('--model', 'sonnet');
 const out = flag('--out', join(tmpdir(), `lpk-flow-${Date.now()}.jsonl`));
 const keep = args.includes('--keep');
 
@@ -75,7 +76,7 @@ function attempt(root, task, arm, n) {
   const sha = sh('git', ['rev-parse', 'HEAD'], { cwd: dir, env: plain }).stdout.trim();
   const text = readFileSync(join(here, task, 'prompt.txt'), 'utf8').trim();
   const prompt = arm === 'with' ? `/lpk:lpk ${text}` : arm === 'flow' ? `/lpk:lpk ${text} Run \`lpk run start\` before the first edit and follow every step of the lpk skill, including the reviews it owes.` : text;
-  const argv = ['-p', prompt, '--output-format', 'json', '--model', 'sonnet', '--permission-mode', 'bypassPermissions', '--max-turns', maxTurns, '--max-budget-usd', (budget - spent).toFixed(4)];
+  const argv = ['-p', prompt, '--output-format', 'json', '--model', model, '--permission-mode', 'bypassPermissions', '--max-turns', maxTurns, '--max-budget-usd', (budget - spent).toFixed(4)];
   if (arm !== 'without') argv.push('--plugin-dir', plugin);
   const t0 = Date.now();
   const r = sh(claudeBin, argv, { cwd: dir, env: base, limit: 2400, maxBuffer: 64 * 1024 * 1024 });
@@ -89,7 +90,7 @@ function attempt(root, task, arm, n) {
 function once(task, arm, n) {
   const root = mkdtempSync(join(tmpdir(), `flow-${task}-${arm}-`));
   try {
-    const row = attempt(root, task, arm, n);
+    const row = { model, ...attempt(root, task, arm, n) };
     if (keep) row.dir = root;
     return row;
   } finally {
