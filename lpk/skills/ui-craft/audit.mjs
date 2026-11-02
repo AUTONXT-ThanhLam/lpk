@@ -3,7 +3,7 @@ import { withPage } from './page.mjs';
 import { fontVerdict } from './fontverdict.mjs';
 const [url, ...rest] = process.argv.slice(2);
 if (!url) {
-  console.error('usage: audit.mjs <url> [--width 1440 (720 is 200% zoom of 1440)] [--scheme light|dark] [--tabs 60] [--space 0,4,8,...] [--radius 0,4,6,...] [--heights 24,28,32,...]');
+  console.error('usage: audit.mjs <url> [--width 1440 (720 is 200% zoom of 1440)] [--scheme light|dark] [--tabs 60] [--space 0,4,8,...] [--radius 0,4,6,...] [--heights 24,28,32,...] [--port 9333]');
   process.exit(2);
 }
 const opt = (n, d) => { const i = rest.indexOf(`--${n}`); return i < 0 ? d : rest[i + 1]; };
@@ -96,7 +96,19 @@ const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${async func
     return { family: x.family, status: x.status };
   }));
   const loaded = Object.keys(families).map((stack) => [stack, fontVerdict(stack, faces)]);
+  const nodes = [...document.body.querySelectorAll('*')];
+  const levels = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(vis).map((h) => +h.tagName[1]);
+  const widest = nodes.reduce((m, e) => (e.children.length > m.n ? { n: e.children.length, e } : m), { n: 0, e: null });
+  const textFields = ints.filter((e) => e.matches('input,textarea,select') && !/^(checkbox|radio|file|button|submit|reset|image|range|color)$/.test(e.type));
+  const web = {
+    headingLevels: levels.join(' '),
+    inputs: textFields.slice(0, 20).map((e) => ({ field: sel(e), name: e.getAttribute('name'), type: e.type, autocomplete: e.getAttribute('autocomplete'), inputmode: e.getAttribute('inputmode') })),
+    inputsTotal: textFields.length,
+    roleButtonOnNonButton: ints.filter((e) => e.matches('[role=button]') && !e.matches('button,input,a')).map(sel),
+    domNodes: nodes.length, widestParent: { children: widest.n, element: widest.e ? sel(widest.e) : '' },
+  };
   return {
+    web,
     pageOverflowX: document.documentElement.scrollWidth - innerWidth, scrollY: scrollY,
     offScaleSpace: bad.space, offScaleRadius: bad.radius, offScaleControlHeight: bad.height,
     fontSizes: sizes, fontWeights: weights, fonts: loaded, clipped, truncatedNoTitle: truncated, coveredControls: covered, overlappingText: overlapText.slice(0, 10), smallTargets, transitionAll: motion.transitionAll, easeIn: motion.easeIn, zoomLocked, scaleZero, ungatedHoverMoves: ungatedHover, longTransitions, layoutTransitions,
@@ -104,7 +116,7 @@ const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${async func
   };
 }})(${JSON.stringify(spaceScale)},${JSON.stringify(radiusScale)},${JSON.stringify(heights)}); })()`;
 const key = (s) => ({ type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, ...s });
-const res = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light') }, async ({ send, evaluate }) => {
+const res = await withPage(url, { width: Number(opt('width', 1440)), scheme: opt('scheme', 'light'), port: Number(opt('port', 9333)) }, async ({ send, evaluate }) => {
   const r = await evaluate(probe);
   const stops = [], noRing = [];
   const max = Number(opt('tabs', 60));
