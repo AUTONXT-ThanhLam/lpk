@@ -96,9 +96,8 @@ before copying it: a registry is not a licence.
 
 Not taken, each for a reason a future run need not re-decide:
 
-- **Aceternity UI** and the rest of Magic UI: landing-page beams, glows and particles are tells
-  of the same kind as the Magic UI items above; Aceternity's licence also leaves each item with its
-  author.
+- **Aceternity UI** and the Magic UI items beyond the three above: landing-page beams, glows and
+  particles are tells of the same kind.
 - **Anime.js**: a second animation library beside the ladder of override 4; use it only on a
   public page whose scene needs it, next to GSAP.
 - **Uiverse**: its licence page returned 403, and per-control hover effects break the frequency

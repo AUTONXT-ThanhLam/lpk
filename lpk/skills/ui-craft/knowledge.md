@@ -30,7 +30,7 @@ sign-in is skipped and listed.
 - **Curated galleries and style catalogues, at the same lower weight.** Minimal Gallery
   (minimal.gallery, running since 2013) for sites chosen for taste; Kage (kage.design) for
   interfaces of real products, each turnable into a prompt; AppShot Gallery (appshot.gallery) for
-  phone screens, whose entries are App Store marketing shots, so open the app's own screens before
+  phone screens, whose entries are App Store listing shots, so open the app's own screens before
   you measure; Component Gallery
   (component.gallery: 60 components, 95 design systems, 2,671 examples on its page) for how real
   systems name, build and state one component before you draw it by hand; Refero Styles
