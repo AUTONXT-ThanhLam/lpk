@@ -32,15 +32,15 @@ exists). `--keep` leaves the workspaces in `/tmp` for reading the transcripts un
 ## What it showed
 
 Sonnet, `results/<task>.jsonl`, one row per run. Pass means the hidden test passed in full; cost
-and seconds are means per run (subagents included). `listed` has 4 `flow` rows; `contained` has 4 `without` rows, no `with` arm and 14 `flow` rows (4 before the rule, 10 after);
+and seconds are means per run (subagents included). `listed` has 14 `flow` rows and `contained` has 4 `without` rows, no `with` arm and 14 `flow` rows (4 before the rules, 10 after);
 every other cell has 5.
 
 | Task | `without` | `with` | `flow` |
 | --- | --- | --- | --- |
 | `coupon` | 0/5, 0.07 USD, 19 s | 0/5, 0.11 USD, 24 s | 5/5, 0.82 USD, 283 s |
 | `reopen` | 3/5, 0.05 USD, 17 s | 3/5, 0.10 USD, 20 s | 4/5, 0.60 USD, 159 s |
-| `listed` | 0/5, 0.05 USD, 15 s | 0/5, 0.09 USD, 19 s | 0/4, 0.58 USD, 151 s |
-| `contained` | 0/4, 0.05 USD, 17 s | not run | 0/4, 0.63 USD, 367 s before the rule; 5/10, 0.95 USD, 288 s with it |
+| `listed` | 0/5, 0.05 USD, 15 s | 0/5, 0.09 USD, 19 s | 0/4, 0.58 USD, 151 s before the rules; 10/10, 1.02 USD, 344 s with them |
+| `contained` | 0/4, 0.05 USD, 17 s | not run | 0/4, 0.63 USD, 367 s before the rules; 10/10, 1.19 USD, 467 s with them |
 | `cancel` | 5/5, 0.06 USD, 15 s | 5/5, 0.10 USD, 18 s | 5/5, 0.54 USD, 132 s |
 | `csv` | 5/5, 0.05 USD, 16 s | 5/5, 0.10 USD, 22 s | 5/5, 0.46 USD, 222 s |
 
@@ -56,9 +56,11 @@ every other cell has 5.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
   what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included, until the
   `path-identity` rule and the line in `build.md` that sends a builder to read a flagged rule's text.
-  With them `flow` passed `listed` 4 of 5 (0 of 4 before) and `contained` 5 of 10 (0 of 4 before). The 10 `contained` runs are the last 10 `flow` rows in
-  `results/contained.jsonl`; a first set of 4 had given 1 of 4. With the rule alone and no `build.md` line, `listed` was 1 of 5 and
-  `contained` 0 of 5, because `lpk check` prints only a rule's id and 9 of 10 runs never read its text.
+  With the rule and the `build.md` line `flow` passed `listed` 4 of 5 (0 of 4 before) and `contained` 5 of 10 (0 of 4 before). With the rule alone,
+  `listed` was 1 of 5 and `contained` 0 of 5, because `lpk check` prints only a rule's id and 9 of 10 runs never read its text.
+  In the three failing `contained` runs the builder wrote `relative(resolve(root), resolve(file))` and defended it; two never opened the rule.
+  The hook that reports a candidate now prints the flagged rule's text once per run, and `flow` then passed `listed` 10 of 10 and
+  `contained` 10 of 10. These are the last 10 `flow` rows in each results file.
 
 ## What this sample cannot show
 
@@ -78,4 +80,4 @@ application, not its discovery, is hard, as the path-identity ones are.
 
 A grader must be one either arm can pass, and a trap written in the repo's `REVIEW.md` is solved by
 every arm, so a task earns its place only where some arm sometimes fails. `cancel` and `csv` are
-kept as the price baseline; `listed` and `contained` are kept as the limit: `contained` passes in 5 runs of 10.
+kept as the price baseline; `listed` and `contained` are kept as the limit: both pass in 10 runs of 10.

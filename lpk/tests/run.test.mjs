@@ -130,6 +130,11 @@ test('in a run, a candidate comes back once, right after the edit that adds it, 
   write(repo, 'src/a.mjs', 'export const a = 1;\nload().catch(() => undefined);\n');
   const first = hook('PostToolUse', 'post', { tool_name: 'Bash', cwd: tmp, session_id: 'p', tool_input: { command: 'sed -i s/x/y/ post/src/a.mjs' } });
   assert.match(context(first), /- no-silent-failure {2}src\/a\.mjs:2 {2}load\(\)\.catch/);
+  assert.match(context(first), /\nrule no-silent-failure: .+\n {2}check: /);
+  write(repo, 'src/a.mjs', 'export const a = 1;\nload().catch(() => undefined);\nsave().catch(() => undefined);\n');
+  const second = context(hook('PostToolUse', 'post', { tool_name: 'Bash', cwd: repo, session_id: 'p', tool_input: { command: 'sed -i s/x/y/ src/a.mjs' } }));
+  assert.match(second, /- no-silent-failure {2}src\/a\.mjs:3 {2}save\(\)\.catch/);
+  assert.doesNotMatch(second, /\nrule no-silent-failure:/);
   assert.equal(hook('PostToolUse', 'post', { tool_name: 'Bash', cwd: repo, session_id: 'p', tool_input: { command: 'ls' } }), null, 'reported twice');
   assert.equal(hook('PostToolUse', 'post', { tool_name: 'Bash', cwd: repo, session_id: 'other', tool_input: { command: 'ls' } }), null, 'another session');
 });
