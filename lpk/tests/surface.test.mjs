@@ -222,3 +222,11 @@ test('S2 R3 a surface changed from ui to other after a Prover run needs a new Pr
   assert.equal(r.holds, false);
   assert.match(r.why, /no Prover run/);
 });
+
+test('S7 R8 the report reads NOT PROVED for a forged PASS and PASS for a driven one', () => {
+  let n = 0;
+  const report = (calls, lines) => { const fx = begin(`s7-${n++}`, [UI]); prover(fx, 'p1', calls(fx), lines(fx)); return lpk(fx.repo, fx.S, 'report').stdout; };
+  assert.match(report((c) => [NEW], () => [pass('S1', [])]), /the owner sees the total \(agent-judged\) \| ui \| \/ after login \| none \| NOT PROVED \|/);
+  const driven = report((c) => [NEW, CLICK, shot(png(c, 'a.png'))], (c) => [pass('S1', [join(c.dir, 'a.png')])]);
+  assert.match(driven, /\| ui \| \/ after login \| .*a\.png \| PASS \|/);
+});

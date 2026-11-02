@@ -2,16 +2,32 @@
 // scenario, a failure row or a test that names it, or the owner's waiver; the Quick lane numbers
 // them at `lpk run start`, the Full lane in brief.json.
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { lens, lpk, repoWith, sh, write } from './gates-env.mjs';
+import { agent, ENV, lpk, repoWith, sh, write } from './gates-env.mjs';
 import { appendRecord } from '../lib/records.mjs';
 import { runDir } from '../lib/where.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
 const row = (repo, session) => JSON.parse(lpk(repo, session, 'gates', '--json').stdout).find((r) => r.gate === 'requirements');
 const range = (repo) => `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
+const CH = 'mcp__plugin_lpk_chrome-devtools__';
+
+function proverRun(repo, session, id, calls, results) {
+  const at = (n) => new Date(Date.now() - 60000 + n * 1000).toISOString();
+  const entries = [{ type: 'user', message: { role: 'user', content: `Prove ${range(repo)}.` }, timestamp: at(0) }];
+  [...calls, { name: 'StructuredOutput', input: { findings: [], results } }].forEach((t, i) => entries.push({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: `t${i}`, ...t }], stop_reason: 'tool_use' }, timestamp: at(i + 1) }));
+  agent(join(ENV.CLAUDE_CONFIG_DIR, 'projects', '-scratch', session, 'subagents'), id, 'lpk:prover', entries);
+}
+
+function proofFile(repo, session, name) {
+  const run = JSON.parse(readFileSync(join(runDir(repo, session), 'run.json'), 'utf8'));
+  const p = join(sh(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir').trim(), 'lpk', 'proof', run.id, name);
+  mkdirSync(join(p, '..'), { recursive: true });
+  writeFileSync(p, 'seen');
+  return p;
+}
 
 test('lpk run start numbers each --req and refuses a --proves that names no requirement or no scenario', () => {
   const repo = repoWith('req-flags', { 'src/a.mjs': 'export const a = 1;\n' });
@@ -80,11 +96,13 @@ test('a full run is denied without numbered requirements, reads them from brief.
   r = row(repo, S);
   assert.match(r.why, /R1 unproved \(S1 has no Prover PASS on HEAD's code\); R2 unproved \(failure row FM1 has no Prover PASS on HEAD's code\)/);
 
-  lens(S, 'pv1', 'lpk:prover', range(repo), { findings: [], results: [
-    { scenario: 'S1: the page shows 2', status: 'PASS', evidence: 'shot.png', proves: ['R1'] }] });
+  const shot = proofFile(repo, S, 'shot.png');
+  proverRun(repo, S, 'pv1', [{ name: `${CH}new_page`, input: { url: '/' } }, { name: `${CH}click`, input: { uid: '1' } }, { name: `${CH}take_screenshot`, input: { pageId: 1, filePath: shot } }], [
+    { scenario: 'S1: the page shows 2', status: 'PASS', evidence: [shot], proves: ['R1'] }]);
   assert.match(row(repo, S).why, /^R2 unproved \(failure row FM1 has no Prover PASS on HEAD's code\)$/);
-  lens(S, 'pv2', 'lpk:prover', range(repo), { findings: [], results: [
-    { scenario: 'FM1: store unreachable', status: 'PASS', evidence: 'log', proves: ['R2'] }] });
+  const log = proofFile(repo, S, 'fm1.txt');
+  proverRun(repo, S, 'pv2', [{ name: 'Write', input: { file_path: log, content: 'unreachable store reported' } }], [
+    { scenario: 'FM1: store unreachable', status: 'PASS', evidence: [log], proves: ['R2'] }]);
   r = row(repo, S);
   assert.equal(r.holds, true, r.why);
   assert.equal(r.read, '2 requirements in brief.json; scenarios, failure rows and tests that name them');

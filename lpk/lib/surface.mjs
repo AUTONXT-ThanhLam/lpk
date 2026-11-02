@@ -41,8 +41,6 @@ export function oldShapeWayOut(run) {
   return `${run.ended ? 'lpk run take first, then ' : ''}${how}`;
 }
 
-// The Prover's result line for scenario or failure row `s`: by its id (`S1`, `S1: ...`), or by the
-// agent-judged text itself.
 export const named = (results, s) => results.find((x) => { const t = String(x?.scenario || '').trim(); return t === s.id || t.startsWith(`${s.id}:`) || t.startsWith(`${s.id} `) || (s.agentJudged && t === s.agentJudged); });
 
 function ident(p) {

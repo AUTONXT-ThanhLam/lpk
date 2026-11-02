@@ -10,7 +10,7 @@ import { git } from '../git.mjs';
 import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
-import { named, proofsOf, proverResults, trace } from '../proof.mjs';
+import { judgedStatus, named, proofsOf, proverResults, trace } from '../proof.mjs';
 import { readDecisions, readRecords } from '../records.mjs';
 import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
@@ -78,8 +78,7 @@ export async function main(argv) {
     const cell = (x) => String(x).replace(/\|/g, '\\|').replace(/\n/g, ' ');
     const status = (s) => {
       if (s.cmd) { const last = proofsOf(recs, s).filter((r) => r.tree === tree).at(-1); return last ? (last.pass ? 'PASS' : 'FAIL') : 'NOT PROVED'; }
-      const r = named(judged, s);
-      return r && ['PASS', 'FAIL'].includes(r.status) ? r.status : 'NOT PROVED';
+      return judgedStatus(repo, run, s, judged);
     };
     const evidenceOf = (s) => {
       if (s.cmd) return `prove log: ${proofsOf(recs, s).filter((r) => r.tree === tree).length} run(s) on HEAD`;
