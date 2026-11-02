@@ -99,10 +99,10 @@ const probe = `(() => { const fontVerdict = ${fontVerdict}; return (${async func
   const nodes = [...document.body.querySelectorAll('*')];
   const levels = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(vis).map((h) => +h.tagName[1]);
   const widest = nodes.reduce((m, e) => (e.children.length > m.n ? { n: e.children.length, e } : m), { n: 0, e: null });
-  const textFields = ints.filter((e) => e.matches('input,textarea') && !/^(checkbox|radio|file|button|submit|reset|image|range|color)$/.test(e.type));
+  const textFields = ints.filter((e) => e.matches('input,textarea,select') && !/^(checkbox|radio|file|button|submit|reset|image|range|color)$/.test(e.type));
   const web = {
     headingLevels: levels.join(' '),
-    inputs: textFields.slice(0, 20).map((e) => ({ field: sel(e), name: e.getAttribute('name'), label: (e.labels && e.labels[0] ? e.labels[0].textContent.trim() : e.getAttribute('aria-label')) || null, placeholder: e.getAttribute('placeholder'), type: e.type, autocomplete: e.getAttribute('autocomplete'), inputmode: e.getAttribute('inputmode') })),
+    inputs: textFields.slice(0, 20).map((e) => ({ field: sel(e), name: e.getAttribute('name'), type: e.type, autocomplete: e.getAttribute('autocomplete'), inputmode: e.getAttribute('inputmode') })),
     inputsTotal: textFields.length,
     roleButtonOnNonButton: ints.filter((e) => e.matches('[role=button]') && !e.matches('button,input,a')).map(sel),
     domNodes: nodes.length, widestParent: { children: widest.n, element: widest.e ? sel(widest.e) : '' },

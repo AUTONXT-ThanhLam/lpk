@@ -126,8 +126,9 @@ bundle's `proof/` directory and check:
    zoom, and every target it lists is judged (a padded or pseudo-element hit area, a label that
    toggles it, or a kit component passes; a bare small icon button does not);
 8. the `web` facts `audit.mjs` prints, each judged as a person meets it: `headingLevels` has one 1
-   and skips no level; each of `inputs` (of `inputsTotal`; a `label` of null is a field with no label, whatever its
-   `placeholder` says) has the `type`, `autocomplete` and `inputmode` its `name` and `label` ask for, and a name, email or address field never has autocomplete `off`;
+   and skips no level; each of `inputs` (of `inputsTotal`, text fields and selects) has the `type`, `autocomplete`
+   and `inputmode` its `name` asks for, a name, email or address field never has autocomplete
+   `off`, and each has a name in the snapshot, which is where its label is read;
    `roleButtonOnNonButton` is a finding when Enter or Space does not work on it; `domNodes`
    above a few thousand and a `widestParent` of about a thousand children mean a long list
    rendered whole, so scroll it with `performance_start_trace`. A skip link, image sizes and
