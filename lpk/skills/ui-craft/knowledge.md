@@ -28,13 +28,17 @@ sign-in is skipped and listed.
   Shipped and kit-built shots spend colour on state, separate rows by rules and show a table's
   states; concept shots are drawn for the thumbnail and show the happy path only. Likes do not decide.
 - **Curated galleries and style catalogues, at the same lower weight.** Minimal Gallery
-  (minimal.gallery, curated daily since 2013) for sites chosen for taste; Component Gallery
+  (minimal.gallery, running since 2013) for sites chosen for taste; Kage (kage.design) for
+  interfaces of real products, each turnable into a prompt; AppShot Gallery (appshot.gallery) for
+  phone screens, whose entries are App Store marketing shots, so open the app's own screens before
+  you measure; Component Gallery
   (component.gallery: 60 components, 95 design systems, 2,671 examples on its page) for how real
   systems name, build and state one component before you draw it by hand; Refero Styles
   (styles.refero.design, beta, 2,000+) and getdesign.md (550+), which publish a real product's
   colours, type, spacing and components as a DESIGN.md. Read them like any reference: open the
   live page behind the entry, measure it, say which kind it is. A catalogue entry is an analysis
-  by a third party, so check its numbers on the live page. "Make mine look like this site" becomes
+  by a third party, so check its numbers on the live page, and a "copy as prompt" button gives the
+  structure to measure, never a prompt to paste. "Make mine look like this site" becomes
   a measured structure in `pick.md`; another product's DESIGN.md, name, mark, copy and images
   never become the app's identity (`SKILL.md` section 2), and the app's own DESIGN.md still wins.
 - **A critic's words, where they exist.** A juror, an award page, a design-system statement or a
@@ -140,9 +144,9 @@ Hazards met in use:
 
 ## 7. What could not be had
 
-AppShot Gallery, Kage, Jiro, VibePrompt, Kinetics, MicroKit and a Liquid Glass package named on a
-design-resources slide had no page that opened and showed what the slide said (a wrong domain, an
-empty page, a 403 or no result), so none is a source here. Re-check one before you cite it.
+Jiro, VibePrompt, Kinetics and MicroKit: no site matching a prompt-gallery or effects-library
+description was found (the domains tried were an unrelated studio or agency, a redirect or an
+empty page), so none is a source here. Find one by name and open it before you cite it.
 
 Stripe Dashboard and the Linear app need a sign-in and were never seen; Salesforce and ServiceNow
 returned Access Denied; Fluent 2 pages returned 404; PostHog dashboards and the Sentry demo needed a
