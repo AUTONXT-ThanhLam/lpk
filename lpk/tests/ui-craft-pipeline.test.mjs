@@ -100,15 +100,16 @@ test('audit prints the web facts of a page in a real Chrome: heading levels, nam
       if (!up) await new Promise((r) => setTimeout(r, 100));
     }
     assert.ok(up, 'Chrome did not start');
-    const page = '<meta charset="utf-8"><nav><a href="/">Home</a></nav><main id="main"><h1>Orders</h1><h3>Find</h3><label for="a">Address</label><input id="a" name="addr" autocomplete="off"><div role="button" tabindex="0">Save</div><ul><li>a</li><li>b</li><li>c</li><li>d</li><li>e</li><li>f</li><li>g</li></ul></main>';
+    const page = '<meta charset="utf-8"><nav><a href="/">Home</a></nav><main id="main"><h1>Orders</h1><h3>Find</h3><label for="a">Address</label><input id="a" name="addr" autocomplete="off"><input name="bare" placeholder="Phone"><input type="checkbox" name="tick"><div role="button" tabindex="0">Save</div><ul><li>a</li><li>b</li><li>c</li><li>d</li><li>e</li><li>f</li><li>g</li><li>h</li><li>i</li><li>j</li></ul></main>';
     writeFileSync(join(dir, 'p.html'), page);
     const r = run('audit.mjs', pathToFileURL(join(dir, 'p.html')).href, '--port', String(port));
     assert.match(r.stderr, /^(ok|FAIL: fonts)\s*$/, r.stderr);
     const web = JSON.parse(r.stdout).web;
     assert.equal(web.headingLevels, '1 3');
-    assert.deepEqual(web.inputs.map((i) => [i.name, i.label, i.autocomplete]), [['addr', 'Address', 'off']]);
+    assert.deepEqual(web.inputs.map((i) => [i.name, i.label, i.placeholder, i.autocomplete]), [['addr', 'Address', null, 'off'], ['bare', null, 'Phone', null]]);
+    assert.equal(web.inputsTotal, 2);
     assert.equal(web.roleButtonOnNonButton.length, 1);
-    assert.equal(web.widestParent.children, 7);
+    assert.equal(web.widestParent.children, 10);
     assert.match(web.widestParent.element, /^ul/);
     assert.ok(web.domNodes > 10);
   } finally {
