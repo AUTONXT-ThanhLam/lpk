@@ -89,6 +89,34 @@ test('copyfacts says Chrome cannot be reached on the port it was given, in one l
   assert.doesNotMatch(r.stderr, /\n\s+at /);
 });
 
+test('audit prints the web facts of a page in a real Chrome: heading levels, named inputs, a role=button div and the list size', { skip: !CHROME && 'no Chrome on this machine' }, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'audit-web-'));
+  const port = await freePort();
+  const chrome = spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', `--remote-debugging-port=${port}`, `--user-data-dir=${join(dir, 'profile')}`, 'about:blank'], { stdio: 'ignore' });
+  try {
+    let up = false;
+    for (let i = 0; i < 100 && !up; i++) {
+      up = await fetch(`http://127.0.0.1:${port}/json/version`).then((r) => r.ok, () => false);
+      if (!up) await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.ok(up, 'Chrome did not start');
+    const page = '<meta charset="utf-8"><nav><a href="/">Home</a></nav><main id="main"><h1>Orders</h1><h3>Find</h3><label for="a">Address</label><input id="a" name="addr" autocomplete="off"><div role="button" tabindex="0">Save</div><ul><li>a</li><li>b</li><li>c</li><li>d</li><li>e</li><li>f</li><li>g</li></ul></main>';
+    writeFileSync(join(dir, 'p.html'), page);
+    const r = run('audit.mjs', pathToFileURL(join(dir, 'p.html')).href, '--port', String(port));
+    assert.match(r.stderr, /^(ok|FAIL: fonts)\s*$/, r.stderr);
+    const web = JSON.parse(r.stdout).web;
+    assert.equal(web.headingLevels, '1 3');
+    assert.deepEqual(web.inputs.map((i) => [i.name, i.label, i.autocomplete]), [['addr', 'Address', 'off']]);
+    assert.equal(web.roleButtonOnNonButton.length, 1);
+    assert.equal(web.widestParent.children, 7);
+    assert.match(web.widestParent.element, /^ul/);
+    assert.ok(web.domNodes > 10);
+  } finally {
+    await stop(chrome);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('sample reports the mean colour of a bucket and refuses a --top it cannot read', () => {
   const mixed = buckets([248, 248, 248, 255, 250, 250, 250, 255], 1);
   assert.equal(mixed[0].hex, '#f9f9f9');

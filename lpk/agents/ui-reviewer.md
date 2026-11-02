@@ -124,7 +124,14 @@ bundle's `proof/` directory and check:
    undone is guarded and names its consequence, an error or required action is never in a
    self-dismissing toast, a dialog is never shown for information alone, `audit.mjs` exits clean at
    zoom, and every target it lists is judged (a padded or pseudo-element hit area, a label that
-   toggles it, or a kit component passes; a bare small icon button does not).
+   toggles it, or a kit component passes; a bare small icon button does not);
+8. the `web` facts `audit.mjs` prints, each judged as a person meets it: `headingLevels` has one 1
+   and skips no level; each of `inputs` has the `type`, `autocomplete` and `inputmode` its `name`
+   and `label` ask for, and a name, email or address field never has autocomplete `off`;
+   `roleButtonOnNonButton` is a finding when Enter or Space does not work on it; `domNodes`
+   above a few thousand and a `widestParent` of about a thousand children mean a long list
+   rendered whole, so scroll it with `performance_start_trace`. A skip link, image sizes and
+   straight quotes or three dots are not printed: read them from the snapshot and `copyfacts.mjs`.
 Run the worst-case catalogue of `ux.md` section 10 through the test data the brief or the repo
 profile names (a seed, a fixture, the create form of a test account), never a production account,
 with plausible or schema-backed values and never random ones, and put the probes you tried and
