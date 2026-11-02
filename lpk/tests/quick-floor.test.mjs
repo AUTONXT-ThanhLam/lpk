@@ -58,3 +58,27 @@ test('the design gate denies a change the floor calls full that has no Design Br
   sh(small, 'commit', '-qam', 'Set a to 2');
   assert.match(gates(small, 'dg-small'), /^design\s+holds/m);
 });
+
+test('the design gate holds once a round passed on the brief, denies the brief edited after it, and still holds after the run ended', () => {
+  const S = 'dg-brief';
+  const repo = repoWith('design-brief', { 'src/a.mjs': 'export const a = 1;\n' });
+  const dir = `${repo}/.git/lpk`;
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  write(dir, 'brief.md', '# Brief\nA is doubled.\n');
+  for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  sh(repo, 'add', '-A');
+  sh(repo, 'commit', '-qm', 'Widen');
+  assert.match(gates(repo, S), /^design\s+DENY .*\n.*round/m);
+
+  ok(lpk(repo, S, 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered'));
+  assert.match(gates(repo, S), /^design\s+holds/m);
+
+  write(dir, 'brief.md', '# Brief\nA is tripled.\n');
+  assert.match(gates(repo, S), /^design\s+DENY[^]*before the brief changed/m);
+
+  write(dir, 'brief.md', '# Brief\nA is doubled.\n');
+  ok(lpk(repo, S, 'run', 'end'));
+  const report = lpk(repo, S, 'report');
+  assert.match(report.stdout + report.stderr, /^design\s+holds/m);
+});

@@ -6,7 +6,7 @@ export function designGate(repo, run) {
   const f = floor(repo, patchesOf(repo, run.target).base);
   if (!f.full || f.docsOnly) return { holds: true, read: 'the floor calls the change small', why: '' };
   const facts = `the floor calls this change full: ${f.why.slice(0, 4).join('; ')}`;
-  if (!briefHash(repo)) return { holds: false, read: 'no Design Brief', why: facts, wayOut: 'write the Design Brief and pass a design review round on it (`design.md`); a run that declared the Quick lane meets this too' };
+  if (!briefHash(repo, run)) return { holds: false, read: 'no Design Brief', why: facts, wayOut: 'write the Design Brief and pass a design review round on it (`design.md`); a run that declared the Quick lane meets this too' };
   const unchecked = briefUnchecked(repo, { ...run, lane: 'full' });
   return { holds: !unchecked, read: 'brief.md and brief.json; the design review rounds', why: unchecked ? `${facts}; ${unchecked}` : '', wayOut: 'run the design review on the brief as it stands' };
 }
