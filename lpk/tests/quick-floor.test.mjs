@@ -26,3 +26,17 @@ test('a quick run whose change the floor calls full says so in the plan row, and
   ok(lpk(wide, 'qf-wide', 'run', 'lane', 'full', '--why', 'wider than quick'));
   assert.match(gates(wide, 'qf-wide'), /^plan\s+print\s+no brief\.json$/m);
 });
+
+test('a change the floor calls full owes the full review set at the increment bar, quick lane or not', () => {
+  for (const lane of ['quick', 'full']) {
+    const repo = repoWith(`owed-${lane}`, { 'src/a.mjs': 'export const a = 1;\n' });
+    ok(lpk(repo, `ow-${lane}`, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+    for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
+    write(repo, 'src/a.mjs', 'export const a = 2;\n');
+    sh(repo, 'add', '-A');
+    sh(repo, 'commit', '-qm', 'Widen');
+    const r = lpk(repo, `ow-${lane}`, 'reviews', 'owed');
+    const owed = r.stdout + r.stderr;
+    for (const lens of ['techlead', 'prover', 'claims']) assert.match(owed, new RegExp(`^- ${lens} on `, 'm'));
+  }
+});

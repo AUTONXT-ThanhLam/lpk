@@ -68,9 +68,9 @@ async function laneSet(repo, run, base, list) {
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
   if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };
-  if (isIncrement(run)) return { set: [...forHost(QUICK, 1), ...(extra.includes('security') ? [{ key: 'security' }] : [])], why: 'increment bar' };
-  if (run.lane === 'quick' && floor && !floor.full) return { set: forHost(QUICK, 1), why: '' };
-  const why = run.lane !== 'quick' ? '' : floor ? `quick lane, but lpk floor: ${floor.why.join('; ')}` : 'quick lane, and lpk floor is not installed to clear it';
+  const small = floor && !floor.full && (run.lane === 'quick' || isIncrement(run));
+  if (small) return { set: forHost(QUICK, 1), why: isIncrement(run) ? 'increment bar' : '' };
+  const why = floor?.full ? `lpk floor: ${floor.why.join('; ')}` : floor ? '' : 'lpk floor is not installed to clear it';
   const full = forHost(FULL, 2);
   return { set: [...full, ...[...new Set(extra)].filter((k) => !full.some((q) => q.key === k)).map((key) => ({ key }))], why };
 }
