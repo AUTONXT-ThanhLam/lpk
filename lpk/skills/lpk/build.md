@@ -20,7 +20,7 @@ repeat, and the lead names the final ones, because lpk never guesses that a chec
 scenarios of `brief.json`. In the Quick lane add `--lane quick`, one `--req "<text>"` per
 requirement (numbered `R1`, `R2`… in that order), and one `--scenario "<command>"` per scenario,
 with `--expect "<literal>"` when the output must contain it and `--proves R1,R2` for the
-requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover judges). The run's preflight prints what is missing; fix it before you build.
+requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover judges). Each scenario carries `--surface` (the surface its user meets) and `--entry` (where they start), and a judged one `--leaves` (what the Prover leaves behind). The run's preflight prints what is missing; fix it before you build.
 
 ## Run the final tier
 

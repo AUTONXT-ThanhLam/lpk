@@ -27,7 +27,7 @@ function changedRepo(name, S) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
   sh(repo, 'config', 'diff.od.textconv', 'od -c');
   write(repo, '.git/info/attributes', '*.mjs diff=od\n');
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', '--surface', 'cli', '--entry', 'true'));
   write(repo, 'src/a.mjs', 'export const a = "2";\n');
   sh(repo, 'commit', '-qam', 'Make a a string');
   return repo;

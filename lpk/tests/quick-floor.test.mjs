@@ -6,7 +6,7 @@ const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.std
 const gates = (repo, session) => { const r = lpk(repo, session, 'gates'); return r.stdout + r.stderr; };
 const quick = (name, session) => {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   return repo;
 };
 
@@ -30,7 +30,7 @@ test('a quick run whose change the floor calls full says so in the plan row, and
 test('a change the floor calls full owes the full review set at the increment bar, quick lane or not', () => {
   for (const lane of ['quick', 'full']) {
     const repo = repoWith(`owed-${lane}`, { 'src/a.mjs': 'export const a = 1;\n' });
-    ok(lpk(repo, `ow-${lane}`, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+    ok(lpk(repo, `ow-${lane}`, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
     for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
     write(repo, 'src/a.mjs', 'export const a = 2;\n');
     sh(repo, 'add', '-A');
@@ -44,7 +44,7 @@ test('a change the floor calls full owes the full review set at the increment ba
 test('the design gate denies a change the floor calls full that has no Design Brief, whatever lane it declared, and holds for a small one', () => {
   const wide = (name, session, lane) => {
     const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-    ok(lpk(repo, session, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+    ok(lpk(repo, session, 'run', 'start', '--lane', lane, '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
     for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
     write(repo, 'src/a.mjs', 'export const a = 2;\n');
     sh(repo, 'add', '-A');
@@ -63,7 +63,7 @@ test('the design gate holds once a round passed on the brief, denies the brief e
   const S = 'dg-brief';
   const repo = repoWith('design-brief', { 'src/a.mjs': 'export const a = 1;\n' });
   const dir = `${repo}/.git/lpk`;
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   write(dir, 'brief.md', '# Brief\nA is doubled.\n');
   for (const n of ['b', 'c', 'd']) write(repo, `src/${n}.mjs`, `export const ${n} = 1;\n`);
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
@@ -85,7 +85,7 @@ test('the design gate holds once a round passed on the brief, denies the brief e
 
 const wideRun = (name, S, files = ['b', 'c', 'd'].map((n) => `src/${n}.mjs`)) => {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   for (const f of files) write(repo, f, 'x\n');
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   sh(repo, 'add', '-A');
@@ -131,7 +131,7 @@ test('an ended run keeps reading its own brief while a newer run is open, and th
 
   const first = JSON.parse(ok(lpk(repo, S, 'run', 'status')));
   ok(lpk(repo, S, 'run', 'end'));
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'full', '--why', 'again', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'full', '--why', 'again', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   const { briefHash } = await import('../lib/briefcheck.mjs');
   assert.ok(briefHash(repo, { id: first.id }), 'the ended run still has its brief');
   assert.equal(briefHash(repo, JSON.parse(ok(lpk(repo, S, 'run', 'status')))), null, 'the open run has none');

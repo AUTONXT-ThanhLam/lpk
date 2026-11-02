@@ -87,7 +87,7 @@ The brief follows `writing.md` in this skill's directory and stays at 5,000 word
 
 Write the same in `brief.json`, beside it, with only what code reads: `requirements` (each
 `{ id: "R1", text, source }`), `scenarios` (each with its `id`, its `text`, a `cmd` (and `expect`)
-when a command proves it, and `proves`, the requirement ids), `failures` (each row with its `id`,
+when a command proves it, and `proves`, the requirement ids, `surface`, the one the user meets, `entry`, where they start, and for a judged one `leaves`, what the Prover leaves behind), `failures` (each row with its `id`,
 `provedBy` and `proves`), `slices` (each with its `name`, its `files`, its `contract`: the types, routes, signatures and events it must meet, in a few lines, and `proves`: the requirement ids it answers) and `verify` (the check commands, the cheapest first: a run with no timings yet runs them in this order).
 `lpk run start` records the scenarios of `brief.json` under the same ids; run it again after a
 revision changes them. The `requirements` gate denies the handover until a green scenario, a

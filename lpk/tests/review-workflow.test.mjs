@@ -24,7 +24,7 @@ const pipeline = (items, ...stages) => Promise.all(items.map(async (item, i) => 
 }));
 
 const R = 'a'.repeat(40) + '..' + 'b'.repeat(40);
-const ARGS = { repo: '/r', base: 'a'.repeat(40), commit: 'b'.repeat(40), range: R, bundle: '/b', request: 'add paging', scenarios: 'S1 a page has n rows', surface: 'http://localhost:3000', testCmd: 'npm test -- page' };
+const ARGS = { repo: '/r', base: 'a'.repeat(40), commit: 'b'.repeat(40), range: R, bundle: '/b', proofDir: '/p', request: 'add paging', scenarios: 'S1 a page has n rows', surface: 'http://localhost:3000', testCmd: 'npm test -- page' };
 
 // Runs the workflow; `answer(prompt, opts)` gives each agent's return, and every call is kept with
 // how many agents were running when it started.
@@ -278,4 +278,16 @@ test('a Prover that is given no running surface is ungraded with that reason and
   const { out } = await run({ ...ARGS, surface: undefined, lenses: ['techlead', 'prover'] }, (prompt, o) => (o.agentType === 'lpk:techlead' ? found('F1') : o.agentType === 'lpk:verifier' ? confirm : { results: [] }));
   assert.deepEqual(out.confirmed.map((v) => v.id), ['F1']);
   assert.deepEqual(out.ungraded, ['prover: no running surface given in args.surface']);
+});
+
+test('R3 the Prover is told the proof directory it is given, and its evidence array reaches the finding as lines', async () => {
+  const evidence = ['/p/S1.png', '/p/S1.log'];
+  const { calls } = await run({ ...ARGS, lenses: ['prover'] }, (prompt, o) => (o.agentType === 'lpk:verifier' ? confirm : { results: [{ scenario: 'S1', status: 'FAIL', evidence, id: 'F1', proves: [] }] }));
+  assert.match(calls.find((c) => c.opts.agentType === 'lpk:prover').prompt, /Proof directory: \/p\n/);
+  assert.ok(JSON.stringify(calls.map((c) => c.prompt)).includes(evidence.join('\\n')), 'the evidence lines reach the verifier');
+});
+
+test('R3 a Prover with no proof directory in args is ungraded with that reason', async () => {
+  const { out } = await run({ ...ARGS, proofDir: undefined, lenses: ['prover'] }, () => ({ results: [] }));
+  assert.deepEqual(out.ungraded, ['prover: no proof directory given in args.proofDir']);
 });

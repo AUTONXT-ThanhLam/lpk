@@ -11,7 +11,7 @@ const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.std
 
 function quickRun(name, session) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
+  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--surface', 'cli', '--entry', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, session, 'verify'));
   sh(repo, 'commit', '-qam', 'Set a to 2');

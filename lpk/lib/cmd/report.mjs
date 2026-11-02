@@ -14,6 +14,7 @@ import { named, proofsOf, proverResults, trace } from '../proof.mjs';
 import { readDecisions, readRecords } from '../records.mjs';
 import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
+import { scenarioChanges } from '../scenariolog.mjs';
 import { runHere } from './gates.mjs';
 
 // A finding the owner reads in the report: its ruling (for an unsettled one, the ruling asked and
@@ -80,15 +81,23 @@ export async function main(argv) {
       const r = named(judged, s);
       return r && ['PASS', 'FAIL'].includes(r.status) ? r.status : 'NOT PROVED';
     };
-    facts.push(['Scenarios:', '| S | Scenario | Status on HEAD |', '|---|---|---|',
-      ...run.scenarios.map((s) => `| ${s.id} | ${s.cmd ? `\`${cell(s.cmd)}\`` : `${cell(s.agentJudged)} (agent-judged)`} | ${status(s)} |`)].join('\n'));
+    const evidenceOf = (s) => {
+      if (s.cmd) return `prove log: ${proofsOf(recs, s).filter((r) => r.tree === tree).length} run(s) on HEAD`;
+      const files = [].concat(named(judged, s)?.evidence || []).filter(Boolean);
+      return files.length ? files.join(', ') : 'none';
+    };
+    facts.push(['Scenarios:', '| S | Scenario | Surface | Entry | Evidence | Status on HEAD |', '|---|---|---|---|---|---|',
+      ...run.scenarios.map((s) => `| ${s.id} | ${s.cmd ? `\`${cell(s.cmd)}\`` : `${cell(s.agentJudged)} (agent-judged)`} | ${cell(s.surface || 'none')} | ${cell(s.entry || 'none')} | ${cell(evidenceOf(s))} | ${status(s)} |`)].join('\n'));
+    const changed = scenarioChanges(run);
+    if (changed.length) facts.push(`Scenarios that differ from the first list: ${changed.join('; ')}`);
   }
   // R -> proof as a Markdown table, so the PR body can carry it as it stands.
   try {
     const t = trace(repo, run, recs);
     const cell = (x) => String(x).replace(/\|/g, '\\|').replace(/\n/g, ' ');
-    facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Proof |', '|---|---|---|---|',
-      ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
+    const surfacesOf = (id) => [...new Set((run.scenarios || []).filter((s) => (s.proves || []).includes(id)).map((s) => s.surface || 'none'))].join(', ') || 'none';
+    facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Surfaces | Proof |', '|---|---|---|---|---|',
+      ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${surfacesOf(r.id)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
   facts.push(ownerWords(repo, run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);

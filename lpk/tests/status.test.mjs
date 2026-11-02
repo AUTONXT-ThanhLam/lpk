@@ -168,7 +168,7 @@ test('the step follows the run\'s records from understanding to delivery, and th
   write(repo, '.git/lpk/brief.md', '# Brief\n');
   ok(lpk(repo, S, 'decide', 'design review round 1: revise, 2/3/1', '--why', 'two High findings'));
   assert.deepEqual(step(), ['design', { round: 1, verdict: 'revise', high: 2, medium: 3, low: 1, running: [] }]);
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = [23]" src/a.mjs', '--expect', '', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = [23]" src/a.mjs', '--surface', 'cli', '--entry', 'grep -q "a = [23]" src/a.mjs', '--expect', '', '--verify', 'true'));
   assert.equal(json(repo, S).phase, 'build');
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, S, 'verify'));
@@ -209,7 +209,7 @@ test('a quick run that needed no fix leaves Design and Fix off its track', () =>
   const S = 'status-quick';
   const repo = repoWith('status-quick', { 'src/a.mjs': 'export const a = 1;\n' });
   mainOf(S, [said(-5, `${LPK} set a to 2`)]);
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'grep -q "a = 2" src/a.mjs', '--surface', 'cli', '--entry', 'grep -q "a = 2" src/a.mjs', '--expect', '', '--verify', 'true'));
   assert.deepEqual(json(repo, S).track, ['understand', 'build', 'review', 'fix', 'prove', 'deliver']);
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, S, 'verify'));

@@ -100,7 +100,7 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
   sh(repo, 'worktree', 'add', '-q', '-b', 'slice-api', wt);
   commit(wt, 'Start the api slice', { 'a.js': 'a2\n' });
   write(wt, 'b.js', 'b2\n');
-  write(join(repo, '.git', 'lpk'), 'brief.json', JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }, { id: 'R2', text: 'other' }], scenarios: [{ id: 'S1', text: 'call a twice', proves: ['R1'] }, { id: 'S2', text: 'unrelated', proves: ['R2'] }], slices: [{ id: 'api', files: ['a.js'], contract: `a() returns 2${' word'.repeat(120)} END-OF-CONTRACT`, proves: ['R1'] }] }));
+  write(join(repo, '.git', 'lpk'), 'brief.json', JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }, { id: 'R2', text: 'other' }], scenarios: [{ id: 'S1', text: 'call a twice', proves: ['R1'], surface: 'ui', entry: '/', leaves: 'a screenshot' }, { id: 'S2', text: 'unrelated', proves: ['R2'], surface: 'ui', entry: '/', leaves: 'a screenshot' }], slices: [{ id: 'api', files: ['a.js'], contract: `a() returns 2${' word'.repeat(120)} END-OF-CONTRACT`, proves: ['R1'] }] }));
   write(join(repo, '.git', 'lpk'), 'brief.md', '# Brief\n\n## Contract\ntext\n');
   const r = lpk(repo, 'handoff', 'api', '--base', 'main');
   assert.equal(r.status, 2, 'handoff takes no --base');
@@ -121,7 +121,7 @@ test('lpk handoff prints a stuck slice\'s files, worktree, commits, uncommitted 
 test('a worktree named for its slice lives in the git directory and `lpk run end` removes it unless it holds uncommitted work', () => {
   const repo = repoWith('wt-inside', { 'a.js': 'a\n' });
   sh(repo, 'switch', '-q', 'main');
-  const started = lpk(repo, 'run', 'start', '--verify', 'true', '--lane', 'quick', '--why', 'three files', '--req', 'a works', '--scenario', 'true', '--proves', 'R1');
+  const started = lpk(repo, 'run', 'start', '--verify', 'true', '--lane', 'quick', '--why', 'three files', '--req', 'a works', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--proves', 'R1');
   assert.equal(started.status, 0, started.stderr);
   const made = lpk(repo, 'run', 'worktree', 'api', 'HEAD', '--branch', 'slice-api');
   assert.equal(made.status, 0, made.stderr);

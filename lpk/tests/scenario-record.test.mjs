@@ -74,6 +74,7 @@ test('S6 R7 the scenario log keeps the first list and each change whole, in a qu
   assert.equal(start(repo, 'l1', ...CLI).status, 0);
   assert.equal(readRun(repo).scenarioLog.length, 1, 'a restated list is no change');
   assert.equal(start(repo, 'l1', '--req', 'one', '--scenario', 'echo hi', '--surface', 'cli', '--entry', 'echo hi', '--expect', 'hi', '--proves', 'R1').status, 0);
+  const { scenarioLog } = readRun(repo);
   assert.equal(scenarioLog.length, 2);
   assert.equal(scenarioLog[0].scenarios[0].cmd, 'true');
   assert.deepEqual(scenarioLog[1].scenarios[0], { id: 'S1', cmd: 'echo hi', expect: 'hi', proves: ['R1'], surface: 'cli', entry: 'echo hi' });

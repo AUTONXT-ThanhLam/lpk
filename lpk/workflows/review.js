@@ -5,7 +5,7 @@ export const meta = {
   phases: [{ title: 'Review', detail: 'every owed lens at once' }, { title: 'Verify', detail: 'one verifier per finding, as each lens returns' }],
 }
 
-// args: { repo, base, commit, range, lenses, bundle, request, scenarios, failureModes, surface, main,
+// args: { repo, base, commit, range, lenses, bundle, proofDir (`lpk run status` prints it), request, scenarios, failureModes, surface, main,
 //   testCmd, e2e, proverGroups, bugGroups, mutantAfterProver, maxParallel, stallMs, lpk, delta }
 // - range: the reviewed range exactly as `lpk review start` printed it (<base sha>..<commit sha>).
 // - lenses: the lenses the lane owes (`lpk reviews owed`), each one of LENSES below; a lens named
@@ -39,7 +39,7 @@ const MUTANTS = { type: 'object', properties: { findings: { type: 'array', items
 const covered = (key, item) => ({ type: 'object', properties: { findings: FINDINGS.properties.findings, [key]: { type: 'array', items: item } }, required: ['findings', key] })
 const GROUPS = covered('groups', { type: 'object', properties: { id: S, status: { type: 'string', enum: ['reviewed', 'skipped'] }, changes: S }, required: ['id', 'status'] })
 // The prover's findings are its FAIL and NOT PROVED results, each carrying its ledger id: no second list.
-const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: S, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
+const PROVED = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { scenario: S, status: { type: 'string', enum: ['PASS', 'FAIL', 'NOT PROVED'] }, evidence: { type: 'array', items: S }, id: S, proves: { type: 'array', items: S } }, required: ['scenario', 'status', 'evidence', 'proves'] } }, noticed: { type: 'array', items: S } }, required: ['results'] }
 const RECORD = { type: 'object', properties: { record: { type: 'string' }, ids: { type: 'array', items: { type: 'string' } }, error: { type: 'string' } }, required: ['record', 'ids'] }
 const VERDICT = { type: 'object', properties: { verdict: { type: 'string', enum: ['confirmed', 'preexisting', 'dropped', 'duplicate', 'unsettled'] },
   evidence: S, basis: { type: 'string', enum: ['not-reproduced', 'disproved'] }, primary: S, born: { type: 'string', enum: ['request', 'design', 'build', 'fix'] }, cause: S, reach: { type: 'string', enum: ['user', 'merge', 'neither'] } }, required: ['verdict', 'evidence'] }
@@ -105,11 +105,11 @@ const shards = a.delta ? [] : shardsOf((a.bugGroups || []).filter((g) => g && g.
 const shardOf = new Map()
 const shardFor = (label) => shardOf.get(label.replace(/ \(retry\)$/, ''))
 const huntAsk = 'Hunt the correctness bugs this commit adds, line by line.'
-const prover = (lens) => (label) => (a.surface
-  ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.bundle}/proof\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
+const prover = (lens) => (label) => (a.surface && a.proofDir
+  ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.proofDir}\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
-  : Promise.resolve({ error: 'no running surface given in args.surface' }))
-  .then((o) => o && { findings: (o.results || []).filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: x.evidence })), results: o.results || [], error: o.error })
+  : Promise.resolve({ error: a.surface ? 'no proof directory given in args.proofDir' : 'no running surface given in args.surface' }))
+  .then((o) => o && { findings: (o.results || []).filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: [].concat(x.evidence ?? []).join('\n') })), results: o.results || [], error: o.error })
 const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterProver && owed.includes('prover')) await proverDone; return run(lens)(label) }
 
 const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))

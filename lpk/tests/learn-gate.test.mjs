@@ -10,7 +10,7 @@ const confirm = (repo, id) => ruleOn(repo, { id, verdict: 'confirmed', reach: 'u
 
 function startRun(name, session) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, session, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   return repo;
 }
 const raise = (repo, claim = 'a is wrong') => addFinding(repo, { from: 'lpk:bug-hunter', at: `${sh(repo, 'rev-parse', 'main').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`, claim, repro: 'node a.mjs', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }).finding.id;
@@ -73,14 +73,14 @@ test('the tests-first gate denies a change whose first test arrives after its fi
 test('the tests-first gate counts the lines a commit writes, not the files a rename moves', () => {
   const S = 'rename-session';
   const repo = repoWith('rename', { 'src/a.mjs': 'export const a = 1;\n', 'tests/old.test.mjs': 'import "../src/a.mjs";\n' });
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   sh(repo, 'mv', 'src/a.mjs', 'src/z.mjs'); sh(repo, 'commit', '-qm', 'Move a');
   write(repo, 'tests/z.test.mjs', 'import "../src/z.mjs";\n');
   sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'Test z');
   assert.match(lpk(repo, S, 'gates').stdout, /^tests-first +holds/m, 'moving a code file writes no code');
 
   const other = repoWith('rename-test', { 'tests/old.test.mjs': 'x\n' });
-  ok(lpk(other, 'rename-test-session', 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(other, 'rename-test-session', 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   sh(other, 'mv', 'tests/old.test.mjs', 'tests/new.test.mjs'); sh(other, 'commit', '-qm', 'Move test');
   write(other, 'src/b.mjs', 'export const b = 1;\n');
   sh(other, 'add', '.'); sh(other, 'commit', '-qm', 'Add b');
@@ -93,7 +93,7 @@ test('lpk handoff lists only archived ledgers as past, wherever the repo sits', 
   mkdirSync(join(tmp, 'runs'), { recursive: true });
   const S = 'runs-session';
   const repo = repoWith('runs/proj', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   confirm(repo, raise(repo));
   write(join(repo, '.git', 'lpk'), 'brief.json', JSON.stringify({ requirements: [], slices: [{ id: 'api', files: ['src/a.mjs'] }] }));
   assert.doesNotMatch(ok(lpk(repo, S, 'handoff', 'api')), /past findings/);

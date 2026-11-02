@@ -15,11 +15,11 @@ const range = (repo) => `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(
 
 test('lpk run start numbers each --req and refuses a --proves that names no requirement or no scenario', () => {
   const repo = repoWith('req-flags', { 'src/a.mjs': 'export const a = 1;\n' });
-  const bad = lpk(repo, 'f', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--req', 'a is 2', '--scenario', 'true', '--proves', 'R1,R2');
+  const bad = lpk(repo, 'f', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--req', 'a is 2', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--proves', 'R1,R2');
   assert.equal(bad.status, 2);
   assert.match(bad.stderr, /--proves names R2, and the run's requirements are R1/);
   assert.match(lpk(repo, 'f', 'run', 'start', '--verify', 'true', '--req', 'a is 2', '--proves', 'R1').stderr, /--proves follows the --scenario or --judged/);
-  const out = ok(lpk(repo, 'f', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--req', 'a is 2', '--req', 'b is kept', '--scenario', 'true', '--proves', 'R1,R2', '--judged', 'the page shows 2', '--proves', 'R1'));
+  const out = ok(lpk(repo, 'f', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--req', 'a is 2', '--req', 'b is kept', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--proves', 'R1,R2', '--judged', 'the page shows 2', '--surface', 'ui', '--entry', '/', '--leaves', 'a screenshot', '--proves', 'R1'));
   assert.match(out, /S1 `true` proves R1, R2; S2 \(agent-judged\) the page shows 2 proves R1/);
   assert.match(out, /Requirements: R1 a is 2; R2 b is kept\./);
   assert.deepEqual(JSON.parse(ok(lpk(repo, 'f', 'run', 'status'))).requirements.map((q) => q.id), ['R1', 'R2']);
@@ -29,7 +29,7 @@ test('a quick run denies each unproved requirement by id, holds once a scenario 
   const S = 'req-quick';
   const repo = repoWith('req-quick', { 'src/a.mjs': 'export const a = 1;\n' });
   ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true', '--req', 'a is 2', '--req', 'a stays a number',
-    '--scenario', 'grep -q "a = 2" src/a.mjs', '--proves', 'R1'));
+    '--scenario', 'grep -q "a = 2" src/a.mjs', '--surface', 'cli', '--entry', 'grep -q "a = 2" src/a.mjs', '--proves', 'R1'));
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, S, 'verify'));
   sh(repo, 'commit', '-qam', 'Set a to 2');
@@ -49,10 +49,10 @@ test('a quick run denies each unproved requirement by id, holds once a scenario 
   assert.doesNotMatch(r.why, /R2/);
   ok(lpk(repo, S, 'prove', '--all'));
   assert.equal(row(repo, S).holds, true);
-  assert.match(lpk(repo, S, 'report').stdout, /\| R1 \| a is 2 \| lpk run start --req \| S1 green on tree \w{12} \|\n\| R2 \| a stays a number \| lpk run start --req \| test in tests\/a\.test\.mjs, verify green \|/);
+  assert.match(lpk(repo, S, 'report').stdout, /\| R1 \| a is 2 \| lpk run start --req \| cli \| S1 green on tree \w{12} \|\n\| R2 \| a stays a number \| lpk run start --req \| none \| test in tests\/a\.test\.mjs, verify green \|/);
 
   const none = repoWith('req-none', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(none, 'n', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--scenario', 'true'));
+  ok(lpk(none, 'n', 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--scenario', 'true', '--surface', 'cli', '--entry', 'true'));
   r = row(none, 'n');
   assert.equal(r.holds, true);
   assert.equal(r.print, true);
@@ -63,7 +63,7 @@ test('a full run is denied without numbered requirements, reads them from brief.
   const S = 'req-full';
   const repo = repoWith('req-full', { 'src/a.mjs': 'export const a = 1;\n' });
   const dir = join(repo, '.git', 'lpk');
-  write(dir, 'brief.json', JSON.stringify({ scenarios: [{ id: 'S1', text: 'the page shows 2' }] }));
+  write(dir, 'brief.json', JSON.stringify({ scenarios: [{ id: 'S1', text: 'the page shows 2', surface: 'ui', entry: '/', leaves: 'a screenshot' }] }));
   assert.match(ok(lpk(repo, S, 'run', 'start', '--verify', 'true')), /Scenarios: S1 \(agent-judged\) the page shows 2\./, 'run start records the brief\'s scenarios');
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, S, 'verify'));
@@ -74,7 +74,7 @@ test('a full run is denied without numbered requirements, reads them from brief.
 
   write(dir, 'brief.json', JSON.stringify({
     requirements: [{ id: 'R1', text: 'the page shows 2', source: 'request: "show 2"' }, { id: 'R2', text: 'a dead store is reported', source: 'inferred' }],
-    scenarios: [{ id: 'S1', text: 'the page shows 2', proves: ['R1'] }],
+    scenarios: [{ id: 'S1', text: 'the page shows 2', proves: ['R1'], surface: 'ui', entry: '/', leaves: 'a screenshot' }],
     failures: [{ id: 'FM1', row: 'store unreachable: reported', proves: ['R2'] }],
   }));
   r = row(repo, S);
@@ -101,7 +101,7 @@ test('a full run is denied without numbered requirements, reads them from brief.
 test('lpk report counts a run that has not ended up to its last record, not up to now', () => {
   const S = 'wall-open';
   const repo = repoWith('wall-open', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true', '--scenario', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'one line', '--verify', 'true', '--scenario', 'true', '--surface', 'cli', '--entry', 'true'));
   const marker = join(runDir(repo, S), 'run.json');
   const file = JSON.parse(readFileSync(marker, 'utf8'));
   const t0 = Date.now() - 3 * 3600 * 1000;
