@@ -59,10 +59,13 @@ export function testLoss(files) {
 // Returns the text it reads, at most SHOW of them ('' when none is new), and `seen` with the shown
 // ones added, so the rest come back on the next call.
 const SHOW = 15;
+const ruleBriefs = (rules, shown, old) => [...new Set(shown.map((f) => f.line.split(/\s/)[0]))]
+  .filter((id) => !old.has(`rule|${id}`) && rules.some((r) => r.id === id));
 export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), only, quiet = false) {
   const files = changeOf(repo, base);
+  const rules = loadRules(repo);
   const found = [
-    ...allCandidates(repo, loadRules(repo), files, only).cands.filter((c) => !(quiet && COMMENT_ID.test(c.id))).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
+    ...allCandidates(repo, rules, files, only).cands.filter((c) => !(quiet && COMMENT_ID.test(c.id))).map((c) => ({ key: `${c.id}|${c.path}|${c.text.trim()}`, line: `${c.id}  ${c.path}:${c.n}  ${c.text.trim().slice(0, 160)}` })),
     ...envWiring(repo, files, sibs).filter((e) => !e.seen.length)
       .map((e) => ({ key: `env|${e.name}`, line: `deploy-wiring  ${e.at}  ${e.name} is read here and no deploy file mentions it` })),
     ...testLoss(files),
@@ -70,12 +73,14 @@ export function freshCandidates(repo, base, seen = [], sibs = siblings(repo), on
   const old = new Set(seen);
   const fresh = found.filter((f) => !old.has(f.key));
   const shown = fresh.slice(0, SHOW);
+  const briefs = ruleBriefs(rules, shown, old);
   const text = shown.length ? [
     'lpk check, on lines you just added (each is a place to look, not a verdict; fix it now, or know the one line that says why it is right):',
     ...shown.map((f) => `- ${f.line}`),
+    ...briefs.flatMap((id) => { const r = rules.find((x) => x.id === id); return [`rule ${id}: ${r.rule}`, `  check: ${r.check}`]; }),
     ...(fresh.length > SHOW ? [`${fresh.length - SHOW} more: run lpk check`] : []),
   ].join('\n') : '';
-  return { text, seen: [...new Set([...old, ...shown.map((f) => f.key)])] };
+  return { text, seen: [...new Set([...old, ...shown.map((f) => f.key), ...briefs.map((id) => `rule|${id}`)])] };
 }
 
 // A subagent shares the session id, so its tool calls reach this hook too: only the main session

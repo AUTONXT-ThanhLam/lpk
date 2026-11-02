@@ -12,3 +12,13 @@
 {"task":"listed","arm":"flow","n":4,"costUsd":0.3545007,"seconds":101,"turns":4,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true}
 {"task":"listed","arm":"without","n":5,"costUsd":0.0518391,"seconds":16,"turns":5,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
 {"task":"listed","arm":"with","n":5,"costUsd":0.0881754,"seconds":20,"turns":4,"stop":"success","hiddenPass":4,"hiddenFail":1,"ownFail":0,"commits":1,"dirty":0,"lpkRun":false}
+{"task":"listed","arm":"flow","n":1,"costUsd":0.9226101000000001,"seconds":337,"turns":6,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":4,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-71vNCW"}
+{"task":"listed","arm":"flow","n":2,"costUsd":1.0962314000000004,"seconds":402,"turns":20,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-4NJV3p"}
+{"task":"listed","arm":"flow","n":3,"costUsd":0.6558879999999999,"seconds":172,"turns":3,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-zl19AK"}
+{"task":"listed","arm":"flow","n":4,"costUsd":1.1450195999999997,"seconds":334,"turns":1,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":6,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-7V34Hz"}
+{"task":"listed","arm":"flow","n":5,"costUsd":1.7236362999999997,"seconds":543,"turns":1,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":6,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-j7nVtz"}
+{"task":"listed","arm":"flow","n":6,"costUsd":1.7054393000000003,"seconds":608,"turns":3,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":4,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-jw2mmD"}
+{"task":"listed","arm":"flow","n":7,"costUsd":1.1262111000000001,"seconds":395,"turns":2,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":5,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-EzJCrR"}
+{"task":"listed","arm":"flow","n":8,"costUsd":0.7774117,"seconds":237,"turns":2,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":2,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-pxoq5r"}
+{"task":"listed","arm":"flow","n":9,"costUsd":0.5731809000000001,"seconds":260,"turns":2,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":1,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-uFMhgq"}
+{"task":"listed","arm":"flow","n":10,"costUsd":0.510069,"seconds":150,"turns":2,"stop":"success","hiddenPass":5,"hiddenFail":0,"ownFail":0,"commits":3,"dirty":0,"lpkRun":true,"dir":"/tmp/flow-listed-flow-kG9Unw"}
