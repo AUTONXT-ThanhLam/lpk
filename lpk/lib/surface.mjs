@@ -5,7 +5,7 @@ import { checkout } from './where.mjs';
 export const SURFACES = ['ui', 'cli', 'api', 'library', 'plugin', 'mobile', 'desktop', 'job', 'migration', 'docs', 'other'];
 export const needsUser = (s) => ['ui', 'mobile', 'desktop'].includes(s);
 export const PAGE_OPEN = ['new_page', 'navigate_page'];
-export const INTERACTION = ['click', 'click_at', 'fill', 'fill_form', 'type_text', 'press_key'];
+export const INTERACTION = ['click', 'click_at', 'fill', 'fill_form', 'type_text', 'press_key', 'drag', 'upload_file'];
 export const SCREENSHOT = ['take_screenshot'];
 
 const bare = (name) => String(name).replace(/^mcp__(?:plugin_lpk_)?chrome-devtools__/, '');
@@ -34,11 +34,11 @@ const briefFile = (run) => {
 const briefHasScenarios = (run) => { try { return JSON.parse(readFileSync(briefFile(run), 'utf8')).scenarios?.length > 0; } catch { return false; } };
 
 export function oldShapeWayOut(run) {
-  const bare0 = (run.scenarios || []).filter((s) => !s.surface || !s.entry).map((s) => s.id);
+  const bare0 = (run.scenarios || []).filter((s) => checkScenario(s).length).map((s) => s.id);
   const fromBrief = run.scenarioFrom ? run.scenarioFrom === 'brief' : briefHasScenarios(run);
   const how = fromBrief
     ? `add \`surface\` (one of ${SURFACES.join(', ')}), \`entry\` and, for a judged one, \`leaves\` to ${bare0.join(', ') || 'each scenario'} in brief.json`
-    : `restate ${bare0.join(', ') || 'each scenario'} with \`lpk run start ... --scenario|--judged "<text>" --surface <${SURFACES.join('|')}> --entry "<where the user starts>"\``;
+    : `restate ${bare0.join(', ') || 'each scenario'} with \`lpk run start ... --scenario|--judged "<text>" --surface <${SURFACES.join('|')}> --entry "<where the user starts>" [--leaves "<what the Prover leaves behind>", for a judged one]\``;
   return `${run.ended ? 'lpk run take first, then ' : ''}${how}`;
 }
 

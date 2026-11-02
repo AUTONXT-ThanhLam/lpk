@@ -69,7 +69,7 @@ function scenariosGate(repo, run, recs) {
   const sc = run.scenarios || [];
   if (!sc.length) return { holds: false, read: 'run.json scenarios', why: 'the run records no scenario', wayOut: 'record them: `lpk run start --scenario "<cmd>" --surface <surface> --entry "<where the user starts>"` or `--judged "<scenario>" --surface <surface> --entry "<where the user starts>" --leaves "<what the Prover leaves behind>"` (it amends the open run)' };
   const shape = sc.flatMap(checkScenario);
-  if (shape.length) return { holds: false, read: 'run.json scenarios: surface and entry', why: list(shape, 4), wayOut: oldShapeWayOut(run) };
+  if (shape.length) return { holds: false, read: 'run.json scenarios: surface, entry and leaves', why: list(shape, 4), wayOut: oldShapeWayOut(run) };
   const tree = headTree(repo);
   const why = [];
   for (const s of sc.filter((x) => x.cmd)) {

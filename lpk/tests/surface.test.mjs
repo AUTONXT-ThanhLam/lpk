@@ -131,6 +131,14 @@ test('S2 R3 new_page, click and a named .png pass, and a docs-only commit after 
   assert.equal(gate(fx.repo, fx.S, 'scenarios').holds, true);
 });
 
+test('S2 R3 a drag or an upload before the screenshot counts as the user acting', () => {
+  for (const tool of ['drag', 'upload_file']) {
+    const fx = begin(`s2-${tool}`, [UI]);
+    prover(fx, 'p1', [NEW, { name: `${CH}${tool}`, input: { uid: '1_4' } }, shot(png(fx, 'total.png'))], [pass('S1', [join(fx.dir, 'total.png')])]);
+    assert.equal(gate(fx.repo, fx.S, 'scenarios').holds, true, `${tool}: ${gate(fx.repo, fx.S, 'scenarios').why}`);
+  }
+});
+
 test('S2 R3 a Bash-written file named in a command passes for a non-screen judged scenario', () => {
   const fx = begin('s2-bash', [{ text: 'the doc names the flag', surface: 'docs', entry: 'README.md' }]);
   const p = png(fx, 'grep.txt');
@@ -207,6 +215,15 @@ test('S1 R9 an old-shape run without surface or entry is denied at scenarios wit
   assert.match(r.wayOut, /lpk run start .*--surface .*--entry/);
   patchRun(fx.repo, fx.S, (run) => { run.scenarioFrom = 'brief'; });
   assert.match(gate(fx.repo, fx.S, 'scenarios').wayOut, /brief\.json/);
+});
+
+test('S1 R9 a judged scenario missing only its leaves is named by the way out, with the flag to add', () => {
+  const fx = begin('s1-leaves', [UI]);
+  patchRun(fx.repo, fx.S, (run) => { run.scenarios = run.scenarios.map(({ leaves, ...s }) => s); });
+  const r = gate(fx.repo, fx.S, 'scenarios');
+  assert.equal(r.holds, false);
+  assert.match(r.wayOut, /restate S1 /);
+  assert.match(r.wayOut, /--leaves/);
 });
 
 test('S6 R7 swapping a scenario after the first list is named by the plan row', () => {
