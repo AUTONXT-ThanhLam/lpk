@@ -50,7 +50,8 @@ and seconds are means per run (subagents included). `listed` has 4 `flow` rows a
   (`applyCoupon(375, 18.4%)`) in 5 of 5 runs against 0 of 10 in the other two arms. The rows do not
   show which step of the flow caught it.
 - `cancel` and `csv` are solved by every arm; they show the flow's price, not its worth.
-- `reopen` differs by one run (3, 3, 4 of 5), which is noise.
+- `reopen` differs by one run (3, 3, 4 of 5), which is noise. Its trap is not in the prompt or in
+  `REVIEW.md`: a held item must stay held, which only `src/items.mjs` and its test show.
 - `listed` and `contained` hold one trap of the same class: a path compared by its spelling, not by
   what it names (a symlink, or `realpath`). No arm passed in any run, `flow` included.
 
