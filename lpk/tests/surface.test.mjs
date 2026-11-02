@@ -13,6 +13,7 @@ const CLICK = { name: `${CH}click`, input: { uid: '1_4' } };
 const shot = (p) => ({ name: `${CH}take_screenshot`, input: { pageId: 1, filePath: p } });
 const put = (p) => ({ name: 'Write', input: { file_path: p, content: 'seen' } });
 const bash = (command) => ({ name: 'Bash', input: { command } });
+const owedText = (fx) => { const r = lpk(fx.repo, fx.S, 'reviews', 'owed'); return r.stdout + r.stderr; };
 const range = (repo) => `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
 const gate = (repo, S, name) => JSON.parse(lpk(repo, S, 'gates', '--json').stdout).find((r) => r.gate === name);
 const marker = (repo, S) => join(runDir(repo, S), 'run.json');
@@ -144,11 +145,11 @@ test('S4 R5 a unit test naming R1 does not prove it while a scenario names it an
 
 test('S5 R6 a small quick diff with a ui scenario, and a README-only diff with a judged docs scenario, owe the prover', () => {
   const ui = begin('s5-ui', [UI], { files: { 'src/App.tsx': 'export const A = 1;\n' }, edit: 'src/App.tsx' });
-  assert.match(ok(lpk(ui.repo, ui.S, 'reviews', 'owed')), /^- prover on /m);
+  assert.match(owedText(ui), /^- prover on /m);
   const docs = begin('s5-docs', [{ text: 'the readme names the flag', surface: 'docs', entry: 'README.md' }], { files: { 'README.md': 'a\n' }, edit: 'README.md' });
-  assert.match(ok(lpk(docs.repo, docs.S, 'reviews', 'owed')), /^- prover on /m);
+  assert.match(owedText(docs), /^- prover on /m);
   const plain = begin('s5-cmd', [{ cmd: 'true', surface: 'cli' }]);
-  assert.doesNotMatch(ok(lpk(plain.repo, plain.S, 'reviews', 'owed')), /prover/);
+  assert.doesNotMatch(owedText(plain), /prover/);
 });
 
 test('R3 R5 a failure row line PASS with empty evidence is NOT PROVED, and a provedBy test still proves its requirement', () => {
