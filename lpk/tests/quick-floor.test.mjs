@@ -121,8 +121,13 @@ test('an ended run keeps reading its own brief while a newer run is open, and th
   const band = () => JSON.parse(ok(lpk(repo, S, 'status', '--gates', '--write-cache', '--session', S, '--json'))).gates.rows.find((r) => r.gate === 'design');
   assert.equal(band().holds, false);
   write(dir, 'brief.md', '# Brief\nA is doubled.\n');
+  assert.equal(band().holds, false, 'a written brief with no round is still denied');
   ok(lpk(repo, S, 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered'));
-  assert.equal(band().holds, true, 'a written brief and a recorded round show in the cached band');
+  assert.equal(band().holds, true, 'a recorded round shows in the cached band');
+  write(dir, 'brief.md', '# Brief\nA is tripled.\n');
+  assert.equal(band().holds, false, 'a brief edited after its round shows in the cached band');
+  write(dir, 'brief.md', '# Brief\nA is doubled.\n');
+  assert.equal(band().holds, true, 'the brief the round passed holds again');
 
   const first = JSON.parse(ok(lpk(repo, S, 'run', 'status')));
   ok(lpk(repo, S, 'run', 'end'));
