@@ -63,7 +63,7 @@ test('the child is given a fallback model only when --fallback-model is passed',
   assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
 });
 
-test('a code review finding the verifier confirms carries reach and born into the ledger and the report, which names each finding born in a fix and counts the confirmed ones per reviewed range', () => {
+test('a code review finding the verifier confirms carries reach and born into the ledger and the report, which names each finding born in a fix and counts the confirmed defects per reviewed range', () => {
   const S = 'crreach';
   const repo = changedRepo('crreach', S);
   const first = sh(repo, 'rev-parse', 'HEAD~1').trim();
@@ -88,16 +88,18 @@ test('a code review finding the verifier confirms carries reach and born into th
   }
   ruleOn(repo, { id: 'F4', verdict: 'confirmed', born: 'fix', cause: 'Number does not trim', reach: 'user', evidence: 'NaN', by: 'lpk:verifier' });
   ruleOn(repo, { id: 'F5', verdict: 'dropped', basis: 'disproved', evidence: 'a module is evaluated once', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:mutant', at: delta, claim: 'no test fails when the parse is dropped', repro: 'lpk mutate', kind: 'test-gap', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F6', verdict: 'confirmed', born: 'fix', cause: 'no test reads a back', reach: 'merge', evidence: 'the mutant survives', by: 'lpk:verifier' });
   const shown = lpk(repo, S, 'report').stdout;
-  assert.match(shown, /^Confirmed defects by the step they began in: build 1, fix 3$/m);
+  assert.match(shown, /^Confirmed defects by the step they began in: build 1, fix 4$/m);
   const bornLine = shown.split('\n').find((l) => l.startsWith('Born in a fix:')) ?? '';
   assert.match(bornLine, /\bF1 confirmed\b/);
   assert.match(bornLine, new RegExp(`\\bF2 fixed\\b.*\\b${fixSha.slice(0, 12)}\\b`));
   assert.ok(!bornLine.includes(fixSha.slice(0, 13)));
   assert.ok(!/\bF3\b/.test(bornLine), bornLine);
-  assert.match(shown, /^Confirmed defects by who meets them: user 3, merge 1$/m);
+  assert.match(shown, /^Confirmed defects by who meets them: user 3, merge 2$/m);
   const short = (x) => x.slice(0, 12);
-  assert.match(shown, new RegExp(`^Confirmed per reviewed range: ${short(first)}\\.\\.${short(reviewedSha)} 3, ${short(reviewedSha)}\\.\\.${short(fixSha)} 1$`, 'm'));
+  assert.match(shown, new RegExp(`^Confirmed defects per reviewed range: ${short(first)}\\.\\.${short(reviewedSha)} 3, ${short(reviewedSha)}\\.\\.${short(fixSha)} 1$`, 'm'));
 });
 
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
