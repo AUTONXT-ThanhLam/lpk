@@ -242,3 +242,18 @@ test('R5: the nudge budget a holder spent is not the session\'s that takes the p
   assert.equal(first.decision, 'block');
   assert.ok(!first.reason.includes('PushNotification'));
 });
+
+test('R1: ending a run names the open plan item, its prove command and the item after it, and a session without a plan sees none', () => {
+  const repo = seeded('rend', 's-rend', [['first part', 'false'], ['second part', 'true']]);
+  must(lpk(repo, 's-rend', 'run', 'start', '--target', 'main', '--verify', 'true'));
+  const out = must(lpk(repo, 's-rend', 'run', 'end')).stdout;
+  assert.match(out, /lpk run ended/);
+  assert.match(out, /rend/);
+  assert.match(out, /P1 first part/);
+  assert.ok(out.includes('Its proof: false'));
+  assert.ok(out.includes('lpk plan prove P1'));
+  assert.ok(out.includes('then start P2: second part'));
+  must(lpk(repo, 's-other', 'run', 'start', '--target', 'main', '--verify', 'true'));
+  const bare = must(lpk(repo, 's-other', 'run', 'end')).stdout;
+  assert.ok(!bare.includes('lpk plan prove'));
+});

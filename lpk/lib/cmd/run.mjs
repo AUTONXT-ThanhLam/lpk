@@ -15,6 +15,7 @@ import { recordRun } from '../runs.mjs';
 import { prLine, prWaiver, prBlocks, runPrs, unwaived } from '../prs.mjs';
 import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
+import { openItemNotes } from '../plan.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
 import { cleanTrees, treeOf } from '../slicetree.mjs';
 import { linkWorktree } from '../where.mjs';
@@ -141,6 +142,7 @@ export async function main(argv) {
     const file = promptsOf(r.run.marker);
     const said = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0;
     console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still hold on ${r.run.branches?.join(', ') || 'its branch'}.`);
+    try { for (const note of openItemNotes(sessionId())) console.log(note); } catch {}
     return 0;
   }
   if (sub === 'status') {

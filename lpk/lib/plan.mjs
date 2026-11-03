@@ -65,6 +65,15 @@ const doneIds = (plan) => plan.items.filter((i) => i.status === 'done').map((i) 
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
+export function openItemNotes(session) {
+  if (!session) return [];
+  return listPlans(session).plans.filter((p) => p.session === session && nextOpen(p)).map((p) => {
+    const item = nextOpen(p);
+    const after = p.items.slice(p.items.indexOf(item) + 1).find((i) => i.status === 'todo');
+    return `Plan ${p.name}: ${item.id} ${item.title} is still open. Its proof: ${item.proof}. Once that exits 0, run \`lpk plan prove ${item.id}\`; ${after ? `then start ${after.id}: ${after.title}.` : 'the plan is then done.'}`;
+  });
+}
+
 export function render(plan) {
   const lines = [`plan ${plan.name} (repo ${plan.repo}; ${plan.session ? `held by session ${plan.session}` : 'held by no session: `lpk plan take` binds it'})`];
   for (const i of plan.items) {
