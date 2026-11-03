@@ -1,7 +1,7 @@
 // The delivery gates of a run, each from what the CLI ran or computed: git facts, its own records,
 // the findings ledger and the agents' transcripts. A gate with no evidence does not hold. A gate
-// whose own code fails does not hold either, and names the error; the owner's waiver of that gate
-// (`gate:<name>`) is the way out.
+// whose own code fails does not hold either, and names the error; a waiver of that gate
+// (`gate:<name>`), the lead's with its reason or the owner's, is the way out.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,7 +18,7 @@ import { ciFacts } from './ci.mjs';
 import { learnGate } from './learn.mjs';
 import { designGate } from './designgate.mjs';
 import { testsFirstGate } from './testfirst.mjs';
-import { readRecords, waived } from './records.mjs';
+import { readRecords, waiveCommand, waiverOf } from './records.mjs';
 import { readRun, runDir } from './run.mjs';
 import { headTree, untrackedCode } from './tree.mjs';
 
@@ -53,7 +53,7 @@ function findingsGate(repo, run) {
   const known = limits.length ? `known limits of the increment bar, listed in the PR body: ${list(limits.map((f) => f.id))}` : '';
   const note = owner.length ? `${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}: for the owner to read, not blocking` : '';
   // The ledger tools read only the live ledger: once a later run has archived this ended run's
-  // findings, no agent can rule on or close them, and only the owner's waiver is left.
+  // findings, no agent can rule on or close them, and only a waiver of `gate:findings` is left.
   const archived = why.length && run.ended && !readLedger(repo).findings.some((f) => f.run === run.id);
   return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, known, note].filter(Boolean).join('; '),
     wayOut: archived ? `run ${run.id} has ended and a later run archived its findings, so no agent can rule on or close them any more`
@@ -146,8 +146,9 @@ export async function gates(repo, run = readRun(repo), { ci = true } = {}) {
     if (gate === 'ci' && !ci) continue;
     let row;
     try { row = await fn(); } catch (e) { row = { holds: false, read: '', why: `the gate failed: ${String(e.message || e).split('\n')[0]}`, wayOut: '' }; }
-    if (!row.holds && waived(repo, run.id, `gate:${gate}`)) row = { ...row, holds: true, why: `waived by the owner (${row.why})` };
-    else if (!row.holds) row.wayOut = [row.wayOut, `or the owner waives it (option \`gate:${gate}\`)`].filter(Boolean).join('; ');
+    const w = row.holds ? null : waiverOf(repo, run.id, `gate:${gate}`);
+    if (w) row = { ...row, holds: true, why: w.via === 'lead' ? `waived by the lead: ${w.why} (${row.why})` : `waived by the owner (${row.why})` };
+    else if (!row.holds) row.wayOut = [row.wayOut, `or, when no agent can fix it, the lead waives it: \`${waiveCommand([`gate:${gate}`])}\``].filter(Boolean).join('; ');
     out.push({ gate, ...row });
   }
   return out;

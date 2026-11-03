@@ -1,5 +1,5 @@
 // `lpk hook <name>`: every hook of the plugin, fed the hook's JSON on stdin, answering on stdout.
-// A gate hook whose own code fails inside a run denies, naming the error and the owner's waiver as
+// A gate hook whose own code fails inside a run denies, naming the error and its waiver as
 // the way out, so a broken gate never passes what it guards; outside a run, and for every hint
 // hook, a failure lets the call go on and says what is missing, except for a silent hook, which says nothing.
 import { readFileSync, realpathSync, writeSync } from 'node:fs';
@@ -40,7 +40,7 @@ const unattended = (i) => (i.agent_id && i.permission_mode === 'bypassPermission
   ? { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'deny', message: NOBODY_ANSWERS, interrupt: false } } }
   : null);
 
-const HOOKS = {
+export const HOOKS = {
   pre: { gate: true, run: pre },
   commit: { gate: true, run: async (i) => (await lib('hooks')).beforeCommit(i) },
   stamp: { gate: true, run: async (i) => (await lib('stamp')).stampHookOutput(i) },
@@ -62,8 +62,14 @@ const HOOKS = {
       const run = w.waiverRun(i) || (repo ? (await lib('run')).runHere(repo) : null);
       const got = w.picks(i.tool_input, i.tool_response);
       const n = await w.recordWaiver(i, run);
-      if (!n && got.length && !run) return { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: "lpk: the owner's waiver was NOT recorded: this session has no run open or ended in the repo the question was asked from (several open runs: ask again from inside the repo of the run it belongs to; none: `lpk run take` reopens the run that delivered the branch). Ask again once that holds." } };
-      return n ? { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `lpk: recorded the owner's waiver of ${got.map((p) => `\`${p.what}\``).join(', ')} for this run.` } } : null;
+      const names = (l) => l.map((p) => `\`${p.what}\``).join(', ');
+      const taken = got.filter((p) => w.isWaiverId(p.what));
+      const dropped = got.filter((p) => !w.isWaiverId(p.what));
+      const note = dropped.length ? ` The picked label(s) ${names(dropped)} are not waiver ids and release nothing: label each option exactly one of ${w.ID_FORMS}, and ask again.` : '';
+      const say = (text) => ({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } });
+      if (!n && taken.length && !run) return say("lpk: the owner's waiver was NOT recorded: this session has no run open or ended in the repo the question was asked from (several open runs: ask again from inside the repo of the run it belongs to; none: `lpk run take` reopens the run that delivered the branch). Ask again once that holds." + note);
+      if (n) return say(`lpk: recorded the owner's waiver of ${names(taken)} for this run.${note}`);
+      return note ? say(`lpk: nothing was recorded.${note}`) : null;
     },
   },
 };

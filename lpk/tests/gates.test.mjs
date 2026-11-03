@@ -58,10 +58,12 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
   assert.doesNotMatch(why, /- findings:/, 'a ruling by someone other than the verifier does not block');
   assert.doesNotMatch(why, /- reviews:/, 'both agents ran on the patch and every finding they returned is in the ledger');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds .*\n +.*F2 \(dropped by main\)/m);
-  assert.match(ok(lpk(repo, S, 'waive', 'gate:scenarios', '--why', 'I am sure')), /not an owner waiver/);
+  const pre = lpk(repo, S, 'waive', 'gate:pre', '--why', 'I am sure');
+  assert.equal(pre.status, 2, 'gate:pre is the owner\'s');
+  assert.match(pre.stderr, /waiver question/);
   assert.equal(lpk(repo, S, 'waive', 'F2', '--why', 'I read it', '--via', '/lpk-waive').status, 2, 'a finding id is not waived');
 
-  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/, 'an agent running lpk waive releases nothing');
+  assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/, 'a refused waiver releases nothing');
   assert.equal(hookBash(repo, S, 'gh pr create --draft --title "Set a" --body x'), null, 'a draft PR is not a handover');
   ok(lpk(repo, S, 'prove', '--all'));
   assert.equal(hookBash(repo, 'another-session', 'gh pr ready'), null);
@@ -259,14 +261,14 @@ test('a check or a scenario changed by lpk run start voids what the old one prov
   assert.match(rows(), /^verify\s+holds[\s\S]*^scenarios\s+DENY[^\n]*\n\s+S1 not proved on HEAD's tree/m);
 });
 
-test('the owner\'s waiver of gate:error lets through a call the gate cannot decide', () => {
+test('the lead\'s waiver of gate:error lets through a call the gate cannot decide', () => {
   const S = 'error-session';
   const repo = quickRun('gate-error', S);
   write(tmp, 'broken-gh/gh', '#!/bin/sh\necho "gh: no host" >&2; exit 1\n');
   chmodSync(join(tmp, 'broken-gh', 'gh'), 0o755);
   const env = { PATH: `${join(tmp, 'broken-gh')}${delimiter}${process.env.PATH}` };
-  assert.match(hookBash(repo, S, 'gh pr ready 12', env), /could not decide: .*gh pr view 12[\s\S]*`gate:error`/);
-  ok(lpk(repo, S, 'waive', 'gate:error', '--why', 'GitHub is down', '--via', '/lpk-waive'));
+  assert.match(hookBash(repo, S, 'gh pr ready 12', env), /could not decide: .*gh pr view 12[\s\S]*lpk waive gate:error/);
+  ok(lpk(repo, S, 'waive', 'gate:error', '--why', 'GitHub is down'));
   assert.equal(hookBash(repo, S, 'gh pr ready 12', env), null);
 });
 

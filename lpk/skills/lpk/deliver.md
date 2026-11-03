@@ -72,10 +72,14 @@ and answer a repeated point in one line ("declined, see the first triage").
 1. Run the `lpk:learn` skill on this run's evidence and record it with `lpk learn [--rule <id>]...`: the
    `learn` gate holds only once every confirmed, fixed or deferred finding is covered. Then run `lpk report`:
    it runs `lpk gates` and prints every number from the records.
-2. Ask the owner one question with `AskUserQuestion`, with `metadata.source: "lpk:waive"`: the PR
-   question (draft, ready, merge, as this repo's CLAUDE files authorize), and, multi-select, only
-   the gates that do not hold for a reason no agent can fix (a service that is down, a lens that
-   stalled twice). Fix every other gate instead. The owner's answer is recorded as the waiver.
+2. Fix every gate an agent can fix. A gate that does not hold for a reason no agent can fix (a
+   service that is down, a lens that stalled twice) is yours to weigh, not the owner's: waive it
+   with `lpk waive <gate:name> --why "<what stays unproved, and why delivering anyway is right>"`
+   when delivering is still right, else hold the delivery and say why. List each waiver and its
+   reason in the PR body and the report. What leaves this machine or cannot be undone (`connector:`,
+   `git:`, `pr:`, and `gate:pre`) stays the owner's: ask with `AskUserQuestion`,
+   `metadata.source: "lpk:waive"`, an option labelled exactly with the id. Ask the PR question
+   (draft, ready, merge) only where this repo's CLAUDE files do not already authorize it.
    While the owner is away, the PR stays a draft and the report lists what waits. When the owner asks
    for the PRs ready, run `lpk run grant ready --why "<their words>"`: `lpk run end` then lists the
    PRs of the run and refuses a draft one or one that conflicts with its base.

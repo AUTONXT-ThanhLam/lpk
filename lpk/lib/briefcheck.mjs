@@ -34,5 +34,5 @@ export function briefUnchecked(repo, run, { go = true } = {}) {
   const last = rounds.at(-1);
   const seen = last ? `the last round (${last.round}: ${last.verdict}) ${last.brief && last.brief !== now ? 'was recorded before the brief changed after it' : 'did not pass'}` : 'no round is recorded';
   const round = 'Run the design review on it (`design.md`) and record the round with `lpk decide "design review round <n>: pass, <High>/<Medium>/<Low>"`';
-  return `the Design Brief has not passed a design review round as it stands (${seen}). ${round}${go ? ', then run `lpk go`; or the owner waives it (option `gate:brief-check`).' : '.'}`;
+  return `the Design Brief has not passed a design review round as it stands (${seen}). ${round}${go ? ', then run `lpk go`; or, when no round can be run, the lead waives it: `lpk waive gate:brief-check --why "<why>"`.' : '.'}`;
 }

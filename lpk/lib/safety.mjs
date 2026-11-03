@@ -20,14 +20,19 @@ export function credentialTrip(input) {
   return hit ? deny(`this call names \`${hit}\`, where the owner's account tokens are. No agent reads a token; the lpk CLI hands one to the processes that need it. This is a tripwire on that literal text: if the owner asked for this, they run it themselves.`) : null;
 }
 
-// The owner's waiver is theirs alone: it comes from /lpk-waive or the waiver question, never from an
-// agent running `lpk waive` or writing the run's records. A tripwire on that literal text.
+// A waiver comes from the lead session's `lpk waive`, the owner's /lpk-waive or the waiver question,
+// never from a subagent or from writing the run's records. A tripwire on that literal text.
 export const WAIVER_TEXT = ['lpk waive', 'cmd/waive.mjs', 'records.jsonl'];
 export function waiverTrip(input) {
   const t = input.tool_input ?? {};
-  const hit = input.tool_name === 'Bash' ? WAIVER_TEXT.find((c) => String(t.command || '').includes(c))
+  const command = String(t.command || '');
+  const owners = /--via\b/.test(command);
+  const hit = input.tool_name === 'Bash' ? WAIVER_TEXT.find((c) => command.includes(c) && (c !== 'lpk waive' || input.agent_id || owners))
     : /^(Write|Edit|MultiEdit)$/.test(input.tool_name || '') && String(t.file_path || '').endsWith('/lpk/records.jsonl') ? 'records.jsonl' : null;
-  return hit ? deny(`this call names \`${hit}\`. A waiver is the owner's act: ask them with the waiver question, or they type /lpk-waive.${hit === 'records.jsonl' && input.tool_name === 'Bash' ? ' To read the run\'s records, run \`lpk records\`: no command needs to name the file.' : ''}`) : null;
+  if (!hit) return null;
+  if (hit === 'lpk waive' && input.agent_id) return deny('this call names `lpk waive`, and only the lead session waives a gate. Report to the lead what holds, why no agent can fix it, and what stays unproved; the lead weighs it.');
+  if (hit === 'lpk waive') return deny('this call names `lpk waive` with `--via`, which names the owner\'s channels: the owner speaks through the waiver question or types the command themselves. The lead\'s own waiver is `lpk waive <gate:id> --why "<why>"`, with no `--via`.');
+  return deny(`this call names \`${hit}\`. A waiver is recorded by \`lpk waive\` in the lead session, or by the owner's waiver question or /lpk-waive.${hit === 'records.jsonl' && input.tool_name === 'Bash' ? ' To read the run\'s records, run \`lpk records\`: no command needs to name the file.' : ''}`);
 }
 
 // A page opened from a file in the lpk Chrome reads the local disk with the owner's browser profile.

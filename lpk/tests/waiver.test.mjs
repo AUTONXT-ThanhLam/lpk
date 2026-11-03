@@ -34,7 +34,7 @@ test('the handover deny names the options of the waiver question, and the owner\
   const S = 'ask-session';
   const repo = quickRun('ask', S);
   const create = 'gh pr create --title "Set a" --body x';
-  const labels = [...new Set([...hookBash(repo, S, create).matchAll(/`(gate:\w+)`/g)].map((m) => m[1]))];
+  const labels = [...new Set([...hookBash(repo, S, create).matchAll(/lpk waive (gate:[\w-]+)/g)].map((m) => m[1]))];
   assert.ok(labels.includes('gate:scenarios') && labels.includes('gate:reviews'), labels.join());
   const question = 'Release these?';
   const input = { session_id: S, tool_input: { questions: [{ question, multiSelect: true, options: labels.map((label) => ({ label, description: '' })) }], metadata: { source: 'lpk:waive' } }, tool_response: { answers: { [question]: labels.join(', ') } } };
@@ -51,7 +51,7 @@ test('a waiver asked after the run ended still releases the gates that stay on i
   sh(repo, 'commit', '-qam', 'Set a to 3');
   ok(lpk(repo, S, 'run', 'end', '--abandon', 'the work moved on'));
   const create = 'gh pr create --title "Set a" --body x';
-  const labels = [...new Set([...hookBash(repo, S, create).matchAll(/`(gate:\w+)`/g)].map((m) => m[1]))];
+  const labels = [...new Set([...hookBash(repo, S, create).matchAll(/lpk waive (gate:[\w-]+)/g)].map((m) => m[1]))];
   assert.ok(labels.length > 0, 'the ended run still holds the branch\'s gates');
   const question = 'Release these?';
   const input = { session_id: S, cwd: repo, tool_input: { questions: [{ question, multiSelect: true, options: labels.map((label) => ({ label, description: '' })) }], metadata: { source: 'lpk:waive' } }, tool_response: { answers: { [question]: labels.join(', ') } } };

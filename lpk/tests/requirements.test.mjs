@@ -52,7 +52,7 @@ test('a quick run denies each unproved requirement by id, holds once a scenario 
   let r = row(repo, S);
   assert.equal(r.holds, false);
   assert.match(r.why, /R1 unproved \(S1 not green on HEAD's tree\); R2 unproved \(no scenario, failure row or added test names it\)/);
-  assert.match(r.wayOut, /prove R1, R2: .*or the owner waives it \(option `gate:requirements`\)/);
+  assert.match(r.wayOut, /prove R1, R2: .*or, when no agent can fix it, the lead waives it: `lpk waive gate:requirements/);
   assert.match(lpk(repo, S, 'gates').stdout, /requirements +DENY/);
 
   ok(lpk(repo, S, 'prove', '--all'));

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { lpk, repoWith, write } from './gates-env.mjs';
+import { hook } from './hooks-env.mjs';
 
 const BRIEF = JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }], scenarios: [{ id: 'S1', text: 'call a twice', cmd: 'true', proves: ['R1'], surface: 'cli', entry: 'true' }] });
 const dir = (repo) => join(repo, '.git', 'lpk');
@@ -51,12 +52,13 @@ test('editing the brief after the round that passed puts the check back', () => 
   assert.equal(go(repo, S).status, 0, 'the last round is final whatever it left open');
 });
 
-test('the owner can waive the brief check, an agent cannot, and a run with no brief is unaffected', () => {
+test('the lead can waive the brief check, an agent cannot, and a run with no brief is unaffected', () => {
   const S = 'brief-check-waive';
   const repo = fullRun('brief-waive', S);
-  assert.equal(lpk(repo, S, 'waive', 'gate:brief-check', '--why', 'agent says skip').status, 0);
-  assert.equal(go(repo, S).status, 1, 'a waiver recorded by an agent counts for nothing');
-  assert.equal(lpk(repo, S, 'waive', 'gate:brief-check', '--why', 'the owner reviewed it', '--via', 'ask').status, 0);
+  const agent = hook('PreToolUse', 'pre', { tool_name: 'Bash', session_id: S, cwd: repo, agent_id: 'a1', agent_type: 'lpk:staff', tool_input: { command: 'lpk waive gate:brief-check --why "agent says skip"' } });
+  assert.equal(agent.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(go(repo, S).status, 1, 'a subagent\'s waiver is refused and counts for nothing');
+  assert.equal(lpk(repo, S, 'waive', 'gate:brief-check', '--why', 'the lead reviewed it').status, 0);
   assert.equal(go(repo, S).status, 0);
 
   const T = 'brief-check-none';

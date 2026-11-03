@@ -5,13 +5,28 @@
 // the owner was away, records nothing.
 import { top } from './git.mjs';
 import { records } from './hooks.mjs';
-import { WAIVE_SOURCE } from './records.mjs';
+import { leadMay, WAIVE_SOURCE } from './records.mjs';
 import { endedRuns, sessionRuns } from './run.mjs';
+import { CONNECTOR_WRITES, GIT_TRIPS } from './safety.mjs';
 
-export { WAIVE_SOURCE };
+export { leadMay, WAIVE_SOURCE };
 
-// The way out a deny names: the exact label to put on the waiver question's option.
-export const waiverHow = (id) => `The owner can release it: ask with AskUserQuestion, \`metadata: { source: "${WAIVE_SOURCE}" }\`, an option labelled exactly \`${id}\`; their pick is recorded and this check lets it through.`;
+export const GATES = ['verify', 'findings', 'reviews', 'scenarios', 'requirements', 'ci', 'learn', 'tests-first', 'design', 'error', 'brief-check', 'commit', 'pre', 'stamp'];
+const GIT_IDS = GIT_TRIPS.map((t) => `git:${t.id}`);
+const CONNECTOR_IDS = CONNECTOR_WRITES.map((t) => `connector:${t}`);
+export function isWaiverId(s) {
+  const id = String(s ?? '');
+  if (id.startsWith('gate:')) return GATES.includes(id.slice(5));
+  if (id.startsWith('git:')) return GIT_IDS.includes(id);
+  if (id.startsWith('connector:')) return CONNECTOR_IDS.includes(id);
+  return /^pr:https?:\/\/\S+$/.test(id);
+}
+export const ID_FORMS = `\`gate:<name>\` (<name> one of ${GATES.join(', ')}), \`${GIT_IDS.join('\`, \`')}\`, \`connector:<tool>\` (<tool> one of ${CONNECTOR_WRITES.join(', ')}) or \`pr:<url>\``;
+
+// The way out a deny names: the lead's command for a gate, the owner's waiver question for the rest.
+export const waiverHow = (id) => (leadMay(id)
+  ? `When no agent can fix it, the lead waives it, without asking the owner: \`lpk waive ${id} --why "<what stays unproved, and why going on is right>"\`.`
+  : `Only the owner releases it: ask with AskUserQuestion, \`metadata: { source: "${WAIVE_SOURCE}" }\`, an option labelled exactly \`${id}\`; their pick is recorded and this check lets it through.`);
 
 // The labels the owner picked, per question. A multi-select answer comes back comma-joined, and a
 // label may itself hold a comma, so each offered label is looked for as one whole item of the answer.
@@ -39,7 +54,7 @@ export function waiverRun(input) {
 
 // Records the picks against the session's run; returns how many were recorded.
 export async function recordWaiver(input, run) {
-  const got = picks(input.tool_input, input.tool_response);
+  const got = picks(input.tool_input, input.tool_response).filter((p) => isWaiverId(p.what));
   if (!run || !got.length) return 0;
   const { appendRecord } = await records();
   for (const p of got) appendRecord(run.repo, { kind: 'waiver', what: p.what, question: p.question, run: run.id, session: input.session_id, exit: 0 });

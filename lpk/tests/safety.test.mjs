@@ -20,18 +20,21 @@ test('every session is denied the owner\'s tokens by their path or the command t
   assert.equal(pre({ tool_name: 'Read', tool_input: { file_path: `${HOME}/.claude/settings.json` } }), null);
 });
 
-test('an agent cannot record the owner\'s waiver, even by naming the owner\'s channel', () => {
-  for (const [tool_name, tool_input] of [
-    ['Bash', { command: 'lpk waive gate:reviews --why "the owner agreed" --via /lpk-waive' }],
-    ['Bash', { command: 'node ~/.claude/plugins/lpk/bin/lpk waive F2 --why x --via ask' }],
-    ['Bash', { command: `node ${HOME}/lpk/lib/cmd/waive.mjs gate:ci --why x --via /lpk-waive` }],
-    ['Bash', { command: 'echo \'{"kind":"waiver","what":"gate:ci","via":"/lpk-waive"}\' >> .git/lpk/records.jsonl' }],
-    ['Write', { file_path: `${tmp}/repo/.git/lpk/records.jsonl`, content: '{}' }],
+test('no agent records the owner\'s waiver: --via, the command file and the records file are refused, and a subagent never waives', () => {
+  for (const [tool_name, tool_input, shown] of [
+    ['Bash', { command: 'lpk waive gate:reviews --why "the owner agreed" --via /lpk-waive' }, /--via/],
+    ['Bash', { command: 'node ~/.claude/plugins/lpk/bin/lpk waive F2 --why x --via ask' }, /--via/],
+    ['Bash', { command: `node ${HOME}/lpk/lib/cmd/waive.mjs gate:ci --why x --via /lpk-waive` }, /cmd\/waive\.mjs/],
+    ['Bash', { command: 'echo \'{"kind":"waiver","what":"gate:ci","via":"/lpk-waive"}\' >> .git/lpk/records.jsonl' }, /records\.jsonl/],
+    ['Write', { file_path: `${tmp}/repo/.git/lpk/records.jsonl`, content: '{}' }, /records\.jsonl/],
   ]) {
     const why = reason(pre({ tool_name, tool_input }));
-    assert.match(why, /A waiver is the owner's act/, JSON.stringify(tool_input));
+    assert.match(why, shown, JSON.stringify(tool_input));
     assert.equal(why.includes('lpk records'), tool_name === 'Bash' && tool_input.command.includes('records.jsonl'), JSON.stringify(tool_input));
   }
+  const waive = { command: 'lpk waive gate:ci --why "CI is down"' };
+  assert.equal(pre({ tool_name: 'Bash', tool_input: waive }), null);
+  assert.match(reason(pre({ tool_name: 'Bash', tool_input: waive, agent_id: 'a1', agent_type: 'lpk:staff' })), /lead/);
 });
 
 test('the lpk Chrome never opens a file: URL, and opens a local server', () => {

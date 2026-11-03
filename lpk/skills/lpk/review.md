@@ -55,7 +55,7 @@ you run it yourself). `lpk reviews owed` names any lens
 still owed and why. Before you pass `lenses`, read `lpk rules --yield`: its last table line names the
 lenses that raised no finding in any run ledger of this repo. Drop a silent extra lens (security,
 regression, mutant, ui-reviewer) from a change that does not touch what it checks; never drop one
-the lane owes, since `lpk reviews owed` keeps listing it. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only the owner's waiver passes it.
+the lane owes, since `lpk reviews owed` keeps listing it. A lens that stalled or errored is re-run once; after that it is `ungraded`, and only a waiver of `gate:reviews` passes it, which the lead weighs and records.
 
 ## Check yourself while it runs
 
