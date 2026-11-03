@@ -27,6 +27,7 @@ test('the owner\'s /lpk-waive reaches the session\'s run from a directory outsid
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /waived gate:scenarios in run \S+ via \/lpk-waive/);
   assert.match(lpk(repo, S, 'gates').stdout, /^scenarios +holds[\s\S]*waived by the owner/m);
+  assert.deepEqual(JSON.parse(lpk(repo, S, 'gates', '--json').stdout).find((g) => g.gate === 'scenarios').waived, { by: 'owner', why: 'the owner decided' });
   assert.equal(lpk(outside, 'another-session', 'waive', 'gate:scenarios', '--why', 'x', '--via', '/lpk-waive').status, 1, 'another session holds no run there');
 });
 
