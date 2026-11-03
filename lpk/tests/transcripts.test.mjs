@@ -31,3 +31,9 @@ test('a lens ran when its transcript ends in structured output or end_turn; an A
   assert.equal(findingCount(runs.aa2.structured), null, 'end_turn returns no count');
   assert.deepEqual(lensRuns('/home/me/repo', 'other-session'), []);
 });
+
+test('S6 a lens prompt that names a sha before its Review range line is read as that range', () => {
+  const s = join(ENV.CLAUDE_CONFIG_DIR, 'projects', '-home-me-repo', 'sess-6', 'subagents');
+  agent(s, 'cc1', 'lpk:techlead', [user('The fix 9f8e7d6c5b4a landed earlier.\nReview range a1b2c3d4e5f6..0f9e8d7c6b5a.\nRepo /home/me/repo.'), assistant([{ type: 'text', text: 'done' }], 'end_turn')]);
+  assert.equal(lensRuns('/home/me/repo', 'sess-6')[0].range, 'a1b2c3d4e5f6..0f9e8d7c6b5a');
+});

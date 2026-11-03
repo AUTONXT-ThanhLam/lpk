@@ -87,9 +87,27 @@ test('lpk facts writes a bundle that shows the change, its base, its outside cal
 
 test('on a large change every removed field keeps its place in impact.md beside the other names', () => {
   const lines = [...Array.from({ length: 30 }, (_, i) => `-  removed_field_${i}: 1,`), ...Array.from({ length: 30 }, (_, i) => `+export const addedSymbol${i} = 1;`)];
-  const names = touched([{ path: 'src/a.ts', skipped: false, text: lines.join('\n') }]);
+  const names = touched([{ path: 'src/a.ts', skipped: false, text: lines.join('\n') }]).list;
   assert.equal(names.length, 50);
   assert.equal(names.filter((e) => e.kind === 'field').length, 30);
+});
+
+test('S6 lpk facts says how many touched names it found when it lists only the first of them', () => {
+  const repo = join(tmp, 'many-names');
+  mkdirSync(repo);
+  sh(repo, 'init', '-q', '-b', 'main');
+  write(repo, 'a.ts', `export const settings = {\n${Array.from({ length: 60 }, (_, i) => `  removed_field_${i}: 1,\n`).join('')}};\n`);
+  sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'init'); sh(repo, 'switch', '-qc', 'cut');
+  write(repo, 'a.ts', `export const settings = {};\n${Array.from({ length: 30 }, (_, i) => `export const addedSymbol${i} = 1;\n`).join('')}`);
+  sh(repo, 'commit', '-qam', 'cut');
+  const heading = (out) => { lpk(repo, ['facts', '--base', 'main', '--out', out]); return readFileSync(join(out, 'impact.md'), 'utf8').split('\n')[0]; };
+  const all = touched([{ path: 'a.ts', skipped: false, text: sh(repo, 'diff', 'main', 'HEAD') }]);
+  assert.ok(all.found > all.list.length);
+  assert.match(heading(join(tmp, 'many-out')), new RegExp(`\\b${all.list.length} of ${all.found}\\b`));
+  sh(repo, 'switch', '-qc', 'few', 'main');
+  write(repo, 'a.ts', 'export const settings = {};\n');
+  sh(repo, 'commit', '-qam', 'few');
+  assert.doesNotMatch(heading(join(tmp, 'few-out')), /\d+ of \d+/);
 });
 
 test('lpk facts searches the sibling submodules of a superproject', () => {

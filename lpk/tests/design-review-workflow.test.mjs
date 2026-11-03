@@ -60,6 +60,12 @@ test('a High resting only on inference counts as Medium, and the critic keeps it
   assert.equal(out.verdict, 'revise');
 });
 
+test('S6 the round returns how many findings it demoted and how many it cut', async () => {
+  const many = [finding('High', [1], 'inferred'), finding('High', [2]), ...[3, 4, 5, 6].map((n) => finding('Low', [n]))];
+  assert.deepEqual(await run(ARGS, answers({ 'design-critic': { findings: many } })).then(({ out }) => [out.demoted, out.cut]), [1, 2]);
+  assert.deepEqual(await run(ARGS, answers({})).then(({ out }) => [out.demoted, out.cut]), [0, 0]);
+});
+
 test('a later round tells the critic its open Highs to check closed and keeps it to the changed lines', async () => {
   const open = [{ angle: 'design-critic', severity: 'High', lines: [9], claim: 'two writers race on the row', cause: 'one writer per row' }];
   const { out, calls } = await run({ ...LATER, open }, answers({}));
