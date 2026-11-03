@@ -72,12 +72,11 @@ and answer a repeated point in one line ("declined, see the first triage").
 
 1. Run the `lpk:learn` skill on this run's evidence and record it with `lpk learn [--rule <id>]...`: the
    `learn` gate holds only once every confirmed, fixed or deferred finding is covered. Then run `lpk report`:
-   it runs `lpk gates` and prints every number from the records.
-2. Consult the Opus advisor once on the whole run, with the draft report written and `lpk gates` and
-   `lpk report` on screen, before a waiver is recorded, `lpk run grant ready` runs, or the PR is made
-   ready or merged: every waiver, deferral, `lpk decide` and patch-or-revert call, and what the report
-   claims that the run did not do. The report names each call it changed or confirmed. Where the host has no
-   advisor, `lpk:staff` reads the same material.
+   it runs `lpk gates` and prints every number from the records. Write the draft of `The report` below.
+2. Make the handover call of the advisor in `SKILL.md`, with the draft and the `lpk report` output in front
+   of it, before a waiver is recorded, `lpk run grant ready` runs, or the PR is made ready or merged. It
+   reads the calls of the run it has not read yet (each waiver, deferral, `lpk decide` and patch-or-revert
+   call) and what the draft claims that the run did not do.
 3. Fix every gate an agent can fix. A gate that does not hold for a reason no agent can fix (a
    service that is down, a lens that stalled twice) is yours to weigh, not the owner's: waive it
    with `lpk waive <gate:name> --why "<what stays unproved, and why delivering anyway is right>"`
@@ -111,6 +110,7 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
    and why; then each acceptance scenario with its evidence on that commit, or NOT PROVED and why.
 3. The calls made without the owner, each from where it is recorded, so the owner can check each one:
    - each decision you logged with `lpk decide` (`decisions.jsonl`; `lpk report` lists them);
+   - each call the advisor changed or confirmed, in one line;
    - each waiver, with who made it and why (waiver records; `lpk report` lists them);
    - each deferred finding, with who deferred it (the findings ledger; `lpk report` lists them);
    - each dropped finding, with its basis (the findings ledger; `finding_list` with state `dropped`);
