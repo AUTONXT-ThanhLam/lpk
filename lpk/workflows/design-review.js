@@ -91,4 +91,5 @@ const absent = answer ? [] : [critic.name]
 const verdict = counts.High && round >= 3 ? 'last'
   : findings.some((f) => f.severity === 'High' && f.stillOpen && f.onChanged) ? 'redesign'
     : counts.High ? 'revise' : absent.length ? 'incomplete' : 'pass'
-return { round, verdict, counts, findings, missing: absent }
+const demoted = all.filter((f) => f.demoted).length
+return { round, verdict, counts, findings, demoted, cut: all.length - findings.length, missing: absent }
