@@ -142,7 +142,9 @@ export async function main(argv) {
     const file = promptsOf(r.run.marker);
     const said = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0;
     console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still hold on ${r.run.branches?.join(', ') || 'its branch'}.`);
-    try { for (const note of openItemNotes(sessionId())) console.log(note); } catch (e) { console.error(`lpk: the plan this session holds was not read: ${e.message}`); }
+    const plan = openItemNotes(sessionId());
+    for (const note of plan.notes) console.log(note);
+    for (const file of plan.broken) console.error(`lpk: ${file} names this session but is not a readable plan, so its open item is not named; fix or remove the file`);
     return 0;
   }
   if (sub === 'status') {

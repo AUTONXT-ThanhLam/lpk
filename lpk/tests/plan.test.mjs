@@ -243,17 +243,35 @@ test('R5: the nudge budget a holder spent is not the session\'s that takes the p
   assert.ok(!first.reason.includes('PushNotification'));
 });
 
-test('R1: ending a run names the open plan item, its prove command and the item after it, and a session without a plan sees none', () => {
-  const repo = seeded('rend', 's-rend', [['first part', 'false'], ['second part', 'true']]);
-  must(lpk(repo, 's-rend', 'run', 'start', '--target', 'main', '--verify', 'true'));
-  const out = must(lpk(repo, 's-rend', 'run', 'end')).stdout;
-  assert.match(out, /lpk run ended/);
-  assert.match(out, /rend/);
-  assert.match(out, /P1 first part/);
-  assert.ok(out.includes('Its proof: false'));
-  assert.ok(out.includes('lpk plan prove P1'));
-  assert.ok(out.includes('then start P2: second part'));
-  must(lpk(repo, 's-other', 'run', 'start', '--target', 'main', '--verify', 'true'));
-  const bare = must(lpk(repo, 's-other', 'run', 'end')).stdout;
-  assert.ok(!bare.includes('lpk plan prove'));
+const ended = (repo, session) => {
+  must(lpk(repo, session, 'run', 'start', '--target', 'main', '--verify', 'true'));
+  return must(lpk(repo, session, 'run', 'end'));
+};
+
+test('R1: ending a run names the open plan item, its prove command and the next open item past a held one, and a session without a plan sees none', () => {
+  const repo = seeded('rend', 's-rend', [['first part', 'false'], ['owner part', 'true'], ['second part', 'true']]);
+  must(run(repo, 's-rend', 'hold', 'P2', '--why', 'which store?'));
+  const garbled = join(plans, 'rend-torn.json');
+  writeFileSync(garbled, '{"session": "s-rend", "items": [');
+  const end = ended(repo, 's-rend');
+  rmSync(garbled);
+  assert.match(end.stdout, /lpk run ended/);
+  assert.ok(end.stdout.includes('Plan rend: P1 first part'));
+  assert.ok(end.stdout.includes('Its proof: false'));
+  assert.ok(end.stdout.includes('lpk plan prove P1'));
+  assert.ok(end.stdout.includes('then start P3: second part'));
+  assert.ok(!end.stdout.includes('then start P2'));
+  assert.ok(end.stderr.includes(garbled));
+  assert.ok(!ended(repo, 's-other').stdout.includes('lpk plan prove'));
+});
+
+test('R1: ending a run on the last open item says the plan is then done only when no item waits on the owner', () => {
+  const last = seeded('rend-last', 's-rend-last', [['only part', 'false']]);
+  assert.ok(ended(last, 's-rend-last').stdout.includes('then done'));
+  const repo = seeded('rend-wait', 's-rend-wait', [['first part', 'false'], ['owner part', 'true']]);
+  must(run(repo, 's-rend-wait', 'hold', 'P2', '--why', 'which store?'));
+  const out = ended(repo, 's-rend-wait').stdout;
+  assert.ok(out.includes('P2 held (which store?)'));
+  assert.ok(!out.includes('then start P2'));
+  assert.ok(!out.includes('then done'));
 });
