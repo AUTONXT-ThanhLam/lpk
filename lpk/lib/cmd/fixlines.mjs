@@ -1,6 +1,5 @@
 // `lpk fixlines [<fix commit>]`: the lines a fix commit changes that an earlier commit of the same
-// run wrote. A fix on the run's own earlier lines is a fix on a fix; a confirmed finding there means
-// revert or redesign, never a third patch. Exact facts from `git diff` and `git blame`.
+// run wrote. Exact facts from `git diff` and `git blame`.
 import { git } from '../git.mjs';
 import { baseOf, capped, parseArgs, repoOf } from '../out.mjs';
 
