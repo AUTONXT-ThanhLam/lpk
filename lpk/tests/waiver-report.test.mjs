@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, lpk, repoWith, sh, write } from './gates-env.mjs';
 import { addFinding, ruleOn } from '../lib/findings.mjs';
-import { MAX_ROWS } from '../lib/out.mjs';
 import { appendRecord } from '../lib/records.mjs';
 import { readRun } from '../lib/run.mjs';
 
@@ -98,14 +97,21 @@ test('S2 a red gate keeps lpk report NOT deliverable while it lists every waiver
   assert.doesNotMatch(section(r.stdout, 'For the owner to read, not blocking:'), new RegExp(`\\b${f.id}\\b`));
 });
 
-test('S1 a report with more waivers than fit prints at most MAX_ROWS lines and names the file that holds them all (R2)', () => {
+test('S1 a report with many waivers clips their list, still prints the held plan item and the decisions, and names the file that holds them all (R2)', () => {
   const S = 'waiver-many-session';
   const repo = quickRun('waiver-many', S);
   const run = readRun(repo).id;
   for (let i = 1; i <= 90; i++) appendRecord(repo, { kind: 'waiver', run, what: 'gate:error', why: `blip number ${i}`, via: 'lead' });
+  ok(lpk(repo, S, 'plan', 'new', 'widths', '--repo', repo));
+  ok(lpk(repo, S, 'plan', 'add', 'Widen it', '--proof', 'true', '--source', 'widen'));
+  ok(lpk(repo, S, 'plan', 'hold', 'P1', '--why', 'which width'));
   const out = lpk(repo, S, 'report').stdout;
-  assert.ok(out.trimEnd().split('\n').length <= MAX_ROWS, out);
-  const file = out.match(/more rows; all \d+ in (\S+)$/m)?.[1];
+  assert.match(out, /^Waived \(90\):$/m);
+  const shown = out.match(/^- gate:error .*blip number \d+$/gm).length;
+  assert.ok(shown < 90, out);
+  assert.match(out, /^Plan waiting \(widths\): P1 held \(which width\)$/m);
+  assert.match(out, /^Decided without the owner \(1\):\n- quick lane: one line$/m);
+  const file = out.match(new RegExp(`^\\.\\.\\. ${90 - shown} more waivers; .* in (\\S+)$`, 'm'))?.[1];
   assert.ok(file, out);
   const whole = readFileSync(file, 'utf8');
   for (const i of [1, 45, 90]) assert.match(whole, new RegExp(`^- gate:error .*blip number ${i}$`, 'm'));

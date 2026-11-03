@@ -1,7 +1,8 @@
 // `lpk report`: the numbers of the run's report, every one from code, after the gates ran. The
 // verdict line says "deliverable" only when every delivery gate holds on the HEAD it names; the
 // session adds the verdict in words, the decisions it took alone and the weakest point.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { counts } from '../findings-text.mjs';
 import { limitsBlock } from '../bar.mjs';
 import { countedRound } from '../briefcheck.mjs';
@@ -10,7 +11,7 @@ import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
 import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
-import { capped, parseArgs, repoOf } from '../out.mjs';
+import { outDir, parseArgs, repoOf } from '../out.mjs';
 import { judgedStatus, named, proofsOf, proverResults, trace } from '../proof.mjs';
 import { planLines } from '../plan.mjs';
 import { readDecisions, readRecords, waiversIn } from '../records.mjs';
@@ -44,6 +45,17 @@ function roundBeforeRun(repo, run, rows) {
   } catch (e) { return [`- the design round could not be read: ${e.message}`]; }
 }
 
+const LIST = 10;
+const list = (name, heading, entries) => ({ name, heading, entries });
+const whole = (x) => (typeof x === 'string' ? [x] : [x.heading, ...x.entries]);
+const clipped = (x) => typeof x !== 'string' && x.entries.length > LIST;
+
+function print(repo, run, parts) {
+  const file = join(outDir(repo), `report-${run.id}.txt`);
+  if (parts.some(clipped)) writeFileSync(file, `${parts.flatMap(whole).join('\n')}\n`);
+  return parts.flatMap((x) => (clipped(x) ? [x.heading, ...x.entries.slice(0, LIST), `... ${x.entries.length - LIST} more ${x.name}; the full report is in ${file}`] : whole(x))).join('\n');
+}
+
 const wallEnd = (repo, run) => run.endedAt || Math.max(0, ...readRecords(repo, { run: run.id }).map((r) => Date.parse(r.at) || 0)) || Date.now();
 
 export async function main(argv) {
@@ -67,7 +79,7 @@ export async function main(argv) {
     `run ${run.id}, ${run.lane} lane${run.laneWhy ? ` (${run.laneWhy})` : ''}, branch ${run.branch || 'none'}, wall ${Math.round((wallEnd(repo, run) - run.started) / 60000)} min`,
     '', 'Gates:', gatesText(rows),
   ];
-  const facts = [waivers.length ? [`Waived (${waivers.length}):`, ...waivers.map((w) => `- ${w.what} by ${w.by} via ${w.via} at ${w.at}: ${w.why || 'no reason recorded'}${w.counted ? '' : ' — not counted (old shape)'}`)].join('\n') : 'Waived: none'];
+  const facts = [waivers.length ? list('waivers', `Waived (${waivers.length}):`, waivers.map((w) => `- ${w.what} by ${w.by} via ${w.via} at ${w.at}: ${w.why || 'no reason recorded'}${w.counted ? '' : ' — not counted (old shape)'}`)) : 'Waived: none'];
   const recs = readRecords(repo, { run: run.id });
   try {
     const ledger = ledgerFor(repo, run);
@@ -83,7 +95,7 @@ export async function main(argv) {
     const ranges = [...new Set(recs.filter((r) => r.kind === 'review-start').map((r) => r.range))];
     if (ranges.length) facts.push(`Confirmed defects per reviewed range: ${ranges.map((r) => `${r.split('..').map((x) => x.slice(0, 12)).join('..')} ${confirmed.filter((f) => f.at === r).length}`).join(', ')}`);
     const limits = limitsBlock(repo, run, ledger);
-    facts.push([limits.heading, ...limits.entries].join('\n'));
+    facts.push(list('known limits', limits.heading, limits.entries));
     const blocking = ledger.filter(blocksUnsettled);
     if (blocking.length) facts.push(['Unsettled in a protected area, blocking until ruled or waived:', ...blocking.map(ruling)].join('\n'));
     const toRead = ledger.filter((f) => needsOwner(f) && !blocksUnsettled(f));
@@ -127,6 +139,6 @@ export async function main(argv) {
     if (row) facts.push(`Tokens by job: ${Object.entries(row.agents).map(([k, v]) => `${k} ${fmt(v.fresh)} fresh, ${fmt(v.cacheRead)} cache reads`).join('; ') || 'none measured'}`);
   } catch (e) { facts.push(`Tokens could not be measured: ${e.message}`); }
   const decided = [...roundBeforeRun(repo, run, rows), ...readDecisions(repo, { run: run.id }).map((d) => `- ${d.what}: ${d.why}`)];
-  console.log(capped(repo, `report-${run.id}`, out.flatMap((l) => l.split('\n')), ['', ...facts.flatMap((f) => f.split('\n')), '', `Decided without the owner (${decided.length}):`, ...decided]));
+  console.log(print(repo, run, [...out, '', ...facts, '', list('decisions', `Decided without the owner (${decided.length}):`, decided)]));
   return bad.length ? 1 : 0;
 }
