@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
-import { capped, repoOf } from '../out.mjs';
+import { repoOf } from '../out.mjs';
 import { ledgerFor, owed } from '../owed.mjs';
 import { appendDecision, waiversIn } from '../records.mjs';
 import { leftText } from '../left.mjs';
@@ -151,7 +151,7 @@ export async function main(argv) {
     console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still apply to ${r.run.branches?.join(', ') || 'its branch'}.`);
     const waivers = waiversIn(repo, r.run.id);
     console.log(`Waived in this run: ${waivers.map((w) => `${w.what} by ${w.by}${w.counted ? ` (${w.why})` : ' (not counted)'}`).join(', ') || 'none'}`);
-    if (calls.length) console.log(capped(repo, `run-end-${r.run.id}`, [], calls));
+    if (calls.length) console.log(calls.join('\n'));
     for (const note of openItemNotes(sessionId())) console.log(note);
     return 0;
   }

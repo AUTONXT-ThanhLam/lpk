@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, lpk, repoWith, sh, write } from './gates-env.mjs';
-import { addFinding, ruleOn } from '../lib/findings.mjs';
+import { addFinding, markFixed, ruleOn } from '../lib/findings.mjs';
 import { appendRecord } from '../lib/records.mjs';
 import { readRun } from '../lib/run.mjs';
 
@@ -97,22 +96,27 @@ test('S2 a red gate keeps lpk report NOT deliverable while it lists every waiver
   assert.doesNotMatch(section(r.stdout, 'For the owner to read, not blocking:'), new RegExp(`\\b${f.id}\\b`));
 });
 
-test('S1 a report with many waivers clips their list, still prints the held plan item and the decisions, and names the file that holds them all (R2)', () => {
+test('S1 with many waivers and deferrals, lpk report and lpk run end print every one of them, the held plan item and the decisions (R2)', () => {
   const S = 'waiver-many-session';
   const repo = quickRun('waiver-many', S);
   const run = readRun(repo).id;
+  const range = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
   for (let i = 1; i <= 90; i++) appendRecord(repo, { kind: 'waiver', run, what: 'gate:error', why: `blip number ${i}`, via: 'lead' });
+  for (let i = 1; i <= 70; i++) {
+    const { id } = addFinding(repo, { from: 'lpk:bug-hunter', at: range, claim: `width case ${i}`, repro: 'r', kind: 'defect', severity: 'nit' }).finding;
+    ruleOn(repo, { id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'a fixed width', evidence: 'seen', by: 'lpk:verifier' });
+    assert.ok(!markFixed(repo, { id, closedBy: 'defer', evidence: `later ${i}`, by: 'lead' }).error);
+  }
   ok(lpk(repo, S, 'plan', 'new', 'widths', '--repo', repo));
   ok(lpk(repo, S, 'plan', 'add', 'Widen it', '--proof', 'true', '--source', 'widen'));
   ok(lpk(repo, S, 'plan', 'hold', 'P1', '--why', 'which width'));
-  const out = lpk(repo, S, 'report').stdout;
-  assert.match(out, /^Waived \(90\):$/m);
-  const shown = out.match(/^- gate:error .*blip number \d+$/gm).length;
-  assert.ok(shown < 90, out);
-  assert.match(out, /^Plan waiting \(widths\): P1 held \(which width\)$/m);
-  assert.match(out, /^Decided without the owner \(1\):\n- quick lane: one line$/m);
-  const file = out.match(new RegExp(`^\\.\\.\\. ${90 - shown} more waivers; .* in (\\S+)$`, 'm'))?.[1];
-  assert.ok(file, out);
-  const whole = readFileSync(file, 'utf8');
-  for (const i of [1, 45, 90]) assert.match(whole, new RegExp(`^- gate:error .*blip number ${i}$`, 'm'));
+  const every = (out) => {
+    assert.match(out, /^Plan waiting \(widths\): P1 held \(which width\)$/m);
+    assert.equal(out.match(/^- F\d+ defect\/nit: width case \d+ — later \d+/gm)?.length, 70, out);
+  };
+  const report = lpk(repo, S, 'report').stdout;
+  every(report);
+  assert.equal(report.match(/^- gate:error .*blip number \d+$/gm).length, 90);
+  assert.match(report, /^Decided without the owner \(1\):\n- quick lane: one line$/m);
+  every(ok(lpk(repo, S, 'run', 'end')));
 });
