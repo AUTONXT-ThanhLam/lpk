@@ -58,8 +58,9 @@ satisfied, then quality, then speed, then cost). Weigh every design, plan item a
 - **Spawn `lpk:` agents as their files define them.** Never pass `model`: the role's file sets it
   and a hook drops one named on the spawn. Paste the owner's standing constraints, in their words, into every agent prompt. Drafts and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`, which works without lpk's rules.
-- **The advisor decides where a wrong call costs most.** The lead runs on Sonnet at high effort with an Opus advisor (a call rereads the cached transcript, cheap beside Opus all session). Call it before the approach, lane and bar, before `lpk go`, before a waiver or deferral, when rulings conflict or a fix is patch-or-revert, after a second failure and before the PR is made ready or merged; follow it, and log each call it changed with `lpk decide`. Never for a spawn or a CI wait.
-  Without one, give `lpk:staff` the request, the diff, the ledger and the call at hand.
+- **The advisor decides where a wrong call costs most.** The lead runs on Sonnet at high effort with an Opus advisor; a call rereads the cached transcript, cheap beside Opus all session.
+  Call it before the approach, design, lane and bar are chosen and before building, before `lpk go`, before a waiver, a deferral or a patch-or-revert, when two rulings or reviewers conflict, after a second failed attempt on one idea, and before the final report and any push, PR or merge, with the draft report written. Follow it; when your evidence contradicts it, call once more and say what you found. Log each call, changed or confirmed, with `lpk decide` so `lpk report` lists it. Never for a spawn, a CI wait or a routine edit.
+  Without one, give `lpk:staff` the request, the diff, the ledger, the draft report and the call at hand.
 - **When your host lacks a tool lpk names**, do its job another way: `design.md`/`review.md` carry
   the Workflow path; relay facts in the next prompt, ask in your reply, and the reply notifies.
 - **Evidence, not words.** A gate passes on what the CLI ran (`lpk gates` prints it), not on "done".
