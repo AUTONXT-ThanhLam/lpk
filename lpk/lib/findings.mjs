@@ -75,13 +75,16 @@ export function stateOf(f, findings) {
 }
 
 // True when the owner should read this finding in the report: an unsettled finding, or a drop,
-// pre-existing, duplicate or closing ruling made by someone other than the verifier. None blocks.
+// pre-existing, duplicate or closing ruling made by someone other than the verifier. Of these only
+// an unsettled finding in a protected area blocks, until it is ruled or the findings gate is waived.
 export function needsOwner(f) {
   if (f.state === 'unsettled') return true;
   if (['dropped', 'preexisting', 'duplicate'].includes(f.state)) return f.by !== VERIFIER;
   if (f.state === 'fixed' && f.closedBy === 'verifier') return f.fixedBy !== VERIFIER;
   return false;
 }
+
+export const blocksUnsettled = (f) => f.state === 'unsettled' && PROTECTED.includes(f.area);
 
 export function append(repo, event) {
   const dir = ledgerDir(repo);

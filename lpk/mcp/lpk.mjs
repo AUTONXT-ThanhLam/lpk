@@ -62,14 +62,14 @@ const TOOLS = [
   },
   {
     name: 'finding_fixed',
-    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, a test gap\'s mutant caught on it, or your ruling as verifier) with that evidence. A fixed finding whose commit left the branch (a cherry-pick, an amend, a rebase) is closed again on the commit now on HEAD. closedBy owner, with no commit, defers a finding outside a protected area and not a failing scenario under a policy the owner stated, quoting the owner\'s words as evidence; the report lists it as a known limit.',
+    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, a test gap\'s mutant caught on it, or your ruling as verifier) with that evidence. A fixed finding whose commit left the branch (a cherry-pick, an amend, a rebase) is closed again on the commit now on HEAD. closedBy defer, with no commit, is the lead deferring a finding outside a protected area and not a failing scenario, with its reason as evidence; the report lists it as a known limit with who deferred it.',
     inputSchema: {
       type: 'object',
       properties: {
         id: str('F<n>'),
-        commit: str('the fix commit; none for closedBy owner'),
+        commit: str('the fix commit; none for closedBy defer'),
         closedBy: { type: 'string', enum: CLOSED_BY },
-        evidence: str('the repro or test output, the ruling, or for closedBy owner the owner\'s words'),
+        evidence: str('the repro or test output, the ruling, or for closedBy defer the lead\'s reason it waits'),
         fix: str('how, in one sentence'),
         sweep: str('for a finding with a file, not a test gap: a git grep -E pattern for the form of the defect. lpk runs it over the files the change touches: it must hit before the fix and on no line the change adds after it'),
         ...stamped, by: str(STAMP),
@@ -94,7 +94,7 @@ function call(name, input) {
   if (name === 'finding_get') { const f = getFinding(repo, a.id); return f ? ok(JSON.stringify(f, null, 1)) : bad(`lpk: no finding ${a.id}`); }
   if (name === 'finding_verdict') {
     if (a.by !== VERIFIER) return bad(`lpk: only ${VERIFIER} rules on a finding, and this call came from ${a.by || 'nobody'}. Start ${VERIFIER} with the finding's id, claim and reproduction, and it rules with evidence.`);
-    return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
+    return say(ruleOn(repo, a), (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled and blocks the findings gate until it is ruled or waived)` : ''}: ${f.evidence}`);
   }
   if (name === 'finding_fixed') return say(markFixed(repo, a), (f) => (f.state === 'deferred' ? `${f.id} deferred: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`));
   if (name === 'finding_list') {

@@ -65,7 +65,7 @@ const doneIds = (plan) => plan.items.filter((i) => i.status === 'done').map((i) 
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
-const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' || i.status === 'paused').map((i) => `${i.id} ${i.status} (${i.why})`);
+export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' || i.status === 'paused').map((i) => `${i.id} ${i.status} (${i.why})`);
 
 function thenNote(plan, item) {
   const after = nextOpen({ items: plan.items.slice(plan.items.indexOf(item) + 1) });
