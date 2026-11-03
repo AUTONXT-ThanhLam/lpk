@@ -97,7 +97,7 @@ Read each step's file when the step starts; each file states its goal and how it
 ## The bar
 
 A run starts at the **increment** bar unless the owner asks for production (`lpk run start --bar production`, which never lowers): a change a person can use now.
-A confirmed finding whose `reach` is `neither` is a known limit, listed in the PR body. The bar never lowers the reviews a change the floor calls full owes.
+A confirmed finding outside the protected areas and the scenarios is a known limit, listed in the PR body. The bar never lowers the reviews a change the floor calls full owes.
 
 ## Screens
 
