@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { lpk, repoWith, ROOT, sh, tmp, write } from './gates-env.mjs';
+import { lpk, repoWith, sh, tmp, write } from './gates-env.mjs';
 import { addFinding, archiveLedger, ruleOn, VERIFIER } from '../lib/findings.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
@@ -14,10 +14,6 @@ function startRun(name, session) {
   return repo;
 }
 const raise = (repo, claim = 'a is wrong') => addFinding(repo, { from: 'lpk:bug-hunter', at: `${sh(repo, 'rev-parse', 'main').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`, claim, repro: 'node a.mjs', kind: 'defect', severity: 'important', file: 'src/a.mjs', line: 1 }).finding.id;
-
-test('the builder runs on Sonnet', () => {
-  assert.match(readFileSync(join(ROOT, 'agents', 'builder.md'), 'utf8'), /^model: sonnet$/m);
-});
 
 test('lpk handoff shows the builder what earlier runs confirmed on its files and the rules lpk learned', () => {
   const S = 'past-session';

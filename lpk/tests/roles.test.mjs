@@ -10,22 +10,22 @@ const AGENTS = join(dirname(fileURLToPath(import.meta.url)), '..', 'agents');
 
 // The effort the plan settled for each role, by measured results, and whether the role ever edits.
 const TABLE = {
-  architect: { effort: 'high', readOnly: false },
-  'design-critic': { effort: 'high', readOnly: true },
-  builder: { effort: 'medium', readOnly: false },
-  techlead: { effort: 'high', readOnly: true },
-  'code-reviewer': { effort: 'high', readOnly: true },
-  'bug-hunter': { effort: 'high', readOnly: true },
-  security: { effort: 'high', readOnly: true },
-  verifier: { effort: 'high', readOnly: true },
-  regression: { effort: 'medium', readOnly: true },
-  claims: { effort: 'medium', readOnly: true },
-  mutant: { effort: 'medium', readOnly: true },
-  designer: { effort: 'high', readOnly: false },
-  'ui-reviewer': { effort: 'high', readOnly: true },
-  prover: { effort: 'high', readOnly: true },
-  env: { effort: 'medium', readOnly: false },
-  staff: { effort: 'high', readOnly: false },
+  architect: { model: 'opus', effort: 'high', readOnly: false },
+  'design-critic': { model: 'opus', effort: 'high', readOnly: true },
+  builder: { model: 'opus', effort: 'medium', readOnly: false },
+  techlead: { model: 'opus', effort: 'high', readOnly: true },
+  'code-reviewer': { model: 'sonnet', effort: 'high', readOnly: true },
+  'bug-hunter': { model: 'opus', effort: 'high', readOnly: true },
+  security: { model: 'opus', effort: 'high', readOnly: true },
+  verifier: { model: 'opus', effort: 'high', readOnly: true },
+  regression: { model: 'sonnet', effort: 'medium', readOnly: true },
+  claims: { model: 'sonnet', effort: 'medium', readOnly: true },
+  mutant: { model: 'sonnet', effort: 'medium', readOnly: true },
+  designer: { model: 'opus', effort: 'high', readOnly: false },
+  'ui-reviewer': { model: 'sonnet', effort: 'high', readOnly: true },
+  prover: { model: 'opus', effort: 'high', readOnly: true },
+  env: { model: 'haiku', effort: 'medium', readOnly: false },
+  staff: { model: 'sonnet', effort: 'high', readOnly: false },
 };
 
 // The frontmatter of an agent file: `key: value` lines between the first two `---` lines.
@@ -44,14 +44,13 @@ test('every agent the plugin ships has a row in the role table, and every row ha
 });
 
 const MODELS = ['sonnet', 'haiku', 'opus'];
-const OPUS = ['designer'];
-test('every agent pins a model alias, never a full model id or Fable, and names its role effort', () => {
+test('every agent pins the model and effort of its role, as an alias, never a full model id or Fable', () => {
   for (const [name, row] of Object.entries(TABLE)) {
     const fm = agents[name]?.fm;
     assert.ok(fm, `agents/${name}.md exists`);
     assert.equal(fm.name, name, `agents/${name}.md names itself ${name}`);
     assert.ok(MODELS.includes(fm.model), `agents/${name}.md pins model: ${fm.model} outside ${MODELS.join(', ')}`);
-    assert.equal(fm.model === 'opus', OPUS.includes(name), `${name} ${OPUS.includes(name) ? 'runs on opus' : 'stays off opus'}`);
+    assert.equal(fm.model, row.model, `${name} runs on ${row.model}`);
     assert.equal(fm.effort, row.effort, `${name} runs at effort ${row.effort}`);
   }
 });

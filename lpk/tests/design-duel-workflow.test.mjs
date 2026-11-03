@@ -25,7 +25,7 @@ const answers = (fail = []) => (o) => {
 };
 const step = (calls, mode) => calls.filter((c) => c.opts.label.startsWith(`${mode}:`));
 
-test('three architects write, each attacks the two rival briefs, each revises against the attacks on it, and a Sonnet judge picks', async () => {
+test('three architects write, each attacks the two rival briefs, each revises against the attacks on it, and an Opus judge picks', async () => {
   const { out, calls } = await run(ARGS, answers());
   assert.deepEqual(calls.map((c) => c.opts.label), ['write:small', 'write:failure', 'write:pattern',
     'attack:small', 'attack:failure', 'attack:pattern', 'revise:small', 'revise:failure', 'revise:pattern', 'judge']);
@@ -37,7 +37,7 @@ test('three architects write, each attacks the two rival briefs, each revises ag
   const revise = step(calls, 'revise').find((c) => c.opts.label === 'revise:small').prompt;
   assert.match(revise, /duel\/failure\/attacks\.md[\s\S]*duel\/pattern\/attacks\.md/);
   assert.doesNotMatch(revise.split('The attacks on your brief')[1], /duel\/small\/attacks/);
-  assert.equal(calls.at(-1).opts.model, 'sonnet');
+  assert.equal(calls.at(-1).opts.model, 'opus');
   assert.equal(out.pick, 'failure');
   assert.deepEqual(out.briefs.map((b) => b.brief), ['small', 'failure', 'pattern'].map((c) => `/r/.git/lpk/duel/${c}/brief.md`));
 });
