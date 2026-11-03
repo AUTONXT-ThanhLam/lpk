@@ -58,8 +58,8 @@ satisfied, then quality, then speed, then cost). Weigh every design, plan item a
 - **Spawn `lpk:` agents as their files define them.** Never pass `model`: the role's file sets it
   and a hook drops one named on the spawn. Paste the owner's standing constraints, in their words, into every agent prompt. Drafts and fix rounds go to `lpk:staff` or `lpk:builder`,
   not `general-purpose`, which works without lpk's rules.
-- **The advisor decides where a wrong call costs most.** The lead runs on Sonnet at high effort with an Opus
-  advisor; a call rereads the cached transcript, cheap beside running Opus all session. Call it before the approach, lane and bar are chosen, before `lpk go`, before waiving a gate or deferring a finding, when rulings conflict or a fix is patch-or-revert, after a second failed attempt, and before handover (`deliver.md`); follow it, and when your evidence contradicts it call once more. Never for a spawn or a CI wait. Without one, `lpk:staff` is given the request, the diff, the ledger and the call at hand at each of those points.
+- **The advisor decides where a wrong call costs most.** The lead runs on Sonnet at high effort with an Opus advisor (a call rereads the cached transcript, cheap beside Opus all session). Call it before the approach, lane and bar, before `lpk go`, before a waiver or deferral, when rulings conflict or a fix is patch-or-revert, after a second failure and before the PR is made ready or merged; follow it, and log each call it changed with `lpk decide`. Never for a spawn or a CI wait.
+  Without one, give `lpk:staff` the request, the diff, the ledger and the call at hand.
 - **When your host lacks a tool lpk names**, do its job another way: `design.md`/`review.md` carry
   the Workflow path; relay facts in the next prompt, ask in your reply, and the reply notifies.
 - **Evidence, not words.** A gate passes on what the CLI ran (`lpk gates` prints it), not on "done".

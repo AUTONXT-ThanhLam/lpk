@@ -88,7 +88,7 @@ program enforces: a script, a hook or an `lpk` command first, then a skill line,
 last, because a prompt line no check verifies drifts. Propose it in the report as a change to the
 lpk repo, quoting the evidence. It is never saved as a notes file, which nothing reads.
 
-An approach the run tried and ruled out belongs to the repo profile's ruled-out lines (the profile step of the Handover in `deliver.md`, in the lpk skill's directory), with the files it touches and why, so the next design on those files starts from it.
+An approach the run tried and ruled out belongs to the repo profile's ruled-out lines (`deliver.md` step 4 in the lpk skill's directory), with the files it touches and why, so the next design on those files starts from it.
 
 A lesson about one repo or about the owner's own setup (the repo's CLAUDE files, the global
 `~/.claude/CLAUDE.md`, a `CLAUDE.local.md`) is shown as a diff in the report and applied only on the
