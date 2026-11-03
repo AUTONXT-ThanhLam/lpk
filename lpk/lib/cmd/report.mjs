@@ -4,14 +4,17 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { counts } from '../findings-text.mjs';
 import { knownLimits } from '../bar.mjs';
-import { BORN, needsOwner, stateOf } from '../findings.mjs';
+import { countedRound } from '../briefcheck.mjs';
+import { BORN, blocksUnsettled, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
+import { sessionId } from '../host.mjs';
 import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { judgedStatus, named, proofsOf, proverResults, trace } from '../proof.mjs';
-import { readDecisions, readRecords } from '../records.mjs';
+import { listPlans, waitingOf } from '../plan.mjs';
+import { readDecisions, readRecords, waiversIn } from '../records.mjs';
 import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
 import { scenarioChanges } from '../scenariolog.mjs';
@@ -35,6 +38,20 @@ function ownerWords(repo, run) {
     ...rows.map((w, i) => `${i + 1}. ${(w.length > CLIP ? `${w.slice(0, CLIP)} [+${w.length - CLIP} chars in ${file}]` : w).replace(/\n/g, '\n   ')}`)].join('\n');
 }
 
+function planWaiting() {
+  const session = sessionId();
+  if (!session) return [];
+  const { plans, broken } = listPlans(session);
+  return [...plans.filter((p) => p.session === session && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`), ...broken.map((file) => `plan not read: ${file}`)];
+}
+
+function roundBeforeRun(repo, run) {
+  try {
+    const d = countedRound(repo, run);
+    return d && d.run !== run.id ? [`- ${d.what}: ${d.why} (${d.at}, before the run started; the design round the design gate counts)`] : [];
+  } catch (e) { return [`- the design round could not be read: ${e.message}`]; }
+}
+
 const wallEnd = (repo, run) => run.endedAt || Math.max(0, ...readRecords(repo, { run: run.id }).map((r) => Date.parse(r.at) || 0)) || Date.now();
 
 export async function main(argv) {
@@ -48,12 +65,17 @@ export async function main(argv) {
   const rows = await gates(repo, run);
   const bad = failing(rows);
   const head = git(['rev-parse', '--short=12', 'HEAD'], repo).trim();
+  const waivers = waiversIn(repo, run.id);
+  const live = rows.filter((r) => r.gate !== 'plan');
+  const ids = [...new Set([...waivers.filter((w) => w.counted).map((w) => w.what), ...live.filter((r) => r.waived).map((r) => `gate:${r.gate}`)])];
+  const tally = `${live.filter((r) => r.holds && !r.waived).length} hold, ${ids.length} waived (${ids.join(', ')})`;
   const out = [
-    bad.length ? `NOT deliverable at ${head}: ${bad.map((r) => r.gate).join(', ')} do not hold` : `deliverable at ${head}: every delivery gate holds`,
+    bad.length ? `NOT deliverable at ${head}: ${bad.map((r) => r.gate).join(', ')} do not hold${ids.length ? `; ${tally}` : ''}`
+      : `deliverable at ${head}: ${ids.length ? tally : 'every delivery gate holds'}`,
     `run ${run.id}, ${run.lane} lane${run.laneWhy ? ` (${run.laneWhy})` : ''}, branch ${run.branch || 'none'}, wall ${Math.round((wallEnd(repo, run) - run.started) / 60000)} min`,
     '', 'Gates:', gatesText(rows),
   ];
-  const facts = [];
+  const facts = [waivers.length ? [`Waived (${waivers.length}):`, ...waivers.map((w) => `- ${w.what} by ${w.by} via ${w.via} at ${w.at}: ${w.why || 'no reason recorded'}${w.counted ? '' : ' — not counted (old shape)'}`)].join('\n') : 'Waived: none'];
   const recs = readRecords(repo, { run: run.id });
   try {
     const ledger = ledgerFor(repo, run);
@@ -69,8 +91,10 @@ export async function main(argv) {
     const ranges = [...new Set(recs.filter((r) => r.kind === 'review-start').map((r) => r.range))];
     if (ranges.length) facts.push(`Confirmed defects per reviewed range: ${ranges.map((r) => `${r.split('..').map((x) => x.slice(0, 12)).join('..')} ${confirmed.filter((f) => f.at === r).length}`).join(', ')}`);
     const deferred = [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
-    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}`)].join('\n'));
-    const toRead = ledger.filter(needsOwner);
+    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}${f.deferredBy ? ` (deferred by ${f.deferredBy})` : ''}`)].join('\n'));
+    const blocking = ledger.filter(blocksUnsettled);
+    if (blocking.length) facts.push(['Unsettled in a protected area, blocking until ruled or waived:', ...blocking.map(ruling)].join('\n'));
+    const toRead = ledger.filter((f) => needsOwner(f) && !blocksUnsettled(f));
     if (toRead.length) facts.push(['For the owner to read, not blocking:', ...toRead.map(ruling)].join('\n'));
     const ran = {};
     for (const i of evidence(repo, run, ledger).items) { ran[i.key] = (ran[i.key] || 0) + 1; }
@@ -103,13 +127,14 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Surfaces | Proof |', '|---|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${surfacesOf(r.id)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
+  try { facts.push(...planWaiting()); } catch (e) { facts.push(`plan not read: ${e.message}`); }
   facts.push(ownerWords(repo, run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {
     const row = run.ended ? null : runRow(repo);
     if (row) facts.push(`Tokens by job: ${Object.entries(row.agents).map(([k, v]) => `${k} ${fmt(v.fresh)} fresh, ${fmt(v.cacheRead)} cache reads`).join('; ') || 'none measured'}`);
   } catch (e) { facts.push(`Tokens could not be measured: ${e.message}`); }
-  const decided = readDecisions(repo, { run: run.id });
-  console.log(capped(repo, `report-${run.id}`, [...out, '', ...facts, '', `Decided without the owner (${decided.length}):`], decided.map((d) => `- ${d.what}: ${d.why}`)));
+  const decided = [...roundBeforeRun(repo, run), ...readDecisions(repo, { run: run.id }).map((d) => `- ${d.what}: ${d.why}`)];
+  console.log(capped(repo, `report-${run.id}`, [...out, '', ...facts, '', `Decided without the owner (${decided.length}):`], decided));
   return bad.length ? 1 : 0;
 }
