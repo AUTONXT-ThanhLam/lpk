@@ -43,6 +43,7 @@ the fix, the related tests, lint, one commit per fix, one push, the triage rows,
 PR body. When the floor calls the whole PR small it skips the brief, the design check and the Full
 lane's extra lenses, and the Code reviewer and the Bug hunter read the fix commits. When the PR is
 floor-full, the `design` gate wants its Design Brief: `lpk run take` reopens the run that delivered
-it, with its brief; a PR no lpk run delivered goes to the owner for `gate:design`.
+it, with its brief. For a PR no lpk run delivered, waive `gate:design` yourself with `lpk waive`
+and the reason it goes on without a brief; the report names it.
 
 Then run the `lpk:learn` skill on the PR.

@@ -15,7 +15,7 @@ These are exact and cheap; run them before you design:
   every writer, reader and test. A durable value with more than one writer needs a reason.
 - `lpk cochange <files>`: the files that usually change with these, and the fixes on their lines.
 - `lpk rules --list`, then the full text of the rules that touch this change (`lpk rules --all`).
-- `lpk floor`: the exact facts that make this change Full.
+- `lpk floor`: the facts that make this change Full. Each hit is exact; a miss proves nothing.
 
 ## Name the lane
 

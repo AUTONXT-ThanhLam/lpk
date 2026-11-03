@@ -59,7 +59,8 @@ reviews, or the confirmed findings of an lpk run handed over by the lpk skill.
    - **already said**: the step or agent file that should have caught it already holds the
      sentence and the agent still missed it: save a placement fix (move it before the step it
      guards, put the condition first), not a second copy.
-   - **computable**: `lpk/lib` can decide it from git or files: propose a check there, not prose.
+   - **computable**: `lpk/lib` can decide it exactly from git or files: propose a check there, not prose.
+     When the fact is not exact, propose that lib prints it and the agent decides.
    - **repo-only**: true only for this repo (its vocabulary, its layout): its file, never `all.md`.
 4. Decide where each one goes: `all.md` when the rule holds in any codebase, the repo's file when
    it names this repo's vocabulary or layout. Drop one only when it duplicates a rule after all.
