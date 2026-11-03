@@ -73,7 +73,12 @@ and answer a repeated point in one line ("declined, see the first triage").
 1. Run the `lpk:learn` skill on this run's evidence and record it with `lpk learn [--rule <id>]...`: the
    `learn` gate holds only once every confirmed, fixed or deferred finding is covered. Then run `lpk report`:
    it runs `lpk gates` and prints every number from the records.
-2. Fix every gate an agent can fix. A gate that does not hold for a reason no agent can fix (a
+2. Consult the Opus advisor once on the whole run, with the draft report written and `lpk gates` and
+   `lpk report` on screen, before a waiver is recorded, `lpk run grant ready` runs, or the PR is made
+   ready or merged: every waiver, deferral, `lpk decide` and patch-or-revert call, and what the report
+   claims that the run did not do. The report names each call it changed or confirmed. Where the host has no
+   advisor, `lpk:staff` reads the same material.
+3. Fix every gate an agent can fix. A gate that does not hold for a reason no agent can fix (a
    service that is down, a lens that stalled twice) is yours to weigh, not the owner's: waive it
    with `lpk waive <gate:name> --why "<what stays unproved, and why delivering anyway is right>"`
    when delivering is still right, else hold the delivery and say why. The waiver stands as your
@@ -86,23 +91,15 @@ and answer a repeated point in one line ("declined, see the first triage").
    While the owner is away, the PR stays a draft and the report lists what waits. When the owner asks
    for the PRs ready, run `lpk run grant ready --why "<their words>"`: `lpk run end` then lists the
    PRs of the run and refuses a draft one or one that conflicts with its base.
-3. Run `lpk run end` (it names the file of the owner's messages and removes the frozen tree and the
+4. Run `lpk run end` (it names the file of the owner's messages and removes the frozen tree and the
    slice worktrees that hold no uncommitted work), then `lpk reap`, and stop what the env agent
    started (its report lists the commands).
-4. Update `~/.local/share/lpk/profiles/<repo>.md` with what you had to discover this time: start
+5. Update `~/.local/share/lpk/profiles/<repo>.md` with what you had to discover this time: start
    command, logins by variable name and their roles, test command, the tech lead's login,
    known-red checks, test data prefix, conventions, and the screens a real drive reached. For each
    feature the change or the Prover reached, write or correct its feature-map entry (how to reach
    it, the login, the selector or shortcut, the file that owns it). For each approach tried and
    abandoned, write a line: what was tried, why it was ruled out, the files it touches.
-
-## The advisor's read before handover
-
-When the draft report is written and `lpk gates` and `lpk report` are on screen, consult the Opus
-advisor once, before `gh pr ready` or the merge: that one read covers every waiver, deferral,
-`lpk decide` and patch-or-revert call of the run, so none needs a call of its own. Each call the advisor
-changed or confirmed goes in the report as one line. Where the host has no advisor, `lpk:staff` reads
-the same material.
 
 ## The report
 
