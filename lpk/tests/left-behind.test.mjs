@@ -65,6 +65,19 @@ test('S5 R4: a new run on a branch prints what earlier runs left until the lead 
   assert.deepEqual(leftBehind(repo, 'feat', runB), [], 'a run that ended after this one started is not what this one was left');
 });
 
+test('S5 R4: an earlier run\'s old-shape waiver that counted for nothing is not listed as one it left', () => {
+  const S = 'old-shape-session';
+  const repo = changedRepo('old-shape');
+  start(repo, S);
+  const a = runId(repo);
+  appendFileSync(join(lpkDir(repo), 'records.jsonl'), `${JSON.stringify({ kind: 'waiver', run: a, what: 'gate:scenarios', why: 'typed in the shell', by: 'owner', via: 'cli', at: new Date().toISOString() })}\n`);
+  ok(lpk(repo, S, 'waive', 'gate:reviews', '--why', 'the lens stalled'));
+  ok(lpk(repo, S, 'run', 'end'));
+  const started = start(repo, S);
+  assert.ok(started.includes('gate:reviews'), `the counted waiver is listed:\n${started}`);
+  assert.ok(!started.includes('gate:scenarios'), `the waiver that counted for nothing is not:\n${started}`);
+});
+
 test('S5 R4: an earlier run whose archive cannot be read is named with the error, and neither run start nor the gate refuses', () => {
   const S = 'garbled-session';
   const repo = changedRepo('garbled');

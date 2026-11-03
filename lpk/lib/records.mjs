@@ -60,7 +60,7 @@ export function waiverOf(repo, runId, what) {
   return all.find(byOwner) || all.find((r) => r.via === 'lead' && leadMay(what)) || null;
 }
 export const waived = (repo, runId, what) => Boolean(waiverOf(repo, runId, what));
-const countedWaiver = (r) => byOwner(r) || (r.via === 'lead' && leadMay(String(r.what ?? '')));
+export const countedWaiver = (r) => byOwner(r) || (r.via === 'lead' && leadMay(String(r.what ?? '')));
 export const waiversIn = (repo, runId) => readRecords(repo, { run: runId }).filter((r) => r.kind === 'waiver')
   .map((r) => ({ what: r.what, by: byOwner(r) ? 'owner' : r.via === 'lead' ? 'lead' : r.by || r.via || 'unknown', via: r.via, why: r.why ?? r.question ?? '', at: r.at, session: r.session ?? null, counted: countedWaiver(r) }));
 export const waiveCommand = (ids) => `lpk waive ${ids.join(' ')} --why "<what stays unproved, and why delivering anyway is right>"`;

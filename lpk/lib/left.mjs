@@ -1,7 +1,7 @@
 import { stateOf } from './findings.mjs';
 import { learnGate } from './learn.mjs';
 import { ledgerFor } from './owed.mjs';
-import { readDecisions, readRecords } from './records.mjs';
+import { countedWaiver, readDecisions, readRecords } from './records.mjs';
 import { endedRuns } from './run.mjs';
 
 const UNCLOSED = ['open', 'unsettled', 'confirmed', 'deferred'];
@@ -11,7 +11,7 @@ function leftBy(repo, earlier) {
     const all = ledgerFor(repo, earlier);
     const findings = all.filter((f) => f.state !== 'duplicate' && UNCLOSED.includes(stateOf(f, all))).map((f) => ({ id: f.id, state: f.state }));
     const recs = readRecords(repo, { run: earlier.id });
-    const waivers = [...new Set(recs.filter((r) => r.kind === 'waiver').map((r) => r.what))];
+    const waivers = [...new Set(recs.filter((r) => r.kind === 'waiver' && countedWaiver(r)).map((r) => r.what))];
     const learn = learnGate(repo, earlier, recs);
     if (!findings.length && !waivers.length && learn.holds) return null;
     return { run: earlier.id, findings, waivers, ...(learn.holds ? {} : { learn: learn.why }) };
