@@ -19,7 +19,7 @@ test('inside a run a gate that cannot read the run denies, naming the error and 
   const commit = (cwd) => hook('PreToolUse', 'commit', { tool_name: 'Bash', session_id: 'broken', cwd, tool_input: { command: 'git commit -am x' } });
   const out = reason(commit(repo));
   assert.match(out, /the commit gate failed \(.*run\.json cannot be read/);
-  assert.match(out, /labelled exactly `gate:commit`/);
+  assert.match(out, /lpk waive gate:commit/);
   assert.equal(commit(other), null);
   // Input the gate cannot even parse still denies inside the run, and a hint hook stays quiet.
   const raw = (name) => spawnSync('node', [join(ROOT, 'lib', 'cmd', 'hook.mjs'), name], { cwd: repo, env: ENV, input: 'not json', encoding: 'utf8' });
@@ -41,9 +41,10 @@ test('the owner\'s picks on the waiver question are recorded and release what th
   assert.equal(ask({ answers: { [questions[0].question]: 'connector:editJiraIssue' } }, 'something-else'), null, 'another question');
   assert.equal(ask({ answers: {} }), null, 'nothing picked');
   assert.deepEqual(records(dir).filter((r) => r.kind === 'waiver'), []);
-  assert.match(context(ask({ answers: { [questions[0].question]: 'connector:editJiraIssue, F3, F4' } })), /`connector:editJiraIssue`, `F3, F4`/);
+  const said = context(ask({ answers: { [questions[0].question]: 'connector:editJiraIssue, F3, F4' } }));
+  assert.ok(said.includes('recorded') && said.includes('`connector:editJiraIssue`') && said.includes('`F3, F4`') && said.includes('gate:<name>'), said);
   const run = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')).id;
-  assert.deepEqual(records(dir).filter((r) => r.kind === 'waiver').map((r) => [r.what, r.run]), [['connector:editJiraIssue', run], ['F3, F4', run]]);
+  assert.deepEqual(records(dir).filter((r) => r.kind === 'waiver').map((r) => [r.what, r.run]), [['connector:editJiraIssue', run]]);
   assert.equal(jira(), null, 'released for this run');
 });
 

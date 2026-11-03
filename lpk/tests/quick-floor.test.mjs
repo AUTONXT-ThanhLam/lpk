@@ -102,15 +102,15 @@ test('the design gate holds for a documentation-only change of any size', () => 
   assert.match(gates(repo, 'dg-docs'), /^design\s+holds/m);
 });
 
-test('the design row is released by the owner under its own name and by no other', () => {
+test('the design row is released by the lead under its own name and by no other', () => {
   const repo = wideRun('design-waive', 'dg-waive');
   write(`${repo}/.git/lpk`, 'brief.md', '# Brief\n');
   const denied = gates(repo, 'dg-waive');
-  assert.match(denied, /option `gate:design`/);
+  assert.match(denied, /lpk waive gate:design/);
   assert.doesNotMatch(denied, /gate:brief-check|lpk go/);
-  ok(lpk(repo, 'dg-waive', 'waive', 'gate:brief-check', '--why', 'the owner said', '--via', 'ask'));
+  ok(lpk(repo, 'dg-waive', 'waive', 'gate:brief-check', '--why', 'the lead said'));
   assert.match(gates(repo, 'dg-waive'), /^design\s+DENY/m);
-  ok(lpk(repo, 'dg-waive', 'waive', 'design', '--why', 'the owner said', '--via', 'ask'));
+  ok(lpk(repo, 'dg-waive', 'waive', 'design', '--why', 'the lead said'));
   assert.match(gates(repo, 'dg-waive'), /^design\s+holds/m);
 });
 

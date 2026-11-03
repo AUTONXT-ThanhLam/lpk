@@ -13,7 +13,7 @@ export function lateFix(repo, finding, ledger) {
 
 export function lateFixError(finding, late) {
   return `${finding.id} was raised on ${finding.at}, which holds ${late.commit.slice(0, 12)}, the fix of ${late.id}: patching it is a second fix round, and the loop of review, fix and review runs once. `
-    + 'The ways out: revert or redesign that fix (`lpk fixlines` names what it rewrote), have the owner defer it (closedBy owner) or waive the findings gate, or take it into a new run.';
+    + 'The ways out: revert or redesign that fix (`lpk fixlines` names what it rewrote), have the owner defer it (closedBy owner) or waive the findings gate as the lead (`lpk waive gate:findings --why "..."`), or take it into a new run.';
 }
 
 function hitsAt(repo, rev, pattern, files) {

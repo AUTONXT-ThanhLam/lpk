@@ -47,10 +47,17 @@ export function readDecisions(repo, { run } = {}) {
   return run ? all.filter((r) => r.run === run) : all;
 }
 
-// Whether the owner released `what` (a gate as `gate:<name>`, a finding by its id) in this run,
-// through one of the owner's channels: /lpk-waive, or the waiver question (recorded with the
-// question it answered). `lpk waive` run by an agent records `via: cli` and counts for nothing.
+// The record that released `what` in this run: the owner's, through /lpk-waive or the waiver
+// question (recorded with the question it answered), for any id; the lead's (`via: lead`) for a
+// `gate:` id other than `gate:pre`, which fails before the lead's command can run. An old `via: cli`
+// record counts for nothing.
 export const WAIVE_SOURCE = 'lpk:waive';
 const OWNER = new Set(['/lpk-waive', 'ask']);
-export const waived = (repo, runId, what) => readRecords(repo, { run: runId })
-  .some((r) => r.kind === 'waiver' && r.what === what && (OWNER.has(r.via) || (r.via === undefined && r.question)));
+const byOwner = (r) => OWNER.has(r.via) || (r.via === undefined && Boolean(r.question));
+export const leadMay = (what) => what.startsWith('gate:') && what !== 'gate:pre';
+export function waiverOf(repo, runId, what) {
+  const all = readRecords(repo, { run: runId }).filter((r) => r.kind === 'waiver' && r.what === what);
+  return all.find(byOwner) || all.find((r) => r.via === 'lead' && leadMay(what)) || null;
+}
+export const waived = (repo, runId, what) => Boolean(waiverOf(repo, runId, what));
+export const waiveCommand = (ids) => `lpk waive ${ids.join(' ')} --why "<what stays unproved, and why delivering anyway is right>"`;

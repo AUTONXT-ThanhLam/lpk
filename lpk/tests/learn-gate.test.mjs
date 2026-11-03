@@ -36,7 +36,7 @@ test('the learn gate holds only after lpk learn has recorded every confirmed fin
   confirm(repo, id);
   const denied = lpk(repo, S, 'gates').stdout;
   assert.match(denied, new RegExp(`^learn +DENY .*\\n +.*${id}`, 'm'));
-  assert.match(denied, /option `gate:learn`/);
+  assert.match(denied, /lpk waive gate:learn/);
   assert.equal(lpk(repo, S, 'learn', '--rule', 'no-such-rule').status, 2);
   ok(lpk(repo, S, 'learn'));
   assert.match(lpk(repo, S, 'gates').stdout, /^learn +holds/m);
@@ -56,7 +56,7 @@ test('the tests-first gate denies a change whose first test arrives after its fi
   sh(repo, 'add', '.'); sh(repo, 'commit', '-qm', 'Test b');
   const late = lpk(repo, S, 'gates').stdout;
   assert.match(late, /^tests-first +DENY .*\n +.*tests\/b\.test\.mjs/m);
-  assert.match(late, /option `gate:tests-first`/);
+  assert.match(late, /lpk waive gate:tests-first/);
 
   const fresh = startRun('first-ok', 'first-ok-session');
   write(fresh, 'tests/c.test.mjs', 'import "../src/c.mjs";\n');

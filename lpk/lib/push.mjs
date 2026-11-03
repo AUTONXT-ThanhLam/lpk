@@ -10,7 +10,7 @@ import { commits, defaultBranch, git, runsGit, top } from './git.mjs';
 import { isIncrement } from './bar.mjs';
 import { failing, gates } from './gates.mjs';
 import { handover, pushedBranches, readyBranch } from './handover.mjs';
-import { appendRecord, readRecords, WAIVE_SOURCE, waived } from './records.mjs';
+import { appendRecord, readRecords, waiveCommand, waived } from './records.mjs';
 import { endedRuns, markerOf, readRun, runForBranch } from './run.mjs';
 import { codeOfCommit } from './tree.mjs';
 import { gitleaks } from './tools.mjs';
@@ -46,7 +46,7 @@ export function problems(repo, range) {
 // pushed; any other form is refused with the way to run it, rather than guessed at.
 const PLAIN_PUSH = /^\s*git(\s+-C\s+("([^"]*)"|'([^']*)'|([^\s"';&|`$()]+)))?\s+push\b[^;&|`$()\n]*$/;
 const deny = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
-const WAIVE = 'The owner can let the calls this gate cannot decide through for the rest of the open run: the waiver question with an option labelled `gate:error`, or /lpk-waive gate:error.';
+const WAIVE = 'Fix the cause it names. When that is out of reach, the lead lets the calls this gate cannot decide through for the rest of the open run: `lpk waive gate:error --why "<why>"`.';
 
 // A PR title becomes the squash commit's subject on the default branch, so it is held to the same
 // bound. Only a title passed literally to a command that starts `gh pr create|edit` is measured.
@@ -67,7 +67,7 @@ async function gated(repo, run, what, { ci }) {
   const rows = await gates(repo, run, { ci });
   const bad = failing(rows);
   if (!bad.length) return null;
-  return deny(`lpk: ${what} on ${run.branch || 'this branch'} is refused: the delivery gates of run ${run.id} do not hold.\n${bad.map((r) => `- ${r.gate}: ${r.why}${r.wayOut ? ` → ${r.wayOut}` : ''}`).join('\n')}\n\`lpk gates\` shows what each read.\nOnly the owner releases a gate: ask them once with AskUserQuestion (multiSelect, \`metadata: { source: "${WAIVE_SOURCE}" }\`), one option per gate labelled exactly ${bad.map((r) => `\`gate:${r.gate}\``).join(', ')}, each saying what that gate holds and what stays unproved. Their picks are recorded and the gates then hold. Do not ask them to type a command.`);
+  return deny(`lpk: ${what} on ${run.branch || 'this branch'} is refused: the delivery gates of run ${run.id} do not hold.\n${bad.map((r) => `- ${r.gate}: ${r.why}${r.wayOut ? ` → ${r.wayOut}` : ''}`).join('\n')}\n\`lpk gates\` shows what each read.\nFix every gate an agent can fix. For one no agent can fix (a service that is down, a lens that stalled twice), weigh it yourself, without asking the owner: \`${waiveCommand(bad.map((r) => `gate:${r.gate}`))}\`. The gate rows, the report and the PR body then show each waiver and its reason.`);
 }
 
 // Whether this repo has a run, open, damaged or ended: only then do the gates act in it.
@@ -130,7 +130,7 @@ export async function decide(input) {
   } catch (e) {
     const repo = top(input.cwd || '.');
     if (repo && !hasRuns(repo)) return null;
-    // The owner's waiver of `gate:error` in the open run lets through every call the gate cannot decide.
+    // A waiver of `gate:error` in the open run lets through every call the gate cannot decide.
     let run = null;
     try { run = repo && readRun(repo); } catch { /* an unreadable run cannot carry a waiver */ }
     if (run && waived(repo, run.id, 'gate:error')) return null;

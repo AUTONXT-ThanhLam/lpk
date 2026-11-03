@@ -103,7 +103,6 @@ export async function status(repo, { session = '', now = Date.now(), withGates =
   const waits = [
     ...(asks ? [{ what: 'question', why: 'the Captain asked you a question' }] : []),
     ...(yourTurn ? [{ what: 'reply', why: 'the Captain ended its turn and no agent runs' }] : []),
-    ...(g?.rows || []).filter((r) => !r.holds && String(r.wayOut || '').startsWith('or the owner waives')).map((r) => ({ what: `gate:${r.gate}`, why: String(r.why || '').split('\n')[0] })),
   ];
   // A session with no transcript here has measured nothing, which is not the same as 0 tokens: the
   // band and `lpk status` read `tokens.recorded` (lib/host.mjs TOKENS_UNMEASURED).
