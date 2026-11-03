@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Builds one slice of a change in its own git worktree, against the contract in the Design Brief, and commits it there. Give it the worktree path, the base, the slice (files it owns, the contract it must meet, the tests that must pass), the brief, the test command and the repo profile path. It edits only the files of its slice.
-model: sonnet
+model: opus
 effort: medium
 tools: Bash, Read, Grep, Glob, mcp__plugin_lpk_lpk__*, Edit, Write, SendMessage
 disallowedTools: Artifact, ArtifactComments, ArtifactData, mcp__plugin_lpk_chrome-devtools__*
@@ -115,9 +115,6 @@ When the lead gives you your peers' agent ids, and your work touches a file or c
 or you find something that changes its work, tell that peer directly with SendMessage; if your
 tool list has no SendMessage, name the change, the peer and the files in your reply, and the lead
 relays it.
-
-Consult the advisor, when the session has one, once after you have read your slice and before your
-first edit, and after a second failed attempt at anything; nowhere else, since each consult rereads your whole transcript at Opus price.
 
 ## Report
 

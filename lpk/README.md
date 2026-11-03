@@ -54,8 +54,10 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 
 ## Roles
 
-Each agent's file sets its `model` (Sonnet, except the designer on Opus) and `effort`. Run the session itself on Sonnet with an Opus
-`advisorModel`; a plugin cannot set the session's model. What an
+Each agent's file sets its `model` and `effort`: Opus for the roles where a miss costs most
+(design, architecture, tech-lead review, bug hunting, security, verifying, proving, building,
+screens), Sonnet for the diff-bound review lenses and staff work, Haiku for the env agent. The
+session itself is meant to run on Opus; a plugin cannot set the session's model. What an
 agent may not do is set there too, not in prose: the reviewing roles cannot edit files, and the
 architects write only their own briefs.
 

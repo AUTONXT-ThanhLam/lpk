@@ -2,7 +2,8 @@
 
 Each directory holds one `case.yaml`: a small seeded input in the prompt, one agent or skill of
 this plugin, and a grader that decides the answer. They run with `claude plugin eval` on Sonnet,
-and the cases and the judge both use Sonnet.
+and the cases and the judge both use Sonnet; an agent a case spawns runs on the model its own file
+sets.
 
 | Case | Checks |
 | --- | --- |
