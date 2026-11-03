@@ -56,7 +56,7 @@ function ask(proc, msg) {
   });
 }
 
-test('the MCP server records a stamped finding, takes the verifier\'s ruling only with where the defect began, and refuses an unstamped one', async () => {
+test('S1 R3: the MCP server records a stamped finding, takes the verifier\'s ruling only with where the defect began, defers as the lead, and refuses an unstamped one', async () => {
   const { dir, range } = repoWithRun('mcp');
   const proc = spawn('node', [MCP], { cwd: tmp, env: ENV, stdio: ['pipe', 'pipe', 'ignore'] });
   try {
@@ -87,8 +87,12 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     assert.deepEqual(readLedger(dir).findings.map((f) => [f.id, f.from, f.agentId, f.at, f.run, f.state, f.by]), [['F1', 'lpk:bug-hunter', 'a1', range, 'run7', 'confirmed', VERIFIER]]);
     assert.deepEqual(list.result.tools.find((t) => t.name === 'finding_fixed').inputSchema.required, ['id', 'closedBy', 'evidence']);
     assert.equal(list.result.tools.find((t) => t.name === 'finding_fixed').inputSchema.properties.sweep.type, 'string');
-    const deferred = await call('fixed', { id: 'F1', closedBy: 'owner', evidence: 'owner: skip what users cannot reach' });
-    assert.match(deferred.result.content[0].text, /^F1 deferred: owner: skip what users cannot reach$/);
+    const fixedTool = list.result.tools.find((t) => t.name === 'finding_fixed');
+    assert.ok(fixedTool.inputSchema.properties.closedBy.enum.includes('defer') && !fixedTool.inputSchema.properties.closedBy.enum.includes('owner'));
+    assert.doesNotMatch(JSON.stringify(fixedTool), /closedBy owner|owner's words/);
+    assert.equal((await call('fixed', { id: 'F1', closedBy: 'owner', evidence: 'x' })).result.isError, true);
+    const deferred = await call('fixed', { id: 'F1', closedBy: 'defer', evidence: 'no user reaches the retry path yet' });
+    assert.match(deferred.result.content[0].text, /^F1 deferred: no user reaches the retry path yet$/);
   } finally {
     if (proc.exitCode === null && proc.signalCode === null) {
       const closed = new Promise((r) => proc.on('close', r));

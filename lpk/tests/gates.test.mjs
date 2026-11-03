@@ -151,17 +151,17 @@ test('a fix closed in a builder\'s worktree and cherry-picked owes only the fix 
   assert.deepEqual(owedOn(), ['fix delta; has not run on it', 'fix delta; has not run on it']);
 });
 
-test('a confirmed finding the owner defers holds no gate and is listed as a known limit', () => {
+test('a confirmed finding the lead defers holds no gate and is listed as a known limit', () => {
   const S = 'defer-session';
   const repo = quickRun('defer', S);
   const range = `${base(repo)}..${head(repo)}`;
   const f = addFinding(repo, { from: 'lpk:bug-hunter', at: range, claim: 'the tooltip truncates a long name', repro: 'r', kind: 'defect', severity: 'nit' }).finding;
   ruleOn(repo, { id: f.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'a fixed width', evidence: 'seen', by: 'lpk:verifier' });
   assert.match(lpk(repo, S, 'gates').stdout, /findings[\s\S]*confirmed and not fixed: F1/);
-  ok(lpk(repo, S, 'finding', 'fixed', f.id, '--closed-by', 'owner', '--evidence', 'owner: skip what users cannot reach'));
+  ok(lpk(repo, S, 'finding', 'fixed', f.id, '--closed-by', 'defer', '--evidence', 'no user reaches it yet'));
   const report = lpk(repo, S, 'report').stdout;
   assert.match(report, /^findings +holds/m);
-  assert.match(report, /^Known limits, not fixed \(for the PR body\):\n- F1 defect\/nit: the tooltip truncates a long name — owner: skip what users cannot reach$/m);
+  assert.match(report, /^Known limits, not fixed \(for the PR body\):\n- F1 defect\/nit: the tooltip truncates a long name — no user reaches it yet(?: \(deferred by cli\))?$/m);
 });
 
 test('a push of the run\'s branch waits for the owner\'s grant, from any session and after the run ends', () => {
@@ -219,7 +219,7 @@ test('a finding an ended run left confirmed holds its branch, and once a later r
   assert.match(markFixed(repo, { id: 'F1', commit: head(repo), closedBy: 'repro', evidence: 'x', by: 'main' }).error, /no finding F1/);
 });
 
-test('an unsettled finding shows the owner the ruling asked and the area that kept it open, and the gate row names its id first', () => {
+test('an unsettled finding in a protected area shows the owner the ruling asked and the area that kept it open, and denies the findings gate naming its id', () => {
   const S = 'unsettled-session';
   const repo = quickRun('unsettled', S);
   const range = `${base(repo)}..${head(repo)}`;
@@ -228,7 +228,7 @@ test('an unsettled finding shows the owner the ruling asked and the area that ke
   assert.equal(ruleOn(repo, { id: 'F1', verdict: 'dropped', basis: 'not-reproduced', evidence: 'the repro passed', by: 'lpk:verifier' }).finding.state, 'unsettled');
   assert.match(lpk(repo, S, 'report').stdout, /^- F1 unsettled \([^)]*dropped[^)]*not-reproduced[^)]*security\)[^\n]*the cookie is readable/m);
   const row = JSON.parse(lpk(repo, S, 'gates', '--json').stdout).find((r) => r.gate === 'findings');
-  assert.deepEqual([row.holds, row.why.slice(0, 2)], [true, 'F1']);
+  assert.deepEqual([row.holds, /F1/.test(row.why)], [false, true]);
 });
 
 test('a branch the run never noted is its branch: work merged in after a start on main meets the gates at handover and push, also after the run ends', () => {
