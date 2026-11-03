@@ -61,7 +61,7 @@ export async function recordWaiver(input, run) {
   return got.length;
 }
 
-// Whether the owner waived `id` in this run.
+// Whether `id` is waived in this run: the owner's record, or the lead's for a gate the lead may waive.
 export async function waived(run, id) {
   return Boolean(run) && (await records()).waived(run.repo, run.id, id);
 }

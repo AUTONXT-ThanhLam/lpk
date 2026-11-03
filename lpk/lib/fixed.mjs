@@ -11,8 +11,8 @@ const onHead = (repo, sha) => git(['merge-base', sha, 'HEAD'], repo).trim() === 
 
 function defer(repo, f, words, by) {
   if (f.state !== 'confirmed') return { error: `${f.id} is ${f.state}; only a confirmed finding is deferred` };
-  if (PROTECTED.includes(f.area)) return { error: `${f.id} is in the ${f.area} area, which no speed policy defers: fix it, or ask the owner to waive the findings gate` };
-  if (f.kind === 'scenario') return { error: `${f.id} is an acceptance scenario that fails, which its user meets: fix it, or ask the owner to waive the findings gate` };
+  if (PROTECTED.includes(f.area)) return { error: `${f.id} is in the ${f.area} area, which no speed policy defers: fix it, or waive the findings gate as the lead (\`lpk waive gate:findings --why "..."\`)` };
+  if (f.kind === 'scenario') return { error: `${f.id} is an acceptance scenario that fails, which its user meets: fix it, or waive the findings gate as the lead (\`lpk waive gate:findings --why "..."\`)` };
   append(repo, { ev: 'deferred', id: f.id, evidence: words, by });
   return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };
 }

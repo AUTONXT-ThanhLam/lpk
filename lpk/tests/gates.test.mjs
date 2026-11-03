@@ -58,9 +58,6 @@ test('gh pr ready is refused while any gate does not hold, naming each and its w
   assert.doesNotMatch(why, /- findings:/, 'a ruling by someone other than the verifier does not block');
   assert.doesNotMatch(why, /- reviews:/, 'both agents ran on the patch and every finding they returned is in the ledger');
   assert.match(lpk(repo, S, 'gates').stdout, /^findings +holds .*\n +.*F2 \(dropped by main\)/m);
-  const pre = lpk(repo, S, 'waive', 'gate:pre', '--why', 'I am sure');
-  assert.equal(pre.status, 2, 'gate:pre is the owner\'s');
-  assert.match(pre.stderr, /waiver question/);
   assert.equal(lpk(repo, S, 'waive', 'F2', '--why', 'I read it', '--via', '/lpk-waive').status, 2, 'a finding id is not waived');
 
   assert.match(hookBash(repo, S, 'gh pr create --title "Set a" --body x'), /`gh pr create` without --draft on feat is refused[\s\S]*- scenarios:/, 'a refused waiver releases nothing');

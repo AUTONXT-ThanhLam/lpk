@@ -110,7 +110,7 @@ test('a full run is denied without numbered requirements, reads them from brief.
   write(dir, 'brief.json', JSON.stringify({ ...JSON.parse(readFileSync(join(dir, 'brief.json'), 'utf8')), requirements: [
     { id: 'R1', text: 'the page shows 2', source: 'x' }, { id: 'R2', text: 'reported', source: 'x' }, { id: 'R3', text: 'the old total stays', source: 'x' }] }));
   assert.match(row(repo, S).why, /^R3 unproved/);
-  ok(lpk(repo, S, 'waive', 'requirements', '--why', 'the owner proves R3 by hand', '--via', 'ask'));
+  ok(lpk(repo, S, 'waive', 'requirements', '--why', 'the owner proves R3 by hand', '--via', '/lpk-waive'));
   r = row(repo, S);
   assert.equal(r.holds, true);
   assert.match(r.why, /^waived by the owner \(R3 unproved/);

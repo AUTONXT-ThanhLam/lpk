@@ -8,7 +8,7 @@ import { appendRecord } from '../records.mjs';
 import { activeRun, runHere } from '../run.mjs';
 import { GATES, ID_FORMS, isWaiverId, leadMay, WAIVE_SOURCE } from '../waiver.mjs';
 
-const VIA = ['lead', '/lpk-waive', 'ask'];
+const VIA = ['lead', '/lpk-waive'];
 const FINDING = /^F\d+$/;
 const NOT_FINDINGS = 'a finding id is not waived; the findings gate is `gate:findings`';
 const USAGE = `usage: lpk waive <id>... --why "<what stays unproved, and why going on is right>" [--repo <dir>]\n  (an id is ${ID_FORMS}; the lead waives a gate, and the other ids are the owner's)`;
@@ -29,6 +29,7 @@ export function main(argv) {
   try { own = here && runHere(here); } catch { own = null; }
   const run = own || (a.opt('--repo') ? null : activeRun(sessionId(), false, process.cwd()));
   if (!run) { console.error('lpk: no lpk run in this repo, and this session holds none elsewhere; a waiver belongs to a run'); return 1; }
+  if (via === 'lead' && (!run.session || run.session !== sessionId())) { console.error(`lpk: run ${run.id} is held by another session; only the session that holds the run waives its gates`); return 2; }
   const repo = own ? here : run.repo;
   for (const what of ids) {
     appendRecord(repo, { kind: 'waiver', run: run.id, what, why: a.opt('--why'), by: via === 'lead' ? 'lead' : 'owner', via, session: sessionId() || null, exit: 0 });

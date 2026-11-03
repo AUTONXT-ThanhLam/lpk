@@ -79,7 +79,8 @@ and answer a repeated point in one line ("declined, see the first triage").
    reason in the PR body and the report. What leaves this machine or cannot be undone (`connector:`,
    `git:`, `pr:`, and `gate:pre`) stays the owner's: ask with `AskUserQuestion`,
    `metadata.source: "lpk:waive"`, an option labelled exactly with the id. Ask the PR question
-   (draft, ready, merge) only where this repo's CLAUDE files do not already authorize it.
+   (draft, ready, merge) only where this repo's CLAUDE files do not already authorize it, as its
+   own `AskUserQuestion` without `metadata.source: "lpk:waive"`, so its labels are not read as waiver picks.
    While the owner is away, the PR stays a draft and the report lists what waits. When the owner asks
    for the PRs ready, run `lpk run grant ready --why "<their words>"`: `lpk run end` then lists the
    PRs of the run and refuses a draft one or one that conflicts with its base.

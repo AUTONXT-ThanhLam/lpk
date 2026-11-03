@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { HOOKS } from '../lib/cmd/hook.mjs';
+import { waiverOf } from '../lib/records.mjs';
+import { readRun } from '../lib/run.mjs';
 import { GATES } from '../lib/waiver.mjs';
 import { context, hook, lpk, reason, repoWith, startRun } from './hooks-env.mjs';
 
@@ -108,4 +110,38 @@ test('R7 every gate hook is a gate a waiver can name, and so is every gate the d
   assert.ok(rows.includes('reviews') && rows.includes('plan'), rows.join());
   for (const row of rows.filter((r) => r !== 'plan')) assert.ok(GATES.includes(row), row);
   assert.ok(!GATES.includes('plan'));
+  for (const name of GATES) assert.ok(rows.includes(name) || hooks.includes(name) || ['error', 'brief-check'].includes(name), `${name} is a gate nothing prints or enforces`);
+});
+
+test('R8 only the session that holds the run waives its gates as the lead', () => {
+  const { repo, dir } = runIn('lead-other', 'holder', { scenarios: [{ id: 'S1', cmd: 'false', surface: 'cli', entry: 'false' }] });
+  const r = lpk(repo, 'child', 'waive', 'gate:scenarios', '--why', 'x');
+  assert.equal(r.status, 2, r.stdout);
+  assert.deepEqual(waivers(dir), []);
+  assert.match(lpk(repo, 'holder', 'gates').stdout, /^scenarios +DENY /m);
+  assert.equal(lpk(repo, 'child', 'waive', 'gate:scenarios', '--why', 'the owner said so', '--via', 'ask').status, 2, 'ask is the hook\'s, not the command\'s');
+});
+
+test('R3 a stored lead record for gate:pre or a connector counts for nothing, and one for a normal gate counts', () => {
+  const { repo, dir } = runIn('lead-stored', 'stored');
+  const run = readRun(repo, 'stored');
+  for (const what of ['gate:pre', 'connector:editJiraIssue', 'gate:commit']) appendFileSync(join(dir, 'records.jsonl'), `${JSON.stringify({ kind: 'waiver', run: run.id, what, why: 'x', by: 'lead', via: 'lead', exit: 0 })}\n`);
+  assert.equal(waiverOf(repo, run.id, 'gate:pre'), null);
+  assert.equal(waiverOf(repo, run.id, 'connector:editJiraIssue'), null);
+  assert.ok(waiverOf(repo, run.id, 'gate:commit'));
+  const jira = hook('PreToolUse', 'pre', { tool_name: 'mcp__atlassian__editJiraIssue', session_id: 'stored', cwd: repo, tool_input: {} });
+  assert.match(reason(jira), /editJiraIssue/);
+});
+
+test('R9 a pr id is refused by the command and by a waiver question pick unless it holds a URL', () => {
+  const { repo, dir } = runIn('lead-pr', 'prs');
+  for (const id of ['pr:123', 'pr:']) {
+    const r = lpk(repo, 'prs', 'waive', id, '--why', 'x', '--via', '/lpk-waive');
+    assert.equal(r.status, 2, `${id}: ${r.stdout}`);
+  }
+  const question = 'Release it?';
+  hook('PostToolUse', 'waive', { tool_name: 'AskUserQuestion', session_id: 'prs', cwd: repo,
+    tool_input: { metadata: { source: 'lpk:waive' }, questions: [{ question, options: [{ label: 'pr:123' }] }] },
+    tool_response: { answers: { [question]: 'pr:123' } } });
+  assert.deepEqual(waivers(dir), []);
 });

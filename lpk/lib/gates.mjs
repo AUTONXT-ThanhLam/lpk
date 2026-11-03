@@ -19,6 +19,7 @@ import { learnGate } from './learn.mjs';
 import { designGate } from './designgate.mjs';
 import { testsFirstGate } from './testfirst.mjs';
 import { readRecords, waiveCommand, waiverOf } from './records.mjs';
+import { GATES } from './waiver.mjs';
 import { readRun, runDir } from './run.mjs';
 import { headTree, untrackedCode } from './tree.mjs';
 
@@ -148,7 +149,7 @@ export async function gates(repo, run = readRun(repo), { ci = true } = {}) {
     try { row = await fn(); } catch (e) { row = { holds: false, read: '', why: `the gate failed: ${String(e.message || e).split('\n')[0]}`, wayOut: '' }; }
     const w = row.holds ? null : waiverOf(repo, run.id, `gate:${gate}`);
     if (w) row = { ...row, holds: true, why: w.via === 'lead' ? `waived by the lead: ${w.why} (${row.why})` : `waived by the owner (${row.why})` };
-    else if (!row.holds) row.wayOut = [row.wayOut, `or, when no agent can fix it, the lead waives it: \`${waiveCommand([`gate:${gate}`])}\``].filter(Boolean).join('; ');
+    else if (!row.holds && GATES.includes(gate)) row.wayOut = [row.wayOut, `or, when no agent can fix it, the lead waives it: \`${waiveCommand([`gate:${gate}`])}\``].filter(Boolean).join('; ');
     out.push({ gate, ...row });
   }
   return out;
