@@ -9,6 +9,7 @@ import { barFor } from './bar.mjs';
 import { archiveLedger } from './findings.mjs';
 import { git, top, within } from './git.mjs';
 import { sessionId } from './host.mjs';
+import { scenarioLogFor, scenariosMoved } from './scenariolog.mjs';
 import { gone, heirs, sessionPid } from './sessions.mjs';
 import { ACTIVE, activeFile, checkout, markerOf, parse, registered, runDir, startDir, worktreeOf } from './where.mjs';
 
@@ -111,7 +112,7 @@ export function noteBranch(repo, run) {
 
 // Starts a run, or with an open one: amends it when it is this session's (same id, ledger and
 // verify kept), takes it with `take` when its session's process is gone, else refuses.
-export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], requirements = [], verify = [], verifyFinal = [], take = false, draftPush = false, bar }) {
+export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scenarios = [], scenarioFrom, requirements = [], verify = [], verifyFinal = [], take = false, draftPush = false, bar }) {
   const marker = startDir(repo) && join(startDir(repo), 'run.json');
   if (!marker) return { error: 'not inside a git repository' };
   const st = parse(marker), me = sessionId();
@@ -134,8 +135,10 @@ export function startRun(repo, { target, base, lane = 'full', laneWhy = '', scen
   Object.assign(run, { marker, target, base, lane, laneWhy, bar: barFor(open, bar), ...(me ? { session: me } : {}) });
   if (scenarios.length || !open) {
     // A Prover that started before the scenarios changed proved other ones (proof.mjs proverResults).
-    if (open && JSON.stringify(scenarios) !== JSON.stringify(open.scenarios || [])) run.scenariosAt = Date.now();
+    if (open && scenariosMoved(open.scenarios || [], scenarios)) run.scenariosAt = Date.now();
     run.scenarios = scenarios;
+    run.scenarioLog = scenarioLogFor(open, scenarios);
+    if (scenarioFrom) run.scenarioFrom = scenarioFrom;
   }
   if (requirements.length || !open) run.requirements = requirements;
   if (open && fast.join('\n') !== (open.verify || []).join('\n')) delete run.verified;

@@ -24,6 +24,8 @@ function agentFiles(dir) {
 
 const textOf = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter((b) => b?.type === 'text').map((b) => b.text).join('\n') : '');
 
+const resultText = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.map((b) => b?.text || '').join(' ').trim() : '');
+
 // One agent's facts. A line cut short (the agent is still writing) is skipped.
 export function lensRun(file) {
   const entries = readFileSync(file, 'utf8').split('\n').flatMap((l) => { try { return l.trim() ? [JSON.parse(l)] : []; } catch { return []; } });
@@ -33,6 +35,10 @@ export function lensRun(file) {
   const prompt = entries.slice(0, firstAssistant < 0 ? entries.length : firstAssistant)
     .filter((e) => e.type === 'user').map((e) => textOf(e.message?.content)).filter((t) => !t.startsWith(RELAY)).join('\n');
   const m = RANGE.exec(prompt);
+  const failed = new Map(entries.filter((e) => e.type === 'user' && Array.isArray(e.message?.content)).flatMap((e) => e.message.content)
+    .filter((b) => b?.type === 'tool_result' && b.is_error).map((b) => [b.tool_use_id, resultText(b.content) || 'the tool reported an error']));
+  const calls = entries.filter((e) => e.type === 'assistant' && Array.isArray(e.message?.content)).flatMap((e) => e.message.content)
+    .filter((b) => b?.type === 'tool_use').map((b) => ({ name: b.name, input: b.input || {}, ...(failed.has(b.id) ? { error: failed.get(b.id) } : {}) }));
   const last = entries.filter((e) => e.type === 'assistant').at(-1);
   const blocks = Array.isArray(last?.message?.content) ? last.message.content : [];
   const so = blocks.find((b) => b?.type === 'tool_use' && b.name === 'StructuredOutput');
@@ -47,6 +53,7 @@ export function lensRun(file) {
     at: entries.at(-1)?.timestamp || '',
     started: entries[0]?.timestamp || '',
     host: hostOf(file),
+    calls,
   };
 }
 

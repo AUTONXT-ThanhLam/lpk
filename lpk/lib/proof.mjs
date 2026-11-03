@@ -8,6 +8,7 @@ import { git } from './git.mjs';
 import { evidence, ledgerFor } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { TEST } from './rules.mjs';
+import { judgedProof, judgedStatus, named } from './surface.mjs';
 import { readRun, runDir } from './run.mjs';
 import { codeOfCommit, headTree } from './tree.mjs';
 
@@ -26,19 +27,23 @@ export function tiersGreen(run, recs, tree) {
 }
 export const verifiedGreen = (run, recs, tree) => { const t = tiersGreen(run, recs, tree); return t.fast && t.final; };
 
-// The Prover's result line for scenario or failure row `s`: by its id (`S1`, `S1: ...`), or by the
-// agent-judged text itself.
-export const named = (results, s) => results.find((x) => { const t = String(x?.scenario || '').trim(); return t === s.id || t.startsWith(`${s.id}:`) || t.startsWith(`${s.id} `) || (s.agentJudged && t === s.agentJudged); });
+export { judgedStatus, named };
 
 // The result lines of every Prover run whose reviewed commit has HEAD's code, started after the
 // run's scenarios last changed, newest run first, each with its agent id: one Prover per group of
 // scenarios proves the whole set, and a later run's line for a scenario wins over an earlier one's.
 export function proverResults(repo, run) {
   const code = codeOfCommit(repo, 'HEAD').code;
-  const runs = evidence(repo, run, ledgerFor(repo, run)).items
+  const seen = evidence(repo, run, ledgerFor(repo, run));
+  const notPassed = seen.ungraded.map((i) => ({ ...i, structured: { ...i.structured, results: (i.structured.results || []).filter((x) => x?.status !== 'PASS') } })).filter((i) => i.structured.results.length);
+  const runs = [...seen.items, ...notPassed]
     .filter((i) => i.key === 'prover' && i.structured && !(Date.parse(i.started) < (run.scenariosAt || 0)) && codeOfCommit(repo, i.range.split(/\.\.\.?/).pop()).code === code)
     .sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  return { agents: runs.map((i) => i.agentId), results: runs.flatMap((i) => (i.structured.results || []).map((x) => ({ ...x, agentId: i.agentId }))) };
+  const lines = runs.map((i) => (i.structured.results || []).map((x) => ({ ...x, agentId: i.agentId, agent: { agentId: i.agentId, calls: i.calls, started: i.started } })));
+  [...lines].reverse().flat().forEach((r, k) => { r.rank = k; });
+  const results = lines.flat();
+  results.forEach((r) => Object.defineProperty(r, 'all', { value: results, enumerable: false }));
+  return { agents: runs.map((i) => i.agentId), results };
 }
 
 // The run's brief.json: beside run.json while the run is open, under runs/<id>/ once it ended.
@@ -84,7 +89,7 @@ export function trace(repo, run, recs) {
   const missing = !tiers.fast ? 'no green verify' : 'no green `lpk verify --final`';
   const inRun = new Map((run.scenarios || []).map((s) => [s.id, s]));
   let results;
-  const passBy = (s) => { results ??= proverResults(repo, run).results; const r = named(results, s); return r?.status === 'PASS' ? `PASS by Prover ${r.agentId}` : null; };
+  const passBy = (s) => { results ??= proverResults(repo, run).results; const r = named(results, s); if (!r) return { why: '' }; const j = judgedProof(repo, run, s, r, r.agent); return j.ok ? { by: `PASS by Prover ${r.agentId}` } : { why: j.why }; };
   const scenario = (claimed) => {
     const s = inRun.get(claimed.id);
     if (!s) return { note: `${claimed.id} is not a scenario of the run` };
@@ -94,15 +99,15 @@ export function trace(repo, run, recs) {
       return ok ? { proof: `${s.id} green on tree ${short(tree)}` } : { note: `${s.id} not green on HEAD's tree` };
     }
     const by = passBy(s);
-    return by ? { proof: `${s.id} ${by}` } : { note: `${s.id} has no Prover PASS on HEAD's code` };
+    return by.by ? { proof: `${s.id} ${by.by}` } : { note: `${s.id} ${by.why ? `reads NOT PROVED: ${by.why}` : "has no Prover PASS on HEAD's code"}` };
   };
-  const failure = (row) => { const by = passBy(row); return by ? { proof: `${row.id} ${by}` } : { note: `failure row ${row.id} has no Prover PASS on HEAD's code` }; };
+  const failure = (row) => { const by = passBy(row); return by.by ? { proof: `${row.id} ${by.by}` } : { note: `failure row ${row.id} ${by.why ? `reads NOT PROVED: ${by.why}` : "has no Prover PASS on HEAD's code"}` }; };
   const tests = testsNaming(repo, run);
   const rows = own.requirements.map((req) => {
     const got = [
       ...own.scenarios.filter((s) => (s.proves || []).includes(req.id)).map(scenario),
       ...own.failures.filter((f) => (f.proves || []).includes(req.id)).map(failure),
-      ...(tests.has(req.id) ? [verified ? { proof: `test in ${tests.get(req.id).join(', ')}, verify green` } : { note: `test in ${tests.get(req.id).join(', ')}, but ${missing} on HEAD's tree` }] : []),
+      ...(tests.has(req.id) && !own.scenarios.some((s) => (s.proves || []).includes(req.id)) ? [verified ? { proof: `test in ${tests.get(req.id).join(', ')}, verify green` } : { note: `test in ${tests.get(req.id).join(', ')}, but ${missing} on HEAD's tree` }] : []),
     ];
     return { id: req.id, text: req.text || '', source: req.source || '', proofs: got.map((g) => g.proof).filter(Boolean), notes: got.map((g) => g.note).filter(Boolean) };
   });

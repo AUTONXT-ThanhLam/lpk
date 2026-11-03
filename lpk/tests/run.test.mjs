@@ -17,11 +17,11 @@ const runFile = (repo) => join(sh(repo, 'rev-parse', '--path-format=absolute', '
 
 test('a second run start in the same session amends the run and keeps its findings; another session waits until the first has exited', () => {
   const repo = repoWith('life', { 'src/a.mjs': 'export const a = 1;\n' });
-  assert.match(start(repo, 'one', '--verify', 'true', '--lane', 'quick', '--why', 'one file', '--scenario', 'true'), /lpk run (\S+) started .* quick lane, branch feat\.[\s\S]*Scenarios: S1 `true`/);
+  assert.match(start(repo, 'one', '--verify', 'true', '--lane', 'quick', '--why', 'one file', '--scenario', 'true', '--surface', 'cli', '--entry', 'true'), /lpk run (\S+) started .* quick lane, branch feat\.[\s\S]*Scenarios: S1 `true`/);
   const id = JSON.parse(readFileSync(runFile(repo), 'utf8')).id;
   const ledger = join(runFile(repo), '..', 'findings.jsonl');
   writeFileSync(ledger, `${JSON.stringify({ ev: 'add', finding: { id: 'F1', run: id, from: 'lpk:techlead', at: 'a..b', claim: 'c', repro: 'r', kind: 'defect', severity: 'nit' } })}\n`);
-  assert.match(start(repo, 'one', '--judged', 'the owner sees the new total'), new RegExp(`lpk run ${id} amended[\\s\\S]*S1 \\(agent-judged\\) the owner sees the new total`));
+  assert.match(start(repo, 'one', '--judged', 'the owner sees the new total', '--surface', 'ui', '--entry', '/', '--leaves', 'a screenshot'), new RegExp(`lpk run ${id} amended[\\s\\S]*S1 \\(agent-judged\\) the owner sees the new total`));
   assert.ok(existsSync(ledger), 'the open run keeps its ledger');
   const other = lpk(repo, 'two', 'run', 'start', '--target', 'main', '--verify', 'true');
   assert.equal(other.status, 2);

@@ -37,7 +37,7 @@ stamped with it. Start `lpk repro prepare` in the background right after it: it 
 the repro trees of the commit and the base while the net runs, so the first verifier does not wait
 on an install. Then run the `lpk:review` workflow with the Workflow tool, in the background, on
 the frozen tree. Its `args` are listed at the top of `${CLAUDE_PLUGIN_ROOT}/workflows/review.js`:
-the repo, base, commit, bundle, request, scenarios (each with the request sentence it serves), the
+the repo, base, commit, bundle, `proofDir` (`lpk run status` prints it; without it the Prover is ungraded), request, scenarios (each with the request sentence it serves), the
 failure table (each row with its `provedBy`), the surface (URL, start command and each login with its role; for a CLI, its command), the main instance,
 the related-test command and the e2e scripts the builders wrote; `range` exactly as `lpk review start`
 printed it, and `lenses` the `lens` of every row `lpk reviews owed --json` lists, in its order and

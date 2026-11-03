@@ -17,7 +17,7 @@ meets, with evidence a reader can check. A scenario with no evidence is NOT PROV
 
 When the lenses the run owes include the Prover (`lenses.md`; `lpk reviews owed` lists them), the net starts it on the frozen tree. Otherwise start it yourself when a scenario is
 agent-judged, with the scenarios, the failure table, the commit, the surface and
-the proof directory (`<bundle>/proof`).
+the proof directory (`lpk run status` prints it as `proofDir`; pass it to the workflow as `proofDir`).
 - A request that names an environment to host or show the result on (a shared environment, a host
   name) is answered on that environment, by the profile's deploy procedure; a local preview or a
   screenshot is not a substitute. When the profile has no such procedure, ask the owner for it once.
@@ -37,6 +37,10 @@ the proof directory (`<bundle>/proof`).
 - Give it the profile's feature-map entries for the screens and commands the scenarios touch, so it
   opens each by its route and does not hunt for it. A route it had to correct comes back in its
   `noticed`, and you write it into the profile at handover.
+
+## Evidence the gate reads
+
+Each scenario's evidence is its own files in the proof directory, listed in the `evidence` array of its result line: screenshots as `.png` (name the file in the screenshot call itself), logs and dumps as text. Never reuse one file for two scenarios. Drive a screen scenario with its own page open, then click or type, then screenshot; the tool names the gate counts as each step are the lists in `lib/surface.mjs` (`PAGE_OPEN`, `INTERACTION`, `SCREENSHOT`). When you could not drive the surface the way its user does, the result is NOT PROVED, never PASS.
 
 ## After a fix
 

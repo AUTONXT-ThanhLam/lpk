@@ -13,7 +13,7 @@ import { sessionId } from './host.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { designRound, phaseDetail, phaseOf } from './phase.mjs';
-import { named, proverResults, proofsOf, trace } from './proof.mjs';
+import { judgedStatus, proverResults, proofsOf, trace } from './proof.mjs';
 import { readDecisions, readRecords } from './records.mjs';
 import { endedRuns, runDir, runState } from './run.mjs';
 import { readCache, scanSession, tokensOf, writeCache } from './scan.mjs';
@@ -23,12 +23,12 @@ const stamp = (p) => { try { const s = statSync(p); return `${s.size}:${s.mtimeM
 const json = (p) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
 
 // Scenarios passed and requirements proved on HEAD, as the scenarios and requirements gates read them.
-function proofs(repo, run, recs) {
+export function proofs(repo, run, recs) {
   const sc = run.scenarios || [];
   const tree = headTree(repo);
   let prover;
   const results = () => (prover ??= proverResults(repo, run).results);
-  const passed = sc.filter((s) => (s.cmd ? proofsOf(recs, s).some((r) => r.pass && r.tree === tree) : named(results(), s)?.status === 'PASS')).length;
+  const passed = sc.filter((s) => (s.cmd ? proofsOf(recs, s).some((r) => r.pass && r.tree === tree) : judgedStatus(repo, run, s, results()) === 'PASS')).length;
   let req = { proved: 0, total: 0 };
   try { const rows = trace(repo, run, recs).rows; req = { proved: rows.filter((r) => r.proofs.length).length, total: rows.length }; } catch { /* a damaged requirement list: the gate names it */ }
   return { scenarios: { passed, total: sc.length }, requirements: req };

@@ -34,7 +34,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk precedent [<path>...] [--repo <dir>] [--base <ref>]
   lpk cochange [<file>...]  |  lpk floor  |  lpk fixlines [<fix commit>]
  a run
-  lpk run start --verify "<command>"... [--verify-final "<command>"]... [--lane quick|full --why "<why>"] [--req "<text>"]... [--scenario "<cmd>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push]
+  lpk run start --verify "<command>"... [--verify-final "<command>"]... [--lane quick|full --why "<why>"] [--req "<text>"]... [--scenario "<cmd>" [--expect "<text>"] [--proves R1,R2] --surface <surface> --entry "<where>"]... [--judged "<scenario>" [--proves R1] --surface <surface> --entry "<where>" --leaves "<what is left>"]... [--target <ref>] [--draft-push]
   lpk run end [--abandon "<why>"]  |  lpk run status  |  lpk run lane full  |  lpk run start --take
   lpk verify [--final]  |  lpk go  |  lpk decide "<what>" --why "<why>"  |  lpk handoff <slice>
  review and proof

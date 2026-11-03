@@ -14,6 +14,7 @@ import { commitsOf, pairs, patchesOf, rangesOf, touches } from './patches.mjs';
 import { readRecords } from './records.mjs';
 import { CODE, TEST } from './rules.mjs';
 import { readRun, runDir } from './run.mjs';
+import { needsUser } from './surface.mjs';
 import { findingCount, lensRuns } from './transcripts.mjs';
 
 export const FULL = [{ key: 'techlead' }, { key: 'code-reviewer' }, { key: 'bug-hunter' }, { key: 'claims' }, { key: 'prover' }];
@@ -39,7 +40,7 @@ export function ledgerFor(repo, run) {
 
 // What ran: items that count, and notes on runs that do not (errored, still running, ungraded).
 export function evidence(repo, run, ledger) {
-  const items = [], notes = [];
+  const items = [], notes = [], ungraded = [];
   const counted = (agentId, n) => n === null || ledger.filter((f) => f.agentId === agentId).length === n;
   for (const r of readRecords(repo, { run: run.id })) {
     if (r.kind !== 'code-review' || !r.range) continue;
@@ -53,11 +54,14 @@ export function evidence(repo, run, ledger) {
       const n = findingCount(l.structured);
       if (l.ended === 'error') notes.push({ key, range: l.range, why: `agent ${l.agentId} ended on an API error` });
       else if (l.ended === 'running') notes.push({ key, range: l.range, why: `agent ${l.agentId} has not finished` });
-      else if (!counted(l.agentId, n)) notes.push({ key, range: l.range, why: `ungraded: agent ${l.agentId} returned ${n} findings, the ledger holds ${ledger.filter((f) => f.agentId === l.agentId).length}` });
-      else items.push({ key, range: l.range, agentId: l.agentId, structured: l.structured, at: l.at, started: l.started });
+      else if (!counted(l.agentId, n)) {
+        notes.push({ key, range: l.range, why: `ungraded: agent ${l.agentId} returned ${n} findings, the ledger holds ${ledger.filter((f) => f.agentId === l.agentId).length}` });
+        ungraded.push({ key, range: l.range, agentId: l.agentId, structured: l.structured, at: l.at, started: l.started, calls: l.calls });
+      }
+      else items.push({ key, range: l.range, agentId: l.agentId, structured: l.structured, at: l.at, started: l.started, calls: l.calls });
     }
   }
-  return { items, notes };
+  return { items, notes, ungraded };
 }
 
 // The lens set the lane owes on new work, and why when the floor's facts changed it.
@@ -67,9 +71,10 @@ async function laneSet(repo, run, base, list) {
   if (existsSync(file)) floor = await (await import(file)).floor(repo, base);
   const extra = (floor?.lenses || []).map(keyOf);
   if (list.some((c) => touches(repo, c, TEST))) extra.push('mutant');
-  if (floor?.docsOnly) return { set: DOCS, why: 'the change is documentation only' };
+  const prover = (run.scenarios || []).some((s) => s.agentJudged || needsUser(s.surface)) ? [{ key: 'prover' }] : [];
+  if (floor?.docsOnly) return { set: [...DOCS, ...prover], why: 'the change is documentation only' };
   const small = floor && !floor.full && (run.lane === 'quick' || isIncrement(run));
-  if (small) return { set: forHost(QUICK, 1), why: isIncrement(run) ? 'increment bar' : '' };
+  if (small) return { set: [...forHost(QUICK, 1), ...prover], why: isIncrement(run) ? 'increment bar' : '' };
   const why = floor?.full ? `lpk floor: ${floor.why.join('; ')}` : floor ? '' : 'lpk floor is not installed to clear it';
   const full = forHost(FULL, 2);
   return { set: [...full, ...[...new Set(extra)].filter((k) => !full.some((q) => q.key === k)).map((key) => ({ key }))], why };

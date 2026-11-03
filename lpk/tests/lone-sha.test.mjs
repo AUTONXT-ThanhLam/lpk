@@ -8,7 +8,7 @@ const rows = (repo, session) => lpk(repo, session, 'reviews', 'owed').stdout.spl
 test('a lens whose prompt began with one sha says so in the owed row, and one that never ran says it has not run', () => {
   const S = 'lone-session';
   const repo = repoWith('lone', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'two commits', '--scenario', 'true', '--verify', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'two commits', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', '--verify', 'true'));
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   ok(lpk(repo, S, 'verify'));
   sh(repo, 'commit', '-qam', 'Set a to 2');

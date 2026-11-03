@@ -12,7 +12,7 @@ const lensKey = (name) => name.toLowerCase().replace(/[^a-z]/g, '').replace(/^co
 function owedBy(name, flags, file, text) {
   const S = `lane-${name}`;
   const repo = repoWith(name, { 'src/a.mjs': 'const a = 1;\n', 'README.md': 'docs\n' });
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', ...flags));
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', '--surface', 'cli', '--entry', 'true', ...flags));
   write(repo, file, text);
   sh(repo, 'add', '-A');
   sh(repo, 'commit', '-qm', 'Change');

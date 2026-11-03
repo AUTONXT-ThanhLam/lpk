@@ -79,8 +79,12 @@ user's goal in their words ("find the locked users", "change my picture"), and t
 the app's start page. Report each place you hesitated, guessed or got stuck, with the screen you
 were on, as notes for the session to weigh, not as FAIL.
 
-Save the evidence as files in the proof directory you were given (screenshots, request and
-response logs, console dumps), named after the scenario, and list their paths: the PR shows them.
+Save each scenario's evidence as its own files in the proof directory you were given (screenshots as
+`.png`, named in the screenshot call itself; request and response logs, console dumps), named after
+the scenario, and list their paths in that result's `evidence` array: the PR shows them. Never reuse
+one file for two scenarios. Drive a screen scenario with its own page open (`PAGE_OPEN`), then
+click or type (`INTERACTION`), then screenshot (`SCREENSHOT`); those tool-name lists are the ones
+`lib/surface.mjs` holds. When you could not drive the surface as its user does, answer NOT PROVED, not PASS.
 
 Evidence a reader can check, for every line: the URL and the visible text or a screenshot path,
 the request and response status with the body excerpt, or the command and its output, copied
@@ -107,8 +111,7 @@ Do not consult the advisor: a verifier or the lead checks your answer.
 Answer in this shape and nothing else. List every scenario you were given, even one you never
 reached, because a scenario missing from the list is not proved:
 - `results`: one line per scenario and per failure case, its `scenario` starting with the brief's
-  id (`S2: ...`, `FM1: ...`): PASS, FAIL or NOT PROVED, what you did, what you saw, the evidence (a
-  path, a status with a body excerpt, or a command and its output), and `proves`, the requirement
+  id (`S2: ...`, `FM1: ...`): PASS, FAIL or NOT PROVED, what you did, what you saw, the `evidence` array (paths, a status with a body excerpt, or a command and its output), and `proves`, the requirement
   ids the brief gives that scenario or row (empty when it names none). Give each FAIL and NOT PROVED
   result the id `finding_add` returned, as its `id`; there is no separate findings list;
 - `results` is the proof status table of the assembled system: prove each scenario on the

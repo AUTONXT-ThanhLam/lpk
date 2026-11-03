@@ -11,7 +11,7 @@ const status = (repo, S) => JSON.parse(ok(lpk(repo, S, 'run', 'status')));
 
 function incrementRun(name, S, ...extra) {
   const repo = repoWith(name, { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', ...extra));
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', '--surface', 'cli', '--entry', 'the shell', ...extra));
   write(repo, 'src/a.mjs', 'export const a = 2;\n');
   sh(repo, 'commit', '-qam', 'Set a to 2');
   return repo;
@@ -55,7 +55,7 @@ test('the bar rises to production when asked and no later start lowers it', () =
 test('a confirmed finding with no area is not a known limit when the floor owes the security lens', () => {
   const S = 'sec';
   const repo = repoWith('sec', { 'src/a.mjs': 'export const a = 1;\n' });
-  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true'));
+  ok(lpk(repo, S, 'run', 'start', '--verify', 'false', '--scenario', 'true', '--surface', 'cli', '--entry', 'the shell'));
   write(repo, 'src/login.mjs', 'export const login = () => true;\n');
   sh(repo, 'add', '.');
   sh(repo, 'commit', '-qm', 'Add login');

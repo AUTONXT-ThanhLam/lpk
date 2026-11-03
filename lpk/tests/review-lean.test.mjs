@@ -50,13 +50,13 @@ test('lpk rules --yield lists what each lens raised and the lenses the lanes use
 test('lpk report sets every scenario beside its status on HEAD: PASS, FAIL or NOT PROVED', () => {
   const repo = repoWith('lean-report', { 'src/a.mjs': 'export const a = 1;\n' });
   const S = 'lean-s';
-  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--scenario', 'grep -q "a = 2" src/a.mjs', '--scenario', 'false', '--judged', 'the page shows 2'));
+  ok(lpk(repo, S, 'run', 'start', '--lane', 'quick', '--why', 'x', '--verify', 'true', '--scenario', 'grep -q "a = 2" src/a.mjs', '--surface', 'cli', '--entry', 'grep -q "a = 2" src/a.mjs', '--scenario', 'false', '--surface', 'cli', '--entry', 'false', '--judged', 'the page shows 2', '--surface', 'ui', '--entry', '/', '--leaves', 'a screenshot'));
   writeFileSync(join(repo, 'src', 'a.mjs'), 'export const a = 2;\n');
   sh(repo, 'commit', '-qam', 'Set a to 2');
   lpk(repo, S, 'prove', '--all');
   const report = lpk(repo, S, 'report').stdout;
-  assert.match(report, /\| S \| Scenario \| Status on HEAD \|/);
-  assert.match(report, /\| S1 \| `grep -q "a = 2" src\/a\.mjs` \| PASS \|/);
-  assert.match(report, /\| S2 \| `false` \| FAIL \|/);
-  assert.match(report, /\| S3 \| the page shows 2 \(agent-judged\) \| NOT PROVED \|/);
+  assert.match(report, /\| S \| Scenario \| Surface \| Entry \| Evidence \| Status on HEAD \|/);
+  assert.match(report, /\| S1 \| `grep -q "a = 2" src\/a\.mjs` \| cli \| .* \| prove log: 1 run\(s\) on HEAD \| PASS \|/);
+  assert.match(report, /\| S2 \| `false` \| cli \| false \| prove log: 1 run\(s\) on HEAD \| FAIL \|/);
+  assert.match(report, /\| S3 \| the page shows 2 \(agent-judged\) \| ui \| \/ \| none \| NOT PROVED \|/);
 });

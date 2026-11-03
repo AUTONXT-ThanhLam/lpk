@@ -3,9 +3,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ciCommands, git } from '../git.mjs';
 import { runDir } from '../run.mjs';
+import { fillFrom, FIELDS } from '../scenariolog.mjs';
 export const USAGE = `usage:
-  lpk run start --verify "<command>"... [--verify-final "<command>"]... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2]]... [--judged "<scenario>" [--proves R1]]... [--target <ref>] [--draft-push] [--repo <dir>]
-                 (--req numbers R1, R2... in order; --proves names the ones the scenario before it proves.
+  lpk run start --verify "<command>"... [--verify-final "<command>"]... [--lane quick|full --why "<why>"] [--req "<requirement>"]... [--scenario "<command>" [--expect "<text>"] [--proves R1,R2] --surface <ui|cli|api|library|plugin|mobile|desktop|job|migration|docs|other> --entry "<where the user starts>"]... [--judged "<scenario>" [--proves R1] --surface <surface> --entry "<where the user starts>" --leaves "<what the Prover leaves behind>"]... [--target <ref>] [--draft-push] [--repo <dir>]
+                 (--req numbers R1, R2... in order; --proves, --surface, --entry and --leaves belong to the scenario before them; a scenario names its surface and entry.
                   With no --scenario or --judged, the scenarios of brief.json beside run.json are recorded.)
                  (--verify-final names the slow checks that gate delivery but not each commit: \`lpk verify\` runs the --verify ones, \`lpk verify --final\` the others, once, on the committed tree)
                  (--bar production raises the run from the default increment bar to production; it is never lowered)
@@ -20,7 +21,7 @@ export const USAGE = `usage:
   lpk run grant draft-push --why "<the owner's words>" [--repo <dir>]
   lpk run grant ready --why "<the owner's words>" [--repo <dir>]   (the owner asked for the PRs ready: lpk run end then refuses a draft one)`;
 
-const VALUED = new Set(['--verify', '--verify-final', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch', '--bar']);
+const VALUED = new Set(['--verify', '--verify-final', '--lane', '--why', '--scenario', '--expect', '--judged', '--req', '--proves', '--surface', '--entry', '--leaves', '--target', '--base', '--repo', '--abandon', '--reason', '--branch', '--bar']);
 const BARE = new Set(['--take', '--draft-push']);
 
 // Options in order, so each --expect belongs to the --scenario before it.
@@ -45,6 +46,12 @@ export function parse(argv) {
       s.proves = v.split(',').map((x) => x.trim()).filter(Boolean);
       if (!s.proves.length || s.proves.some((x) => !/^R\d+$/.test(x))) return { error: '--proves takes requirement ids, as in --proves R1,R2' };
     }
+    else if (a === '--surface' || a === '--entry' || a === '--leaves') {
+      const s = o.scenarios.at(-1), key = a.slice(2);
+      if (!s || s[key] !== undefined) return { error: `${a} follows the --scenario or --judged it describes, once` };
+      if (key === 'leaves' && s.cmd) return { error: '--leaves follows a --judged scenario: a --scenario command leaves its output in the prove log' };
+      s[key] = v;
+    }
     else o[a.slice(2)] = v;
   }
   return o;
@@ -52,14 +59,14 @@ export function parse(argv) {
 
 // The scenarios brief.json names, as run.json records them: its ids, so `proves` in the brief and
 // the proof records name the same scenario.
-export function briefScenarios(repo) {
+export function briefScenarios(repo, open) {
   const file = join(runDir(repo), 'brief.json');
   const list = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).scenarios || [] : [];
-  return list.map((s, i) => {
+  return fillFrom(open, list.map((s, i) => {
     const id = s.id || `S${i + 1}`;
     if (!s.cmd && !s.text) throw new Error(`brief.json scenario ${id} has neither a \`cmd\` nor a \`text\``);
-    return { id, ...(s.cmd ? { cmd: s.cmd, ...(s.expect !== undefined ? { expect: s.expect } : {}) } : { agentJudged: s.text }), ...(s.proves ? { proves: s.proves } : {}) };
-  });
+    return { id, ...(s.cmd ? { cmd: s.cmd, ...(s.expect !== undefined ? { expect: s.expect } : {}) } : { agentJudged: s.text }), ...(s.proves ? { proves: s.proves } : {}), ...Object.fromEntries(FIELDS.filter((k) => s[k]).map((k) => [k, s[k]])) };
+  }));
 }
 
 export function ciLines(repo) {
