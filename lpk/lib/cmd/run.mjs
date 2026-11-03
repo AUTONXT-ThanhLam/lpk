@@ -7,8 +7,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
-import { repoOf } from '../out.mjs';
-import { owed } from '../owed.mjs';
+import { capped, repoOf } from '../out.mjs';
+import { ledgerFor, owed } from '../owed.mjs';
 import { appendDecision, waiversIn } from '../records.mjs';
 import { leftText } from '../left.mjs';
 import { cleanRepro } from '../repro.mjs';
@@ -16,11 +16,11 @@ import { recordRun } from '../runs.mjs';
 import { prLine, prWaiver, prBlocks, runPrs, unwaived } from '../prs.mjs';
 import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
-import { openItemNotes } from '../plan.mjs';
+import { openItemNotes, runWaiting } from '../plan.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
 import { cleanTrees, treeOf } from '../slicetree.mjs';
 import { linkWorktree } from '../where.mjs';
-import { BARS } from '../bar.mjs';
+import { BARS, leftUnfixed, limitLine } from '../bar.mjs';
 import { checkScenario, proofDir } from '../surface.mjs';
 import { briefScenarios, ciLines, parse, pinned, USAGE } from './run-args.mjs';
 
@@ -122,7 +122,11 @@ export async function main(argv) {
         return 1;
       }
     }
+    let calls = [];
     if (open) {
+      try { const left = leftUnfixed(repo, open, ledgerFor(repo, open)); calls = left.length ? [`Deferred in this run (${left.length}):`, ...left.map(limitLine)] : ['Deferred in this run: none']; }
+      catch (e) { calls = [`Deferred in this run: not read: ${e.message}`]; }
+      try { calls.push(...runWaiting(open).lines); } catch (e) { calls.push(`plan not read: ${e.message}`); }
       try { recordRun(repo, { owed: await owed(repo, open).catch((e) => [{ error: e.message }]), ...(why ? { abandon: why } : {}) }); }
       catch (e) { console.error(`lpk: the run's row for runs.jsonl was not written: ${e.message}`); }
     }
@@ -147,6 +151,7 @@ export async function main(argv) {
     console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still apply to ${r.run.branches?.join(', ') || 'its branch'}.`);
     const waivers = waiversIn(repo, r.run.id);
     console.log(`Waived in this run: ${waivers.map((w) => `${w.what} by ${w.by}${w.counted ? ` (${w.why})` : ' (not counted)'}`).join(', ') || 'none'}`);
+    if (calls.length) console.log(capped(repo, `run-end-${r.run.id}`, [], calls));
     const plan = openItemNotes(sessionId());
     for (const note of plan.notes) console.log(note);
     for (const file of plan.broken) console.error(`lpk: ${file} names this session but is not a readable plan, so its open item is not named; fix or remove the file`);

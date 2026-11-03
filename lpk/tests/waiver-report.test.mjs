@@ -66,6 +66,8 @@ test('S1 lpk report and lpk run end name each waiver, each deferral with who mad
   assert.match(ended, /The delivery gates still apply to feat\b/);
   const after = ended.slice(ended.indexOf('still apply'));
   assert.match(after, /gate:error by lead[\s\S]*gate:reviews by lead/);
+  assert.match(after, new RegExp(`^- ${f.id}\\b.*no user reads a name that long.*\\bdeferred by cli\\b`, 'm'));
+  assert.match(after, /^Plan waiting.*tooltips.*P2.*which width does the owner want/m);
   assert.match(ok(lpk(repo, S, 'run', 'end')), /no lpk run is open/);
 });
 

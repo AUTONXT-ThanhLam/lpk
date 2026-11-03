@@ -3,7 +3,7 @@
 // session adds the verdict in words, the decisions it took alone and the weakest point.
 import { existsSync, readFileSync } from 'node:fs';
 import { counts } from '../findings-text.mjs';
-import { knownLimits } from '../bar.mjs';
+import { leftUnfixed, limitLine } from '../bar.mjs';
 import { countedRound } from '../briefcheck.mjs';
 import { BORN, blocksUnsettled, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
@@ -82,8 +82,8 @@ export async function main(argv) {
     const confirmed = ledger.filter((f) => f.born && f.kind !== 'test-gap' && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger)));
     const ranges = [...new Set(recs.filter((r) => r.kind === 'review-start').map((r) => r.range))];
     if (ranges.length) facts.push(`Confirmed defects per reviewed range: ${ranges.map((r) => `${r.split('..').map((x) => x.slice(0, 12)).join('..')} ${confirmed.filter((f) => f.at === r).length}`).join(', ')}`);
-    const deferred = [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
-    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}${f.deferredBy ? ` (deferred by ${f.deferredBy})` : ''}`)].join('\n'));
+    const deferred = leftUnfixed(repo, run, ledger);
+    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map(limitLine)].join('\n'));
     const blocking = ledger.filter(blocksUnsettled);
     if (blocking.length) facts.push(['Unsettled in a protected area, blocking until ruled or waived:', ...blocking.map(ruling)].join('\n'));
     const toRead = ledger.filter((f) => needsOwner(f) && !blocksUnsettled(f));
