@@ -68,7 +68,7 @@ export async function main(argv) {
   const waivers = waiversIn(repo, run.id);
   const live = rows.filter((r) => r.gate !== 'plan');
   const ids = [...new Set([...waivers.filter((w) => w.counted).map((w) => w.what), ...live.filter((r) => r.waived).map((r) => `gate:${r.gate}`)])];
-  const tally = `${live.filter((r) => r.holds && !r.waived).length} hold, ${ids.length} waived (${ids.join(', ')})`;
+  const tally = `${live.filter((r) => r.holds && !ids.includes(`gate:${r.gate}`)).length} hold, ${ids.length} waived (${ids.join(', ')})`;
   const out = [
     bad.length ? `NOT deliverable at ${head}: ${bad.map((r) => r.gate).join(', ')} do not hold${ids.length ? `; ${tally}` : ''}`
       : `deliverable at ${head}: ${ids.length ? tally : 'every delivery gate holds'}`,
