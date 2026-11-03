@@ -127,6 +127,6 @@ export async function main(argv) {
     if (row) facts.push(`Tokens by job: ${Object.entries(row.agents).map(([k, v]) => `${k} ${fmt(v.fresh)} fresh, ${fmt(v.cacheRead)} cache reads`).join('; ') || 'none measured'}`);
   } catch (e) { facts.push(`Tokens could not be measured: ${e.message}`); }
   const decided = [...roundBeforeRun(repo, run, rows), ...readDecisions(repo, { run: run.id }).map((d) => `- ${d.what}: ${d.why}`)];
-  console.log(capped(repo, `report-${run.id}`, [...out, '', ...facts, '', `Decided without the owner (${decided.length}):`], decided));
+  console.log(capped(repo, `report-${run.id}`, out.flatMap((l) => l.split('\n')), ['', ...facts.flatMap((f) => f.split('\n')), '', `Decided without the owner (${decided.length}):`, ...decided]));
   return bad.length ? 1 : 0;
 }

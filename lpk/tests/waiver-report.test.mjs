@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, lpk, repoWith, sh, write } from './gates-env.mjs';
 import { addFinding, ruleOn } from '../lib/findings.mjs';
+import { MAX_ROWS } from '../lib/out.mjs';
 import { appendRecord } from '../lib/records.mjs';
 import { readRun } from '../lib/run.mjs';
 
@@ -91,4 +93,17 @@ test('S2 a red gate keeps lpk report NOT deliverable while it lists every waiver
   assert.match(waived, /^- gate:scenarios\b.*typed in the shell.*not counted/m);
   assert.match(r.stdout, new RegExp(`^- ${f.id} unsettled\\b.*the cookie is readable`, 'm'));
   assert.doesNotMatch(section(r.stdout, 'For the owner to read, not blocking:'), new RegExp(`\\b${f.id}\\b`));
+});
+
+test('S1 a report with more waivers than fit prints at most MAX_ROWS lines and names the file that holds them all (R2)', () => {
+  const S = 'waiver-many-session';
+  const repo = quickRun('waiver-many', S);
+  const run = readRun(repo).id;
+  for (let i = 1; i <= 90; i++) appendRecord(repo, { kind: 'waiver', run, what: 'gate:error', why: `blip number ${i}`, via: 'lead' });
+  const out = lpk(repo, S, 'report').stdout;
+  assert.ok(out.trimEnd().split('\n').length <= MAX_ROWS, out);
+  const file = out.match(/more rows; all \d+ in (\S+)$/m)?.[1];
+  assert.ok(file, out);
+  const whole = readFileSync(file, 'utf8');
+  for (const i of [1, 45, 90]) assert.match(whole, new RegExp(`^- gate:error .*blip number ${i}$`, 'm'));
 });
