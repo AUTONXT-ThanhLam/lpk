@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, lpk, noHost, repoWith, sh, tmp, write } from './gates-env.mjs';
-import { readLedger, ruleOn } from '../lib/findings.mjs';
+import { addFinding, readLedger, ruleOn } from '../lib/findings.mjs';
+import { markFixed } from '../lib/fixed.mjs';
 import { stubBin } from './stub.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
@@ -69,10 +70,19 @@ test('a code review finding the verifier confirms carries reach and born into th
   ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'fix', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
   const [f] = readLedger(repo).findings;
   assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'fix', 'user']);
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: f.at, claim: 'a is never parsed back', repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F2', verdict: 'confirmed', born: 'fix', cause: 'the edit dropped the parse', reach: 'user', evidence: 'a is "2"', by: 'lpk:verifier' });
+  write(repo, 'src/a.mjs', 'export const a = Number("2");\n');
+  sh(repo, 'commit', '-qam', 'Parse a back to a number');
+  const fixSha = sh(repo, 'rev-parse', 'HEAD').trim();
+  assert.equal(markFixed(repo, { id: 'F2', commit: fixSha, closedBy: 'test', evidence: 'a + 1 is 3', by: 'lpk:verifier' }).error, undefined);
   const shown = lpk(repo, S, 'report').stdout;
-  assert.match(shown, /^Confirmed defects by the step they began in: fix 1$/m);
-  assert.match(shown, /^Born in a fix: F1 confirmed$/m);
-  assert.match(shown, /^Confirmed defects by who meets them: user 1$/m);
+  assert.match(shown, /^Confirmed defects by the step they began in: fix 2$/m);
+  const bornLine = shown.split('\n').find((l) => l.startsWith('Born in a fix:')) ?? '';
+  assert.match(bornLine, /\bF1 confirmed\b/);
+  assert.match(bornLine, new RegExp(`\\bF2 fixed\\b.*\\b${fixSha.slice(0, 12)}\\b`));
+  assert.ok(!bornLine.includes(fixSha.slice(0, 13)));
+  assert.match(shown, /^Confirmed defects by who meets them: user 2$/m);
 });
 
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
