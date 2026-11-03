@@ -27,7 +27,7 @@ function section(text, heading) {
   return lines.slice(at + 1, end < 0 ? undefined : end).join('\n');
 }
 
-test('S1 lpk report and lpk run end name each waiver, each deferral with who made it, each held plan item and the counted design round (R2, R3)', () => {
+test('S1 lpk report and lpk run end name each waiver, each deferral with who made it, each held plan item, and no design round on a quick run (R2, R3)', () => {
   const S = 'waiver-report-session';
   const repo = quickRun('waiver-report', S);
   const range = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
@@ -57,7 +57,7 @@ test('S1 lpk report and lpk run end name each waiver, each deferral with who mad
   assert.match(report, new RegExp(`^- ${f.id}\\b.*no user reads a name that long.*\\bdeferred by cli\\b`, 'm'));
   assert.match(report, /^Plan waiting.*tooltips.*P2.*which width does the owner want/m);
   assert.ok(report.includes(`plan not read: ${garbled}`));
-  assert.match(report, /^- design review round 1: pass, 0\/0\/0: the critic found nothing/m);
+  assert.doesNotMatch(report, /^- design review round 1:/m);
 
   const ended = ok(lpk(repo, S, 'run', 'end'));
   assert.match(ended, /The delivery gates still apply to feat\b/);

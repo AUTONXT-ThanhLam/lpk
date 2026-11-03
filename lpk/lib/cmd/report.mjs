@@ -45,10 +45,10 @@ function planWaiting() {
   return [...plans.filter((p) => p.session === session && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`), ...broken.map((file) => `plan not read: ${file}`)];
 }
 
-function roundBeforeRun(repo, run) {
+function roundBeforeRun(repo, run, rows) {
   try {
-    const d = countedRound(repo, run);
-    return d && d.run !== run.id ? [`- ${d.what}: ${d.why} (${d.at}, before the run started; the design round the design gate counts)`] : [];
+    const d = run.lane === 'full' ? countedRound(repo, run) : rows.find((r) => r.gate === 'design')?.round;
+    return d && d.run !== run.id ? [`- ${d.what}: ${d.why} (${d.at}, before the run started; the design round the run's checks count)`] : [];
   } catch (e) { return [`- the design round could not be read: ${e.message}`]; }
 }
 
@@ -134,7 +134,7 @@ export async function main(argv) {
     const row = run.ended ? null : runRow(repo);
     if (row) facts.push(`Tokens by job: ${Object.entries(row.agents).map(([k, v]) => `${k} ${fmt(v.fresh)} fresh, ${fmt(v.cacheRead)} cache reads`).join('; ') || 'none measured'}`);
   } catch (e) { facts.push(`Tokens could not be measured: ${e.message}`); }
-  const decided = [...roundBeforeRun(repo, run), ...readDecisions(repo, { run: run.id }).map((d) => `- ${d.what}: ${d.why}`)];
+  const decided = [...roundBeforeRun(repo, run, rows), ...readDecisions(repo, { run: run.id }).map((d) => `- ${d.what}: ${d.why}`)];
   console.log(capped(repo, `report-${run.id}`, [...out, '', ...facts, '', `Decided without the owner (${decided.length}):`], decided));
   return bad.length ? 1 : 0;
 }
