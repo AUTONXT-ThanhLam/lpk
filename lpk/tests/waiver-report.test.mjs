@@ -71,6 +71,9 @@ test('S2 a red gate keeps lpk report NOT deliverable while it lists every waiver
   const repo = quickRun('waiver-red', S);
   ok(lpk(repo, S, 'waive', 'gate:error', '--why', 'the ci probe crashed'));
   appendRecord(repo, { kind: 'waiver', run: readRun(repo).id, what: 'gate:scenarios', why: 'typed in the shell', via: 'cli' });
+  const range = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
+  const f = addFinding(repo, { from: 'lpk:security', at: range, claim: 'the cookie is readable', repro: 'r', kind: 'defect', severity: 'important', area: 'security' }).finding;
+  assert.equal(ruleOn(repo, { id: f.id, verdict: 'dropped', basis: 'not-reproduced', evidence: 'the repro passed', by: 'lpk:verifier' }).finding.state, 'unsettled');
 
   const r = lpk(repo, S, 'report');
   assert.equal(r.status, 1, r.stderr + r.stdout);
@@ -79,4 +82,6 @@ test('S2 a red gate keeps lpk report NOT deliverable while it lists every waiver
   const waived = section(r.stdout, 'Waived (2):');
   assert.match(waived, /^- gate:error\b.*\blead\b.*the ci probe crashed/m);
   assert.match(waived, /^- gate:scenarios\b.*typed in the shell.*not counted/m);
+  assert.match(r.stdout, new RegExp(`^- ${f.id} unsettled\\b.*the cookie is readable`, 'm'));
+  assert.doesNotMatch(section(r.stdout, 'For the owner to read, not blocking:'), new RegExp(`\\b${f.id}\\b`));
 });
