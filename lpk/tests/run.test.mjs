@@ -33,7 +33,7 @@ test('a second run start in the same session amends the run and keeps its findin
   writeFileSync(join(ENV.HOME, '.claude', 'sessions', `${process.pid}.json`), JSON.stringify({ pid: process.pid, sessionId: 'someone' }));
   assert.match(ok(lpk(repo, 'two', 'run', 'take')), new RegExp(`lpk run ${id} taken over by this session`));
   assert.equal(JSON.parse(ok(lpk(repo, 'two', 'run', 'status'))).session, 'two');
-  assert.match(ok(lpk(repo, 'two', 'run', 'end')), /lpk run ended\. Last verify: never ran.*The delivery gates still hold on feat\./);
+  assert.match(ok(lpk(repo, 'two', 'run', 'end')), /lpk run ended\. Last verify: never ran.*The delivery gates still apply to feat\.\nWaived in this run: none\n/);
   assert.ok(existsSync(join(runFile(repo), '..', 'runs', id, 'run.json')), 'the ended run is kept by its id');
   start(repo, 'two');
   assert.ok(existsSync(join(runFile(repo), '..', 'runs', id, 'findings.jsonl')), 'the next run moves the old ledger under the old id');

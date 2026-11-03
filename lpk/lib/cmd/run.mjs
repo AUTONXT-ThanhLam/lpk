@@ -8,18 +8,19 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { defaultBranch, git, mergeBase } from '../git.mjs';
 import { sessionId } from '../host.mjs';
 import { repoOf } from '../out.mjs';
-import { owed } from '../owed.mjs';
-import { appendDecision } from '../records.mjs';
+import { ledgerFor, owed } from '../owed.mjs';
+import { appendDecision, waiversIn } from '../records.mjs';
+import { leftText } from '../left.mjs';
 import { cleanRepro } from '../repro.mjs';
 import { recordRun } from '../runs.mjs';
 import { prLine, prWaiver, prBlocks, runPrs, unwaived } from '../prs.mjs';
 import { reap } from '../spawn.mjs';
 import { reopenRun } from '../reopen.mjs';
-import { openItemNotes } from '../plan.mjs';
+import { openItemNotes, planLines } from '../plan.mjs';
 import { currentBranch, endRun, promptsOf, readRun, runDir, runForBranch, runState, sessionPid, startRun, update } from '../run.mjs';
 import { cleanTrees, treeOf } from '../slicetree.mjs';
 import { linkWorktree } from '../where.mjs';
-import { BARS } from '../bar.mjs';
+import { BARS, limitsBlock } from '../bar.mjs';
 import { checkScenario, proofDir } from '../surface.mjs';
 import { briefScenarios, ciLines, parse, pinned, USAGE } from './run-args.mjs';
 
@@ -59,6 +60,8 @@ async function start(repo, o) {
   const targetName = String(target || '').replace(/^origin\//, '');
   if (on && (on === targetName || ['main', 'master'].includes(on))) console.log(`This checkout is on ${on}, the branch the change merges into: create the change's own branch (\`git switch -c <type>/<name>\`) before the first commit, and \`lpk verify\` there; a commit here is refused.`);
   console.log(`Until \`lpk run end\` the main session commits only a tree with a green \`lpk verify\`; handing over the branch (\`gh pr create\` without --draft, \`gh pr ready\`) waits for \`lpk gates\`. Draft pushes: ${run.granted.draftPush ? 'granted' : 'not granted; ask the owner before the first push'}.`);
+  const left = leftText(repo, run.branches, run);
+  if (left) console.log(left);
   const ci = ciLines(repo);
   console.log(ci.length ? ['CI runs these; each one that checks the code you will touch belongs among the checks:', ...ci].join('\n') : 'CI: no GitHub Actions or GitLab CI steps found; the checks are the repo\'s own test, lint and typecheck commands.');
   return 0;
@@ -119,7 +122,11 @@ export async function main(argv) {
         return 1;
       }
     }
+    let calls = [];
     if (open) {
+      try { const limits = limitsBlock(repo, open, ledgerFor(repo, open)); calls = [limits.heading, ...limits.entries]; }
+      catch (e) { calls = [`Known limits not read: ${e.message}`]; }
+      try { calls.push(...planLines(open)); } catch (e) { calls.push(`plan not read: ${e.message}`); }
       try { recordRun(repo, { owed: await owed(repo, open).catch((e) => [{ error: e.message }]), ...(why ? { abandon: why } : {}) }); }
       catch (e) { console.error(`lpk: the run's row for runs.jsonl was not written: ${e.message}`); }
     }
@@ -141,10 +148,11 @@ export async function main(argv) {
     if (why) appendDecision(repo, { what: `run ${r.run.id} ended before delivery`, why });
     const file = promptsOf(r.run.marker);
     const said = existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0;
-    console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still hold on ${r.run.branches?.join(', ') || 'its branch'}.`);
-    const plan = openItemNotes(sessionId());
-    for (const note of plan.notes) console.log(note);
-    for (const file of plan.broken) console.error(`lpk: ${file} names this session but is not a readable plan, so its open item is not named; fix or remove the file`);
+    console.log(`lpk run ended${why ? `: ${why}` : ''}. Last verify: ${r.run.verified ? (r.run.verified.green ? 'green' : 'RED') : 'never ran'}. Owner messages during the run: ${said}${said ? `, in ${file} (hand them to lpk:learn)` : ''}. The delivery gates still apply to ${r.run.branches?.join(', ') || 'its branch'}.`);
+    const waivers = waiversIn(repo, r.run.id);
+    console.log(`Waived in this run: ${waivers.map((w) => `${w.what} by ${w.by}${w.counted ? ` (${w.why})` : ' (not counted)'}`).join(', ') || 'none'}`);
+    if (calls.length) console.log(calls.join('\n'));
+    for (const note of openItemNotes(sessionId())) console.log(note);
     return 0;
   }
   if (sub === 'status') {

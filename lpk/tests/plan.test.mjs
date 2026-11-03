@@ -261,7 +261,7 @@ test('R1: ending a run names the open plan item, its prove command and the next 
   assert.ok(end.stdout.includes('lpk plan prove P1'));
   assert.ok(end.stdout.includes('then start P3: second part'));
   assert.ok(!end.stdout.includes('then start P2'));
-  assert.ok(end.stderr.includes(garbled));
+  assert.ok(end.stdout.includes(`plan not read: ${garbled}`));
   assert.ok(!ended(repo, 's-other').stdout.includes('lpk plan prove'));
 });
 

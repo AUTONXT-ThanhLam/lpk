@@ -11,7 +11,7 @@ const USAGE = `usage:
   lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>" --reach user|merge|neither] [--area security|auth|data|concurrency|migration|permissions] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" --sweep "<git grep -E pattern of the defect form>" [--fix "<how>"] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by mutant --evidence "<lpk mutate --patch output on the fix>" [--fix "<how>"] [--repo <dir>]   (a test gap)
-  lpk finding fixed <id> --closed-by owner --evidence "<the owner's words>" [--repo <dir>]
+  lpk finding fixed <id> --closed-by defer --evidence "<the lead's reason it waits>" [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
 
 const closed = (f) => (f.state === 'deferred' ? `${f.id} deferred: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
@@ -41,7 +41,7 @@ export async function main(argv) {
     }
     if (sub === 'verdict' && id) {
       const r = ruleOn(repo, { id, verdict: argv[2], evidence: opt('--evidence'), basis: opt('--basis'), primary: opt('--primary'), born: opt('--born'), cause: opt('--cause'), reach: opt('--reach'), area: opt('--area'), by: 'cli' });
-      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled, for the owner to read)` : ''}: ${f.evidence}`);
+      return done(r, (f) => `${f.id} is ${f.state}${f.asked ? ` (asked ${f.asked}; in a protected area it stays unsettled and blocks the findings gate until it is ruled or waived)` : ''}: ${f.evidence}`);
     }
     if (sub === 'fixed' && id) {
       const r = markFixed(repo, { id, commit: opt('--commit'), closedBy: opt('--closed-by'), evidence: opt('--evidence'), fix: opt('--fix'), sweep: opt('--sweep'), by: 'cli' });

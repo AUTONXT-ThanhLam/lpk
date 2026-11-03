@@ -1,4 +1,4 @@
-// How every lpk verb prints: at most 60 rows on stdout, the whole list in a named file under the
+// How lpk's list verbs print: at most 60 rows on stdout, the whole list in a named file under the
 // run directory, so an agent reads a summary and opens the file only when it needs the rest.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';

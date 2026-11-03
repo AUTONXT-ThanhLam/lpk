@@ -16,7 +16,7 @@ worktree, with its own `lpk run start` there, so PRs of one repo run side by sid
 (typecheck, lint, the test suites; `lpk facts` lists them). Give a check that is slow and that CI runs
 too, such as a database suite, to `--verify-final "<command>"` instead. The fast checks gate every
 commit and the final ones gate delivery, so a slow suite does not stall each commit. Both flags
-repeat, and the lead names the final ones, because lpk never guesses that a check is slow. In the Full lane it records the
+repeat, and the lead names the final ones and logs each with `lpk decide`, because lpk never guesses that a check is slow. In the Full lane it records the
 scenarios of `brief.json`. In the Quick lane add `--lane quick`, one `--req "<text>"` per
 requirement (numbered `R1`, `R2`… in that order), and one `--scenario "<command>"` per scenario,
 with `--expect "<literal>"` when the output must contain it and `--proves R1,R2` for the

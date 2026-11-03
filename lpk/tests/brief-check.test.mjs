@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { lpk, repoWith, write } from './gates-env.mjs';
+import { lpk, repoWith, sh, write } from './gates-env.mjs';
 import { hook } from './hooks-env.mjs';
 
 const BRIEF = JSON.stringify({ requirements: [{ id: 'R1', text: 'a is doubled' }], scenarios: [{ id: 'S1', text: 'call a twice', cmd: 'true', proves: ['R1'], surface: 'cli', entry: 'true' }] });
@@ -67,7 +67,7 @@ test('the lead can waive the brief check, an agent cannot, and a run with no bri
   assert.equal(go(quick, T).status, 0);
 });
 
-test('a round recorded before the run started counts, as the order in design.md has it', () => {
+test('a round recorded before the run started counts, as the order in design.md has it, and the report names it where a check read it', () => {
   const S = 'brief-check-early';
   const repo = repoWith('brief-early', { 'src/a.mjs': 'export const a = 1;\n' });
   write(dir(repo), 'brief.md', '# Brief\nA is doubled.\n');
@@ -76,4 +76,15 @@ test('a round recorded before the run started counts, as the order in design.md 
   assert.equal(lpk(repo, S, 'run', 'start', '--verify', 'false', '--lane', 'full').status, 0);
   const r = go(repo, S);
   assert.equal(r.status, 0, r.stderr);
+  assert.match(lpk(repo, S, 'report').stdout, /^- design review round 1: pass/m);
+
+  const T = 'brief-check-early-quick';
+  const wide = repoWith('brief-early-quick', { 'src/a.mjs': 'export const a = 1;\n' });
+  write(dir(wide), 'brief.md', '# Brief\nA is doubled.\n');
+  decide(wide, T, 'design review round 1: pass, 0/0/0');
+  assert.equal(lpk(wide, T, 'run', 'start', '--verify', 'true', '--lane', 'quick', '--why', 'one line', '--scenario', 'true', '--surface', 'cli', '--entry', 'true').status, 0);
+  for (const n of ['a', 'b', 'c', 'd']) write(wide, `src/${n}.mjs`, `export const ${n} = 2;\n`);
+  sh(wide, 'add', '-A');
+  sh(wide, 'commit', '-qm', 'Widen');
+  assert.match(lpk(wide, T, 'report').stdout, /^- design review round 1: pass/m);
 });

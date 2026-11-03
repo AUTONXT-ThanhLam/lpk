@@ -95,7 +95,7 @@ export function touched(files, bodies = []) {
     .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
   // Forty names, and up to eighty when more than twenty of them were removed: a removal is what breaks a reader.
   const removed = kept.filter((e) => rank(e) === 0).length;
-  return kept.slice(0, Math.min(80, Math.max(40, removed + 20)));
+  return { list: kept.slice(0, Math.min(80, Math.max(40, removed + 20))), found: kept.length };
 }
 
 // For each changed line, the nearest declaration above it in the changed file: the function whose
@@ -117,8 +117,9 @@ function bodiesOf(repo, files, at) {
 // Each sibling is searched where `refs` says (siblingRefs): a branch, or its folder ('').
 function impact(repo, files, sibs, refs, bodies) {
   const changed = new Set(files.map((f) => f.path));
-  const lines = ['# Where the touched identifiers are used outside the diff', ''];
-  for (const e of touched(files, bodies)) {
+  const { list, found } = touched(files, bodies);
+  const lines = [`# Where the touched identifiers are used outside the diff${found > list.length ? ` (the first ${list.length} of ${found} found, removed ones first)` : ''}`, ''];
+  for (const e of list) {
     const sides = [...e.sides].filter((x) => x !== 'body');
     const label = sides.length === 2 ? 'changed' : sides[0] ?? 'body changed';
     lines.push(`## ${e.name} (${e.kind}, ${label} in ${[...e.paths].join(', ')})`);

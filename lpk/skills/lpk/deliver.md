@@ -10,7 +10,8 @@ After each push wait for CI with Monitor on `gh pr checks <pr> --watch`, never a
 latest run, red only here, or flipped on one rerun, and each new test file's pass count in CI. A
 job red only here in code the PR did not touch may be a stale base: check
 `git merge-base --is-ancestor <target> HEAD` and rebase before any rerun. After a rebase compare
-`git patch-id`: when equal, keep the review verdicts and rerun verify, the final tier too, and CI (check first that
+`git patch-id`: when equal, keep the review verdicts, log it with
+`lpk decide "kept the verdicts after an equal patch-id"`, and rerun verify, the final tier too, and CI (check first that
 the gate is not keyed to HEAD). Any other job red only here is a finding: reproduce it here, fix it at its cause, `lpk verify`, commit and
 push, and add its command to the run's checks and the repo profile. A new test file with no passes
 in CI is not run by CI: wire it into the CI command now.
@@ -75,8 +76,9 @@ and answer a repeated point in one line ("declined, see the first triage").
 2. Fix every gate an agent can fix. A gate that does not hold for a reason no agent can fix (a
    service that is down, a lens that stalled twice) is yours to weigh, not the owner's: waive it
    with `lpk waive <gate:name> --why "<what stays unproved, and why delivering anyway is right>"`
-   when delivering is still right, else hold the delivery and say why. List each waiver and its
-   reason in the PR body and the report. What leaves this machine or cannot be undone (`connector:`,
+   when delivering is still right, else hold the delivery and say why. The waiver stands as your
+   call: `lpk report` and `lpk run end` name it with who made it and why, and the PR body lists it
+   with its reason. What leaves this machine or cannot be undone (`connector:`,
    `git:`, `pr:`, and `gate:pre`) stays the owner's: ask with `AskUserQuestion`,
    `metadata.source: "lpk:waive"`, an option labelled exactly with the id. Ask the PR question
    (draft, ready, merge) only where this repo's CLAUDE files do not already authorize it, as its
@@ -102,8 +104,14 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
 2. Each sentence the owner asked (`lpk report` lists their words numbered) set beside the requirement
    that took it up and that requirement's proof (the `lpk report` table), or marked not delivered
    and why; then each acceptance scenario with its evidence on that commit, or NOT PROVED and why.
-3. The decisions you took alone (`decisions.jsonl`), and the findings `lpk report` lists for the
-   owner to read (unsettled, or ruled by you rather than a verifier), each with its evidence.
+3. The calls made without the owner, each from where it is recorded, so the owner can check each one:
+   - each decision you logged with `lpk decide` (`decisions.jsonl`; `lpk report` lists them);
+   - each waiver, with who made it and why (waiver records; `lpk report` lists them);
+   - each deferred finding, with who deferred it (the findings ledger; `lpk report` lists them);
+   - each dropped finding, with its basis (the findings ledger; `finding_list` with state `dropped`);
+   - each `shortcut:` or `contested:` line the builders returned, and what you did with it;
+   - the findings `lpk report` lists for the owner to read (unsettled, or ruled by you rather than
+     a verifier), each with its evidence.
 4. The weakest point.
 5. The wall time (against the owner's bound, when they gave one), and per lens the findings raised and confirmed.
 6. The PR link and what the owner does next; never list a check for the owner to run that you

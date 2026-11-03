@@ -17,7 +17,7 @@ export async function main(argv) {
   if (a.flags.has('--json')) { console.log(JSON.stringify({ base, ...f })); return 0; }
   const head = [
     `change from ${base.slice(0, 12)} to the working tree: ${f.files.length} file(s)`,
-    f.full ? 'floor: FULL — these facts owe the full-lane net:' : 'floor: none of the full-lane facts (more than 3 files, auth marker, credential path, SENSITIVE.md glob, migration, manifest) is in the diff',
+    f.full ? 'floor: FULL — these facts owe the full-lane net (each hit is exact):' : 'floor: none of the full-lane facts (more than 3 files, auth marker, credential path, SENSITIVE.md glob, migration, manifest) is in the diff; each is a fixed tripwire, so a miss proves nothing: raise the lane on your own reading of the change',
   ];
   const lenses = f.lenses.length ? f.lenses.map((k) => `  lens ${k}: ${f.lensWhy[k]}`) : ['  no conditional lens is owed by these facts'];
   console.log(capped(repo, 'floor', head, [...f.why.map((w) => `  ${w}`), 'lenses the facts call for:', ...lenses]));

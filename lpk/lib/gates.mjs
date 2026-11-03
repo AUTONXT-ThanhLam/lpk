@@ -8,7 +8,8 @@ import { join } from 'node:path';
 import { git } from './git.mjs';
 import { knownLimits } from './bar.mjs';
 import { floor } from './floor.mjs';
-import { needsOwner, readLedger, stateOf } from './findings.mjs';
+import { blocksUnsettled, needsOwner, readLedger, stateOf } from './findings.mjs';
+import { leftText } from './left.mjs';
 import { ledgerFor, owed } from './owed.mjs';
 import { patchesOf } from './patches.mjs';
 import { proofsOf, proverResults, trace, tiersGreen } from './proof.mjs';
@@ -47,18 +48,19 @@ function findingsGate(repo, run) {
   const confirmed = all.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap');
   const limits = knownLimits(repo, run, confirmed);
   const unfixed = confirmed.filter((f) => !limits.includes(f));
-  // Unsettled findings and rulings made by someone other than the verifier do not block: they are
-  // named here and in `lpk report`, for the owner to read.
-  const owner = all.filter(needsOwner);
-  const why = [open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
+  // An unsettled finding in a protected area blocks; other unsettled findings and rulings made by
+  // someone other than the verifier do not: they are named here and in `lpk report`, for the owner to read.
+  const unsettled = all.filter(blocksUnsettled);
+  const owner = all.filter((f) => needsOwner(f) && !blocksUnsettled(f));
+  const why = [unsettled.length && `unsettled in a protected area: ${list(unsettled.map((f) => `${f.id} (${f.area})`))}`, open.length && `open, no verifier ruling: ${list(open.map((f) => f.id))}`, unfixed.length && `confirmed and not fixed: ${list(unfixed.map((f) => f.id))}`].filter(Boolean);
   const known = limits.length ? `known limits of the increment bar, listed in the PR body: ${list(limits.map((f) => f.id))}` : '';
   const note = owner.length ? `${list(owner.map((f) => `${f.id} (${f.state}${f.by ? ` by ${f.by}` : ''})`))}: for the owner to read, not blocking` : '';
   // The ledger tools read only the live ledger: once a later run has archived this ended run's
   // findings, no agent can rule on or close them, and only a waiver of `gate:findings` is left.
   const archived = why.length && run.ended && !readLedger(repo).findings.some((f) => f.run === run.id);
-  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, known, note].filter(Boolean).join('; '),
+  return { holds: !why.length, read: `ledger: ${all.length} findings of run ${run.id}`, why: [...why, known, note, leftText(repo, run.branches, run)].filter(Boolean).join('; '),
     wayOut: archived ? `run ${run.id} has ended and a later run archived its findings, so no agent can rule on or close them any more`
-      : [open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
+      : [unsettled.length && 'have a verifier rule on the unsettled ones with a reproduction', open.length && 'have a verifier rule on the open ones', unfixed.length && 'fix the confirmed ones and close each with finding_fixed'].filter(Boolean).join('; ') };
 }
 
 async function reviewsGate(repo, run) {
@@ -148,7 +150,7 @@ export async function gates(repo, run = readRun(repo), { ci = true } = {}) {
     let row;
     try { row = await fn(); } catch (e) { row = { holds: false, read: '', why: `the gate failed: ${String(e.message || e).split('\n')[0]}`, wayOut: '' }; }
     const w = row.holds ? null : waiverOf(repo, run.id, `gate:${gate}`);
-    if (w) row = { ...row, holds: true, why: w.via === 'lead' ? `waived by the lead: ${w.why} (${row.why})` : `waived by the owner (${row.why})` };
+    if (w) row = { ...row, holds: true, waived: { by: w.via === 'lead' ? 'lead' : 'owner', why: w.why ?? w.question ?? '' }, why: w.via === 'lead' ? `waived by the lead: ${w.why} (${row.why})` : `waived by the owner (${row.why})` };
     else if (!row.holds && GATES.includes(gate)) row.wayOut = [row.wayOut, `or, when no agent can fix it, the lead waives it: \`${waiveCommand([`gate:${gate}`])}\``].filter(Boolean).join('; ');
     out.push({ gate, ...row });
   }

@@ -9,6 +9,7 @@ import { agentFile, agentIdOf, hostOf, sessionDirs } from './host.mjs';
 // such as "defaced" is not taken for a commit.
 const SHA = '(?=[a-f]*\\d)[0-9a-f]{7,40}';
 const RANGE = new RegExp(`(?<![0-9a-zA-Z])(${SHA})(?:\\.\\.\\.?(${SHA}))?(?![0-9a-zA-Z])`);
+const REVIEWED = new RegExp(`Review range ${RANGE.source}`);
 const RELAY = '[Workflow harness — user request]';
 
 // The session's directories that hold subagents: the session may have started in a parent of the
@@ -34,7 +35,7 @@ export function lensRun(file) {
   const firstAssistant = entries.findIndex((e) => e.type === 'assistant');
   const prompt = entries.slice(0, firstAssistant < 0 ? entries.length : firstAssistant)
     .filter((e) => e.type === 'user').map((e) => textOf(e.message?.content)).filter((t) => !t.startsWith(RELAY)).join('\n');
-  const m = RANGE.exec(prompt);
+  const m = REVIEWED.exec(prompt) || RANGE.exec(prompt);
   const failed = new Map(entries.filter((e) => e.type === 'user' && Array.isArray(e.message?.content)).flatMap((e) => e.message.content)
     .filter((b) => b?.type === 'tool_result' && b.is_error).map((b) => [b.tool_use_id, resultText(b.content) || 'the tool reported an error']));
   const calls = entries.filter((e) => e.type === 'assistant' && Array.isArray(e.message?.content)).flatMap((e) => e.message.content)

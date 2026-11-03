@@ -25,12 +25,19 @@ export function briefHash(repo, run, { raw = false } = {}) {
   return createHash('sha256').update(parts.map((p) => p ?? '').join('\0')).digest('hex').slice(0, 12);
 }
 
+export function countedRound(repo, run) {
+  const now = briefHash(repo, run);
+  if (!now) return null;
+  const before = briefHash(repo, run, { raw: true });
+  const passes = (d) => designRounds([d]).some((r) => PASSED.has(r.verdict.toLowerCase()) && (r.brief === now || r.brief === before));
+  return readDecisions(repo).filter((d) => (d.run === run.id || d.run === null) && passes(d)).at(-1) ?? null;
+}
+
 export function briefUnchecked(repo, run, { go = true } = {}) {
   const now = run.lane === 'full' ? briefHash(repo, run) : null;
   if (!now || (go && waived(repo, run.id, 'gate:brief-check'))) return null;
+  if (countedRound(repo, run)) return null;
   const rounds = designRounds(readDecisions(repo).filter((d) => d.run === run.id || d.run === null));
-  const before = briefHash(repo, run, { raw: true });
-  if (rounds.some((r) => PASSED.has(r.verdict.toLowerCase()) && (r.brief === now || r.brief === before))) return null;
   const last = rounds.at(-1);
   const seen = last ? `the last round (${last.round}: ${last.verdict}) ${last.brief && last.brief !== now ? 'was recorded before the brief changed after it' : 'did not pass'}` : 'no round is recorded';
   const round = 'Run the design review on it (`design.md`) and record the round with `lpk decide "design review round <n>: pass, <High>/<Medium>/<Low>"`';

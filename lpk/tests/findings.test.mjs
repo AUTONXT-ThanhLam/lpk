@@ -99,7 +99,7 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   const fix = { id: 'F1', fix: 'guard closed', closedBy: 'test', evidence: 'guard.test fails on fix^, passes on fix', by: 'lpk:builder' };
   assert.match(markFixed(dir, { ...fix, commit: head }).error, /raised on/);
   assert.match(markFixed(dir, { ...fix, commit: 'deadbeef' }).error, /not a commit/);
-  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, mutant, verifier, owner/);
+  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, mutant, verifier, defer/);
   assert.match(markFixed(dir, { ...fix, commit: head, evidence: '' }).error, /evidence/);
   const sha = commit(dir, 'fix');
   const fixed = markFixed(dir, { ...fix, commit: sha.slice(0, 10) }).finding;
@@ -135,17 +135,18 @@ test('a fix closed on a builder\'s commit moves to its cherry-pick on the branch
   assert.match(markFixed(dir, { ...fix, commit: picked }).error, /which is on HEAD/);
 });
 
-test('the owner\'s stated policy defers a confirmed finding with their words, never one in a protected area or a failing scenario', () => {
+test('S1 R3: the lead defers a confirmed finding with its reason, never one in a protected area or a failing scenario, and closedBy owner is refused', () => {
   const { dir, head } = repoWithRun('defer');
   raise(dir, head, { severity: 'nit' }); raise(dir, head, { area: 'data' }); raise(dir, head, { kind: 'scenario' }); raise(dir, head);
   for (const id of ['F1', 'F2', 'F3']) ruleOn(dir, { id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'c', evidence: 'exit 1', by: VERIFIER });
-  const owner = { closedBy: 'owner', evidence: 'owner: "non-critical errors users cannot reach may be skipped"', by: 'main' };
-  const f = markFixed(dir, { id: 'F1', ...owner }).finding;
-  assert.deepEqual([f.state, f.deferEvidence, f.fixedCommit], ['deferred', owner.evidence, undefined]);
-  assert.match(markFixed(dir, { id: 'F2', ...owner }).error, /data area/);
-  assert.match(markFixed(dir, { id: 'F3', ...owner }).error, /acceptance scenario/);
-  assert.match(markFixed(dir, { id: 'F4', ...owner }).error, /F4 is open; only a confirmed finding is deferred/);
-  assert.match(markFixed(dir, { id: 'F2', ...owner, evidence: '' }).error, /the owner's words/);
+  assert.match(markFixed(dir, { id: 'F1', closedBy: 'owner', evidence: 'x', by: 'main' }).error, /closedBy is one of .*defer/);
+  const lead = { closedBy: 'defer', evidence: 'no user reaches the export path yet', by: 'main' };
+  const f = markFixed(dir, { id: 'F1', ...lead }).finding;
+  assert.deepEqual([f.state, f.deferEvidence, f.fixedCommit], ['deferred', lead.evidence, undefined]);
+  assert.match(markFixed(dir, { id: 'F2', ...lead }).error, /data area/);
+  assert.match(markFixed(dir, { id: 'F3', ...lead }).error, /acceptance scenario/);
+  assert.match(markFixed(dir, { id: 'F4', ...lead }).error, /F4 is open; only a confirmed finding is deferred/);
+  assert.match(markFixed(dir, { id: 'F2', ...lead, evidence: '' }).error, /evidence: /);
 });
 
 test('a confirmed finding that reaches neither a user nor the merge is deferred at once, never one in a protected area or a failing scenario', () => {
