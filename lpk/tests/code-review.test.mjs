@@ -90,16 +90,21 @@ test('a code review finding the verifier confirms carries reach and born into th
   ruleOn(repo, { id: 'F5', verdict: 'dropped', basis: 'disproved', evidence: 'a module is evaluated once', by: 'lpk:verifier' });
   assert.equal(addFinding(repo, { from: 'lpk:mutant', at: delta, claim: 'no test fails when the parse is dropped', repro: 'lpk mutate', kind: 'test-gap', severity: 'important' }).error, undefined);
   ruleOn(repo, { id: 'F6', verdict: 'confirmed', born: 'fix', cause: 'no test reads a back', reach: 'merge', evidence: 'the mutant survives', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: delta, claim: 'Number of a padded string is NaN', repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F7', verdict: 'duplicate', primary: 'F4', evidence: 'the same missing trim', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: f.at, claim: 'a is named too briefly', repro: 'read', kind: 'defect', severity: 'nit' }).error, undefined);
+  ruleOn(repo, { id: 'F8', verdict: 'confirmed', born: 'build', cause: 'a one-letter name', reach: 'neither', evidence: 'no caller misreads it', by: 'lpk:verifier' });
+  ok(lpk(repo, S, 'review', 'start', `${first}..${reviewedSha}`));
   const shown = lpk(repo, S, 'report').stdout;
-  assert.match(shown, /^Confirmed defects by the step they began in: build 1, fix 4$/m);
+  assert.match(shown, /^Confirmed defects by the step they began in: build 2, fix 4$/m);
   const bornLine = shown.split('\n').find((l) => l.startsWith('Born in a fix:')) ?? '';
   assert.match(bornLine, /\bF1 confirmed\b/);
   assert.match(bornLine, new RegExp(`\\bF2 fixed\\b.*\\b${fixSha.slice(0, 12)}\\b`));
   assert.ok(!bornLine.includes(fixSha.slice(0, 13)));
   assert.ok(!/\bF3\b/.test(bornLine), bornLine);
-  assert.match(shown, /^Confirmed defects by who meets them: user 3, merge 2$/m);
+  assert.match(shown, /^Confirmed defects by who meets them: user 3, merge 2, neither 1$/m);
   const short = (x) => x.slice(0, 12);
-  assert.match(shown, new RegExp(`^Confirmed defects per reviewed range: ${short(first)}\\.\\.${short(reviewedSha)} 3, ${short(reviewedSha)}\\.\\.${short(fixSha)} 1$`, 'm'));
+  assert.match(shown, new RegExp(`^Confirmed defects per reviewed range: ${short(first)}\\.\\.${short(reviewedSha)} 4, ${short(reviewedSha)}\\.\\.${short(fixSha)} 1$`, 'm'));
 });
 
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {
