@@ -3,7 +3,7 @@
 // session adds the verdict in words, the decisions it took alone and the weakest point.
 import { existsSync, readFileSync } from 'node:fs';
 import { counts } from '../findings-text.mjs';
-import { leftUnfixed, limitLine } from '../bar.mjs';
+import { limitsBlock } from '../bar.mjs';
 import { countedRound } from '../briefcheck.mjs';
 import { BORN, blocksUnsettled, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
@@ -12,7 +12,7 @@ import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { judgedStatus, named, proofsOf, proverResults, trace } from '../proof.mjs';
-import { runWaiting } from '../plan.mjs';
+import { planLines } from '../plan.mjs';
 import { readDecisions, readRecords, waiversIn } from '../records.mjs';
 import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
@@ -82,8 +82,8 @@ export async function main(argv) {
     const confirmed = ledger.filter((f) => f.born && f.kind !== 'test-gap' && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger)));
     const ranges = [...new Set(recs.filter((r) => r.kind === 'review-start').map((r) => r.range))];
     if (ranges.length) facts.push(`Confirmed defects per reviewed range: ${ranges.map((r) => `${r.split('..').map((x) => x.slice(0, 12)).join('..')} ${confirmed.filter((f) => f.at === r).length}`).join(', ')}`);
-    const deferred = leftUnfixed(repo, run, ledger);
-    if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map(limitLine)].join('\n'));
+    const limits = limitsBlock(repo, run, ledger);
+    facts.push([limits.heading, ...limits.entries].join('\n'));
     const blocking = ledger.filter(blocksUnsettled);
     if (blocking.length) facts.push(['Unsettled in a protected area, blocking until ruled or waived:', ...blocking.map(ruling)].join('\n'));
     const toRead = ledger.filter((f) => needsOwner(f) && !blocksUnsettled(f));
@@ -119,7 +119,7 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Surfaces | Proof |', '|---|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${surfacesOf(r.id)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
-  try { const w = runWaiting(run); facts.push(...w.lines, ...w.broken.map((file) => `plan not read: ${file}`)); } catch (e) { facts.push(`plan not read: ${e.message}`); }
+  try { facts.push(...planLines(run)); } catch (e) { facts.push(`plan not read: ${e.message}`); }
   facts.push(ownerWords(repo, run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {

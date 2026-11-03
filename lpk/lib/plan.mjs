@@ -67,28 +67,25 @@ export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
 export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' || i.status === 'paused').map((i) => `${i.id} ${i.status} (${i.why})`);
 
-export function runWaiting(run) {
+export function planLines(run) {
   const sessions = [run.session, ...(run.previous || [])].filter(Boolean);
-  if (!sessions.length) return { lines: [], broken: [] };
-  const lines = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
-  return { lines, broken: [...new Set(sessions.flatMap((s) => listPlans(s).broken))] };
+  const waiting = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
+  return [...waiting, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
 }
 
 function thenNote(plan, item) {
   const after = nextOpen({ items: plan.items.slice(plan.items.indexOf(item) + 1) });
   if (after) return `then start ${after.id}: ${after.title}.`;
   const waiting = waitingOf(plan);
-  return waiting.length ? `the plan then waits on the owner: ${waiting.join('; ')}.` : 'the plan is then done.';
+  return waiting.length ? `the plan then waits on the owner for ${waiting.length} held or paused item${waiting.length === 1 ? '' : 's'}.` : 'the plan is then done.';
 }
 
 export function openItemNotes(session) {
-  if (!session) return { notes: [], broken: [] };
-  const { plans, broken } = listPlans(session);
-  const notes = plans.filter((p) => p.session === session && nextOpen(p)).map((p) => {
+  if (!session) return [];
+  return listPlans(session).plans.filter((p) => p.session === session && nextOpen(p)).map((p) => {
     const item = nextOpen(p);
     return `Plan ${p.name}: ${item.id} ${item.title} is still open. Its proof: ${item.proof}. Once that exits 0, run \`lpk plan prove ${item.id}\`; ${thenNote(p, item)}`;
   });
-  return { notes, broken };
 }
 
 export function render(plan) {

@@ -11,5 +11,9 @@ export function knownLimits(repo, run, confirmed) {
   return confirmed.filter((f) => !PROTECTED.includes(f.area) && f.kind !== 'scenario');
 }
 
-export const leftUnfixed = (repo, run, ledger) => [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
-export const limitLine = (f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}${f.deferredBy ? ` (deferred by ${f.deferredBy})` : ''}`;
+const limitLine = (f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}${f.deferredBy ? ` (deferred by ${f.deferredBy})` : ''}`;
+
+export function limitsBlock(repo, run, ledger) {
+  const left = [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
+  return { heading: left.length ? 'Known limits, not fixed (for the PR body):' : 'Known limits, not fixed: none', entries: left.map(limitLine) };
+}
