@@ -24,14 +24,14 @@ cheapest. Speed comes from less rework, less waiting and no agent that adds no f
    owns, so they tell each other directly when their work touches another's files, contract or
    findings, and report what they told whom.
 5. Keep fixed what the owner trusts the result through: the gates and the evidence they read, the
-   verifier's ruling, one fix round and one delta review, the review net, and the order of the
-   steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
+   verifier's ruling, the fix rounds and a delta review after each, the review net, and the order
+   of the steps. A shortcut the lanes do not offer is the owner's call, asked before it is taken.
 
 **Why the flow has this shape.**
 - Recall grows with reviewer diversity, so the review net runs its lenses at once and costs its
   slowest lens, not the sum.
-- Late true findings sit on the previous fix's own lines, so there is one batched fix round, and a
-  finding on a fix's own lines means redesign or revert, never a third patch.
+- Fix rounds must converge: on a defect a fix wrote, moved, narrowed or left, the lead patches
+  once or replaces the fix, never a patch on a patch on the same cause, and the report names each.
 - Whatever does not wait on the next step runs at once.
 
 ## How you work, in every step
@@ -81,7 +81,7 @@ Read each step's file when the step starts; each file states its goal and how it
    change) and check it: `design.md` in this skill's directory.
 3. **Build** with its tests, every line checked as it is written: `build.md` in this skill's
    directory, and in the Full lane `slices.md` in this skill's directory, because builders build it, and the designer builds its screens.
-4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in one round:
+4. **Review**: verify, freeze the commit, run the review net, and fix what it confirms in rounds that converge:
    `review.md` in this skill's directory.
 5. **Prove** each scenario on the real surface: `prove.md` in this skill's directory (the Prover runs inside the review net when `lenses.md` owes it).
 6. **Deliver**: gates, CI, the PR, the report, the lessons: `deliver.md` in this skill's directory.

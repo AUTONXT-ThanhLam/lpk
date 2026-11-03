@@ -99,7 +99,7 @@ test('a duplicate closes with its primary, and a fix closes only with a later co
   const fix = { id: 'F1', fix: 'guard closed', closedBy: 'test', evidence: 'guard.test fails on fix^, passes on fix', by: 'lpk:builder' };
   assert.match(markFixed(dir, { ...fix, commit: head }).error, /raised on/);
   assert.match(markFixed(dir, { ...fix, commit: 'deadbeef' }).error, /not a commit/);
-  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, verifier, owner/);
+  assert.match(markFixed(dir, { ...fix, commit: head, closedBy: 'said-so' }).error, /closedBy is one of repro, test, mutant, verifier, owner/);
   assert.match(markFixed(dir, { ...fix, commit: head, evidence: '' }).error, /evidence/);
   const sha = commit(dir, 'fix');
   const fixed = markFixed(dir, { ...fix, commit: sha.slice(0, 10) }).finding;

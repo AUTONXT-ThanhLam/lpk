@@ -62,15 +62,16 @@ test('the child is given a fallback model only when --fallback-model is passed',
   assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
 });
 
-test('a code review finding the verifier confirms carries reach and born into the ledger and the report', () => {
+test('a code review finding the verifier confirms carries reach and born into the ledger and the report, which names each finding born in a fix', () => {
   const S = 'crreach';
   const repo = changedRepo('crreach', S);
   ok(codeReview(repo, S, fakeClaude('claude-reach', [report, result])));
-  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
+  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'fix', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
   const [f] = readLedger(repo).findings;
-  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'build', 'user']);
+  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'fix', 'user']);
   const shown = lpk(repo, S, 'report').stdout;
-  assert.match(shown, /^Confirmed defects by the step they began in: build 1$/m);
+  assert.match(shown, /^Confirmed defects by the step they began in: fix 1$/m);
+  assert.match(shown, /^Born in a fix: F1 confirmed$/m);
   assert.match(shown, /^Confirmed defects by who meets them: user 1$/m);
 });
 

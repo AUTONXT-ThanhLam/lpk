@@ -10,6 +10,7 @@ const USAGE = `usage:
   lpk finding get <id> [--repo <dir>]
   lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>" --reach user|merge|neither] [--area security|auth|data|concurrency|migration|permissions] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" --sweep "<git grep -E pattern of the defect form>" [--fix "<how>"] [--repo <dir>]
+  lpk finding fixed <id> --commit <sha> --closed-by mutant --evidence "<lpk mutate --patch output on the fix>" [--fix "<how>"] [--repo <dir>]   (a test gap)
   lpk finding fixed <id> --closed-by owner --evidence "<the owner's words>" [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
 

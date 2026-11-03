@@ -46,7 +46,11 @@ Rule from what the runs showed:
   asked; `design` when the brief (`brief.md` beside the run's `run.json`, or in the Quick
   lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
   or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
-  commit that fixed an earlier finding of this run; else `build`. `reach`: who meets it, the
+  commit that fixed an earlier finding of this run (`lpk fixlines <commit>` lists the lines each fix
+  rewrote, and a fix that only deleted lines counts when the defect is the missing line); else `build`.
+  A defect a fix was meant to remove that still reproduces on HEAD (it moved it, narrowed it or
+  missed an instance, whatever blame says) is `fix` too; one that fix removed is a DUPLICATE of
+  the finding it closed. `reach`: who meets it, the
   question that decides whether it is fixed in this run. `user` when a person or a caller meets it
   on the surface the change touches (a screen, a response, CLI output, data they keep, a message
   they read) or an acceptance scenario fails; `merge` when the tech lead would block the merge on

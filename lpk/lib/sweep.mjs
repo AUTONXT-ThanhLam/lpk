@@ -3,19 +3,6 @@ import { baseOf } from './out.mjs';
 
 const lines = (out) => out.split('\n').filter(Boolean);
 
-export function lateFix(repo, finding, ledger) {
-  const [from, to] = String(finding.at).split('..');
-  if (!from || !to) return null;
-  const inRange = new Set(lines(git(['rev-list', `${from}..${to}`], repo)));
-  const earlier = ledger.find((x) => x.run === finding.run && x.id !== finding.id && x.state === 'fixed' && inRange.has(x.fixedCommit));
-  return earlier ? { id: earlier.id, commit: earlier.fixedCommit } : null;
-}
-
-export function lateFixError(finding, late) {
-  return `${finding.id} was raised on ${finding.at}, which holds ${late.commit.slice(0, 12)}, the fix of ${late.id}: patching it is a second fix round, and the loop of review, fix and review runs once. `
-    + 'The ways out: revert or redesign that fix (`lpk fixlines` names what it rewrote), have the owner defer it (closedBy owner) or waive the findings gate as the lead (`lpk waive gate:findings --why "..."`), or take it into a new run.';
-}
-
 function hitsAt(repo, rev, pattern, files) {
   if (!files.length) return [];
   return lines(git(['--literal-pathspecs', 'grep', '-z', '-n', '-I', '-E', '-e', pattern, rev, '--', ...files], repo)).flatMap((l) => {

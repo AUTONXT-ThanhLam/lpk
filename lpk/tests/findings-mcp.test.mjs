@@ -73,6 +73,8 @@ test('the MCP server records a stamped finding, takes the verifier\'s ruling onl
     assert.match(leadRuling.result.content[0].text, /only lpk:verifier rules on a finding/);
     const causeless = await call('verdict', { id: 'F1', verdict: 'confirmed', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
     assert.match(causeless.result.content[0].text, /born: the step the defect began in/);
+    const verdictProps = list.result.tools.find((t) => t.name === 'finding_verdict').inputSchema.properties;
+    assert.deepEqual(Object.keys(verdictProps).filter((k) => k.startsWith('fix')), []);
     const ruled = await call('verdict', { id: 'F1', verdict: 'confirmed', reach: 'user', born: 'design', cause: 'the brief never says a retry must not repeat the charge', evidence: 'ran it twice, two charges' }, { agent_type: VERIFIER, agent_id: 'v1' });
     assert.match(ruled.result.content[0].text, /F1 is confirmed/);
     const wrong = await call('add', { claim: 'c', repro: 'r', kind: 'defect', severity: 'nit', verdict: 'confirmed' }, { agent_type: 'lpk:bug-hunter' });
