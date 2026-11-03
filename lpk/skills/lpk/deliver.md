@@ -96,6 +96,14 @@ and answer a repeated point in one line ("declined, see the first triage").
    it, the login, the selector or shortcut, the file that owns it). For each approach tried and
    abandoned, write a line: what was tried, why it was ruled out, the files it touches.
 
+## The advisor's read before handover
+
+When the draft report is written and `lpk gates` and `lpk report` are on screen, consult the Opus
+advisor once, before `gh pr ready` or the merge: that one read covers every waiver, deferral,
+`lpk decide` and patch-or-revert call of the run, so none needs a call of its own. Each call the advisor
+changed or confirmed goes in the report as one line. Where the host has no advisor, `lpk:staff` reads
+the same material.
+
 ## The report
 
 In Vietnamese, in the reply itself (never only a link), readable in ten seconds, each claim tagged
