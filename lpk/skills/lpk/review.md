@@ -121,7 +121,9 @@ other.
    the change touches and refuses the close unless it hits on `fix^` and on no line the change adds at `fix`, so
    the same class is fixed everywhere in this one round (a finding with no file takes none),
    `closedBy` `test` with the builder's test output on `fix^` and on `fix`, `mutant` for a test gap (no `sweep`)
-   with `lpk mutate --patch <its mutant diff> --test "<command>"` on `fix` showing the mutant caught, or
+   with `lpk mutate --patch <its mutant diff> --test "<command>"` on `fix` showing the mutant caught (a gap with
+   no mutant diff, as the code review raises it, takes one the closer writes, removing or inverting the
+   behaviour no test covers; `closedBy` `verifier` does not close a test gap), or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
@@ -135,11 +137,10 @@ code review on that range plus the lenses that raised the fixed findings, in
 parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
 no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines. A round-2 fix owes its own delta review, the same way.
 
-On a finding ruled born `fix` you decide, by reading its cause, whether to patch it once or replace
-the fix (revert or redesign); never a patch on a patch on the same cause. Log the call with
-`lpk decide "<what>" --why "<why>"`. `lpk report` lists every born-fix finding for the owner, and prints the
-confirmed findings per reviewed range: a round that confirms no fewer than the one before it means
-replace the fix or hand the cause back to the owner, logged with `lpk decide`.
+On a finding ruled born `fix` you decide, by reading its cause, whether to patch it once or replace the fix
+(revert or redesign); never a patch on a patch on the same cause. Log the call with `lpk decide "<what>" --why "<why>"`.
+`lpk report` lists every born-fix finding for the owner and the confirmed findings per reviewed range: a round that
+confirms no fewer than the one before means replace the fix or hand the cause back to the owner, logged the same way.
 
 A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
 naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens that raised it re-checks the body. It never waits for a waiver.
