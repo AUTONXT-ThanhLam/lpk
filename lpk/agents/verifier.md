@@ -46,8 +46,10 @@ Rule from what the runs showed:
   asked; `design` when the brief (`brief.md` beside the run's `run.json`, or in the Quick
   lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
   or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
-  commit that fixed an earlier finding of this run (`lpk fixlines <commit>` lists the lines each fix
-  rewrote, and a fix that only deleted lines counts when the defect is the missing line); else `build`.
+  commit that fixed an earlier finding of this run (`lpk fixlines <fix>` lists the lines that one fix
+  changes whose blame on `<fix>^` names an earlier commit of this run; a deleted line older than the
+  run never appears there, so read `git show <fix>`: a fix that deleted a line counts when the
+  defect is the missing line); else `build`.
   A defect a fix was meant to remove that still reproduces on HEAD (it moved it, narrowed it or
   missed an instance, whatever blame says) is `fix` too; one that fix removed is a DUPLICATE of
   the finding it closed. `reach`: who meets it, the
