@@ -133,6 +133,18 @@ test('R3 a stored lead record for gate:pre or a connector counts for nothing, an
   assert.match(reason(jira), /editJiraIssue/);
 });
 
+test('R2 when the lead and the owner both waive a gate, the owner\'s record is the one read', () => {
+  const { repo, dir } = runIn('lead-both', 'both', { scenarios: [{ id: 'S1', cmd: 'false', surface: 'cli', entry: 'false' }] });
+  const run = readRun(repo, 'both');
+  for (const [by, via, why] of [['lead', 'lead', 'the lead weighed it'], ['owner', '/lpk-waive', 'the owner said ship it']]) {
+    appendFileSync(join(dir, 'records.jsonl'), `${JSON.stringify({ kind: 'waiver', run: run.id, what: 'gate:scenarios', why, by, via, exit: 0 })}\n`);
+  }
+  assert.equal(waiverOf(repo, run.id, 'gate:scenarios').by, 'owner');
+  const out = lpk(repo, 'both', 'gates').stdout;
+  const row = out.slice(out.search(/^scenarios /m)).split(/\n(?=\S)/)[0];
+  assert.ok(row.includes('waived by the owner') && !row.includes('lead'), row);
+});
+
 test('R9 a pr id is refused by the command and by a waiver question pick unless it holds a URL', () => {
   const { repo, dir } = runIn('lead-pr', 'prs');
   for (const id of ['pr:123', 'pr:']) {
