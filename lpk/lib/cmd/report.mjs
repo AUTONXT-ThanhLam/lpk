@@ -54,14 +54,20 @@ export async function main(argv) {
     '', 'Gates:', gatesText(rows),
   ];
   const facts = [];
+  const recs = readRecords(repo, { run: run.id });
   try {
     const ledger = ledgerFor(repo, run);
     const c = counts(ledger);
     facts.push(`Findings: ${c.total} raised; ${['confirmed', 'fixed', 'deferred', 'dropped', 'preexisting', 'unsettled', 'open'].map((s) => `${c[s]} ${s}`).join(', ')}, ${c.duplicate} duplicate; ${ledger.filter((f) => f.kind === 'test-gap').length} test gaps`);
     const born = BORN.map((b) => [b, ledger.filter((f) => f.born === b && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
     if (born.length) facts.push(`Confirmed defects by the step they began in: ${born.map(([b, n]) => `${b} ${n}`).join(', ')}`);
+    const ofFix = ledger.filter((f) => f.born === 'fix');
+    if (ofFix.length) facts.push(`Born in a fix: ${ofFix.map((f) => `${f.id} ${f.state}${f.state === 'fixed' ? ` in ${f.fixedCommit.slice(0, 12)}` : ''}`).join(', ')}`);
     const reach = REACH.map((r) => [r, ledger.filter((f) => f.reach === r && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger))).length]).filter(([, n]) => n);
     if (reach.length) facts.push(`Confirmed defects by who meets them: ${reach.map(([r, n]) => `${r} ${n}`).join(', ')}`);
+    const confirmed = ledger.filter((f) => f.born && f.kind !== 'test-gap' && ['confirmed', 'fixed', 'deferred'].includes(stateOf(f, ledger)));
+    const ranges = [...new Set(recs.filter((r) => r.kind === 'review-start').map((r) => r.range))];
+    if (ranges.length) facts.push(`Confirmed defects per reviewed range: ${ranges.map((r) => `${r.split('..').map((x) => x.slice(0, 12)).join('..')} ${confirmed.filter((f) => f.at === r).length}`).join(', ')}`);
     const deferred = [...ledger.filter((f) => f.state === 'deferred'), ...knownLimits(repo, run, ledger.filter((f) => f.state === 'confirmed' && f.kind !== 'test-gap'))];
     if (deferred.length) facts.push(['Known limits, not fixed (for the PR body):', ...deferred.map((f) => `- ${f.id} ${f.kind}/${f.severity}${f.file ? ` ${f.file}${f.line ? `:${f.line}` : ''}` : ''}: ${f.claim} — ${f.deferEvidence || 'confirmed; a known limit of the increment bar'}`)].join('\n'));
     const toRead = ledger.filter(needsOwner);
@@ -70,7 +76,6 @@ export async function main(argv) {
     for (const i of evidence(repo, run, ledger).items) { ran[i.key] = (ran[i.key] || 0) + 1; }
     facts.push(`Lenses that ran: ${Object.entries(ran).map(([k, n]) => `${k} ×${n}`).join(', ') || 'none'}`);
   } catch (e) { facts.push(`Findings and lenses could not be read: ${e.message}`); }
-  const recs = readRecords(repo, { run: run.id });
   if ((run.scenarios || []).length) {
     let judged;
     try { judged = proverResults(repo, run).results; } catch { judged = []; }

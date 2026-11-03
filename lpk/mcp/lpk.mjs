@@ -62,7 +62,7 @@ const TOOLS = [
   },
   {
     name: 'finding_fixed',
-    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, or your ruling as verifier) with that evidence. A fixed finding whose commit left the branch (a cherry-pick, an amend, a rebase) is closed again on the commit now on HEAD. closedBy owner, with no commit, defers a finding outside a protected area and not a failing scenario under a policy the owner stated, quoting the owner\'s words as evidence; the report lists it as a known limit.',
+    description: 'Close a confirmed finding: the fix commit, and how it is known fixed (repro green on it, a test failing on its parent, a test gap\'s mutant caught on it, or your ruling as verifier) with that evidence. A fixed finding whose commit left the branch (a cherry-pick, an amend, a rebase) is closed again on the commit now on HEAD. closedBy owner, with no commit, defers a finding outside a protected area and not a failing scenario under a policy the owner stated, quoting the owner\'s words as evidence; the report lists it as a known limit.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -71,7 +71,7 @@ const TOOLS = [
         closedBy: { type: 'string', enum: CLOSED_BY },
         evidence: str('the repro or test output, the ruling, or for closedBy owner the owner\'s words'),
         fix: str('how, in one sentence'),
-        sweep: str('for a finding with a file: a git grep -E pattern for the form of the defect. lpk runs it over the files the change touches: it must hit before the fix and on no line the change adds after it'),
+        sweep: str('for a finding with a file, not a test gap: a git grep -E pattern for the form of the defect. lpk runs it over the files the change touches: it must hit before the fix and on no line the change adds after it'),
         ...stamped, by: str(STAMP),
       },
       required: ['id', 'closedBy', 'evidence'],

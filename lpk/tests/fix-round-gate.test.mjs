@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { addFinding, markFixed, readLedger, ruleOn, VERIFIER } from '../lib/findings.mjs';
+import { addFinding, markFixed, ruleOn, VERIFIER } from '../lib/findings.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-fix-round-')));
@@ -32,9 +32,10 @@ function change() {
 }
 let readdirCount = 0;
 
-const raise = (dir, at, line) => {
+const raise = (dir, at, line, ruling = {}) => {
   const { finding } = addFinding(dir, { from: 'lpk:bug-hunter', at, claim: 'risky is called unguarded', repro: 'node a.js', kind: 'defect', severity: 'important', file: 'a.js', line });
-  ruleOn(dir, { id: finding.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'risky is not guarded', evidence: 'throws on the commit', by: VERIFIER });
+  const r = ruleOn(dir, { id: finding.id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'risky is not guarded', evidence: 'throws on the commit', by: VERIFIER, ...ruling });
+  assert.ok(!r.error, r.error);
   return finding.id;
 };
 const close = (dir, id, commit, extra = {}) => markFixed(dir, { id, commit, closedBy: 'test', evidence: 'fails on fix^, passes on fix', by: 'lead', ...extra });
@@ -52,19 +53,26 @@ test('a fix closes only when the pattern of its defect hits before it and nowher
   assert.match(r.finding.sweep.pattern, /risky/);
 });
 
-test('a finding raised on a range that holds another finding\'s fix is a second fix round and is refused', () => {
+test('a finding the delta review of a fix round raises closes on its fix commit', () => {
   const { dir, base, reviewed } = change();
   const first = raise(dir, `${base}..${reviewed}`, 2);
-  const fix = write(dir, 'const ok = 1;\nguard(1);\nguard(2);\n', 'guard the calls');
-  assert.equal(close(dir, first, fix, { sweep: 'risky\\(' }).finding.state, 'fixed');
-  const late = raise(dir, `${reviewed}..${fix}`, 2);
-  const patch = write(dir, 'const ok = 1;\nguard(1);\nguard(3);\n', 'patch the patch');
-  const refused = close(dir, late, patch, { sweep: 'guard\\(2' });
-  assert.match(refused.error, /second fix round/);
-  assert.ok(refused.error.includes(fix.slice(0, 12)) && refused.error.includes(first));
-  assert.equal(readLedger(dir).findings.find((f) => f.id === late).state, 'confirmed');
-  const deferred = markFixed(dir, { id: late, closedBy: 'owner', evidence: 'the owner said a late finding waits', by: 'lead' });
-  assert.equal(deferred.finding.state, 'deferred');
+  const fix = write(dir, 'const ok = 1;\nguard(1);\nrisky(2);\n', 'guard the first call');
+  assert.equal(close(dir, first, fix, { sweep: 'risky\\(1' }).finding.state, 'fixed');
+  const delta = raise(dir, `${reviewed}..${fix}`, 3, { born: 'fix' });
+  const next = write(dir, 'const ok = 1;\nguard(1);\nguard(2);\n', 'guard the second call');
+  assert.equal(close(dir, delta, next, { sweep: 'risky\\(2' }).finding.state, 'fixed');
+});
+
+test('a test gap closes by its mutant without a sweep, and only a test gap does', () => {
+  const { dir, base, reviewed } = change();
+  const { finding } = addFinding(dir, { from: 'lpk:mutant', at: `${base}..${reviewed}`, claim: 'no test fails when risky(1) is dropped', repro: 'lpk mutate --patch m.diff --test "node --test"', kind: 'test-gap', severity: 'important', file: 'a.js', line: 2 });
+  ruleOn(dir, { id: finding.id, verdict: 'confirmed', reach: 'merge', born: 'build', cause: 'no test covers the first call', evidence: 'the mutant survives', by: VERIFIER });
+  writeFileSync(join(dir, 'a.test.js'), 'risky(1);\n');
+  sh(dir, 'add', '.'); sh(dir, 'commit', '-qm', 'test the first call');
+  assert.match(close(dir, finding.id, head(dir)).error, /closes by its mutant/);
+  assert.equal(close(dir, finding.id, head(dir), { closedBy: 'mutant', evidence: 'caught: 1 of 1' }).finding.state, 'fixed');
+  const defect = raise(dir, `${base}..${reviewed}`, 3);
+  assert.match(close(dir, defect, head(dir), { closedBy: 'mutant', evidence: 'caught' }).error, /only a test gap/);
 });
 
 test('a fixed finding moved to the commit now on HEAD keeps its sweep and is not counted again', () => {

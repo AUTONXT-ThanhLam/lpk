@@ -1,9 +1,9 @@
 import { append, ledgerDir, PROTECTED, readLedger } from './findings.mjs';
 import { git } from './git.mjs';
 import { locked } from './lock.mjs';
-import { lateFix, lateFixError, sweepOf } from './sweep.mjs';
+import { sweepOf } from './sweep.mjs';
 
-export const CLOSED_BY = ['repro', 'test', 'verifier', 'owner'];
+export const CLOSED_BY = ['repro', 'test', 'mutant', 'verifier', 'owner'];
 
 const text = (v) => (typeof v === 'string' ? v.trim() : '');
 const commitOf = (repo, ref) => git(['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], repo).trim();
@@ -29,6 +29,9 @@ export function markFixed(repo, { id, commit, fix, closedBy, evidence, by, sweep
     const f = readLedger(repo).findings.find((x) => x.id === text(id));
     if (!f) return { error: `no finding ${text(id)}` };
     if (owner) return defer(repo, f, why, text(by));
+    if ((f.kind === 'test-gap') !== (closedBy === 'mutant')) {
+      return { error: f.kind === 'test-gap' ? `${f.id} is a test gap: it closes by its mutant, closedBy mutant with the output of \`lpk mutate --patch <mutant.diff> --test "<command>"\` on the fix showing the mutant caught` : `closedBy mutant closes only a test gap, and ${f.id} is a ${f.kind}` };
+    }
     if (f.state === 'fixed') {
       if (onHead(repo, f.fixedCommit)) return { error: `${f.id} is fixed in ${f.fixedCommit}, which is on HEAD; it is closed again only after that commit left the branch` };
       if (!onHead(repo, sha)) return { error: `${f.id} is fixed in ${f.fixedCommit}; it moves only to a commit on HEAD that carries the fix, and ${sha} is not on HEAD` };
@@ -37,9 +40,7 @@ export function markFixed(repo, { id, commit, fix, closedBy, evidence, by, sweep
     if (reviewed === sha) return { error: `${f.id} was raised on ${f.at}: its fix is a commit after that one` };
     let kept = f.sweep;
     if (f.state === 'confirmed') {
-      const late = lateFix(repo, f, readLedger(repo).findings);
-      if (late) return { error: lateFixError(f, late) };
-      if (f.file) {
+      if (f.file && f.kind !== 'test-gap') {
         const s = sweepOf(repo, f, sha, sweep);
         if (s.error) return s;
         kept = s.sweep;

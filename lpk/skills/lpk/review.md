@@ -1,7 +1,7 @@
 # Step 4: Review
 
 **Goal.** The commit that reaches the tech lead has had every lens its lane owes, each finding has
-been ruled on by a verifier, and every confirmed one is fixed at its root in one round. All lenses
+been ruled on by a verifier, and every confirmed one is fixed at its root, in rounds that converge. All lenses
 run at once, so the net costs its slowest lens; you keep working while it runs.
 
 ## Verify and freeze
@@ -74,7 +74,7 @@ Record each defect you find with `finding_add`, written to `writing.md` in this 
 and start one `lpk:verifier` on it. Leave rulings to the verifier: a ruling of yours is listed in
 the report for the owner to read.
 
-## Fix what is real, in one round
+## Fix what is real, in rounds that converge
 
 Only a confirmed finding that a user meets or that blocks the merge is fixed: the verifier records
 it as `reach` `user` or `merge`. One with `reach` `neither` is real but no user reaches it and
@@ -82,7 +82,7 @@ nothing blocks the merge, so the ledger defers it at once and the PR body lists 
 it never starts a fix, a delta review or another round. A finding that cites a rule below `blocks: high` is `neither` too unless its area is protected;
 the ledger refuses `user` or `merge` for it. A finding in a protected area or a failing
 scenario is never `neither`. The reviewers are told the same scope, so they raise few of those.
-Everything else is fixed at its root, whatever its stated severity, all in one round. Start
+Everything else is fixed at its root, whatever its stated severity, batched into one round. Start
 as the first verdicts land (`finding_list`): the net reads the frozen tree, so the fixes never
 change what it sees. Only when the tests use a database or a port that the net's mutant or Prover
 also uses (the env agent's `db` line), start when the net returns, because shared runs break each
@@ -106,8 +106,8 @@ other.
    they run in parallel, because builders queued behind one lock each wait for all the others.
 5. Note your branch head, then bring each builder's commit in with `git cherry-pick`. Run
    `lpk fixlines <commit>` for each: it prints the fix's lines that an earlier commit of this run
-   wrote. A confirmed finding on those lines means revert or redesign, never another patch.
-6. When the last commit of the round is in, run `lpk verify` once, then the final tier on the new head, frozen as `review-2` (step 4 of "Run the final tier" in `build.md`), beside the delta review.
+   wrote, and the verifier rules a defect a fix wrote, moved, narrowed or left as born `fix` (below).
+6. When the last commit of the round is in, run `lpk verify` once, then the final tier on the new head, frozen under the next free name `review-<n>` (step 4 of "Run the final tier" in `build.md`), beside the delta review.
    When a tier is red, the builder of the fix that broke it amends that commit, never a commit of its
    own, because a commit that closes no finding owes the whole net. Whenever a commit you picked
    is amended, drop your picks with `git reset --keep <the head you noted>` (they are yours and
@@ -120,27 +120,27 @@ other.
    `sweep` a `git grep -E` pattern for the form of the defect (not of its fix): `lpk` runs it over the files
    the change touches and refuses the close unless it hits on `fix^` and on no line the change adds at `fix`, so
    the same class is fixed everywhere in this one round (a finding with no file takes none),
-   `closedBy` `test` with the builder's test output on `fix^` and on `fix`, or
+   `closedBy` `test` with the builder's test output on `fix^` and on `fix`, `mutant` for a test gap (no `sweep`)
+   with `lpk mutate --patch <its mutant diff> --test "<command>"` on `fix` showing the mutant caught (a gap with
+   no mutant diff, as the code review raises it, takes one the closer writes, removing or inverting the
+   behaviour no test covers; `closedBy` `verifier` does not close a test gap), or
    `repro` with the output of `lpk repro <id> --commit <fix> --at commit` now passing, as
    `evidence`. A finding with no reproduction (a comment, the docs, the PR text) closes when a
    verifier rules it `fixed` on the fix commit.
 8. `unsettled` findings, the ones you ruled on yourself, `preexisting` and deferred ones, and
-   surviving mutants (`test-gap`) go in the report with their evidence (`lpk report` lists them
-   for the owner to read; they do not block).
+   surviving mutants (`test-gap`) go in the report with their evidence (`lpk report` lists them for the owner to read; they do not block).
 9. A refactor a finding seems to call for is a separate PR, named in the report.
 
 Then one delta review: rerun the self-check on the files the fixes touched,
-`lpk review start <reviewed commit>..<fix head>`, `lpk repro prepare` in the background, and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
-code review on `<reviewed commit>..<fix head>` plus the lenses that raised the fixed findings, in
+`lpk review start <reviewed or last reviewed commit>..<fix head>`, `lpk repro prepare` in the background, and run the `lpk:review` workflow with `args.delta` (with `docsOnly` when the round touched only comments, docs or the PR body): one
+code review on that range plus the lenses that raised the fixed findings, in
 parallel, each given the ledger's findings as already raised. A round that touches only comments, docs or the PR body owes
-no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines.
+no code review: the lens that raised it re-checks it. Never re-run the whole net: each pass finds something new on new lines. A round-2 fix owes its own delta review, the same way.
 
-The delta review is the last review. A finding it confirms is on a range that holds a fix of this
-run, so closing it with a patch is a second fix round and `finding_fixed` refuses it, naming the fix.
-One that no user reaches or the merge would not block is deferred into the PR body as a known limit.
-One that a user meets or that blocks the merge goes to the owner in the report with its evidence,
-to be reverted or redesigned there, or taken into a new run. The loop of review, fix and review
-never runs a third time.
+On a finding ruled born `fix` you decide, by reading its cause, whether to patch it once or replace the fix
+(revert or redesign); never a patch on a patch on the same cause. Log the call with `lpk decide "<what>" --why "<why>"`.
+`lpk report` lists every born-fix finding for the owner and the confirmed defects per reviewed range: a fix round
+that confirms defects and no fewer than the one before is not converging on the cause; weigh it in that call.
 
 A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
 naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens that raised it re-checks the body. It never waits for a waiver.

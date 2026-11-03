@@ -29,8 +29,8 @@ requirements it proves (`--judged "<scenario>" --proves R1` for one the Prover j
    `lpk verify --final --repo <review worktree>` with Bash `run_in_background`. A foreground call
    ends at 600000 ms, before a real suite does.
 3. Run it beside the review net, against its own database or port. Never run two final runs at once.
-4. After the fix round, freeze the new head under a new name: `lpk run worktree review-2 <new head>`
-   (`review-3` for a later one). The name `review` is taken, and the command fails on it.
+4. After each fix round, freeze the new head under the next free name: `lpk run worktree review-<n> <new head>`
+   (`review-2`, then `review-3`). A name already taken fails, `review` among them.
 5. Run `lpk verify --final --repo <that worktree>` the same way. The final record of the old review
    worktree belongs to the old tree and counts for nothing.
 6. Delivery needs both tiers green on the tree of HEAD (`lpk gates` shows it).

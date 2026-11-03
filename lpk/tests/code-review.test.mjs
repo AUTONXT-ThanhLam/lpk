@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, lpk, noHost, repoWith, sh, tmp, write } from './gates-env.mjs';
-import { readLedger, ruleOn } from '../lib/findings.mjs';
+import { addFinding, readLedger, ruleOn } from '../lib/findings.mjs';
+import { markFixed } from '../lib/fixed.mjs';
 import { stubBin } from './stub.mjs';
 
 const ok = (r) => { assert.equal(r.status, 0, r.stderr + r.stdout); return r.stdout; };
@@ -62,16 +63,48 @@ test('the child is given a fallback model only when --fallback-model is passed',
   assert.equal(args[args.indexOf('--fallback-model') + 1], 'opus');
 });
 
-test('a code review finding the verifier confirms carries reach and born into the ledger and the report', () => {
+test('a code review finding the verifier confirms carries reach and born into the ledger and the report, which names each finding born in a fix and counts the confirmed defects per reviewed range', () => {
   const S = 'crreach';
   const repo = changedRepo('crreach', S);
+  const first = sh(repo, 'rev-parse', 'HEAD~1').trim();
+  const reviewedSha = sh(repo, 'rev-parse', 'HEAD').trim();
+  ok(lpk(repo, S, 'review', 'start', `${first}..${reviewedSha}`));
   ok(codeReview(repo, S, fakeClaude('claude-reach', [report, result])));
-  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'build', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
+  ruleOn(repo, { id: 'F1', verdict: 'confirmed', born: 'fix', cause: 'the edit turned a into a string', reach: 'user', evidence: 'a + 1 is "21"', by: 'lpk:verifier' });
   const [f] = readLedger(repo).findings;
-  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'build', 'user']);
+  assert.deepEqual([f.from, f.state, f.born, f.reach], ['code-review:sonnet', 'confirmed', 'fix', 'user']);
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: f.at, claim: 'a is never parsed back', repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F2', verdict: 'confirmed', born: 'fix', cause: 'the edit dropped the parse', reach: 'user', evidence: 'a is "2"', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: f.at, claim: 'a lost its type', repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F3', verdict: 'confirmed', born: 'build', cause: 'a was written as a string', reach: 'merge', evidence: 'typeof a is string', by: 'lpk:verifier' });
+  write(repo, 'src/a.mjs', 'export const a = Number("2");\n');
+  sh(repo, 'commit', '-qam', 'Parse a back to a number');
+  const fixSha = sh(repo, 'rev-parse', 'HEAD').trim();
+  assert.equal(markFixed(repo, { id: 'F2', commit: fixSha, closedBy: 'test', evidence: 'a + 1 is 3', by: 'lpk:verifier' }).error, undefined);
+  ok(lpk(repo, S, 'review', 'start', `${reviewedSha}..${fixSha}`));
+  const delta = `${reviewedSha}..${fixSha}`;
+  for (const claim of ['Number of a string with a space is NaN', 'a is parsed on every import']) {
+    assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: delta, claim, repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  }
+  ruleOn(repo, { id: 'F4', verdict: 'confirmed', born: 'fix', cause: 'Number does not trim', reach: 'user', evidence: 'NaN', by: 'lpk:verifier' });
+  ruleOn(repo, { id: 'F5', verdict: 'dropped', basis: 'disproved', evidence: 'a module is evaluated once', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:mutant', at: delta, claim: 'no test fails when the parse is dropped', repro: 'lpk mutate', kind: 'test-gap', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F6', verdict: 'confirmed', born: 'fix', cause: 'no test reads a back', reach: 'merge', evidence: 'the mutant survives', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: delta, claim: 'Number of a padded string is NaN', repro: 'node -e', kind: 'defect', severity: 'important' }).error, undefined);
+  ruleOn(repo, { id: 'F7', verdict: 'duplicate', primary: 'F4', evidence: 'the same missing trim', by: 'lpk:verifier' });
+  assert.equal(addFinding(repo, { from: 'lpk:bug-hunter', at: f.at, claim: 'a is named too briefly', repro: 'read', kind: 'defect', severity: 'nit' }).error, undefined);
+  ruleOn(repo, { id: 'F8', verdict: 'confirmed', born: 'build', cause: 'a one-letter name', reach: 'neither', evidence: 'no caller misreads it', by: 'lpk:verifier' });
+  ok(lpk(repo, S, 'review', 'start', `${first}..${reviewedSha}`));
   const shown = lpk(repo, S, 'report').stdout;
-  assert.match(shown, /^Confirmed defects by the step they began in: build 1$/m);
-  assert.match(shown, /^Confirmed defects by who meets them: user 1$/m);
+  assert.match(shown, /^Confirmed defects by the step they began in: build 2, fix 4$/m);
+  const bornLine = shown.split('\n').find((l) => l.startsWith('Born in a fix:')) ?? '';
+  assert.match(bornLine, /\bF1 confirmed\b/);
+  assert.match(bornLine, new RegExp(`\\bF2 fixed\\b.*\\b${fixSha.slice(0, 12)}\\b`));
+  assert.ok(!bornLine.includes(fixSha.slice(0, 13)));
+  assert.ok(!/\bF3\b/.test(bornLine), bornLine);
+  assert.match(shown, /^Confirmed defects by who meets them: user 3, merge 2, neither 1$/m);
+  const short = (x) => x.slice(0, 12);
+  assert.match(shown, new RegExp(`^Confirmed defects per reviewed range: ${short(first)}\\.\\.${short(reviewedSha)} 4, ${short(reviewedSha)}\\.\\.${short(fixSha)} 1$`, 'm'));
 });
 
 test('a fix delta is reviewed alone: the child finds no branch or upstream holding the reviewed change', () => {

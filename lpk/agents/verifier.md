@@ -46,7 +46,13 @@ Rule from what the runs showed:
   asked; `design` when the brief (`brief.md` beside the run's `run.json`, or in the Quick
   lane the requirements and scenarios `lpk run status` prints) says or allows the wrong behaviour,
   or is silent on the case; `fix` when `git blame -L <line>,<line> <commit> -- <file>` names a
-  commit that fixed an earlier finding of this run; else `build`. `reach`: who meets it, the
+  commit that fixed an earlier finding of this run (`lpk fixlines <fix>` lists the lines that one fix
+  changes whose blame on `<fix>^` names an earlier commit of this run; a deleted line older than the
+  run never appears there, so read `git show <fix>`: a fix that deleted a line counts when the
+  defect is the missing line); else `build`.
+  A defect a fix was meant to remove that still reproduces on HEAD (it moved it, narrowed it or
+  missed an instance, whatever blame says) is `fix` too; one that fix removed is a DUPLICATE of
+  the finding it closed. `reach`: who meets it, the
   question that decides whether it is fixed in this run. `user` when a person or a caller meets it
   on the surface the change touches (a screen, a response, CLI output, data they keep, a message
   they read) or an acceptance scenario fails; `merge` when the tech lead would block the merge on
@@ -74,6 +80,7 @@ Record the verdict with `finding_verdict` (load it with ToolSearch if your tool 
 on a fix instead, rerun the repro on the fix commit, or for a finding with no repro (a comment, the
 docs, the PR text) read the fixed text there, and close it with `finding_fixed` (load it with ToolSearch if your tool list does not hold it yet): the id, `commit` the fix commit you ruled on,
 `closedBy` `verifier` or `repro`, the evidence, and for a finding with a file `sweep`, a `git grep -E` pattern for the form of the defect (it must hit on the fix's parent and on no line the change adds).
+A test gap closes with `closedBy` `mutant`, the output of `lpk mutate --patch <mutant diff> --test "<command>"` on the fix showing the mutant caught as the evidence, and no `sweep`. A test gap with no mutant diff (one the code review raised) takes one you write, removing or inverting the behaviour the gap says no test covers, run with the fix checked out; `closedBy` `verifier` does not close a test gap.
 
 Do not consult the advisor: the lead checks your answer.
 
