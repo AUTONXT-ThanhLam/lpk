@@ -8,12 +8,11 @@ import { countedRound } from '../briefcheck.mjs';
 import { BORN, blocksUnsettled, needsOwner, stateOf } from '../findings.mjs';
 import { failing, gates, gatesText } from '../gates.mjs';
 import { git } from '../git.mjs';
-import { sessionId } from '../host.mjs';
 import { REACH } from '../reach.mjs';
 import { evidence, ledgerFor } from '../owed.mjs';
 import { capped, parseArgs, repoOf } from '../out.mjs';
 import { judgedStatus, named, proofsOf, proverResults, trace } from '../proof.mjs';
-import { listPlans, waitingOf } from '../plan.mjs';
+import { runWaiting } from '../plan.mjs';
 import { readDecisions, readRecords, waiversIn } from '../records.mjs';
 import { promptsOf, readRun } from '../run.mjs';
 import { runRow } from '../runs.mjs';
@@ -36,13 +35,6 @@ function ownerWords(repo, run) {
   if (!rows.length) return 'Owner words during the run: none recorded';
   return [`Owner words during the run (${rows.length}), each to be set beside the requirement and proof that delivered it, or marked not delivered:`,
     ...rows.map((w, i) => `${i + 1}. ${(w.length > CLIP ? `${w.slice(0, CLIP)} [+${w.length - CLIP} chars in ${file}]` : w).replace(/\n/g, '\n   ')}`)].join('\n');
-}
-
-function planWaiting() {
-  const session = sessionId();
-  if (!session) return [];
-  const { plans, broken } = listPlans(session);
-  return [...plans.filter((p) => p.session === session && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`), ...broken.map((file) => `plan not read: ${file}`)];
 }
 
 function roundBeforeRun(repo, run, rows) {
@@ -127,7 +119,7 @@ export async function main(argv) {
     facts.push(t.rows.length ? [`Requirements (${t.from}):`, '| R | Requirement | Source | Surfaces | Proof |', '|---|---|---|---|---|',
       ...t.rows.map((r) => `| ${r.id} | ${cell(r.text)} | ${cell(r.source)} | ${surfacesOf(r.id)} | ${cell(r.proofs.join('; ') || `UNPROVED: ${r.notes.join('; ') || 'nothing names it'}`)} |`)].join('\n') : 'Requirements: none numbered');
   } catch (e) { facts.push(`Requirements could not be traced: ${e.message}`); }
-  try { facts.push(...planWaiting()); } catch (e) { facts.push(`plan not read: ${e.message}`); }
+  try { const w = runWaiting(run); facts.push(...w.lines, ...w.broken.map((file) => `plan not read: ${file}`)); } catch (e) { facts.push(`plan not read: ${e.message}`); }
   facts.push(ownerWords(repo, run));
   facts.push(`Verify runs: ${recs.filter((r) => r.kind === 'verify' && !r.final).length}${recs.some((r) => r.final) ? ` (and ${recs.filter((r) => r.final).length} final)` : ''}; reviewed ranges: ${recs.filter((r) => r.kind === 'review-start').map((r) => r.range).join(', ') || 'none recorded'}`);
   try {

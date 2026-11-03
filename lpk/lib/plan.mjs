@@ -67,6 +67,13 @@ export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
 export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' || i.status === 'paused').map((i) => `${i.id} ${i.status} (${i.why})`);
 
+export function runWaiting(run) {
+  const sessions = [run.session, ...(run.previous || [])].filter(Boolean);
+  if (!sessions.length) return { lines: [], broken: [] };
+  const lines = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
+  return { lines, broken: [...new Set(sessions.flatMap((s) => listPlans(s).broken))] };
+}
+
 function thenNote(plan, item) {
   const after = nextOpen({ items: plan.items.slice(plan.items.indexOf(item) + 1) });
   if (after) return `then start ${after.id}: ${after.title}.`;

@@ -57,6 +57,9 @@ test('S1 lpk report and lpk run end name each waiver, each deferral with who mad
   assert.match(report, new RegExp(`^- ${f.id}\\b.*no user reads a name that long.*\\bdeferred by cli\\b`, 'm'));
   assert.match(report, /^Plan waiting.*tooltips.*P2.*which width does the owner want/m);
   assert.ok(report.includes(`plan not read: ${garbled}`));
+  const elsewhere = ok(lpk(repo, 'waiver-report-reader', 'report'));
+  assert.match(elsewhere, /^Plan waiting.*tooltips.*P2.*which width does the owner want/m);
+  assert.ok(elsewhere.includes(`plan not read: ${garbled}`));
   assert.doesNotMatch(report, /^- design review round 1:/m);
 
   const ended = ok(lpk(repo, S, 'run', 'end'));
