@@ -143,7 +143,7 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
     if (soft) return { error: belowHighError(f, soft) };
     if (f.state === 'fixed') return { error: `${f.id} is fixed in ${f.fixedCommit}` };
     if (f.state !== 'open' && f.state !== 'unsettled' && f.by === VERIFIER) return { error: `${f.id} is already ${f.state} by the verifier (${f.evidence})` };
-    const e = { ev: 'verdict', id: f.id, state: verdict, by: text(by), evidence: why };
+    const e = { ev: 'verdict', id: f.id, state: verdict, by: text(by), evidence: why, ...(area ? { area } : {}) };
     if (verdict === 'duplicate') {
       const p = findings.find((x) => x.id === text(primary));
       if (!p || p.id === f.id) return { error: 'primary: the id of the other finding this one repeats' };
@@ -151,8 +151,8 @@ export function ruleOn(repo, { id, verdict, evidence, by, basis, primary, born, 
       e.primary = p.id;
     }
     if (verdict === 'dropped') e.basis = basis;
-    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause), reach, ...(area ? { area } : {}) });
-    if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(f.area)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
+    if (verdict === 'confirmed') Object.assign(e, { born, cause: text(cause), reach });
+    if (verdict === 'dropped' && basis === 'not-reproduced' && PROTECTED.includes(within)) Object.assign(e, { state: 'unsettled', asked: 'dropped' });
     append(repo, e);
     if (verdict === 'confirmed' && reach === 'neither') append(repo, { ev: 'deferred', id: f.id, evidence: `no user meets it and it blocks no merge: ${text(cause)}`, by: text(by) });
     return { finding: readLedger(repo).findings.find((x) => x.id === f.id) };

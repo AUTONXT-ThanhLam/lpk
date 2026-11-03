@@ -33,3 +33,20 @@ test('S4 R4: an unsettled finding in a protected area denies the findings gate u
   assert.match(waived.why, /^waived by the lead/);
   assert.deepEqual(waived.waived, { by: 'lead', why: 'the cookie flag is set by the proxy in front of the app' });
 });
+
+test('S4 R4: a protected area given with an unsettled or not-reproduced verdict blocks the findings gate', () => {
+  const S = 'area-at-verdict-session';
+  const repo = repoWith('area-at-verdict', { 'src/a.mjs': 'export const a = 1;\n' });
+  ok(lpk(repo, S, 'run', 'start', '--target', 'main', '--verify', 'true'));
+  write(repo, 'src/a.mjs', 'export const a = 2;\n');
+  sh(repo, 'commit', '-qam', 'Set a to 2');
+  const at = `${sh(repo, 'merge-base', 'main', 'HEAD').trim()}..${sh(repo, 'rev-parse', 'HEAD').trim()}`;
+  for (const claim of ['the token is logged in plain text', 'the admin route skips the role check']) addFinding(repo, { from: 'lpk:bug-hunter', at, claim, repro: 'r', kind: 'defect', severity: 'important' });
+  ok(lpk(repo, S, 'finding', 'verdict', 'F1', 'unsettled', '--evidence', 'could not start the app', '--area', 'security'));
+  ok(lpk(repo, S, 'finding', 'verdict', 'F2', 'dropped', '--basis', 'not-reproduced', '--evidence', 'the repro passed', '--area', 'auth'));
+  const row = findingsRow(repo, S);
+  assert.equal(row.holds, false, row.why);
+  const [blocking] = row.why.split('; ');
+  assert.match(blocking, /F1/);
+  assert.match(blocking, /F2/);
+});
