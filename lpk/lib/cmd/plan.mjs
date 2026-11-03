@@ -142,7 +142,7 @@ export async function main(argv) {
   const a = parseArgs(argv, ['--repo', '--proof', '--source', '--why', '--timeout', '--plan']);
   if (a.error) return fail(`${a.error}\n${USAGE}`);
   const verb = a.words[0] || 'show';
-  const verbs = { show, new: create, add, prove, take, hold: (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
+  const verbs = { show, 'new': create, add, prove, take, 'hold': (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
   if (!verbs[verb]) return fail(`unknown verb ${verb}\n${USAGE}`);
   return verbs[verb](a);
 }

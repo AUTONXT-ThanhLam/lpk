@@ -65,6 +65,25 @@ const doneIds = (plan) => plan.items.filter((i) => i.status === 'done').map((i) 
 
 export const nextOpen = (plan) => plan.items.find((i) => i.status === 'todo');
 
+const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' || i.status === 'paused').map((i) => `${i.id} ${i.status} (${i.why})`);
+
+function thenNote(plan, item) {
+  const after = nextOpen({ items: plan.items.slice(plan.items.indexOf(item) + 1) });
+  if (after) return `then start ${after.id}: ${after.title}.`;
+  const waiting = waitingOf(plan);
+  return waiting.length ? `the plan then waits on the owner: ${waiting.join('; ')}.` : 'the plan is then done.';
+}
+
+export function openItemNotes(session) {
+  if (!session) return { notes: [], broken: [] };
+  const { plans, broken } = listPlans(session);
+  const notes = plans.filter((p) => p.session === session && nextOpen(p)).map((p) => {
+    const item = nextOpen(p);
+    return `Plan ${p.name}: ${item.id} ${item.title} is still open. Its proof: ${item.proof}. Once that exits 0, run \`lpk plan prove ${item.id}\`; ${thenNote(p, item)}`;
+  });
+  return { notes, broken };
+}
+
 export function render(plan) {
   const lines = [`plan ${plan.name} (repo ${plan.repo}; ${plan.session ? `held by session ${plan.session}` : 'held by no session: `lpk plan take` binds it'})`];
   for (const i of plan.items) {
@@ -94,9 +113,9 @@ function nudge(plan, item) {
 }
 
 function waitingNote(plan) {
-  const waiting = plan.items.filter((i) => i.status === 'held' || i.status === 'paused');
+  const waiting = waitingOf(plan);
   if (!waiting.length) return '';
-  const note = `lpk plan ${plan.name} waits on the owner: ${waiting.map((i) => `${i.id} ${i.status} (${i.why})`).join('; ')}`;
+  const note = `lpk plan ${plan.name} waits on the owner: ${waiting.join('; ')}`;
   const was = readNudge(plan.name);
   if (was.told === note) return '';
   writeAtomic(nudgeFile(plan.name), { ...was, told: note });
