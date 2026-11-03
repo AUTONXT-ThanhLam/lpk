@@ -137,7 +137,9 @@ no code review: the lens that raised it re-checks it. Never re-run the whole net
 
 On a finding ruled born `fix` you decide, by reading its cause, whether to patch it once or replace
 the fix (revert or redesign); never a patch on a patch on the same cause. Log the call with
-`lpk decide "<what>" --why "<why>"`. `lpk report` lists every born-fix finding for the owner.
+`lpk decide "<what>" --why "<why>"`. `lpk report` lists every born-fix finding for the owner, and prints the
+confirmed findings per reviewed range: a round that confirms no fewer than the one before it means
+replace the fix or hand the cause back to the owner, logged with `lpk decide`.
 
 A finding about the PR body alone has no code to fix: edit the body, record `git commit --allow-empty`
 naming the corrected sentence, close the finding with `finding_fixed` on that commit, and the lens that raised it re-checks the body. It never waits for a waiver.
