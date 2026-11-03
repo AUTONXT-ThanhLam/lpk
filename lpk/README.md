@@ -57,8 +57,9 @@ on port 9333; a run without one proves through the HTTP API and the CLI only.
 Each agent's file sets its `model` and `effort`: Opus for the roles where a miss costs most
 (design, architecture, bug hunting, security, verifying, proving, building, screens), with the
 verifier, spawned once per finding, at medium effort; Sonnet for the tech lead and the other
-diff-bound review lenses and staff work; Haiku for the env agent. The
-session itself is meant to run on Opus; a plugin cannot set the session's model. What an
+diff-bound review lenses and staff work; Haiku for the env agent. The session itself is meant to
+run on Sonnet at high effort with an Opus advisor that the lead consults at fixed points
+(`skills/lpk/SKILL.md`); a plugin cannot set the session's model. What an
 agent may not do is set there too, not in prose: the reviewing roles cannot edit files, and the
 architects write only their own briefs.
 
