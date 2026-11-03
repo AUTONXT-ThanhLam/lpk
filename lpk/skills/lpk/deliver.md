@@ -104,11 +104,11 @@ as `writing.md` in this skill's directory says. Numbers come only from `lpk repo
 2. Each sentence the owner asked (`lpk report` lists their words numbered) set beside the requirement
    that took it up and that requirement's proof (the `lpk report` table), or marked not delivered
    and why; then each acceptance scenario with its evidence on that commit, or NOT PROVED and why.
-3. The calls you made alone, each logged with `lpk decide` (`decisions.jsonl`), so the owner can
-   check each one:
-   - each waiver, with who made it and why (`lpk report` lists them);
-   - each deferred finding, with who deferred it;
-   - each dropped finding, with its basis;
+3. The calls made without the owner, each from where it is recorded, so the owner can check each one:
+   - each decision you logged with `lpk decide` (`decisions.jsonl`; `lpk report` lists them);
+   - each waiver, with who made it and why (waiver records; `lpk report` lists them);
+   - each deferred finding, with who deferred it (the findings ledger; `lpk report` lists them);
+   - each dropped finding, with its basis (the findings ledger; `finding_list` with state `dropped`);
    - each `shortcut:` or `contested:` line the builders returned, and what you did with it;
    - the findings `lpk report` lists for the owner to read (unsettled, or ruled by you rather than
      a verifier), each with its evidence.
