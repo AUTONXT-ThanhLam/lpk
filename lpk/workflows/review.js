@@ -25,7 +25,7 @@ export const meta = {
 // adds its child's. The ledger is the record; what this returns is a summary of it. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every lens and verifier that already finished.
 const a = args || {}
-const asText = (v) => (typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
+const asText = (v) => (v === undefined || v === null ? '' : typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
 const LPK = a.lpk || 'lpk'
 const missing = ['repo', 'base', 'commit', 'range', 'bundle', 'request', 'scenarios'].filter((k) => !a[k])
 if (!a.delta && !(a.lenses || []).length) missing.push('lenses')

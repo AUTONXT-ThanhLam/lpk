@@ -50,7 +50,7 @@ test('a brief over the word limit is refused before the critic starts', async ()
 
 test('the requirement ids no row proves reach the critic as a fact', async () => {
   assert.match((await run({ ...ARGS, coverage: 'R3\nR5' }, answers({}))).calls[0].prompt, /not a finding[\s\S]*R3, R5/);
-  for (const coverage of [undefined, []]) assert.doesNotMatch((await run({ ...ARGS, coverage }, answers({}))).calls[0].prompt, /not a finding/);
+  for (const coverage of [undefined, null, [], [''], '\n']) assert.doesNotMatch((await run({ ...ARGS, coverage }, answers({}))).calls[0].prompt, /not a finding/);
 });
 
 test('coverage and sources render given as text or a list, and an empty or missing sources is refused by name', async () => {
@@ -58,7 +58,7 @@ test('coverage and sources render given as text or a list, and an empty or missi
   const listed = (await run({ ...ARGS, sources: '/s/request.md\n/s/answers.md', coverage: rows }, answers({}))).calls[0].prompt;
   assert.ok(listed.includes('/s/request.md, /s/answers.md'));
   assert.ok(listed.includes(`${JSON.stringify(rows[0])}, R5`));
-  for (const sources of [[], '', undefined]) assert.match((await run({ ...ARGS, sources }, answers({}))).out.error, /needs sources in args/);
+  for (const sources of [[], '', '\n', [''], null, undefined]) assert.match((await run({ ...ARGS, sources }, answers({}))).out.error, /needs sources in args/);
 });
 
 test('a High resting only on inference counts as Medium, and the critic keeps its Highs and at most three other findings', async () => {

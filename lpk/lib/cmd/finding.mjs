@@ -19,7 +19,7 @@ const VALUED = ['--why', '--repo'];
 
 function deferMany(repo, argv, why) {
   const ids = argv.slice(1).filter((a, i, rest) => !VALUED.includes(a) && !VALUED.includes(rest[i - 1]));
-  if (!ids.length || ids.some((a) => a.startsWith('--')) || !why?.trim()) { console.error(USAGE); return 2; }
+  if (!ids.length || ids.some((a) => a.startsWith('--')) || !why?.trim() || why.startsWith('--')) { console.error(USAGE); return 2; }
   const unknown = ids.filter((x) => !getFinding(repo, x));
   if (unknown.length) { for (const x of unknown) console.error(`lpk: no finding ${x}`); return 1; }
   let code = 0;

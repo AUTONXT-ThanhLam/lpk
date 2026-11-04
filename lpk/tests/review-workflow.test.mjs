@@ -288,10 +288,10 @@ test('R3 the Prover is told the proof directory it is given, and its evidence ar
 });
 
 test('scenarios, failure rows, surface, main and e2e reach the lens as text, lists or rows with every field, and missing scenarios is refused', async () => {
-  const row = { id: 'S1', serves: 'R1', given: 'a page', odd: { nested: [1] } }, fm = { dep: 'redis', then: 'refuse' };
-  const { prompt } = (await run({ ...ARGS, scenarios: [row, 'S2 plain'], failureModes: [fm], surface: ['http://a', 'http://b'], main: { url: 'http://m' }, e2e: [{ path: 'e2e/a.spec' }], lenses: ['prover'] }, () => ({ results: [] }))).calls[0];
-  for (const part of [`${JSON.stringify(row)}\nS2 plain`, JSON.stringify(fm), 'http://a\nhttp://b', '{"url":"http://m"}', '{"path":"e2e/a.spec"}']) assert.ok(prompt.includes(part), part);
+  const row = { id: 'S1', serves: 'R1', given: 'a page', odd: { nested: [1] } }, fm = { dep: 'redis', then: 'refuse' }, none = () => ({ results: [] }); const { calls } = await run({ ...ARGS, scenarios: [row, 'S2 plain'], failureModes: [fm], surface: ['http://a', 'http://b'], main: { url: 'http://m' }, e2e: [{ path: 'e2e/a.spec' }], lenses: ['prover', 'ui-reviewer'] }, none); assert.ok(calls.length === 2 && calls.every((c) => c.prompt.includes('http://a\nhttp://b')));
+  for (const part of [`${JSON.stringify(row)}\nS2 plain`, JSON.stringify(fm), '{"url":"http://m"}', '{"path":"e2e/a.spec"}']) assert.ok(calls.find((c) => c.opts.agentType === 'lpk:prover').prompt.includes(part), part);
   for (const scenarios of [undefined, '']) assert.match((await run({ ...ARGS, scenarios, lenses: ['techlead'] }, () => found())).out.error, /needs scenarios in args/);
+  const bare = (await run({ ...ARGS, failureModes: [], main: null, e2e: undefined, lenses: ['prover'] }, none)).calls[0].prompt; assert.ok(bare.includes('Main instance for comparison: none\nE2E scripts: none') && !bare.includes('Failure-mode table'));
 });
 
 test('R3 a Prover with no proof directory in args is ungraded with that reason', async () => {

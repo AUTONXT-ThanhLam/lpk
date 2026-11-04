@@ -22,11 +22,11 @@ export const meta = {
 // every High and at most three other findings: a revision answers Highs only. Nothing here reads the
 // clock or chance, so resumeFromRunId replays an answer already given.
 const a = args || {}
-const asText = (v) => (typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
-const asList = (v) => (Array.isArray(v) ? v.map(asText) : (asText(v) || '').split('\n').filter((l) => l.trim()))
+const asText = (v) => (v === undefined || v === null ? '' : typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
+const asList = (v) => (Array.isArray(v) ? v.map(asText) : asText(v).split('\n')).filter((l) => l.trim())
 const BRIEF_WORDS = 5000
 const missing = ['repo', 'base', 'brief', 'round', 'words'].filter((k) => !a[k])
-if (!(a.sources || []).length) missing.push('sources')
+if (!asList(a.sources).length) missing.push('sources')
 const round = Number(a.round)
 if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s lines the previous revision changed)')
 if (round >= 2 && !Array.isArray(a.open)) missing.push('open (the previous round\'s High findings)')
