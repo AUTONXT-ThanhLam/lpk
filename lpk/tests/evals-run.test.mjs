@@ -18,7 +18,7 @@ function harness(claudeBody, argv, extraEnv = {}) {
   mkdirSync(bin);
   writeFileSync(join(bin, 'claude'), `#!/usr/bin/env bash\ntouch ${marker}\n${claudeBody}\n`);
   chmodSync(join(bin, 'claude'), 0o755);
-  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, CLAUDE_CODE_OAUTH_TOKEN: 'dummy', ...extraEnv };
+  const env = { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: 'dummy', ...extraEnv, PATH: [bin, extraEnv.PATH, process.env.PATH].filter(Boolean).join(':') };
   delete env.NODE_TEST_CONTEXT;
   const r = spawnSync(process.execPath, [script, ...argv.map((a) => (a === '@out' ? out : a))], { encoding: 'utf8', env, timeout: 120000 });
   const rows = existsSync(out) ? readFileSync(out, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
@@ -63,15 +63,8 @@ test('an unwritable --out is refused before any run starts', { skip }, () => {
   assert.equal(ran, false);
 });
 
-test('each run is given the budget still left as its own cap', { skip }, () => {
-  const body = `case " $* " in *" --max-budget-usd "*) echo '{"subtype":"success","total_cost_usd":0.5,"num_turns":1}';; *) echo '{"is_error":true,"result":"no cap"}';; esac`;
-  const { rows } = harness(body, ['--task', 'csv', '--arms', 'without', '--out', '@out']);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].error, undefined);
-});
-
 const seen = `pd=; mt=none; pr=; usd=; prev=; for a in "$@"; do case $prev in --plugin-dir) pd=$a;; --max-turns) mt=$a;; --max-budget-usd) usd=$a;; -p) pr=$a;; esac; prev=$a; done
-printf '{"plugin":"%s","lpk":"%s","turns":"%s","usd":"%s","flow":%s}\\n' "$pd" "$(command -v lpk)" "$mt" "$usd" "$([[ $pr == *'lpk run start'* ]] && echo true || echo false)" >> "$EVALS_LOG"`;
+printf '{"plugin":"%s","lpk":"%s","path":"%s","turns":"%s","usd":"%s","flow":%s}\\n' "$pd" "$(command -v lpk)" "$PATH" "$mt" "$usd" "$([[ $pr == *'lpk run start'* ]] && echo true || echo false)" >> "$EVALS_LOG"`;
 const transcript = 'mkdir -p "$CLAUDE_CONFIG_DIR/projects/p" && printf \'%s\\n\' "$EVALS_TEXT" > "$CLAUDE_CONFIG_DIR/projects/p/s.jsonl"';
 const listen = `setsid -f node -e 'require("net").createServer().listen(+process.argv[1], "127.0.0.1", () => require("fs").writeFileSync(process.argv[2], String(process.pid)))' "$EVALS_PORT" "$EVALS_PIDS/$(basename "$PWD")" "--user-data-dir=\${EVALS_UDD:-$HOME/chrome}" >/dev/null 2>&1
 for i in $(seq 50); do [ -s "$EVALS_PIDS/$(basename "$PWD")" ] && break; sleep 0.1; done`;
@@ -89,7 +82,7 @@ async function bench(fn) {
   const arm = (name) => {
     const d = join(root, name);
     mkdirSync(join(d, 'lpk', 'bin'), { recursive: true });
-    writeFileSync(join(d, 'lpk', 'bin', 'lpk'), '#!/usr/bin/env bash\necho "$0 $*" >> "$EVALS_REAP"\n');
+    writeFileSync(join(d, 'lpk', 'bin', 'lpk'), '#!/usr/bin/env bash\necho "$0 $*" >> "$EVALS_REAP"\nexit "${EVALS_REAP_EXIT:-0}"\n');
     chmodSync(join(d, 'lpk', 'bin', 'lpk'), 0o755);
     git(d, 'init', '-q');
     git(d, 'add', '-A');
@@ -109,18 +102,24 @@ async function bench(fn) {
   }
 }
 
-test('each comparison arm runs its own plugin, lpk and flow prompt, records its commit and uncommitted changes, and its outside worktree goes', { skip }, () => bench((b) => {
+test('each comparison arm runs its own plugin, lpk alone on PATH and flow prompt, records its commit and uncommitted changes, and its outside worktree goes even when lpk reap fails', { skip }, () => bench((b) => {
   writeFileSync(join(b.A, 'scratch'), '');
+  const decoy = join(b.root, 'decoy');
+  mkdirSync(decoy);
+  writeFileSync(join(decoy, 'lpk'), '');
   const wt = 'git worktree add -q --detach "/tmp/$(basename "$PWD")-main" && git worktree add -q --detach .git/inner';
-  const { r, rows } = harness(stub(wt), b.compare(), b.env);
+  const { r, rows } = harness(stub(wt), b.compare(), { ...b.env, EVALS_REAP_EXIT: '3', PATH: decoy });
   assert.equal(r.status, 0, r.stderr);
+  assert.equal(rows.length, 2);
   const seenBy = lines(b.log).map((l) => JSON.parse(l));
   assert.deepEqual(seenBy.map((s) => s.plugin).sort(), [join(b.A, 'lpk'), join(b.B, 'lpk')]);
-  for (const s of seenBy) assert.equal(s.lpk, join(s.plugin, 'bin', 'lpk'));
+  for (const s of seenBy) assert.deepEqual([s.lpk, ...s.path.split(':').filter((d) => existsSync(join(d, 'lpk')))], [join(s.plugin, 'bin', 'lpk'), join(s.plugin, 'bin')]);
+  for (const s of seenBy) assert.equal(s.path.split(':')[0], join(s.plugin, 'bin'));
   assert.ok(seenBy.every((s) => s.flow && s.turns === 'none'));
   for (const row of rows) {
     assert.equal(row.commit, git(row.arm === 'baseline' ? b.A : b.B, 'rev-parse', 'HEAD'));
     assert.equal(row.armDirty, row.arm === 'baseline' ? 1 : undefined);
+    assert.match(row.reap, /^exit 3/);
     const clone = readdirSync(row.dir).find((d) => d !== 'home');
     assert.equal(existsSync(join('/tmp', `${clone}-main`)), false);
     assert.equal(existsSync(join(row.dir, clone, '.git', 'inner')), true);
@@ -161,12 +160,18 @@ test('a comparison without --hidden or --out-dir, or with them nested in each ot
   }
 }));
 
-test('--out-dir keeps the home and the clone named after the run, with its wall seconds', { skip }, () => bench((b) => {
-  const { r, rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--out-dir', b.D, '--out', '@out'], { ...b.env, EVALS_TEXT: '{}' });
+test('--out-dir keeps the home and the clone named after the run, with its wall seconds; --tasks gives the fixture and the prompt', { skip }, () => bench((b) => {
+  const T = join(b.root, 'tasks', 'csv');
+  mkdirSync(T, { recursive: true });
+  writeFileSync(join(T, 'prompt.txt'), 'the prompt from --tasks\n');
+  writeFileSync(join(T, 'fixture.sh'), 'git init -q && touch from-tasks && git add -A && git -c user.name=t -c user.email=t@t commit -qm t\n');
+  const { r, rows } = harness(stub(transcript, 'printf %s "$pr" > prompt.seen'), ['--task', 'csv', '--arms', 'without', '--tasks', join(b.root, 'tasks'), '--out-dir', b.D, '--out', '@out'], { ...b.env, EVALS_TEXT: '{}' });
   assert.equal(r.status, 0, r.stderr);
   assert.equal(rows[0].dir, join(b.D, 'csv-without-1'));
   assert.ok(existsSync(join(rows[0].dir, 'home', '.claude', 'projects', 'p', 's.jsonl')));
-  assert.ok(readdirSync(rows[0].dir).some((d) => /^csv-without-1-[0-9a-f]+$/.test(d)));
+  const clone = join(rows[0].dir, readdirSync(rows[0].dir).find((d) => /^csv-without-1-[0-9a-f]+$/.test(d)));
+  assert.ok(existsSync(join(clone, 'from-tasks')));
+  assert.equal(readFileSync(join(clone, 'prompt.seen'), 'utf8'), 'the prompt from --tasks');
   assert.equal(typeof rows[0].seconds, 'number');
 }));
 
@@ -185,7 +190,7 @@ test('a transcript naming the given hidden dir or a file only it holds voids the
 
 test('--max-turns reaches claude only when given, and --max-run-usd caps one run, and --run-timeout ends a run with an error row', { skip }, () => bench((b) => {
   harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-turns', '7', '--out', '@out'], b.env);
-  assert.equal(JSON.parse(lines(b.log)[0]).turns, '7');
+  assert.deepEqual([JSON.parse(lines(b.log)[0]).turns, JSON.parse(lines(b.log)[0]).usd], ['7', '10.0000']);
   harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-run-usd', '0.25', '--out', '@out'], b.env);
   assert.equal(JSON.parse(lines(b.log)[1]).usd, '0.2500');
   const t0 = Date.now();
@@ -216,12 +221,12 @@ test('pair order is drawn at random and recorded; a broken pair is never re-pair
 const hold = (b, host, args = [], env = {}) => new Promise((up) => {
   const c = spawn(process.execPath, ['-e', `require('net').createServer().listen(${b.port}, '${host}', () => console.log('up')).on('error', () => console.log('no'))`, '--', ...args], { detached: true, env: { ...process.env, ...env } });
   writeFileSync(join(b.pids, String(c.pid)), String(c.pid));
-  c.stdout.once('data', (d) => { c.stdout.destroy(); c.unref(); up(String(d).startsWith('up') ? c : null); });
+  c.stdout.once('data', (d) => { c.stdout.destroy(); c.unref(); up(String(d).startsWith('up') ? c : null); }).once('close', () => up(null));
 });
 
-for (const host of ['127.0.0.1', '::1']) test(`a listener on --busy-port at ${host} stops a comparison before its first run and leaves the other arms alone`, { skip }, () => bench(async (b) => {
+for (const host of ['127.0.0.1', '::1']) test(`a listener on --busy-port at ${host} stops a comparison before its first run and leaves the other arms alone`, { skip }, (t) => bench(async (b) => {
   const holder = await hold(b, host);
-  if (!holder) return;
+  if (!holder) return assert.equal(host, '::1') ?? t.skip('the host has no IPv6');
   try {
     const stopped = harness(stub(), b.compare(), b.env);
     assert.equal(stopped.r.status, 2);
@@ -232,14 +237,17 @@ for (const host of ['127.0.0.1', '::1']) test(`a listener on --busy-port at ${ho
   } finally { holder.kill(); }
 }));
 
-test('a listener of the run that stays on the port after it is stopped voids the row', { skip }, () => bench(async (b) => {
-  const { portAfterRun } = await import('../evals-run/pair.mjs');
+test('a listener is the run\'s own by its --user-data-dir in either form, else its HOME; one that stays on the port after it is stopped voids the row', { skip }, () => bench(async (b) => {
+  const { portAfterRun, portVoid } = await import('../evals-run/pair.mjs');
   const home = join(b.root, 'home');
   mkdirSync(home);
-  const holder = await hold(b, '127.0.0.1', [`--user-data-dir=${home}/chrome`]);
-  const row = await portAfterRun(b.port, home, async () => true, 1);
-  assert.deepEqual(row, { ownChrome: true, voided: 'a listener on the port after the run' });
-  await new Promise((gone) => (holder.exitCode !== null || holder.signalCode ? gone() : holder.once('exit', gone)));
+  const cases = [[[`--user-data-dir=${home}/chrome`]], [['--user-data-dir', `${home}/chrome`]], [[], { HOME: home }], [[], { HOME: b.root }, { voided: portVoid }]];
+  for (const [args, env, want = { ownChrome: true, voided: portVoid }] of cases) {
+    const holder = await hold(b, '127.0.0.1', args, env);
+    assert.deepEqual(await portAfterRun(b.port, home, async () => true, 1), want, JSON.stringify([args, env]));
+    holder.kill('SIGKILL');
+    await new Promise((gone) => (holder.exitCode !== null || holder.signalCode ? gone() : holder.once('exit', gone)));
+  }
 }));
 
 test('a listener this run started under its own HOME is stopped and the row stands; lpk reap runs on the clone', { skip }, () => bench((b) => {

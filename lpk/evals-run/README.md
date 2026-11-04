@@ -32,10 +32,12 @@ exists). `--keep` leaves the workspaces in `/tmp` for reading the transcripts un
 Flags shared by every arm: `--tasks <dir>` holds `<task>/prompt.txt` and `<task>/fixture.sh`,
 `--hidden <dir>` holds `<task>/hidden.test.mjs` (both default to this directory);
 `--out-dir <dir>` keeps each run in `<dir>/<task>-<arm>-<n>/` (`home` and the clone, named
-`<task>-<arm>-<n>-<batch id>`) and deletes nothing; `--run-timeout <seconds>` (default 2400) and
+`<task>-<arm>-<n>-<batch id>`): the home, the clone and the transcripts stay, and only a comparison
+removes anything: the clone's worktrees outside the run directory, such as `/tmp/<clone>-main`; `--run-timeout <seconds>` (default 2400) and
 `--max-run-usd <n>` (default the budget left) cap one run; `--max-turns` reaches `claude` only when
-given. A run whose transcripts name the `--hidden` directory or a file in it gets
-`voided: "hidden test in a transcript"` and is not graded.
+given. When `--hidden` is given, it may not equal, contain or lie inside `--out-dir`, and a run
+whose transcripts name that directory, or `hidden.test.mjs` or another file only it holds for the
+task, gets `voided: "hidden test in a transcript"` and is not graded.
 
 ## Comparing two lpk versions
 
@@ -45,23 +47,27 @@ cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs \
   --task coupon --runs 3 --max-cost-usd 20 --out /tmp/proof.jsonl
 ```
 
-Each arm is a git checkout: its `lpk/bin` leads `PATH`, its `lpk` is the `--plugin-dir`, and both
-send the `flow` prompt. `--out-dir` is required, and so is `--hidden` except with `--smoke`; `--hidden` may not equal, contain
-or lie inside either arm, this checkout or `--out-dir`. Each pair runs the two arms in a random order;
-a row adds `commit`, `pair` (the run number, one above the highest already in `--out-dir`, so a
+Each arm is the top directory of a git checkout holding `lpk/bin`: its `lpk/bin` leads `PATH`, its `lpk` is the `--plugin-dir`, and both
+send the `flow` prompt; no other directory holding an `lpk` stays on its `PATH`. `--out-dir` is
+required, and so is `--hidden` except with `--smoke`; `--hidden` may not equal, contain or lie
+inside either arm or this checkout either. Each pair runs the two arms in a random order;
+a row adds `commit` (the arm's `HEAD`; `armDirty` counts its uncommitted changes, when any), `pair` (the run number, one above the highest already in `--out-dir`, so a
 stopped batch never re-pairs) and `pos` (0 or 1).
 
 The batch needs the host to itself: no other lpk session, and the owner's Chrome on `--busy-port`
 (default 9333) closed. A listener on that port before a run stops the batch. After each run the
-arm's own `lpk reap --repo <clone>` stops the apps it spawned, and the clone's worktrees outside the
+arm's own `lpk reap --repo <clone>` stops the apps it spawned (a failure is recorded in `reap`
+and the batch goes on), and the clone's worktrees outside the
 run directory (`/tmp/<clone>-main`) are removed. A listener left on the port whose
-`--user-data-dir` or `HOME` lies in the run's `home` is the run's own Chrome: it is stopped and the
-row gets `ownChrome: true`. Any other listener voids the row (`voided: "a listener on the port
+`--user-data-dir` (or, without one, its `HOME`) lies in the run's `home` is the run's own Chrome: it is stopped and the
+row gets `ownChrome: true`; if it is still on the port after being stopped, the row is voided and
+the batch stops. Any other listener voids the row (`voided: "a listener on the port
 after the run"`) and stops the batch; it is never stopped.
 
 `--smoke` runs one tiny task per arm instead of the tasks: its prompt asks for a background
 Workflow call. The row gets `smoke: "pass"` only when the transcript holds the `Workflow` call and,
-after it and before the last assistant message, its task notification with `completed`.
+after it and before the last assistant message, its task notification with `completed`, as a user
+message or as the queued command Claude Code records mid-turn.
 
 ## What it showed
 
