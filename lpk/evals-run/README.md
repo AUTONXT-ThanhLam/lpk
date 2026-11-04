@@ -39,7 +39,8 @@ given. When `--hidden` is given, it may not equal, contain or lie inside `--out-
 transcripts hold the `--hidden` path, as given or resolved, carries `hiddenSeen: true` and is still graded:
 the runner prints the fact and the reader decides. A read that never prints the path (a relative path
 after a `cd`, a glob) is not seen; the directory lies outside every clone and `HOME`, so read the kept
-transcripts before trusting a comparison.
+transcripts before trusting a comparison. The match is a plain substring, so a sibling directory
+that starts with the `--hidden` path (`<hidden>-x`) also sets the mark.
 
 ## Comparing two lpk versions
 
