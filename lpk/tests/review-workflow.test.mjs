@@ -287,6 +287,13 @@ test('R3 the Prover is told the proof directory it is given, and its evidence ar
   assert.ok(JSON.stringify(calls.map((c) => c.prompt)).includes(evidence.join('\\n')), 'the evidence lines reach the verifier');
 });
 
+test('scenarios and failure rows given as lists reach the lenses one per line, and a wrongly typed one is refused by name', async () => {
+  const { calls } = await run({ ...ARGS, lenses: ['techlead'], scenarios: [{ id: 'S1', text: 'a page has n rows', proves: ['R1'] }, { id: 'S2', cmd: 'npm test', expect: 'exit 0', entry: 'lpk cli' }], failureModes: ['FM1 an empty page is refused'] }, () => found());
+  for (const line of ['S1: a page has n rows (proves R1)', 'S2: npm test; expect exit 0; at lpk cli', 'FM1 an empty page is refused']) assert.ok(calls[0].prompt.split('\n').includes(line), line);
+  assert.match((await run({ ...ARGS, lenses: ['techlead'], scenarios: 5 }, () => found())).out.error, /args\.scenarios is a number/);
+  assert.match((await run({ ...ARGS, lenses: ['techlead'], request: ['a'] }, () => found())).out.error, /args\.request is a list/);
+});
+
 test('R3 a Prover with no proof directory in args is ungraded with that reason', async () => {
   const { out } = await run({ ...ARGS, proofDir: undefined, lenses: ['prover'] }, () => ({ results: [] }));
   assert.deepEqual(out.ungraded, ['prover: no proof directory given in args.proofDir']);

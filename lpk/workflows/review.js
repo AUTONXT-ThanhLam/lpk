@@ -24,7 +24,18 @@ export const meta = {
 // Every finding lands in the run's ledger: lpk agents add theirs with finding_add, `lpk code-review`
 // adds its child's. The ledger is the record; what this returns is a summary of it. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every lens and verifier that already finished.
-const a = args || {}
+const a = { ...(args || {}) }
+const kindOf = (x) => { const k = x === null ? 'null' : Array.isArray(x) ? 'list' : typeof x; return `${/^[aeiou]/.test(k) ? 'an' : 'a'} ${k}` }
+const rowLine = (x) => (typeof x === 'string' ? x : `${x.id ? `${x.id}: ` : ''}${[x.text, x.text && x.cmd ? `run ${x.cmd}` : x.cmd, x.expect && `expect ${x.expect}`, x.entry && `at ${x.entry}`, x.provedBy && `proved by ${[].concat(x.provedBy).join(', ')}`].filter(Boolean).join('; ')}${x.proves ? ` (proves ${[].concat(x.proves).join(', ')})` : ''}`)
+for (const key of ['scenarios', 'failureModes']) {
+  const v = a[key]
+  if (v === undefined || v === null || typeof v === 'string') continue
+  const bad = Array.isArray(v) ? v.find((x) => typeof x !== 'string' && (!x || typeof x !== 'object' || Array.isArray(x))) : v
+  if (bad !== undefined) return { error: `lpk:review: args.${key} is ${Array.isArray(v) ? `a list holding ${kindOf(bad)}` : kindOf(v)}; give a text, a list of texts or a list of rows with id and text, cmd or proves` }
+  a[key] = v.map(rowLine).join('\n')
+}
+const notText = ['repo', 'base', 'commit', 'range', 'bundle', 'proofDir', 'request', 'surface', 'main', 'testCmd', 'e2e', 'lpk'].filter((k) => a[k] !== undefined && a[k] !== null && typeof a[k] !== 'string')
+if (notText.length) return { error: `lpk:review: ${notText.map((k) => `args.${k} is ${kindOf(a[k])}`).join('; ')}; give each as a text` }
 const LPK = a.lpk || 'lpk'
 const missing = ['repo', 'base', 'commit', 'range', 'bundle', 'request', 'scenarios'].filter((k) => !a[k])
 if (!a.delta && !(a.lenses || []).length) missing.push('lenses')

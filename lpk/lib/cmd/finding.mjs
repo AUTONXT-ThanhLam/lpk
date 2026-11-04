@@ -2,11 +2,11 @@
 // closure made here is recorded as by `cli`: the CLI cannot tell which agent ran it, so a drop,
 // pre-existing, duplicate or verifier closure made here is listed for the owner to read.
 import { resolve } from 'node:path';
-import { counts, findingsText, getFinding, markFixed, readLedger, ruleOn } from '../findings.mjs';
+import { counts, findingsText, getFinding, markFixed, readLedger, ruleOn, STATES, stateOf } from '../findings.mjs';
 import { top } from '../git.mjs';
 
 const USAGE = `usage:
-  lpk finding list [--state <state>] [--repo <dir>]
+  lpk finding list [--state <state>] [--json] [--repo <dir>]
   lpk finding get <id> [--repo <dir>]
   lpk finding verdict <id> <confirmed|preexisting|dropped|duplicate|unsettled> --evidence "<why>" [--born request|design|build|fix --cause "<why it exists>" --reach user|merge|neither] [--area security|auth|data|concurrency|migration|permissions] [--basis not-reproduced|disproved] [--primary <id>] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" --sweep "<git grep -E pattern of the defect form>" [--fix "<how>"] [--repo <dir>]
@@ -29,7 +29,10 @@ export async function main(argv) {
   try {
     if (sub === 'list') {
       const { findings, file } = readLedger(repo);
-      console.log(`${findingsText(findings, { state: opt('--state') })}\n${file}`);
+      const state = opt('--state');
+      if (state !== undefined && !STATES.includes(state)) { console.error(`lpk: --state is one of ${STATES.join(', ')}\n${USAGE}`); return 2; }
+      if (argv.includes('--json')) console.log(JSON.stringify(state ? findings.filter((f) => f.state === state || stateOf(f, findings) === state) : findings, null, 1));
+      else console.log(`${findingsText(findings, { state })}\n${file}`);
       return 0;
     }
     if (sub === 'counts') { console.log(JSON.stringify(counts(readLedger(repo).findings))); return 0; }

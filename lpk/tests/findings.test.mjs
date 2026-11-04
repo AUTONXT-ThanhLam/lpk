@@ -209,4 +209,8 @@ test('lpk finding lists, rules, closes and counts from the command line, a rulin
   assert.match(lpk(dir, 'finding', 'list', '--state', 'dropped'), /F2 .*\(dropped by cli, [^)]*owner[^)]*\)/);
   assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'counts')), { open: 0, confirmed: 0, unsettled: 0, dropped: 1, preexisting: 0, fixed: 1, deferred: 0, duplicate: 0, needsOwner: 1, total: 2 });
   assert.match(JSON.parse(lpk(dir, 'finding', 'get', 'F1')).fixEvidence, /lpk repro F1 exit 0/);
+  assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'list', '--json')), JSON.parse(JSON.stringify(readLedger(dir).findings)));
+  assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'list', '--json', '--state', 'dropped')).map((f) => f.id), ['F2']);
+  assert.throws(() => lpk(dir, 'finding', 'list', '--json', '--state', 'nope'), (e) => e.status === 2 && /--state is one of/.test(e.stderr));
+  assert.throws(() => lpk(dir, 'finding', 'list', '--state', 'nope'), (e) => e.status === 2);
 });
