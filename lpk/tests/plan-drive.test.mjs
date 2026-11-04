@@ -184,15 +184,18 @@ test('R1 R6 signal: when the signal throws, the request is emptied and drive ref
   writeFileSync(request, '');
   const plan = { name: 's4', repo: tmp, session: 's-four', items: [{ id: 'P1', title: 'one', proof: 'true', source: 'x', status: 'todo' }] };
   const killed = [];
+  const said = [];
   const r = drive({
     plan,
     session: 's-four',
     env: { CC_SWAP_REQUEST: request, CC_SWAP_LAUNCHER: '100', XDG_RUNTIME_DIR: RUNTIME },
-    deps: { start: 7, parent: (pid) => ({ 7: '100' })[pid], say: () => {}, kill: (pid, sig) => { killed.push([pid, sig]); throw new Error('kill ESRCH'); } },
+    deps: { start: 7, parent: (pid) => ({ 7: '100' })[pid], say: (m) => said.push(m), kill: (pid, sig) => { killed.push([pid, sig]); throw new Error('kill ESRCH'); } },
   });
   assert.ok(r.error, 'drive refuses');
   assert.deepEqual(killed, [[7, 'SIGTERM']]);
   assert.ok(!readOr(request), 'no restart request is left for the launcher');
+  assert.deepEqual(said, [], 'no hand-over is announced');
+  assert.ok(!existsSync(join(cardDir, 'card-s4-P1.md')), 'no card is left behind');
 });
 
 test('without XDG_RUNTIME_DIR the plan-drive card lives in a directory only its user can open', SKIP, () => {

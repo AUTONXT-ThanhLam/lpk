@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { doneIds, nextOpen, waitingOf } from './plan.mjs';
@@ -83,13 +83,14 @@ export function drive({ plan, session, env = process.env, deps = {} }) {
   if (pid === undefined) return { error: `no ancestor of this process is a claude started by launcher ${env.CC_SWAP_LAUNCHER}` };
   if (readText(env.CC_SWAP_REQUEST).length) return { error: `a restart is already requested in ${env.CC_SWAP_REQUEST}: it runs when this claude exits` };
   const card = writeCard(cardDir(env), `card-${plan.name}-${item.id}.md`, cardFor(plan, item, session));
-  const done = doneSince(plan, session);
-  say(`${done.length ? `${done.join(', ')} done in this session. ` : ''}${item.id} ${item.title} opens in a fresh claude in this terminal; its card is ${card}.`);
-  say(`This session is ${session}: \`claude --resume ${session}\` reopens it.`);
   try {
     requestRestart({ request: env.CC_SWAP_REQUEST, id: '-', card, pid, kill });
   } catch (err) {
+    rmSync(card, { force: true });
     return { error: `the hand-over did not happen: signalling claude pid ${pid} failed (${err.message}), and the request is withdrawn` };
   }
+  const done = doneSince(plan, session);
+  say(`${done.length ? `${done.join(', ')} done in this session. ` : ''}${item.id} ${item.title} opens in a fresh claude in this terminal; its card is ${card}.`);
+  say(`This session is ${session}: \`claude --resume ${session}\` reopens it.`);
   return { pid, card, item };
 }
