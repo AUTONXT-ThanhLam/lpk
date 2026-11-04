@@ -56,7 +56,7 @@ while :; do
   card=$(sed -n 2p "$req")
   once=()
   [[ $id == - ]] || once=(--resume "$id")
-  once+=("The owner moved this session to another account and it restarted. Read the state card at $card first, then continue.")
+  once+=("Claude restarted. Read the state card at $card first: it says why and what to do.")
   (( n < 3 )) || exit 9
 done
 `;
@@ -101,11 +101,15 @@ test('R1 R2 R5: plan drive under the launcher ends the session and a fresh claud
 
   const text = readFileSync(card, 'utf8');
   for (const fact of ['P2', 'second "quoted" item', proof, source, 's-old', 'claude --resume s-old', 'lpk plan take s1', 'lpk plan prove P2', 'lpk:lpk']) assert.ok(text.includes(fact), `the card holds ${fact}`);
+  assert.ok(text.split('\n')[0].includes('lpk plan drive'), 'the first line says what restarted claude');
+  assert.ok(text.includes('`lpk plan`') && text.includes('transcript'), 'the card holds the fresh rule and where the facts are');
+  assert.doesNotMatch(text, /ignore/i);
   const said = readFileSync(join(fix, 'drive.out'), 'utf8');
   assert.ok(said.includes('s-old') && said.includes('claude --resume s-old'), said);
 
   const argv = readFileSync(join(fix, 'argv'), 'utf8').split('\n');
   assert.ok(argv.some((a) => a.includes(card)), 'the second claude is told to read the card');
+  assert.doesNotMatch(argv.join('\n'), /account/i);
   assert.ok(!argv.includes('-p') && !argv.includes('--print'));
 
   const done = JSON.parse(readFileSync(join(SAFE.XDG_DATA_HOME, 'lpk', 'plans', 'done', 's1.json'), 'utf8'));
@@ -158,9 +162,15 @@ test('R4 R6: plan drive refuses with exit 2 and writes nothing when it cannot ha
   if (real) assert.equal(readOr(real), realBefore, 'the real launcher request of the session running the suite is untouched');
 });
 
-test('R3: under the launcher the Stop hook asks a session that finished an item to report and drive, naming no next item', SKIP, () => {
-  const repo = seeded('s3', 's-three', [['first one', 'true'], ['second secret title', 'true']]);
+test('R2 R3: under the launcher the Stop hook asks a session that finished an item to report and drive, naming the item drive opens', SKIP, () => {
+  const repo = seeded('s3', 's-three', [['first one', 'true'], ['second one', 'true'], ['third one', 'true']]);
   must(lpk(repo, 's-three', ['plan', 'prove', 'P1']));
+  must(lpk(repo, 's-three', ['plan', 'move', 'P3', '--before', 'P2']));
+  const opened = join(tmp, 's3-opened');
+  writeFileSync(opened, '');
+  const handed = drive({ plan: planOf('s3'), session: 's-three', env: { CC_SWAP_REQUEST: opened, CC_SWAP_LAUNCHER: '100', XDG_RUNTIME_DIR: RUNTIME }, deps: { start: 7, parent: (pid) => ({ 7: '100' })[pid], say: () => {}, kill: () => {} } });
+  assert.equal(handed.item?.id, 'P3', handed.error);
+  assert.match(readFileSync(handed.card, 'utf8'), /^Item: P3$/m);
   const marker = startRun(repo, 's-three');
   const runId = JSON.parse(readFileSync(join(marker, 'run.json'), 'utf8')).id;
   const request = join(tmp, 's3-request');
@@ -170,16 +180,16 @@ test('R3: under the launcher the Stop hook asks a session that finished an item 
   assert.equal(driven.decision, 'block');
   assert.ok(driven.reason.includes('lpk plan drive'), driven.reason);
   assert.ok(driven.reason.includes(runId) && driven.reason.includes(`lpk run end --repo ${repo}`), driven.reason);
-  assert.ok(!/P2|second secret title/.test(driven.reason), driven.reason);
+  assert.ok(/\bP3\b/.test(driven.reason) && !/\bP2\b/.test(driven.reason), driven.reason);
 
   const today = stop(repo, 's-three');
-  assert.ok(today.reason.includes('P2') && !today.reason.includes('lpk plan drive'), today.reason);
+  assert.ok(today.reason.includes('P3') && !today.reason.includes('lpk plan drive'), today.reason);
 
   const plan = planOf('s3');
   delete plan.since;
   writeFileSync(planFile('s3'), JSON.stringify(plan));
   const legacy = stop(repo, 's-three', underTest(request));
-  assert.ok(legacy.reason.includes('P2') && !legacy.reason.includes('lpk plan drive'), legacy.reason);
+  assert.ok(legacy.reason.includes('P3') && !legacy.reason.includes('lpk plan drive'), legacy.reason);
   assert.equal(readFileSync(request, 'utf8'), '');
 });
 
