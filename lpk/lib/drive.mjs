@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { doneIds, nextOpen, waitingOf } from './plan.mjs';
 import { parentOf, requestRestart } from './restart.mjs';
@@ -57,11 +57,13 @@ export function cardFor(plan, item, previous) {
 
 const readText = (file) => { try { return readFileSync(file, 'utf8'); } catch { return ''; } };
 
+const cardDir = (env) => (env.XDG_RUNTIME_DIR ? join(env.XDG_RUNTIME_DIR, 'lpk-drive') : join(homedir(), '.cache', 'lpk', 'drive'));
+
 function writeCard(dir, name, text) {
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
   const card = join(dir, name);
   const tmp = `${card}.${process.pid}.tmp`;
-  writeFileSync(tmp, text);
+  writeFileSync(tmp, text, { mode: 0o600 });
   renameSync(tmp, card);
   return card;
 }
@@ -80,7 +82,7 @@ export function drive({ plan, session, env = process.env, deps = {} }) {
   const pid = claudePid(env, deps);
   if (pid === undefined) return { error: `no ancestor of this process is a claude started by launcher ${env.CC_SWAP_LAUNCHER}` };
   if (readText(env.CC_SWAP_REQUEST).length) return { error: `a restart is already requested in ${env.CC_SWAP_REQUEST}: it runs when this claude exits` };
-  const card = writeCard(join(env.XDG_RUNTIME_DIR || tmpdir(), 'lpk-drive'), `card-${plan.name}-${item.id}.md`, cardFor(plan, item, session));
+  const card = writeCard(cardDir(env), `card-${plan.name}-${item.id}.md`, cardFor(plan, item, session));
   const done = doneSince(plan, session);
   say(`${done.length ? `${done.join(', ')} done in this session. ` : ''}${item.id} ${item.title} opens in a fresh claude in this terminal; its card is ${card}.`);
   say(`This session is ${session}: \`claude --resume ${session}\` reopens it.`);

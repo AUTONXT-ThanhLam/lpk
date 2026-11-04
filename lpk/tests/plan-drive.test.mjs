@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { ENV, ROOT, repoWith, startRun, tmp } from './hooks-env.mjs';
 
@@ -193,4 +193,23 @@ test('R1 R6 signal: when the signal throws, the request is emptied and drive ref
   assert.ok(r.error, 'drive refuses');
   assert.deepEqual(killed, [[7, 'SIGTERM']]);
   assert.ok(!readOr(request), 'no restart request is left for the launcher');
+});
+
+test('without XDG_RUNTIME_DIR the plan-drive card lives in a directory only its user can open', SKIP, () => {
+  const home = join(tmp, 'home-s6');
+  const request = join(tmp, 's6-request');
+  writeFileSync(request, '');
+  const plan = { name: 's6', repo: tmp, session: 's-six', items: [{ id: 'P1', title: 'one', proof: 'true', source: 'x', status: 'todo' }] };
+  const was = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    const r = drive({ plan, session: 's-six', env: { CC_SWAP_REQUEST: request, CC_SWAP_LAUNCHER: '100' }, deps: { start: 7, parent: (pid) => ({ 7: '100' })[pid], say: () => {}, kill: () => {} } });
+    assert.ok(!r.error, r.error);
+    const dir = join(home, '.cache', 'lpk', 'drive');
+    assert.equal(dirname(r.card), dir);
+    assert.equal(statSync(dir).mode & 0o777, 0o700);
+    assert.equal(statSync(r.card).mode & 0o777, 0o600);
+  } finally {
+    process.env.HOME = was;
+  }
 });
