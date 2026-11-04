@@ -175,7 +175,8 @@ test('lpk finding defer defers every confirmed finding named, skips the rest and
   for (const id of ['F1', 'F2', 'F4']) ruleOn(dir, { id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'exit 1', by: VERIFIER });
   const defer = (...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'finding', 'defer', ...args], { cwd: dir, env: ENV, encoding: 'utf8' });
   const states = () => readLedger(dir).findings.map((f) => f.state);
-  assert.equal(defer('F1', 'F2').status, 2);
+  const bare = defer('F1', 'F2');
+  assert.deepEqual([bare.status, /lpk finding defer <id>/.test(bare.stderr)], [2, true]);
   const unknown = defer('F1', 'F9', '--why', 'waits for the next release');
   assert.deepEqual([unknown.status, /no finding F9/.test(unknown.stderr), states()], [1, true, ['confirmed', 'confirmed', 'open', 'confirmed']]);
   const mixed = defer('F1', 'F4', 'F2', 'F3', '--why', 'waits for the next release');

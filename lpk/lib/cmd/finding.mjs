@@ -1,4 +1,4 @@
-// `lpk finding list|get|verdict|fixed|defer|counts`: the run's findings ledger from a shell. A ruling or a
+// `lpk finding list|get|verdict|fixed|counts`: the run's findings ledger from a shell. A ruling or a
 // closure made here is recorded as by `cli`: the CLI cannot tell which agent ran it, so a drop,
 // pre-existing, duplicate or verifier closure made here is listed for the owner to read.
 import { resolve } from 'node:path';
