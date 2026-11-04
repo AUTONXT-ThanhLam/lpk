@@ -144,6 +144,9 @@ test('no builder starts without a run or before `lpk go`, and no session spawns 
   assert.equal(lpk(quick, 'go', 'run', 'worktree', slice, 'HEAD', '--branch', 'go-quick-slice').status, 0);
   assert.equal(spawn(slice), null, 'a builder started from the run\'s own slice worktree');
   assert.equal(spawn(tmp), null, 'a builder started from a directory outside the repo, by the session that holds the run');
+  const unbound = repoWith('go-unbound', { 'src/a.mjs': 'export const a = 1;\n' });
+  startRun(unbound, '', { lane: 'quick' });
+  assert.equal(spawn(unbound, 'lpk:builder', 'late-session'), null, 'a run started outside the session is the first builder\'s to take');
   assert.equal(lpk(full, 'go', 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered').status, 0);
   assert.equal(lpk(full, 'go', 'go').status, 0);
   assert.equal(spawn(full), null);
