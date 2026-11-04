@@ -15,7 +15,10 @@ export function hasTranscript(sessionId, configDir = process.env.CLAUDE_CONFIG_D
   return existsSync(projects) && readdirSync(projects).some((d) => existsSync(join(projects, d, `${sessionId}.jsonl`)));
 }
 
+const pending = (request) => { try { return readFileSync(request, 'utf8').length > 0; } catch { return false; } };
+
 export function requestRestart({ request, id, card, pid, kill = process.kill.bind(process) }) {
+  if (pending(request)) throw Object.assign(new Error(`a restart is already requested in ${request}: it runs when that claude exits`), { pending: true });
   writeFileSync(request, `${id}\n${card}\n`);
   try {
     kill(pid, 'SIGTERM');

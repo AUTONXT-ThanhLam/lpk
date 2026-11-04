@@ -87,7 +87,7 @@ export function drive({ plan, session, env = process.env, deps = {} }) {
     requestRestart({ request: env.CC_SWAP_REQUEST, id: '-', card, pid, kill });
   } catch (err) {
     rmSync(card, { force: true });
-    return { error: `the hand-over did not happen: signalling claude pid ${pid} failed (${err.message}), and the request is withdrawn` };
+    return { error: err.pending ? `the hand-over did not happen: ${err.message}` : `the hand-over did not happen: signalling claude pid ${pid} failed (${err.message}), and the request is withdrawn` };
   }
   const done = doneSince(plan, session);
   say(`${done.length ? `${done.join(', ')} done in this session. ` : ''}${item.id} ${item.title} opens in a fresh claude in this terminal; its card is ${card}.`);

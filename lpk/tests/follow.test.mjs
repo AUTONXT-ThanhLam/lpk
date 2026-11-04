@@ -156,3 +156,19 @@ test('a session whose transcript lives in its own config dir is resumed, and one
   assert.match(said.join('\n'), /not moved: pid 11 in \/w\/one, kill ESRCH/);
   assert.match(said.join('\n'), /restarting pid 12/);
 });
+
+test('a session whose launcher already holds a restart request is not signalled and its request is kept', () => {
+  const dir = join(tmp, 'pending');
+  mkdirSync(dir, { recursive: true });
+  const req = join(dir, 'req-11');
+  writeFileSync(req, 's-plan\n/a/plan/card.md\n');
+  const list = [{ kind: 'interactive', pid: 11, cwd: '/w/one', sessionId: 's-one' }];
+  const envs = { 11: { LPK_ACCOUNT: 'cc1', CC_SWAP_REQUEST: req, CC_SWAP_LAUNCHER: '100' } };
+  const said = [];
+  const killed = [];
+  const failed = moveInteractive(list, { account: 'cc2', say: (m) => said.push(m), environ: (pid) => envs[pid], parent: () => '100', kill: (pid, sig) => killed.push([pid, sig]) });
+  assert.deepEqual(killed, []);
+  assert.equal(readFileSync(req, 'utf8'), 's-plan\n/a/plan/card.md\n');
+  assert.equal(failed, 1);
+  assert.match(said.join('\n'), /not moved: pid 11/);
+});
