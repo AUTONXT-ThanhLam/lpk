@@ -1,7 +1,7 @@
 import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { driveReason } from './drive.mjs';
+import { claudePid, driveReason } from './drive.mjs';
 import { within } from './git.mjs';
 import { sessionPid } from './sessions.mjs';
 
@@ -74,18 +74,20 @@ export function planLines(run) {
   return [...waiting, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
 }
 
-function thenNote(plan, item) {
+function thenNote(plan, item, handOver) {
   const after = nextOpen({ items: plan.items.slice(plan.items.indexOf(item) + 1) });
+  if (after && handOver) return 'then write the report in your reply and run `lpk plan drive`: a fresh session takes the next item.';
   if (after) return `then start ${after.id}: ${after.title}.`;
   const waiting = waitingOf(plan);
   return waiting.length ? `the plan then waits on the owner for ${waiting.length} held or paused item${waiting.length === 1 ? '' : 's'}.` : 'the plan is then done.';
 }
 
-export function openItemNotes(session) {
+export function openItemNotes(session, env = process.env, deps = {}) {
   if (!session) return [];
+  const launched = claudePid(env, deps) !== undefined;
   return listPlans(session).plans.filter((p) => p.session === session && nextOpen(p)).map((p) => {
     const item = nextOpen(p);
-    return `Plan ${p.name}: ${item.id} ${item.title} is still open. Its proof: ${item.proof}. Once that exits 0, run \`lpk plan prove ${item.id}\`; ${thenNote(p, item)}`;
+    return `Plan ${p.name}: ${item.id} ${item.title} is still open. Its proof: ${item.proof}. Once that exits 0, run \`lpk plan prove ${item.id}\`; ${thenNote(p, item, launched && p.since?.session === session)}`;
   });
 }
 

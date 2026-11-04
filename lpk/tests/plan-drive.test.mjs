@@ -216,3 +216,16 @@ test('without XDG_RUNTIME_DIR the plan-drive card lives in a directory only its 
     process.env.HOME = was;
   }
 });
+
+test('under the launcher run end names the hand-over, not the next item; elsewhere it names the next item', SKIP, () => {
+  const repo = seeded('s7', 's-seven', [['first one', 'true'], ['second secret title', 'true']]);
+  const request = join(tmp, 's7-request');
+  writeFileSync(request, '');
+  startRun(repo, 's-seven');
+  const driven = must(lpk(repo, 's-seven', ['run', 'end'], underTest(request))).stdout;
+  assert.ok(driven.includes('lpk plan prove P1') && driven.includes('lpk plan drive'), driven);
+  assert.ok(!/P2|second secret title/.test(driven), driven);
+  startRun(repo, 's-seven');
+  const today = must(lpk(repo, 's-seven', ['run', 'end'])).stdout;
+  assert.ok(today.includes('P2') && !today.includes('lpk plan drive'), today);
+});
