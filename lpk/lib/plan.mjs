@@ -33,11 +33,11 @@ export function readPlan(file) {
   return valid(plan) ? { plan } : { garbled: file, text };
 }
 
-export function listPlans(session) {
-  const names = readdirOr(plansDir()).filter((n) => n.endsWith('.json')).sort();
+export function listPlans(session, dir = plansDir()) {
+  const names = readdirOr(dir).filter((n) => n.endsWith('.json')).sort();
   const plans = [], broken = [];
   for (const n of names) {
-    const file = join(plansDir(), n);
+    const file = join(dir, n);
     const r = readPlan(file);
     if (r.plan) plans.push(r.plan);
     else if (session && r.text.includes(session)) broken.push(file);
@@ -70,8 +70,11 @@ export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' 
 
 export function planLines(run) {
   const sessions = [run.session, ...(run.previous || [])].filter(Boolean);
-  const waiting = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
-  return [...waiting, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
+  const held = (dir) => listPlans('', dir).plans.filter((p) => sessions.includes(p.session));
+  const live = held(plansDir());
+  const waiting = live.filter((p) => waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
+  const removed = [...new Set([...live, ...held(join(plansDir(), 'done'))].flatMap((p) => (p.removed ?? []).map((r) => `Plan removed (${p.name}): ${r.id} ${r.title} (${r.why})`)))];
+  return [...waiting, ...removed, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
 }
 
 function thenNote(plan, item, handOver) {
@@ -97,6 +100,7 @@ export function render(plan) {
     lines.push(`  ${i.id} [${i.status}] ${i.title}${i.why ? ` (${i.why})` : ''}`, `      proof: ${i.proof}`, `      source: ${i.source || '-'} (added ${i.added || '-'})`);
     if (i.proved) lines.push(`      last proof: exit ${i.proved.exit} at ${i.proved.at}`);
   }
+  for (const r of plan.removed ?? []) lines.push(`  ${r.id} [removed] ${r.title} (${r.why})`);
   const n = nextOpen(plan);
   lines.push(n ? `next: ${n.id} ${n.title}, done when \`${n.proof}\` exits 0` : 'next: no open item');
   return lines.join('\n');
@@ -110,11 +114,11 @@ function readNudge(name) {
 const reasonFor = (plan, item) => `lpk plan ${plan.name}: ${item.id} is open: ${item.title}. It is done when \`${item.proof}\` exits 0; run \`lpk plan prove ${item.id}\` then. Work on it now. A finding, a side fix or another repo is not on the plan: a finding outside this item goes in its PR body as a known limit. If it needs the owner, run \`lpk plan hold ${item.id} --why "<question>"\`, ask, and go on to the next item. If you are waiting on something that will wake you, say so and stop. A proof that runs longer than a few minutes goes through Bash with run_in_background.`;
 
 function nudge(plan, item, drive = null) {
-  const done = doneIds(plan);
+  const done = doneIds(plan).split(',').sort().join(',');
   const was = readNudge(plan.name);
-  const seen = was.done === done && was.session === plan.session ? Number(was.count) || 0 : 0;
+  const seen = was.done === done && was.session === plan.session && was.next === item.id ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;
-  writeAtomic(nudgeFile(plan.name), { done, session: plan.session, count: seen + 1 });
+  writeAtomic(nudgeFile(plan.name), { done, session: plan.session, next: item.id, count: seen + 1 });
   const last = seen + 1 === NUDGES ? ` This is the last nudge: no item done in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${drive ? 'the hand-over' : item.id}, then stop.` : '';
   return { decision: 'block', reason: (drive ?? reasonFor(plan, item)) + last };
 }
