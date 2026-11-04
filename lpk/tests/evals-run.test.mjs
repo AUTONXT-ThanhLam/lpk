@@ -167,12 +167,17 @@ test('--out-dir keeps the home and the clone named after the run, with its wall 
   assert.equal(typeof rows[0].seconds, 'number');
 }));
 
-test('a transcript naming the hidden dir or a hidden file voids the run; a longer sibling path does not', { skip }, () => bench((b) => {
-  for (const [text, voided] of [[`read ${b.H}/csv`, true], ['cat hidden.test.mjs', true], [`ls ${b.H}-x/csv`, false]]) {
-    const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
+test('a transcript naming the given hidden dir or a file only it holds voids the run; a sibling path or a task file does not', { skip }, () => bench((b) => {
+  writeFileSync(join(b.H, 'csv', 'fixture.sh'), '');
+  const cases = [[`read ${b.H}/csv`, true], ['cat hidden.test.mjs', true], [`cd "${b.H}" && cat */*`, true], [`ls ${b.H}`, true], [`ls ${b.H}-x/csv`, false], [`ls ${b.H}2`, false], ['cat fixture.sh', false]];
+  for (const [text, voided, hidden = ['--hidden', b.H]] of [...cases, ['cat fixture.sh hidden.test.mjs', false, []]]) {
+    const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', ...hidden, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
     assert.equal(Boolean(rows[0].voided), voided, text);
     assert.equal(rows[0].hiddenPass === undefined, voided, text);
   }
+  const nested = harness(stub(), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out-dir', join(b.H, 'runs'), '--out', '@out'], b.env);
+  assert.equal(nested.r.status, 2);
+  assert.equal(nested.ran, false);
 }));
 
 test('--max-turns reaches claude only when given, and --max-run-usd caps one run, and --run-timeout ends a run with an error row', { skip }, () => bench((b) => {

@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { join } from 'node:path';
 
 export const smokePrompt = 'Call the Workflow tool once, with a script that starts one agent asked to reply with the single word done. The workflow runs in the background: wait for its task notification, then reply with the result it reports.';
 
@@ -12,9 +12,13 @@ function jsonl(dir, deep) {
 
 const sessions = (projects) => readdirSync(projects, { withFileTypes: true }).filter((d) => d.isDirectory()).flatMap((d) => jsonl(join(projects, d.name), false));
 
+function namesDir(text, dir) {
+  for (let i = text.indexOf(dir); i >= 0; i = text.indexOf(dir, i + 1)) if (!/[A-Za-z0-9_.-]/.test(text[i + dir.length] ?? '')) return true;
+  return false;
+}
+
 export function mentionsHidden(projects, hiddenReal, names) {
-  const marks = [`${hiddenReal}${sep}`, ...names];
-  return jsonl(projects, true).some((f) => { const text = readFileSync(f, 'utf8'); return marks.some((m) => text.includes(m)); });
+  return jsonl(projects, true).some((f) => { const text = readFileSync(f, 'utf8'); return namesDir(text, hiddenReal) || names.some((m) => text.includes(m)); });
 }
 
 const text = (content) => (typeof content === 'string' ? content : Array.isArray(content) ? content.map((c) => (c.type === 'text' ? c.text : '')).join('\n') : '');

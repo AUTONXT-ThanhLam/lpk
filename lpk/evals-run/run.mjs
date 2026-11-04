@@ -37,6 +37,7 @@ const tasksDir = resolve(flag('--tasks', here));
 const hiddenDir = resolve(flag('--hidden', here));
 const armDirs = Object.fromEntries(['baseline', 'candidate'].filter((a) => args.includes(`--${a}`)).map((a) => [a, resolve(flag(`--${a}`))]));
 const compare = Object.keys(armDirs).length > 0;
+const hiddenGiven = args.includes('--hidden');
 if (compare && args.includes('--arms')) usage('--arms cannot be combined with --baseline or --candidate');
 const arms = compare ? Object.keys(armDirs) : flag('--arms', 'with,without').split(',');
 
@@ -55,13 +56,14 @@ for (const [arm, dir] of Object.entries(armDirs)) {
   commits[arm] = head.stdout.trim();
 }
 if (compare && !outDir) usage('--baseline and --candidate need --out-dir, where every run is kept');
-if (compare && !smoke && !args.includes('--hidden')) usage('--baseline and --candidate need --hidden, a directory the agent never sees');
+if (compare && !smoke && !hiddenGiven) usage('--baseline and --candidate need --hidden, a directory the agent never sees');
 if (outDir) { try { mkdirSync(outDir, { recursive: true }); } catch (e) { usage(`--out-dir cannot be created: ${e.message}`); } }
 const real = (p, name) => { try { return realpathSync(p); } catch (e) { return usage(`${name} ${p}: ${e.message}`); } };
 const nested = (a, b) => a === b || a.startsWith(b + sep) || b.startsWith(a + sep);
-if (compare && args.includes('--hidden')) {
+if (hiddenGiven) {
   const hidden = real(hiddenDir, '--hidden');
-  const others = [...Object.entries(armDirs).map(([a, d]) => [`--${a}`, d]), ['the runner tree', runnerTree], ['--out-dir', outDir]];
+  const near = compare ? [...Object.entries(armDirs).map(([a, d]) => [`--${a}`, d]), ['the runner tree', runnerTree]] : [];
+  const others = outDir ? [...near, ['--out-dir', outDir]] : near;
   for (const [name, dir] of others) if (nested(hidden, real(dir, name))) usage(`--hidden ${hiddenDir} overlaps ${name} ${dir}`);
 }
 
@@ -71,7 +73,7 @@ if (!tasks.length) usage(`no task${only ? ` named ${only}` : ''} holding ${neede
 const lacking = smoke ? undefined : tasks.find((t) => !existsSync(join(hiddenDir, t, 'hidden.test.mjs')));
 if (lacking) usage(`--hidden ${hiddenDir} holds no ${lacking}/hidden.test.mjs`);
 const hiddenReal = smoke ? '' : realpathSync(hiddenDir);
-const hiddenNames = smoke ? [] : [...new Set(tasks.flatMap((t) => readdirSync(join(hiddenDir, t))))];
+const hiddenNames = smoke ? [] : [...new Set(tasks.flatMap((t) => readdirSync(join(hiddenDir, t)).filter((f) => f === 'hidden.test.mjs' || !existsSync(join(tasksDir, t, f)))))];
 if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) usage('CLAUDE_CODE_OAUTH_TOKEN is not set');
 try { writeFileSync(out, '', { flag: 'a' }); } catch (e) { usage(`--out is not writable: ${e.message}`); }
 
@@ -192,7 +194,7 @@ async function attempt(root, cloneName, task, arm, n) {
   const row = { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || null, ...after };
   const projects = join(home, '.claude', 'projects');
   if (smoke) return { ...row, smoke: smokeVerdict(projects) };
-  if (!row.voided && mentionsHidden(projects, hiddenReal, hiddenNames)) row.voided = 'hidden test in a transcript';
+  if (hiddenGiven && !row.voided && mentionsHidden(projects, hiddenReal, hiddenNames)) row.voided = 'hidden test in a transcript';
   return row.voided ? row : { ...row, ...grade(dir, task, sha, plain) };
 }
 
