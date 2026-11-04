@@ -1,7 +1,7 @@
 // The findings ledger a run keeps: what a reviewer records, what a verifier rules, what a fix
 // closes with its evidence, and which rulings the owner reads.
 import assert from 'node:assert/strict';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
@@ -167,6 +167,23 @@ test('a confirmed finding that reaches neither a user nor the merge is deferred 
 test('the review workflow gives every agent lens the same scope as the reach module states', () => {
   const script = readFileSync(join(ROOT, 'workflows', 'review.js'), 'utf8');
   assert.ok(script.includes(`const SCOPE = '${SCOPE}'`));
+});
+
+test('lpk finding defer defers every confirmed finding named, skips the rest and refuses an unknown id', () => {
+  const { dir, head } = repoWithRun('defer-many');
+  for (const area of [undefined, undefined, undefined, 'auth']) raise(dir, head, area ? { area } : {});
+  for (const id of ['F1', 'F2', 'F4']) ruleOn(dir, { id, verdict: 'confirmed', reach: 'user', born: 'build', cause: 'the guard reads the wrong flag', evidence: 'exit 1', by: VERIFIER });
+  const defer = (...args) => spawnSync('node', [join(ROOT, 'bin', 'lpk'), 'finding', 'defer', ...args], { cwd: dir, env: ENV, encoding: 'utf8' });
+  const states = () => readLedger(dir).findings.map((f) => f.state);
+  assert.equal(defer('F1', 'F2').status, 2);
+  const unknown = defer('F1', 'F9', '--why', 'waits for the next release');
+  assert.deepEqual([unknown.status, /no finding F9/.test(unknown.stderr), states()], [1, true, ['confirmed', 'confirmed', 'open', 'confirmed']]);
+  const mixed = defer('F1', 'F4', 'F2', 'F3', '--why', 'waits for the next release');
+  assert.deepEqual([mixed.status, states()], [1, ['deferred', 'deferred', 'open', 'confirmed']]);
+  assert.match(mixed.stdout, /F1 deferred: waits for the next release\nF2 deferred: waits for the next release\nF3 skipped: open/);
+  assert.match(mixed.stderr, /F4 is in the auth area/);
+  const again = defer('F1', 'F2', '--why', 'waits for the next release');
+  assert.deepEqual([again.status, again.stdout], [0, 'F1 skipped: deferred\nF2 skipped: deferred\n']);
 });
 
 test('a new run archives the old ledger under its run id and never deletes one', () => {
