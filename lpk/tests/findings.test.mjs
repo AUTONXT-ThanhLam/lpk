@@ -211,6 +211,9 @@ test('lpk finding lists, rules, closes and counts from the command line, a rulin
   assert.match(JSON.parse(lpk(dir, 'finding', 'get', 'F1')).fixEvidence, /lpk repro F1 exit 0/);
   assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'list', '--json')), JSON.parse(JSON.stringify(readLedger(dir).findings)));
   assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'list', '--json', '--state', 'dropped')).map((f) => f.id), ['F2']);
+  raise(dir, head, { file: 'a.ts', line: 3 });
+  lpk(dir, 'finding', 'verdict', 'F3', 'duplicate', '--primary', 'F1', '--evidence', 'same guard');
+  assert.deepEqual(JSON.parse(lpk(dir, 'finding', 'list', '--json', '--state', 'fixed')).map((f) => f.id), ['F1', 'F3']);
   assert.throws(() => lpk(dir, 'finding', 'list', '--json', '--state', 'nope'), (e) => e.status === 2 && /--state is one of/.test(e.stderr));
   assert.throws(() => lpk(dir, 'finding', 'list', '--state', 'nope'), (e) => e.status === 2);
 });

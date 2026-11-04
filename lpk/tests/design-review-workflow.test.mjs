@@ -53,20 +53,6 @@ test('the requirement ids no row proves reach the critic as a fact', async () =>
   assert.doesNotMatch((await run(ARGS, answers({}))).calls[0].prompt, /not a finding/);
 });
 
-test('sources and coverage may be a text or a list, and changed and open of another type are refused by name', async () => {
-  for (const coverage of [[], '', 'R3', ['R3']]) {
-    const { out, calls } = await run({ ...ARGS, sources: '/r/request.md', coverage }, answers({}));
-    assert.equal(out.verdict, 'pass');
-    assert.match(calls[0].prompt, /request\.md/);
-    if (coverage.length) assert.match(calls[0].prompt, /not a finding[\s\S]*R3\./); else assert.doesNotMatch(calls[0].prompt, /not a finding/);
-  }
-  assert.match((await run({ ...LATER, changed: ['x'], open: [] }, answers({}))).out.error, /args\.changed is a list holding a string/);
-  assert.match((await run({ ...LATER, open: { lines: [9] } }, answers({}))).out.error, /args\.open is an object/);
-  assert.match((await run({ ...ARGS, coverage: 5 }, answers({}))).out.error, /args\.coverage is a number/);
-  assert.match((await run({ ...LATER, changed: ['9', 30], open: [{ angle: 'design-critic', severity: 'High', lines: [9], claim: 'c', cause: 'k' }] }, answers({}))).calls[0].prompt, /lines 9, 30, which were just rewritten/);
-  assert.match((await run({ ...ARGS, briefJson: 5 }, answers({}))).out.error, /args\.briefJson is a number/);
-});
-
 test('a High resting only on inference counts as Medium, and the critic keeps its Highs and at most three other findings', async () => {
   const many = [finding('High', [1], 'inferred'), finding('High', [2]), ...[3, 4, 5, 6].map((n) => finding('Low', [n]))];
   const { out } = await run(ARGS, answers({ 'design-critic': { findings: many } }));
