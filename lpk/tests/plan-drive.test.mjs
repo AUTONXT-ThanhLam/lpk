@@ -245,3 +245,14 @@ test('under the launcher run end names the hand-over, not the next item; elsewhe
   const today = must(lpk(repo, 's-seven', ['run', 'end'])).stdout;
   assert.ok(today.includes('P2') && !today.includes('lpk plan drive'), today);
 });
+
+test('a plan whose since belongs to another session keeps the next-item note at run end under the launcher', SKIP, () => {
+  const repo = seeded('s8', 's-eight', [['first one', 'true'], ['second secret title', 'true']]);
+  const file = join(SAFE.XDG_DATA_HOME, 'lpk', 'plans', 's8.json');
+  writeFileSync(file, JSON.stringify({ ...planOf('s8'), since: { session: 's-other', done: '' } }));
+  const request = join(tmp, 's8-request');
+  writeFileSync(request, '');
+  startRun(repo, 's-eight');
+  const out = must(lpk(repo, 's-eight', ['run', 'end'], underTest(request))).stdout;
+  assert.ok(out.includes('P2') && !out.includes('lpk plan drive'), out);
+});
