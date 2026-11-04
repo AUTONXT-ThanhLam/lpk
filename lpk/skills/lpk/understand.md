@@ -44,8 +44,9 @@ nothing waits for an install, a database or a login later.
    `lpk plan add "<title>" --proof "<command that exits 0 once it is delivered>" --source "<the owner's words>"`
    per delivery, in delivery order. Each item is its own run. After each delivery run
    `lpk plan prove <id>` and start the next item at once; a report is not a stopping point while an
-   item is open. A question only the owner can answer goes through `lpk plan hold <id> --why "<the
-   question>"`, and you move to the next item.
+   item is open. Under the cc-switch launcher the next item opens in a fresh session instead: end
+   the delivery, write the report, then run `lpk plan drive`. A question only the owner can answer
+   goes through `lpk plan hold <id> --why "<the question>"`, and you move to the next item.
 
 Once the owner says go, or is away, decide and log each decision. The build starts after the
 design review ends and `lpk go` (`design.md` in this skill's directory says when).
