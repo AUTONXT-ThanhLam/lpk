@@ -1,11 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, mkdirSync, copyFileSync, readFileSync, readdirSync, existsSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
-import { connect } from 'node:net';
 import { tmpdir } from 'node:os';
-import { basename, join, resolve, dirname, sep } from 'node:path';
+import { join, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { nextRun, pairOrder } from './pair.mjs';
+import { listening, nextRun, pairOrder, portAfterRun, portVoid, settled } from './pair.mjs';
 import { mentionsHidden, smokeFixture, smokePrompt, smokeVerdict } from './smoke.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -110,48 +109,6 @@ const pluginOf = (arm) => (armDirs[arm] ? join(armDirs[arm], 'lpk') : plugin);
 const flowPrompt = (text) => `/lpk:lpk ${text} Run \`lpk run start\` before the first edit and follow every step of the lpk skill, including the reviews it owes.`;
 const promptFor = (arm, text) => (smoke ? smokePrompt : arm === 'with' ? `/lpk:lpk ${text}` : arm === 'without' ? text : flowPrompt(text));
 
-const listening = (port) => new Promise((done) => {
-  const s = connect({ host: '127.0.0.1', port });
-  const end = (yes) => { s.destroy(); done(yes); };
-  s.once('connect', () => end(true));
-  s.once('error', () => end(false));
-  s.setTimeout(2000, () => end(false));
-});
-const pause = (ms) => new Promise((t) => setTimeout(t, ms));
-const readProc = (pid, file) => { try { return readFileSync(`/proc/${pid}/${file}`, 'utf8'); } catch { return ''; } };
-const groupOf = (pid) => Number(readProc(pid, 'stat').split(')').pop().trim().split(' ')[2]);
-const ownGroup = groupOf(process.pid);
-
-function ownerDir(pid) {
-  const argv = readProc(pid, 'cmdline').split('\0');
-  const i = argv.findIndex((a) => a === '--user-data-dir' || a.startsWith('--user-data-dir='));
-  if (i >= 0) return argv[i].includes('=') ? argv[i].slice(argv[i].indexOf('=') + 1) : argv[i + 1];
-  const home = readProc(pid, 'environ').split('\0').find((e) => e.startsWith('HOME='));
-  return home ? home.slice(5) : '';
-}
-
-function settled(p) {
-  const abs = resolve(p);
-  const up = dirname(abs);
-  try { return realpathSync(abs); } catch { return up === abs ? abs : join(settled(up), basename(abs)); }
-}
-
-function ownListeners(port, home) {
-  const pids = [...(sh('ss', ['-ltnpH', `sport = :${port}`]).stdout || '').matchAll(/pid=(\d+)/g)].map((m) => Number(m[1]));
-  const homeReal = realpathSync(home);
-  const inside = (p) => { const r = settled(p); return r === homeReal || r.startsWith(homeReal + sep); };
-  return pids.length && pids.every((pid) => ownerDir(pid) && inside(ownerDir(pid))) ? [...new Set(pids)] : null;
-}
-
-async function stopListeners(pids, port) {
-  const targets = pids.map((pid) => { const g = groupOf(pid); return g > 1 && g !== ownGroup ? -g : pid; });
-  for (const signal of ['SIGTERM', 'SIGKILL']) {
-    for (const t of targets) { try { process.kill(t, signal); } catch {} }
-    for (let i = 0; i < 50 && await listening(port); i++) await pause(100);
-    if (!await listening(port)) return;
-  }
-}
-
 function extraWorktrees(clone, root, env) {
   const rootReal = realpathSync(root);
   const listed = (sh('git', ['worktree', 'list', '--porcelain'], { cwd: clone, env }).stdout || '').split('\n').filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9)).slice(1);
@@ -162,10 +119,7 @@ async function settle(arm, clone, home, root, env) {
   const row = {};
   const reaped = sh(join(pluginOf(arm), 'bin', 'lpk'), ['reap', '--repo', clone], { cwd: clone, env });
   if (failed(reaped)) row.reap = `exit ${reaped.status}: ${(reaped.stderr || '').slice(0, 300)}`;
-  if (await listening(busyPort)) {
-    const own = ownListeners(busyPort, home);
-    if (own) { await stopListeners(own, busyPort); row.ownChrome = true; } else row.voided = 'a listener on the port after the run';
-  }
+  Object.assign(row, await portAfterRun(busyPort, home));
   for (const wt of extraWorktrees(clone, root, env)) sh('git', ['worktree', 'remove', '--force', wt], { cwd: clone, env });
   return row;
 }
@@ -236,7 +190,7 @@ for (const task of tasks) {
       record(row);
       spent += row.costUsd ?? 0;
       if (row.error) stop(row.error);
-      if (row.voided === 'a listener on the port after the run') stop(`a listener on port ${busyPort} after the run in ${row.dir}, not started under its HOME; nothing was stopped`);
+      if (row.voided === portVoid) stop(row.ownChrome ? `a listener on port ${busyPort} after the run in ${row.dir} is still on the port after the attempt to stop it` : `a listener on port ${busyPort} after the run in ${row.dir}, not started under its HOME; nothing was stopped`);
       if (row.costUsd == null) stop('a run reported no cost, so the spend is unknown; stopping');
     }
   }

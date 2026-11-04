@@ -213,10 +213,16 @@ test('pair order is drawn at random and recorded; a broken pair is never re-pair
   });
 });
 
-test('a listener on --busy-port stops a comparison before its first run and leaves the other arms alone', { skip }, () => bench(async (b) => {
-  const holder = spawn(process.execPath, ['-e', `require('net').createServer().listen(${b.port}, '127.0.0.1', () => console.log('up'))`]);
+const hold = (b, host, args = [], env = {}) => new Promise((up) => {
+  const c = spawn(process.execPath, ['-e', `require('net').createServer().listen(${b.port}, '${host}', () => console.log('up')).on('error', () => console.log('no'))`, '--', ...args], { detached: true, env: { ...process.env, ...env } });
+  writeFileSync(join(b.pids, String(c.pid)), String(c.pid));
+  c.stdout.once('data', (d) => { c.stdout.destroy(); c.unref(); up(String(d).startsWith('up') ? c : null); });
+});
+
+for (const host of ['127.0.0.1', '::1']) test(`a listener on --busy-port at ${host} stops a comparison before its first run and leaves the other arms alone`, { skip }, () => bench(async (b) => {
+  const holder = await hold(b, host);
+  if (!holder) return;
   try {
-    await new Promise((up) => holder.stdout.once('data', up));
     const stopped = harness(stub(), b.compare(), b.env);
     assert.equal(stopped.r.status, 2);
     assert.equal(stopped.ran, false);
@@ -224,6 +230,16 @@ test('a listener on --busy-port stops a comparison before its first run and leav
     const old = harness(stub(), ['--task', 'csv', '--arms', 'without', '--busy-port', String(b.port), '--out', '@out'], b.env);
     assert.equal(old.r.status, 0, old.r.stderr);
   } finally { holder.kill(); }
+}));
+
+test('a listener of the run that stays on the port after it is stopped voids the row', { skip }, () => bench(async (b) => {
+  const { portAfterRun } = await import('../evals-run/pair.mjs');
+  const home = join(b.root, 'home');
+  mkdirSync(home);
+  const holder = await hold(b, '127.0.0.1', [`--user-data-dir=${home}/chrome`]);
+  const row = await portAfterRun(b.port, home, async () => true, 1);
+  assert.deepEqual(row, { ownChrome: true, voided: 'a listener on the port after the run' });
+  await new Promise((gone) => (holder.exitCode !== null || holder.signalCode ? gone() : holder.once('exit', gone)));
 }));
 
 test('a listener this run started under its own HOME is stopped and the row stands; lpk reap runs on the clone', { skip }, () => bench((b) => {
