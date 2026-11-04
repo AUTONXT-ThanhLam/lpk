@@ -109,7 +109,7 @@ async function bench(fn) {
   }
 }
 
-test('each comparison arm runs its own plugin, lpk and flow prompt, records its commit, and its outside worktree goes (R1, R3)', { skip }, () => bench((b) => {
+test('each comparison arm runs its own plugin, lpk and flow prompt, records its commit, and its outside worktree goes', { skip }, () => bench((b) => {
   const wt = 'git worktree add -q --detach "/tmp/$(basename "$PWD")-main" && git worktree add -q --detach .git/inner';
   const { r, rows } = harness(stub(wt), b.compare(), b.env);
   assert.equal(r.status, 0, r.stderr);
@@ -125,7 +125,7 @@ test('each comparison arm runs its own plugin, lpk and flow prompt, records its 
   }
 }));
 
-test('an arm dir that is not a git checkout holding lpk/bin is refused before any run (R1)', { skip }, () => bench((b) => {
+test('an arm dir that is not a git checkout holding lpk/bin is refused before any run', { skip }, () => bench((b) => {
   const plain = join(b.root, 'plain');
   mkdirSync(join(plain, 'lpk', 'bin'), { recursive: true });
   rmSync(join(b.B, 'lpk'), { recursive: true });
@@ -137,13 +137,13 @@ test('an arm dir that is not a git checkout holding lpk/bin is refused before an
   }
 }));
 
-test('the graded hidden test is the one in --hidden (R2)', { skip }, () => bench((b) => {
+test('the graded hidden test is the one in --hidden', { skip }, () => bench((b) => {
   const { rows } = harness(stub(), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out', '@out'], b.env);
   assert.equal(rows[0].hiddenPass, 3);
   assert.equal(rows[0].hiddenFail, 0);
 }));
 
-test('a comparison without --hidden or --out-dir, or with them nested in each other or an arm, is refused before any run (R2)', { skip }, () => bench((b) => {
+test('a comparison without --hidden or --out-dir, or with them nested in each other or an arm, is refused before any run', { skip }, () => bench((b) => {
   mkdirSync(join(b.A, 'h', 'csv'), { recursive: true });
   writeFileSync(join(b.A, 'h', 'csv', 'hidden.test.mjs'), '');
   mkdirSync(join(b.root, 'empty'));
@@ -158,7 +158,7 @@ test('a comparison without --hidden or --out-dir, or with them nested in each ot
   }
 }));
 
-test('--out-dir keeps the home and the clone named after the run, with its wall seconds (R3, R9)', { skip }, () => bench((b) => {
+test('--out-dir keeps the home and the clone named after the run, with its wall seconds', { skip }, () => bench((b) => {
   const { r, rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--out-dir', b.D, '--out', '@out'], { ...b.env, EVALS_TEXT: '{}' });
   assert.equal(r.status, 0, r.stderr);
   assert.equal(rows[0].dir, join(b.D, 'csv-without-1'));
@@ -167,7 +167,7 @@ test('--out-dir keeps the home and the clone named after the run, with its wall 
   assert.equal(typeof rows[0].seconds, 'number');
 }));
 
-test('a transcript naming the hidden dir or a hidden file voids the run; a longer sibling path does not (R4)', { skip }, () => bench((b) => {
+test('a transcript naming the hidden dir or a hidden file voids the run; a longer sibling path does not', { skip }, () => bench((b) => {
   for (const [text, voided] of [[`read ${b.H}/csv`, true], ['cat hidden.test.mjs', true], [`ls ${b.H}-x/csv`, false]]) {
     const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
     assert.equal(Boolean(rows[0].voided), voided, text);
@@ -175,7 +175,7 @@ test('a transcript naming the hidden dir or a hidden file voids the run; a longe
   }
 }));
 
-test('--max-turns reaches claude only when given, and --max-run-usd caps one run, and --run-timeout ends a run with an error row (R5)', { skip }, () => bench((b) => {
+test('--max-turns reaches claude only when given, and --max-run-usd caps one run, and --run-timeout ends a run with an error row', { skip }, () => bench((b) => {
   harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-turns', '7', '--out', '@out'], b.env);
   assert.equal(JSON.parse(lines(b.log)[0]).turns, '7');
   harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-run-usd', '0.25', '--out', '@out'], b.env);
@@ -187,7 +187,7 @@ test('--max-turns reaches claude only when given, and --max-run-usd caps one run
   assert.ok(Date.now() - t0 < 25000);
 }));
 
-test('pair order is drawn at random and recorded; a broken pair is never re-paired (R6)', { skip }, async () => {
+test('pair order is drawn at random and recorded; a broken pair is never re-paired', { skip }, async () => {
   const { pairOrder } = await import('../evals-run/pair.mjs');
   const orders = new Set(Array.from({ length: 20 }, () => pairOrder().join()));
   assert.equal(orders.size, 2);
@@ -205,7 +205,7 @@ test('pair order is drawn at random and recorded; a broken pair is never re-pair
   });
 });
 
-test('a listener on --busy-port stops a comparison before its first run and leaves the other arms alone (R7, R10)', { skip }, () => bench(async (b) => {
+test('a listener on --busy-port stops a comparison before its first run and leaves the other arms alone', { skip }, () => bench(async (b) => {
   const holder = spawn(process.execPath, ['-e', `require('net').createServer().listen(${b.port}, '127.0.0.1', () => console.log('up'))`]);
   try {
     await new Promise((up) => holder.stdout.once('data', up));
@@ -218,7 +218,7 @@ test('a listener on --busy-port stops a comparison before its first run and leav
   } finally { holder.kill(); }
 }));
 
-test('a listener this run started under its own HOME is stopped and the row stands; lpk reap runs on the clone (R7)', { skip }, () => bench((b) => {
+test('a listener this run started under its own HOME is stopped and the row stands; lpk reap runs on the clone', { skip }, () => bench((b) => {
   const { r, rows } = harness(stub(listen), b.compare(), b.env);
   assert.equal(r.status, 0, r.stderr);
   assert.ok(rows.every((row) => row.ownChrome === true && !row.voided));
@@ -232,7 +232,7 @@ test('a listener this run started under its own HOME is stopped and the row stan
   }
 }));
 
-test('a listener owned outside the run voids the row, stops the batch naming the port, and is not killed (R7)', { skip }, () => bench((b) => {
+test('a listener owned outside the run voids the row, stops the batch naming the port, and is not killed', { skip }, () => bench((b) => {
   const { r, rows } = harness(stub(listen), b.compare(), { ...b.env, EVALS_UDD: join(b.root, 'foreign') });
   assert.equal(r.status, 2);
   assert.equal(rows.length, 1);
@@ -243,8 +243,9 @@ test('a listener owned outside the run voids the row, stops the batch naming the
 
 const call = (id) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', id, name: 'Workflow', input: {} }] } });
 const note = (id, status) => JSON.stringify({ type: 'user', message: { content: `<task-notification>\n<tool-use-id>${id}</tool-use-id>\n<status>${status}</status>\n</task-notification>` } });
+const queued = (id, status) => JSON.stringify({ type: 'attachment', attachment: { type: 'queued_command', prompt: `<task-notification>\n<tool-use-id>${id}</tool-use-id>\n<status>${status}</status>\n</task-notification>` } });
 const reply = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'done' }] } });
-test('--smoke passes only on the Workflow call followed by its completed notification (R8, R4)', { skip }, () => bench((b) => {
+test('--smoke passes only on the Workflow call followed by its completed notification', { skip }, () => bench((b) => {
   const cases = [
     [[call('t1'), note('t1', 'completed'), reply], 'pass'],
     [[call('t1'), reply], 'fail'],
