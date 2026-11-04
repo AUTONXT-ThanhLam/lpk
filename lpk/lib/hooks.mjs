@@ -133,7 +133,7 @@ export function spawnRule(input) {
   const type = input.tool_input?.subagent_type;
   if (GENERAL.has(type)) return refuse('lpk: a general agent works without lpk\'s rules, on the lead\'s model or the one the spawn names; give the task to `lpk:staff`, or to the lpk agent whose job it is.');
   const { repo, run } = runOf(input, false);
-  if (!run) return null;
+  if (!run) return type === 'lpk:builder' ? refuse('lpk: this session holds no run, so a builder\'s code would reach a PR with no lens owed, no verifier and no gate reading it. Start one with `lpk run start`, or take over the run of this branch with `lpk run take`, then start the builder again. When another live session holds the run of this repo, never end it: work in a new worktree with its own `lpk run start`.') : null;
   if (type !== 'lpk:builder' || run.lane !== 'full' || !existsSync(join(dirname(run.marker), 'brief.json')) || readRecords(repo, { run: run.id }).some((r) => r.kind === 'go')) return null;
   return refuse('lpk: no builder before go: this run has a Design Brief but no `lpk go`; end its review, and run `lpk go` when the owner says go.');
 }

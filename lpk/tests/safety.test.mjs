@@ -119,7 +119,7 @@ test('a spawn of an lpk agent runs on its role\'s model, whatever model the call
   assert.deepEqual(out.hookSpecificOutput.updatedInput, { subagent_type: 'lpk:techlead', prompt: 'review', description: 'd' });
   assert.equal(out.hookSpecificOutput.permissionDecision, undefined, 'the permission flow still runs');
   assert.equal(pre({ tool_name: 'Agent', tool_input: { subagent_type: 'Explore', model: 'haiku', prompt: 'x' } }), null);
-  assert.equal(pre({ tool_name: 'Agent', tool_input: { subagent_type: 'lpk:builder', prompt: 'x' } }), null);
+  assert.equal(pre({ tool_name: 'Agent', tool_input: { subagent_type: 'lpk:staff', prompt: 'x' } }), null, 'a spawn that names no model passes untouched');
 });
 
 test('settings that remap models are named, and none set says nothing', () => {

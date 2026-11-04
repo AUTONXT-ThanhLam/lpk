@@ -5,7 +5,7 @@ built at the same time without colliding, and each arrives tested by its own bui
 
 For each slice create a worktree from the branch head
 (`lpk run worktree <slice> HEAD --branch <branch>-<slice>`, which binds it to your run) and start one `lpk:builder` per
-slice in the background, all in one message, each with its worktree, the base, its slice name, the test command, the brief's path,
+slice in the background (a hook refuses a builder while your session holds no run), all in one message, each with its worktree, the base, its slice name, the test command, the brief's path,
 `notes.md` beside it and the profile path. The builder reads its files, contract and proofs from
 `lpk handoff <slice>` and opens `brief.md` only at a section, so it never carries the whole brief. You are notified as each one finishes.
 When the slice changes a function, field or output shape that other files read, also give it a map:

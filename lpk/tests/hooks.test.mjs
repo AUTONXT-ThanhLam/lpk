@@ -127,18 +127,23 @@ test('the stop note comes back only when the tree changed since it was last said
   assert.match(context(stop()), /not verified on the current tree/);
 });
 
-test('a Full-lane run spawns no builder before `lpk go`, and no session spawns a general agent', () => {
+test('no builder starts without a run or before `lpk go`, and no session spawns a general agent', () => {
   const full = repoWith('go-full', { 'src/a.mjs': 'export const a = 1;\n' });
   const quick = repoWith('go-quick', { 'src/a.mjs': 'export const a = 1;\n' });
   const spawn = (cwd, subagent_type = 'lpk:builder', session_id = 'go') => hook('PreToolUse', 'pre', { tool_name: 'Agent', session_id, cwd, tool_input: { subagent_type, description: 'slice 1', prompt: 'build slice 1' } });
-  assert.equal(spawn(full), null, 'no run, no rule');
+  assert.match(reason(spawn(full)), /`lpk run start`.*`lpk run take`/, 'no run, no builder');
+  assert.equal(spawn(full, 'lpk:techlead'), null, 'a review lens runs without a run, on purpose');
   const dir = startRun(full, 'go');
   startRun(quick, 'go', { lane: 'quick' });
   assert.equal(spawn(full), null, 'a run with no Design Brief, as a Quick run moved to Full');
   writeFileSync(join(dir, 'brief.json'), '{}');
   assert.match(reason(spawn(full)), /no `lpk go`/);
-  assert.equal(spawn(full, 'lpk:builder', 'another-session'), null, 'another session\'s run');
+  assert.match(reason(spawn(full, 'lpk:builder', 'another-session')), /`lpk run take`/, 'another session\'s run is not this session\'s');
   assert.equal(spawn(quick), null);
+  const slice = join(tmp, 'go-quick-slice');
+  assert.equal(lpk(quick, 'go', 'run', 'worktree', slice, 'HEAD', '--branch', 'go-quick-slice').status, 0);
+  assert.equal(spawn(slice), null, 'a builder started from the run\'s own slice worktree');
+  assert.equal(spawn(tmp), null, 'a builder started from a directory outside the repo, by the session that holds the run');
   assert.equal(lpk(full, 'go', 'decide', 'design review round 1: pass, 0/0/0', '--why', 'the critic answered').status, 0);
   assert.equal(lpk(full, 'go', 'go').status, 0);
   assert.equal(spawn(full), null);
