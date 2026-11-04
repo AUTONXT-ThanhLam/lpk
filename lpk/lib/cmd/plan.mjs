@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { sessionId } from '../host.mjs';
 import { top } from '../git.mjs';
-import { NAME, listPlans, move, planFile, plansDir, readPlan, render, writeAtomic } from '../plan.mjs';
+import { drive as handOver } from '../drive.mjs';
+import { NAME, doneIds, listPlans, move, planFile, plansDir, readPlan, render, writeAtomic } from '../plan.mjs';
 import { runIn } from '../repro.mjs';
 import { sessionPid } from '../sessions.mjs';
 import { parseArgs } from '../out.mjs';
@@ -15,6 +16,7 @@ const USAGE = `usage:
   lpk plan prove <id> [--timeout <seconds, default 540>]
   lpk plan hold <id> --why "<what the owner must answer>"  |  lpk plan pause <id> --why "<why>"  |  lpk plan open <id>
   lpk plan take <name>
+  lpk plan drive [--plan <name>]   (under the cc-switch launcher: end this session and open the next item in a fresh one)
   (--plan <name> names the plan when this shell holds none)`;
 const TAIL = 2000;
 const fail = (msg) => { console.error(`lpk plan: ${msg}`); return 2; };
@@ -61,7 +63,7 @@ function create(a) {
   const session = sessionId();
   const held = mine(session);
   if (session && (held.plans.length || held.broken.length)) return fail(`this session already holds ${held.plans[0]?.name ?? held.broken[0]}: finish it first`);
-  writeAtomic(planFile(name), { name, repo, session, created: new Date().toISOString(), items: [] });
+  writeAtomic(planFile(name), { name, repo, session, since: { session, done: '' }, created: new Date().toISOString(), items: [] });
   console.log(session ? `plan ${name} created and held by this session` : `plan ${name} created, held by no session: run \`lpk plan take ${name}\` in the session that should pursue it`);
   return 0;
 }
@@ -133,16 +135,24 @@ function take(a) {
   if (r.plan.session && sessionPid(r.plan.session)) return fail(`${name} is held by session ${r.plan.session}, which is still running`);
   const held = mine(session);
   if (held.plans.length) return fail(`this session already holds ${held.plans[0].name}`);
-  writeAtomic(planFile(name), { ...r.plan, session });
+  writeAtomic(planFile(name), { ...r.plan, session, since: { session, done: doneIds(r.plan) } });
   console.log(`plan ${name} is now held by this session`);
   return 0;
+}
+
+function drive(a) {
+  if (a.words.length > 1) return fail(USAGE);
+  const t = target(a);
+  if (t.error) return fail(t.error);
+  const r = handOver({ plan: t.plan, session: sessionId() });
+  return r.error ? fail(r.error) : 0;
 }
 
 export async function main(argv) {
   const a = parseArgs(argv, ['--repo', '--proof', '--source', '--why', '--timeout', '--plan']);
   if (a.error) return fail(`${a.error}\n${USAGE}`);
   const verb = a.words[0] || 'show';
-  const verbs = { show, 'new': create, add, prove, take, 'hold': (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
+  const verbs = { show, 'new': create, add, prove, take, 'drive': drive, 'hold': (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
   if (!verbs[verb]) return fail(`unknown verb ${verb}\n${USAGE}`);
   return verbs[verb](a);
 }

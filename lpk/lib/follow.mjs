@@ -1,8 +1,9 @@
 import { execFile } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { hasTranscript, parentOf, requestRestart } from './restart.mjs';
 
 const exec = promisify(execFile);
 
@@ -36,19 +37,6 @@ function environOf(pid) {
   }
 }
 
-function parentOf(pid) {
-  try {
-    return readFileSync(`/proc/${pid}/status`, 'utf8').match(/^PPid:\s*(\d+)/m)?.[1];
-  } catch {
-    return undefined;
-  }
-}
-
-function hasTranscript(sessionId, configDir = process.env.CLAUDE_CONFIG_DIR) {
-  const projects = join(configDir || join(homedir(), '.claude'), 'projects');
-  return existsSync(projects) && readdirSync(projects).some((d) => existsSync(join(projects, d, `${sessionId}.jsonl`)));
-}
-
 export function moveInteractive(list, { except, account, say, environ = environOf, parent = parentOf, kill = process.kill.bind(process) }) {
   let failed = 0;
   for (const s of list.filter((a) => a.kind === 'interactive' && a.sessionId !== except)) {
@@ -66,13 +54,7 @@ export function moveInteractive(list, { except, account, say, environ = environO
       mkdirSync(dir, { recursive: true });
       const card = join(dir, `card-${s.sessionId}.md`);
       writeFileSync(card, CARD);
-      writeFileSync(env.CC_SWAP_REQUEST, `${hasTranscript(s.sessionId, env.CLAUDE_CONFIG_DIR) ? s.sessionId : '-'}\n${card}\n`);
-      try {
-        kill(s.pid, 'SIGTERM');
-      } catch (err) {
-        rmSync(env.CC_SWAP_REQUEST, { force: true });
-        throw err;
-      }
+      requestRestart({ request: env.CC_SWAP_REQUEST, id: hasTranscript(s.sessionId, env.CLAUDE_CONFIG_DIR) ? s.sessionId : '-', card, pid: s.pid, kill });
       say(`restarting ${who} on ${account ?? 'the active account'}`);
     } catch (err) {
       say(`not moved: ${who}, ${err.message}`);

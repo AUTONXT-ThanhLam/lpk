@@ -12,7 +12,7 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOKS = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
 export const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'lpk-hooks-')));
 after(() => rmSync(tmp, { recursive: true, force: true }));
-export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^CLAUDE_/.test(k)));
+export const noHost = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !/^(CLAUDE_|CC_SWAP_)/.test(k)));
 export const HOME = join(tmp, 'home');
 export const ENV = { ...noHost(process.env), HOME, CLAUDE_CODE_SESSION_ID: '', GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', XDG_DATA_HOME: join(tmp, 'data'), XDG_STATE_HOME: join(tmp, 'state'), XDG_CACHE_HOME: join(tmp, 'cache'), CLAUDE_PLUGIN_ROOT: ROOT };
 export const sh = (cwd, ...args) => execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
