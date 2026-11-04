@@ -33,11 +33,11 @@ export function readPlan(file) {
   return valid(plan) ? { plan } : { garbled: file, text };
 }
 
-export function listPlans(session) {
-  const names = readdirOr(plansDir()).filter((n) => n.endsWith('.json')).sort();
+export function listPlans(session, dir = plansDir()) {
+  const names = readdirOr(dir).filter((n) => n.endsWith('.json')).sort();
   const plans = [], broken = [];
   for (const n of names) {
-    const file = join(plansDir(), n);
+    const file = join(dir, n);
     const r = readPlan(file);
     if (r.plan) plans.push(r.plan);
     else if (session && r.text.includes(session)) broken.push(file);
@@ -70,8 +70,10 @@ export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' 
 
 export function planLines(run) {
   const sessions = [run.session, ...(run.previous || [])].filter(Boolean);
-  const waiting = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
-  const removed = listPlans().plans.filter((p) => sessions.includes(p.session)).flatMap((p) => (p.removed ?? []).map((r) => `Plan removed (${p.name}): ${r.id} ${r.title} (${r.why})`));
+  const held = (dir) => listPlans('', dir).plans.filter((p) => sessions.includes(p.session));
+  const live = held(plansDir());
+  const waiting = live.filter((p) => waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
+  const removed = [...new Set([...live, ...held(join(plansDir(), 'done'))].flatMap((p) => (p.removed ?? []).map((r) => `Plan removed (${p.name}): ${r.id} ${r.title} (${r.why})`)))];
   return [...waiting, ...removed, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
 }
 

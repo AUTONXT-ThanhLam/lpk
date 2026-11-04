@@ -136,6 +136,18 @@ test('R3: run end carries one line per removed item of the plan', () => {
   assert.equal(out.filter((l) => /\bP2\b/.test(l) && l.includes('why two')).length, 1, out.join('\n'));
 });
 
+test('R3: report and run end name a removal once after the plan completed during the run', () => {
+  const repo = seeded('told-done', 's-told-done', ['exit 1', 'true']);
+  must(lpk(repo, 's-told-done', 'plan', 'remove', 'P1', '--why', 'why one'));
+  startRun(repo, 's-told-done');
+  must(lpk(repo, 's-told-done', 'plan', 'prove', 'P2'));
+  assert.ok(existsSync(doneFile('told-done')), 'the plan is in done');
+  for (const verb of ['report', 'run end']) {
+    const out = lpk(repo, 's-told-done', ...verb.split(' ')).stdout.split('\n');
+    assert.equal(out.filter((l) => /\bP1\b/.test(l) && l.includes('why one')).length, 1, `${verb}:\n${out.join('\n')}`);
+  }
+});
+
 test('R6: the Stop hook pursues the new next item with a full budget after a move or a removal', async (t) => {
   const rows = [
     ['move', ['plan', 'move', 'P2', '--before', 'P1'], 'P2'],
