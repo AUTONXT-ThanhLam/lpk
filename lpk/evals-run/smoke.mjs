@@ -18,7 +18,8 @@ export function mentionsHidden(projects, hiddenReal, names) {
 }
 
 const text = (content) => (typeof content === 'string' ? content : Array.isArray(content) ? content.map((c) => (c.type === 'text' ? c.text : '')).join('\n') : '');
-const notifications = (entry) => (entry.type === 'user' ? text(entry.message?.content).match(/<task-notification>[\s\S]*?<\/task-notification>/g) || [] : []);
+const queued = (entry) => (entry.type === 'attachment' && entry.attachment?.type === 'queued_command' && typeof entry.attachment.prompt === 'string' ? entry.attachment.prompt : '');
+const notifications = (entry) => (entry.type === 'user' ? text(entry.message?.content) : queued(entry)).match(/<task-notification>[\s\S]*?<\/task-notification>/g) || [];
 const workflowCalls = (entry) => (entry.type === 'assistant' && Array.isArray(entry.message?.content) ? entry.message.content.filter((c) => c.type === 'tool_use' && c.name === 'Workflow').map((c) => c.id) : []);
 
 function passes(file) {

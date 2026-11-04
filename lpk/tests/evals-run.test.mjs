@@ -248,6 +248,8 @@ const reply = JSON.stringify({ type: 'assistant', message: { content: [{ type: '
 test('--smoke passes only on the Workflow call followed by its completed notification', { skip }, () => bench((b) => {
   const cases = [
     [[call('t1'), note('t1', 'completed'), reply], 'pass'],
+    [[call('t1'), queued('t1', 'completed'), reply], 'pass'],
+    [[call('t1'), queued('t2', 'completed'), reply], 'fail'],
     [[call('t1'), reply], 'fail'],
     [[call('t1'), note('t2', 'completed'), reply], 'fail'],
     [[call('t1'), note('t1', 'failed'), reply], 'fail'],
