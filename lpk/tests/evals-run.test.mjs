@@ -70,17 +70,18 @@ test('each run is given the budget still left as its own cap', { skip }, () => {
   assert.equal(rows[0].error, undefined);
 });
 
-const seen = `pd=; mt=none; pr=; prev=; for a in "$@"; do case $prev in --plugin-dir) pd=$a;; --max-turns) mt=$a;; -p) pr=$a;; esac; prev=$a; done
-printf '{"plugin":"%s","lpk":"%s","turns":"%s","flow":%s}\\n' "$pd" "$(command -v lpk)" "$mt" "$([[ $pr == *'lpk run start'* ]] && echo true || echo false)" >> "$EVALS_LOG"`;
+const seen = `pd=; mt=none; pr=; usd=; prev=; for a in "$@"; do case $prev in --plugin-dir) pd=$a;; --max-turns) mt=$a;; --max-budget-usd) usd=$a;; -p) pr=$a;; esac; prev=$a; done
+printf '{"plugin":"%s","lpk":"%s","turns":"%s","usd":"%s","flow":%s}\\n' "$pd" "$(command -v lpk)" "$mt" "$usd" "$([[ $pr == *'lpk run start'* ]] && echo true || echo false)" >> "$EVALS_LOG"`;
 const transcript = 'mkdir -p "$CLAUDE_CONFIG_DIR/projects/p" && printf \'%s\\n\' "$EVALS_TEXT" > "$CLAUDE_CONFIG_DIR/projects/p/s.jsonl"';
-const listen = `setsid -f node -e 'require("net").createServer().listen(+process.argv[1], "127.0.0.1", () => require("fs").writeFileSync(process.argv[2], String(process.pid)))' "$EVALS_PORT" "$EVALS_PID" "--user-data-dir=\${EVALS_UDD:-$HOME/chrome}" >/dev/null 2>&1
-for i in $(seq 50); do [ -s "$EVALS_PID" ] && break; sleep 0.1; done`;
+const listen = `setsid -f node -e 'require("net").createServer().listen(+process.argv[1], "127.0.0.1", () => require("fs").writeFileSync(process.argv[2], String(process.pid)))' "$EVALS_PORT" "$EVALS_PIDS/$(basename "$PWD")" "--user-data-dir=\${EVALS_UDD:-$HOME/chrome}" >/dev/null 2>&1
+for i in $(seq 50); do [ -s "$EVALS_PIDS/$(basename "$PWD")" ] && break; sleep 0.1; done`;
 const ok = `echo '{"subtype":"success","total_cost_usd":'"\${EVALS_COST:-0}"',"num_turns":1}'`;
 const stub = (...parts) => [seen, ...parts, ok].join('\n');
 
 const git = (cwd, ...a) => spawnSync('git', a, { cwd, encoding: 'utf8' }).stdout.trim();
 const freePort = () => new Promise((done) => { const s = createServer().listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => done(port)); }); });
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const listeners = (b) => readdirSync(b.pids).map((f) => Number(readFileSync(join(b.pids, f), 'utf8')));
 const lines = (file) => (existsSync(file) ? readFileSync(file, 'utf8').trim().split('\n').filter(Boolean) : []);
 
 async function bench(fn) {
@@ -98,11 +99,12 @@ async function bench(fn) {
   const H = join(root, 'hidden');
   mkdirSync(join(H, 'csv'), { recursive: true });
   writeFileSync(join(H, 'csv', 'hidden.test.mjs'), "import { test } from 'node:test';\nfor (const n of [1, 2, 3]) test(`fingerprint ${n}`, () => {});\n");
-  const b = { root, A: arm('A'), B: arm('B'), H, D: join(root, 'out'), log: join(root, 'log'), reap: join(root, 'reap'), pid: join(root, 'pid'), port: await freePort() };
-  b.env = { EVALS_LOG: b.log, EVALS_REAP: b.reap, EVALS_PID: b.pid, EVALS_PORT: String(b.port) };
+  const b = { root, A: arm('A'), B: arm('B'), H, D: join(root, 'out'), log: join(root, 'log'), reap: join(root, 'reap'), pids: join(root, 'pids'), port: await freePort() };
+  b.env = { EVALS_LOG: b.log, EVALS_REAP: b.reap, EVALS_PIDS: b.pids, EVALS_PORT: String(b.port) };
+  mkdirSync(b.pids);
   b.compare = (...more) => ['--task', 'csv', '--baseline', b.A, '--candidate', b.B, '--hidden', H, '--out-dir', b.D, '--busy-port', String(b.port), '--out', '@out', ...more];
   try { await fn(b); } finally {
-    if (existsSync(b.pid)) { try { process.kill(Number(readFileSync(b.pid, 'utf8')), 'SIGKILL'); } catch {} }
+    for (const pid of listeners(b)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
     rmSync(root, { recursive: true, force: true });
   }
 }
@@ -147,7 +149,7 @@ test('a comparison without --hidden or --out-dir, or with them nested in each ot
   mkdirSync(join(b.root, 'empty'));
   const drop = (name) => (argv) => argv.filter((a, i) => a !== name && argv[i - 1] !== name);
   const set = (name, value) => (argv) => argv.map((a, i) => (argv[i - 1] === name ? value : a));
-  const cases = [drop('--hidden'), drop('--out-dir'), set('--hidden', join(b.A, 'h')), set('--hidden', b.A), set('--out-dir', join(b.H, 'runs')), set('--hidden', join(b.root, 'empty'))];
+  const cases = [drop('--hidden'), drop('--out-dir'), set('--hidden', join(b.A, 'h')), set('--hidden', b.A), set('--out-dir', join(b.H, 'runs')), set('--hidden', join(b.root, 'empty')), set('--hidden', fileURLToPath(new URL('../evals-run', import.meta.url)))];
   for (const edit of cases) {
     const { r, ran } = harness(stub(), edit(b.compare()), b.env);
     assert.equal(r.status, 2, r.stderr);
@@ -173,9 +175,11 @@ test('a transcript naming the hidden dir or a hidden file voids the run; a longe
   }
 }));
 
-test('--max-turns reaches claude only when given, and --run-timeout ends a run with an error row (R5)', { skip }, () => bench((b) => {
+test('--max-turns reaches claude only when given, and --max-run-usd caps one run, and --run-timeout ends a run with an error row (R5)', { skip }, () => bench((b) => {
   harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-turns', '7', '--out', '@out'], b.env);
   assert.equal(JSON.parse(lines(b.log)[0]).turns, '7');
+  harness(stub(), ['--task', 'csv', '--arms', 'without', '--max-run-usd', '0.25', '--out', '@out'], b.env);
+  assert.equal(JSON.parse(lines(b.log)[1]).usd, '0.2500');
   const t0 = Date.now();
   const { r, rows } = harness('sleep 30', ['--task', 'csv', '--arms', 'without', '--run-timeout', '1', '--out', '@out'], b.env);
   assert.equal(r.status, 2);
@@ -218,7 +222,8 @@ test('a listener this run started under its own HOME is stopped and the row stan
   const { r, rows } = harness(stub(listen), b.compare(), b.env);
   assert.equal(r.status, 0, r.stderr);
   assert.ok(rows.every((row) => row.ownChrome === true && !row.voided));
-  assert.equal(alive(Number(readFileSync(b.pid, 'utf8'))), false);
+  assert.equal(listeners(b).length, 2);
+  assert.ok(listeners(b).every((pid) => !alive(pid)));
   const reaped = lines(b.reap);
   assert.equal(reaped.length, 2);
   for (const row of rows) {
@@ -233,7 +238,7 @@ test('a listener owned outside the run voids the row, stops the batch naming the
   assert.equal(rows.length, 1);
   assert.ok(rows[0].voided);
   assert.ok(r.stderr.includes(String(b.port)));
-  assert.equal(alive(Number(readFileSync(b.pid, 'utf8'))), true);
+  assert.ok(listeners(b).every(alive));
 }));
 
 const call = (id) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', id, name: 'Workflow', input: {} }] } });
@@ -247,6 +252,7 @@ test('--smoke passes only on the Workflow call followed by its completed notific
     [[call('t1'), note('t1', 'failed'), reply], 'fail'],
     [[call('t1'), note('t1', 'killed'), reply], 'fail'],
     [[note('t1', 'completed'), call('t1'), reply], 'fail'],
+    [[call('t1'), reply, note('t1', 'completed')], 'fail'],
     [null, 'fail'],
   ];
   for (const [entries, smoke] of cases) {

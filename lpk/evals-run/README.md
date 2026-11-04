@@ -46,7 +46,7 @@ cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs \
 ```
 
 Each arm is a git checkout: its `lpk/bin` leads `PATH`, its `lpk` is the `--plugin-dir`, and both
-send the `flow` prompt. `--hidden` and `--out-dir` are required; `--hidden` may not equal, contain
+send the `flow` prompt. `--out-dir` is required, and so is `--hidden` except with `--smoke`; `--hidden` may not equal, contain
 or lie inside either arm, this checkout or `--out-dir`. Each pair runs the two arms in a random order;
 a row adds `commit`, `pair` (the run number, one above the highest already in `--out-dir`, so a
 stopped batch never re-pairs) and `pos` (0 or 1).
