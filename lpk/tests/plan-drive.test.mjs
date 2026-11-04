@@ -127,10 +127,14 @@ test('R4 R6: plan drive refuses with exit 2 and writes nothing when it cannot ha
   const ran = seeded('s2-run', 's-run', [['only', 'true']]);
   const marker = startRun(ran, 's-run');
   const runId = JSON.parse(readFileSync(join(marker, 'run.json'), 'utf8')).id;
+  const nobody = seeded('s2-nobody', 's-nobody', [['only', 'true']]);
+  writeFileSync(planFile('s2-nobody'), JSON.stringify({ ...planOf('s2-nobody'), session: '' }));
+  const gone = String(spawnSync('true').pid);
 
   const rows = [
     ['outside a launcher', repo, 's-two', ['plan', 'drive'], {}, request, /CC_SWAP_REQUEST/],
-    ['no claude under the launcher', repo, 's-two', ['plan', 'drive'], { CC_SWAP_REQUEST: request, CC_SWAP_LAUNCHER: String(spawnSync('true').pid) }, request, null],
+    ['no claude under the launcher', repo, 's-two', ['plan', 'drive'], { CC_SWAP_REQUEST: request, CC_SWAP_LAUNCHER: gone }, request, new RegExp(`\\b${gone}\\b`)],
+    ['a plan held by no session, from no session', nobody, '', ['plan', 'drive', '--plan', 's2-nobody'], underTest(request), request, /lpk plan take s2-nobody/],
     ['no open item', empty, 's-none', ['plan', 'drive'], underTest(request), request, /P1|P2/],
     ['a plan another session holds', repo, 's-intruder', ['plan', 'drive', '--plan', 's2'], underTest(request), request, /s-two/],
     ['a request pending', repo, 's-two', ['plan', 'drive'], underTest(pending), pending, new RegExp(pending)],
@@ -177,6 +181,18 @@ test('R3: under the launcher the Stop hook asks a session that finished an item 
   const legacy = stop(repo, 's-three', underTest(request));
   assert.ok(legacy.reason.includes('P2') && !legacy.reason.includes('lpk plan drive'), legacy.reason);
   assert.equal(readFileSync(request, 'utf8'), '');
+});
+
+test('a session that takes a plan is asked to drive naming only the items it finished after the take', SKIP, () => {
+  const repo = seeded('s5', 's-five-old', [['first one', 'true'], ['second one', 'true'], ['third one', 'true']]);
+  must(lpk(repo, 's-five-old', ['plan', 'prove', 'P1']));
+  must(lpk(repo, 's-five', ['plan', 'take', 's5']));
+  must(lpk(repo, 's-five', ['plan', 'prove', 'P2']));
+  const request = join(tmp, 's5-request');
+  writeFileSync(request, '');
+  const driven = stop(repo, 's-five', underTest(request));
+  assert.ok(driven.reason.includes('lpk plan drive') && /\bP2\b/.test(driven.reason), driven.reason);
+  assert.ok(!/\bP1\b/.test(driven.reason), driven.reason);
 });
 
 test('R1 R6 signal: when the signal throws, the request is emptied and drive refuses', SKIP, () => {
