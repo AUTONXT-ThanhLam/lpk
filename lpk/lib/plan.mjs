@@ -114,7 +114,7 @@ function readNudge(name) {
 const reasonFor = (plan, item) => `lpk plan ${plan.name}: ${item.id} is open: ${item.title}. It is done when \`${item.proof}\` exits 0; run \`lpk plan prove ${item.id}\` then. Work on it now. A finding, a side fix or another repo is not on the plan: a finding outside this item goes in its PR body as a known limit. If it needs the owner, run \`lpk plan hold ${item.id} --why "<question>"\`, ask, and go on to the next item. If you are waiting on something that will wake you, say so and stop. A proof that runs longer than a few minutes goes through Bash with run_in_background.`;
 
 function nudge(plan, item, drive = null) {
-  const done = doneIds(plan);
+  const done = doneIds(plan).split(',').sort().join(',');
   const was = readNudge(plan.name);
   const seen = was.done === done && was.session === plan.session && was.next === item.id ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;

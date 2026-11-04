@@ -169,6 +169,17 @@ test('R6: the Stop hook pursues the new next item with a full budget after a mov
   }
 });
 
+test('R6: moving a done item past another done item does not renew the Stop hook budget', () => {
+  const repo = seeded('budget-done', 's-budget-done', ['true', 'true', 'exit 1']);
+  must(lpk(repo, 's-budget-done', 'plan', 'prove', 'P1'));
+  must(lpk(repo, 's-budget-done', 'plan', 'prove', 'P2'));
+  for (let n = 0; n < 10; n++) assert.equal(stop(repo, 's-budget-done').decision, 'block');
+  assert.equal(stop(repo, 's-budget-done'), null, 'the budget of P3 is spent');
+  must(lpk(repo, 's-budget-done', 'plan', 'move', 'P2', '--before', 'P1'));
+  assert.deepEqual(planOf('budget-done').items.map((i) => i.id), ['P2', 'P1', 'P3']);
+  assert.equal(stop(repo, 's-budget-done'), null, 'no work was done, so the hook stays silent');
+});
+
 test('R5: understand.md names the two verbs and both are verbs of lpk plan', () => {
   const text = readFileSync(join(ROOT, 'skills', 'lpk', 'understand.md'), 'utf8');
   const repo = seeded('verbs', 's-verbs', []);
