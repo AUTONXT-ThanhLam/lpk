@@ -175,13 +175,13 @@ test('--out-dir keeps the home and the clone named after the run, with its wall 
   assert.equal(typeof rows[0].seconds, 'number');
 }));
 
-test('a transcript naming a hidden test file by its path voids the run; a sibling path, the bare dir or a task file does not', { skip }, () => bench((b) => {
-  const file = join(realpathSync(b.H), 'csv', 'hidden.test.mjs');
-  const cases = [[`cat ${file}`, true], [`ls ${b.H}-x/csv`, false], [`ls ${b.H}`, false], ['cat hidden.test.mjs', false], ['cat fixture.sh', false]];
-  for (const [text, voided] of cases) {
+test('a transcript that holds the --hidden directory path marks the row hiddenSeen and still grades it; one that does not leaves the mark off', { skip }, () => bench((b) => {
+  const cases = [[`cd ${b.H} && cat csv/*`, true], [`cat ${join(realpathSync(b.H), 'csv', 'hidden.test.mjs')}`, true], ['cat hidden.test.mjs', false], ['cat fixture.sh', false]];
+  for (const [text, seen] of cases) {
     const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
-    assert.equal(Boolean(rows[0].voided), voided, text);
-    assert.equal(rows[0].hiddenPass === undefined, voided, text);
+    assert.equal(rows[0].hiddenSeen === true, seen, text);
+    assert.equal(rows[0].voided, undefined, text);
+    assert.equal(typeof rows[0].hiddenPass, 'number', text);
   }
   const nested = harness(stub(), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out-dir', join(b.H, 'runs'), '--out', '@out'], b.env);
   assert.equal(nested.r.status, 2);

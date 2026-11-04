@@ -35,10 +35,11 @@ Flags shared by every arm: `--tasks <dir>` holds `<task>/prompt.txt` and `<task>
 `<task>-<arm>-<n>-<batch id>`): the home, the clone and the transcripts stay, and only a comparison
 removes anything: the clone's worktrees outside the run directory, such as `/tmp/<clone>-main`; `--run-timeout <seconds>` (default 2400) and
 `--max-run-usd <n>` (default the budget left) cap one run; `--max-turns` reaches `claude` only when
-given. When `--hidden` is given, it may not equal, contain or lie inside `--out-dir`, and a run
-whose transcripts name a hidden test file by its path (`<hidden>/<task>/hidden.test.mjs`) gets
-`voided: "hidden test in a transcript"` and is not graded. A read the path does not show, such as a relative path
-or a listing of the directory, is not caught; the directory lies outside every clone and `HOME`.
+given. When `--hidden` is given, it may not equal, contain or lie inside `--out-dir`, and a row whose
+transcripts hold the `--hidden` path, as given or resolved, carries `hiddenSeen: true` and is still graded:
+the runner prints the fact and the reader decides. A read that never prints the path (a relative path
+after a `cd`, a glob) is not seen; the directory lies outside every clone and `HOME`, so read the kept
+transcripts before trusting a comparison.
 
 ## Comparing two lpk versions
 

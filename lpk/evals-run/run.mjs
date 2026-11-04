@@ -75,7 +75,7 @@ const tasks = smoke ? ['smoke'] : existsSync(tasksDir) ? readdirSync(tasksDir, {
 if (!tasks.length) usage(`no task${only ? ` named ${only}` : ''} holding ${needed.join(', ')} in ${tasksDir}`);
 const lacking = smoke ? undefined : tasks.find((t) => !existsSync(join(hiddenDir, t, 'hidden.test.mjs')));
 if (lacking) usage(`--hidden ${hiddenDir} holds no ${lacking}/hidden.test.mjs`);
-const hiddenFiles = smoke ? [] : tasks.map((t) => join(realpathSync(hiddenDir), t, 'hidden.test.mjs'));
+const hiddenMarks = hiddenGiven ? [...new Set([hiddenDir, realpathSync(hiddenDir)])] : [];
 if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) usage('CLAUDE_CODE_OAUTH_TOKEN is not set');
 try { writeFileSync(out, '', { flag: 'a' }); } catch (e) { usage(`--out is not writable: ${e.message}`); }
 
@@ -151,8 +151,7 @@ async function attempt(root, cloneName, task, arm, n) {
   const row = { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || null, ...after };
   const projects = join(home, '.claude', 'projects');
   if (smoke) return { ...row, smoke: smokeVerdict(projects) };
-  if (hiddenGiven && !row.voided && mentionsHidden(projects, hiddenFiles)) row.voided = 'hidden test in a transcript';
-  return row.voided ? row : { ...row, ...grade(dir, task, sha, plain) };
+  return row.voided ? row : { ...row, ...(mentionsHidden(projects, hiddenMarks) ? { hiddenSeen: true } : {}), ...grade(dir, task, sha, plain) };
 }
 
 const batch = randomBytes(3).toString('hex');
