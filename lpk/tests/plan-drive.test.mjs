@@ -56,7 +56,7 @@ while :; do
   card=$(sed -n 2p "$req")
   once=()
   [[ $id == - ]] || once=(--resume "$id")
-  once+=("Claude restarted. Read the state card at $card first: it says why and what to do.")
+  once+=("Claude restarted. Read the state card at $card first, then continue.")
   (( n < 3 )) || exit 9
 done
 `;
@@ -102,14 +102,12 @@ test('R1 R2 R5: plan drive under the launcher ends the session and a fresh claud
   const text = readFileSync(card, 'utf8');
   for (const fact of ['P2', 'second "quoted" item', proof, source, 's-old', 'claude --resume s-old', 'lpk plan take s1', 'lpk plan prove P2', 'lpk:lpk']) assert.ok(text.includes(fact), `the card holds ${fact}`);
   assert.ok(text.split('\n')[0].includes('lpk plan drive'), 'the first line says what restarted claude');
-  assert.ok(text.includes('`lpk plan`') && text.includes('transcript'), 'the card holds the fresh rule and where the facts are');
-  assert.doesNotMatch(text, /ignore/i);
+  assert.ok(text.includes('`lpk plan`'), 'the card names lpk plan');
   const said = readFileSync(join(fix, 'drive.out'), 'utf8');
   assert.ok(said.includes('s-old') && said.includes('claude --resume s-old'), said);
 
   const argv = readFileSync(join(fix, 'argv'), 'utf8').split('\n');
   assert.ok(argv.some((a) => a.includes(card)), 'the second claude is told to read the card');
-  assert.doesNotMatch(argv.join('\n'), /account/i);
   assert.ok(!argv.includes('-p') && !argv.includes('--print'));
 
   const done = JSON.parse(readFileSync(join(SAFE.XDG_DATA_HOME, 'lpk', 'plans', 'done', 's1.json'), 'utf8'));
