@@ -180,9 +180,9 @@ test('lpk finding defer defers every confirmed finding named, skips the rest and
   for (const why of [['--why', '--repo', dir], ['--why', '  ']]) assert.deepEqual([defer('F1', ...why).status, states()[0]], [2, 'confirmed']);
   const unknown = defer('F1', 'F9', '--why', 'waits for the next release');
   assert.deepEqual([unknown.status, /no finding F9/.test(unknown.stderr), states()], [1, true, ['confirmed', 'confirmed', 'open', 'confirmed']]);
-  const mixed = defer('F1', 'F4', 'F2', 'F3', '--why', 'waits for the next release');
+  const mixed = defer('F1', 'F4', 'F2', 'F3', '--why', '--no-verify was used upstream');
   assert.deepEqual([mixed.status, states()], [1, ['deferred', 'deferred', 'open', 'confirmed']]);
-  assert.match(mixed.stdout, /F1 deferred: waits for the next release\nF2 deferred: waits for the next release\nF3 skipped: open/);
+  assert.match(mixed.stdout, /F1 deferred: --no-verify was used upstream\nF2 deferred: --no-verify was used upstream\nF3 skipped: open/);
   assert.match(mixed.stderr, /F4 is in the auth area/);
   const again = defer('F1', 'F2', '--why', 'waits for the next release', '--repo', dir);
   assert.deepEqual([again.status, again.stdout], [0, 'F1 skipped: deferred\nF2 skipped: deferred\n']);
