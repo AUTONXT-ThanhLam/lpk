@@ -12,7 +12,25 @@ const USAGE = `usage:
   lpk finding fixed <id> --commit <sha> --closed-by <repro|test|verifier> --evidence "<output>" --sweep "<git grep -E pattern of the defect form>" [--fix "<how>"] [--repo <dir>]
   lpk finding fixed <id> --commit <sha> --closed-by mutant --evidence "<lpk mutate --patch output on the fix>" [--fix "<how>"] [--repo <dir>]   (a test gap)
   lpk finding fixed <id> --closed-by defer --evidence "<the lead's reason it waits>" [--repo <dir>]
+  lpk finding defer <id>... --why "<the lead's reason they wait>" [--repo <dir>]
   lpk finding counts [--repo <dir>]`;
+
+const VALUED = ['--why', '--repo'];
+
+function deferMany(repo, argv, why) {
+  const ids = argv.slice(1).filter((a, i, rest) => !VALUED.includes(a) && !VALUED.includes(rest[i - 1]));
+  if (!ids.length || ids.some((a) => a.startsWith('--')) || !why?.trim() || VALUED.includes(why)) { console.error(USAGE); return 2; }
+  const unknown = ids.filter((x) => !getFinding(repo, x));
+  if (unknown.length) { for (const x of unknown) console.error(`lpk: no finding ${x}`); return 1; }
+  let code = 0;
+  for (const x of ids) {
+    const f = getFinding(repo, x);
+    if (f.state !== 'confirmed') { console.log(`${f.id} skipped: ${f.state}`); continue; }
+    const r = markFixed(repo, { id: f.id, closedBy: 'defer', evidence: why, by: 'cli' });
+    if (r.error) { console.error(`lpk: ${r.error}`); code = 1; } else console.log(closed(r.finding));
+  }
+  return code;
+}
 
 const closed = (f) => (f.state === 'deferred' ? `${f.id} deferred: ${f.deferEvidence}` : `${f.id} fixed in ${f.fixedCommit} (${f.closedBy}).`);
 
@@ -35,6 +53,7 @@ export async function main(argv) {
       else console.log(`${findingsText(findings, { state })}\n${file}`);
       return 0;
     }
+    if (sub === 'defer') return deferMany(repo, argv, opt('--why'));
     if (sub === 'counts') { console.log(JSON.stringify(counts(readLedger(repo).findings))); return 0; }
     if (sub === 'get' && id) {
       const f = getFinding(repo, id);

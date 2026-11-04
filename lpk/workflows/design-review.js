@@ -22,9 +22,11 @@ export const meta = {
 // every High and at most three other findings: a revision answers Highs only. Nothing here reads the
 // clock or chance, so resumeFromRunId replays an answer already given.
 const a = args || {}
+const asText = (v) => (v === undefined || v === null ? '' : typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
+const asList = (v) => (Array.isArray(v) ? v.map(asText) : asText(v).split('\n')).filter((l) => l.trim())
 const BRIEF_WORDS = 5000
 const missing = ['repo', 'base', 'brief', 'round', 'words'].filter((k) => !a[k])
-if (!(a.sources || []).length) missing.push('sources')
+if (!asList(a.sources).length) missing.push('sources')
 const round = Number(a.round)
 if (round >= 2 && !Array.isArray(a.changed)) missing.push('changed (the brief\'s lines the previous revision changed)')
 if (round >= 2 && !Array.isArray(a.open)) missing.push('open (the previous round\'s High findings)')
@@ -55,7 +57,7 @@ const FOCUS = {
   failures: 'for each dependency and each new key, column or state, what happens when it is unreachable, slow, half-open, failing with an unexpected error type, garbled, unset, repeated or growing: what each route, worker and periodic pass does, what the user sees, what an anonymous caller can learn, and what is left behind. Follow every error path to where it is caught.',
   main: 'everything main accepted, served, allowed or did (in the request or in a job after it) that this design refuses, changes, delays or moves elsewhere, including its cost and latency; every entry point that reaches the changed state (routes, tools, boot, scripts, delete, restore, re-run); and every record the design creates: is it removed or resolved on every path that ends its owner?',
   proof: 'the route to proof (each scenario names the test, command or screen that shows it; each test drives the entry point its user meets, in a suite CI runs, and can fail for the property it proves); the repo\'s rules (`lpk rules --all --repo <repo>` and the team rule files it names) and any blocker in the `lpk precedent` output that the design repeats; and whether a different design is clearly more correct or less risky.',
-  sources: `every sentence of the request, the tickets and documents it links and the owner's answers, each read whole (${a.sources.join(', ')}): which requirement or scenario carries it; list what the brief drops, changes or adds without a source.${a.coverage ? ` The brief's scenario and failure rows prove none of these requirement ids (a fact, not a finding: do not spend a finding on it; check that the brief's other rows are right): ${a.coverage.split('\n').filter(Boolean).join(', ')}.` : ''}`,
+  sources: `every sentence of the request, the tickets and documents it links and the owner's answers, each read whole (${asList(a.sources).join(', ')}): which requirement or scenario carries it; list what the brief drops, changes or adds without a source.${asList(a.coverage).length ? ` The brief's scenario and failure rows prove none of these requirement ids (a fact, not a finding: do not spend a finding on it; check that the brief's other rows are right): ${asList(a.coverage).join(', ')}.` : ''}`,
   reuse: 'each mechanism the design builds (a loop, lock, retry, queue, poller, cache, event stream, table, script, component), including those taken from the owner\'s or the tech lead\'s design: does the repo, the public API of an installed dependency at its installed version, the standard library or the platform already do it? Read the dependency\'s types or docs where it is installed and run the replacement before you say so. Name rule `reuse-first` on each such finding.',
   unsaid: 'each thing the builder must decide that the brief does not: who writes each file, row and value, the key of each cache or lock, each flag and default, each name two parts must agree on, the unit and the empty, missing or repeated input of each field, and each "the X" the brief uses without saying which X when there are two. List each as a question the brief should answer, with the line that leaves it open and the two readings a builder could take.'
 }

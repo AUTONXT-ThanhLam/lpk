@@ -25,6 +25,7 @@ export const meta = {
 // adds its child's. The ledger is the record; what this returns is a summary of it. Nothing here reads
 // the clock or chance, so resumeFromRunId replays every lens and verifier that already finished.
 const a = args || {}
+const asText = (v) => (v === undefined || v === null ? '' : typeof v === 'string' ? v : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('\n') : JSON.stringify(v))
 const LPK = a.lpk || 'lpk'
 const missing = ['repo', 'base', 'commit', 'range', 'bundle', 'request', 'scenarios'].filter((k) => !a[k])
 if (!a.delta && !(a.lenses || []).length) missing.push('lenses')
@@ -53,7 +54,7 @@ Repo ${a.repo}, base commit ${a.base}, commit under review ${commit}, facts bund
 This is the fix delta of the change ${a.range}: review only what the delta changes. The findings already raised on this change are in the ledger (finding_list): do not raise one again; say in a finding when the delta did not fix one you raised.` : ''}
 Request: ${a.request}
 Acceptance scenarios:
-${a.scenarios}${a.failureModes ? `\nFailure-mode table (what the design says happens when each dependency fails, is slow, repeats or grows; the code must match it):\n${a.failureModes}` : ''}
+${asText(a.scenarios)}${asText(a.failureModes) ? `\nFailure-mode table (what the design says happens when each dependency fails, is slow, repeats or grows; the code must match it):\n${asText(a.failureModes)}` : ''}
 ${SCOPE}
 Add each finding to the ledger with finding_add (kind and severity; area for security, auth, data, concurrency, migration or permissions; ruleId for a broken rule) and return each with the id the ledger gave it.`
 
@@ -106,13 +107,13 @@ const shardOf = new Map()
 const shardFor = (label) => shardOf.get(label.replace(/ \(retry\)$/, ''))
 const huntAsk = 'Hunt the correctness bugs this commit adds, line by line.'
 const prover = (lens) => (label) => (a.surface && a.proofDir
-  ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${a.surface}\nMain instance for comparison: ${a.main || 'none'}\nE2E scripts: ${a.e2e || 'none'}\nProof directory: ${a.proofDir}\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
+  ? call(`${change}${groupFor(label) ? `\nProve only this group; other Provers prove the rest at the same time on the same surface, so leave the data they create alone:\n${groupFor(label)}` : ''}\nProve it on the running surface: ${asText(a.surface)}\nMain instance for comparison: ${asText(a.main) || 'none'}\nE2E scripts: ${asText(a.e2e) || 'none'}\nProof directory: ${a.proofDir}\nAdd each FAIL and NOT PROVED scenario to the ledger (kind scenario) and return it in results only, with the id the ledger gave it as its id.`,
     { label, phase: 'Review', agentType: 'lpk:prover', schema: PROVED, stallMs: stall(lens) })
   : Promise.resolve({ error: a.surface ? 'no proof directory given in args.proofDir' : 'no running surface given in args.surface' }))
   .then((o) => o && { findings: (o.results || []).filter((x) => x.status !== 'PASS').map((x) => ({ id: x.id || '', claim: `${x.scenario}: ${x.status}`, repro: [].concat(x.evidence ?? []).join('\n') })), results: o.results || [], error: o.error })
 const waitsForProver = (run) => (lens) => async (label) => { if (a.mutantAfterProver && owed.includes('prover')) await proverDone; return run(lens)(label) }
 
-const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${a.surface}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))
+const ui = (type, ask) => (lens) => (label) => (a.surface ? typed(type, FINDINGS, `${ask}\nRunning UI: ${asText(a.surface)}`)(lens)(label) : Promise.resolve({ error: 'no running surface given in args.surface' }))
 const LENSES = {
   techlead: typed('techlead', FINDINGS, 'Review this commit as the team\'s tech lead would before approving the merge: return each finding that would block it, with a verdict for every rule whose glob matches a changed file.'),
   'code-review': codeReview,
