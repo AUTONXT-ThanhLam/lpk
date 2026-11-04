@@ -49,11 +49,15 @@ if (runUsd !== null && !(Number(runUsd) > 0)) usage('--max-run-usd needs a posit
 if (!Number.isInteger(runTimeout) || runTimeout < 1) usage('--run-timeout needs a whole number of seconds');
 if (!Number.isInteger(busyPort) || busyPort < 1 || busyPort > 65535) usage('--busy-port needs a port number');
 if (maxTurns !== null && !/^\d+$/.test(maxTurns)) usage('--max-turns needs a whole number');
-const commits = {};
+const armFacts = {};
+const gitIn = (dir, ...a) => spawnSync('git', ['-C', dir, ...a], { encoding: 'utf8' });
 for (const [arm, dir] of Object.entries(armDirs)) {
-  const head = spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8' });
-  if (head.status !== 0 || !existsSync(join(dir, 'lpk', 'bin'))) usage(`--${arm} ${dir} is not a git checkout holding lpk/bin`);
-  commits[arm] = head.stdout.trim();
+  const head = gitIn(dir, 'rev-parse', 'HEAD');
+  const top = gitIn(dir, 'rev-parse', '--show-toplevel').stdout?.trim();
+  const same = head.status === 0 && top && existsSync(dir) && realpathSync(top) === realpathSync(dir);
+  if (!same || !existsSync(join(dir, 'lpk', 'bin'))) usage(`--${arm} ${dir} is not the top of a git checkout holding lpk/bin`);
+  const changed = gitIn(dir, 'status', '--porcelain').stdout.split('\n').filter(Boolean).length;
+  armFacts[arm] = changed ? { commit: head.stdout.trim(), armDirty: changed } : { commit: head.stdout.trim() };
 }
 if (compare && !outDir) usage('--baseline and --candidate need --out-dir, where every run is kept');
 if (compare && !smoke && !hiddenGiven) usage('--baseline and --candidate need --hidden, a directory the agent never sees');
@@ -222,7 +226,7 @@ for (const task of tasks) {
     const order = compare ? pairOrder().filter((a) => armDirs[a]) : arms;
     for (const [pos, arm] of order.entries()) {
       if (spent >= budget) stop(`budget ${budget} USD reached; stopping`);
-      const extra = compare ? { commit: commits[arm], pair: n, pos } : {};
+      const extra = compare ? { ...armFacts[arm], pair: n, pos } : {};
       if (compare && await listening(busyPort)) {
         const error = `a listener on port ${busyPort} before the run; the batch needs the port free`;
         record({ task, arm, n, ...extra, error });

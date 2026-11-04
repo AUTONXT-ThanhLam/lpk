@@ -109,7 +109,8 @@ async function bench(fn) {
   }
 }
 
-test('each comparison arm runs its own plugin, lpk and flow prompt, records its commit, and its outside worktree goes', { skip }, () => bench((b) => {
+test('each comparison arm runs its own plugin, lpk and flow prompt, records its commit and uncommitted changes, and its outside worktree goes', { skip }, () => bench((b) => {
+  writeFileSync(join(b.A, 'scratch'), '');
   const wt = 'git worktree add -q --detach "/tmp/$(basename "$PWD")-main" && git worktree add -q --detach .git/inner';
   const { r, rows } = harness(stub(wt), b.compare(), b.env);
   assert.equal(r.status, 0, r.stderr);
@@ -119,17 +120,19 @@ test('each comparison arm runs its own plugin, lpk and flow prompt, records its 
   assert.ok(seenBy.every((s) => s.flow && s.turns === 'none'));
   for (const row of rows) {
     assert.equal(row.commit, git(row.arm === 'baseline' ? b.A : b.B, 'rev-parse', 'HEAD'));
+    assert.equal(row.armDirty, row.arm === 'baseline' ? 1 : undefined);
     const clone = readdirSync(row.dir).find((d) => d !== 'home');
     assert.equal(existsSync(join('/tmp', `${clone}-main`)), false);
     assert.equal(existsSync(join(row.dir, clone, '.git', 'inner')), true);
   }
 }));
 
-test('an arm dir that is not a git checkout holding lpk/bin is refused before any run', { skip }, () => bench((b) => {
+test('an arm dir that is not the top of a git checkout holding lpk/bin is refused before any run', { skip }, () => bench((b) => {
   const plain = join(b.root, 'plain');
-  mkdirSync(join(plain, 'lpk', 'bin'), { recursive: true });
+  const inner = join(b.A, 'inner');
+  for (const d of [plain, inner]) mkdirSync(join(d, 'lpk', 'bin'), { recursive: true });
   rmSync(join(b.B, 'lpk'), { recursive: true });
-  for (const bad of [plain, b.B]) {
+  for (const bad of [plain, inner, b.B]) {
     const { r, ran } = harness(stub(), b.compare().map((a) => (a === b.B ? bad : a)), b.env);
     assert.equal(r.status, 2);
     assert.ok(r.stderr.includes(bad));
