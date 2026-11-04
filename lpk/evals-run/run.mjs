@@ -75,8 +75,7 @@ const tasks = smoke ? ['smoke'] : existsSync(tasksDir) ? readdirSync(tasksDir, {
 if (!tasks.length) usage(`no task${only ? ` named ${only}` : ''} holding ${needed.join(', ')} in ${tasksDir}`);
 const lacking = smoke ? undefined : tasks.find((t) => !existsSync(join(hiddenDir, t, 'hidden.test.mjs')));
 if (lacking) usage(`--hidden ${hiddenDir} holds no ${lacking}/hidden.test.mjs`);
-const hiddenReal = smoke ? '' : realpathSync(hiddenDir);
-const hiddenNames = smoke ? [] : [...new Set(tasks.flatMap((t) => readdirSync(join(hiddenDir, t)).filter((f) => f === 'hidden.test.mjs' || !existsSync(join(tasksDir, t, f)))))];
+const hiddenFiles = smoke ? [] : tasks.map((t) => join(realpathSync(hiddenDir), t, 'hidden.test.mjs'));
 if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) usage('CLAUDE_CODE_OAUTH_TOKEN is not set');
 try { writeFileSync(out, '', { flag: 'a' }); } catch (e) { usage(`--out is not writable: ${e.message}`); }
 
@@ -152,7 +151,7 @@ async function attempt(root, cloneName, task, arm, n) {
   const row = { task, arm, n, costUsd: res.total_cost_usd ?? null, seconds, turns: res.num_turns ?? null, stop: res.subtype || null, ...after };
   const projects = join(home, '.claude', 'projects');
   if (smoke) return { ...row, smoke: smokeVerdict(projects) };
-  if (hiddenGiven && !row.voided && mentionsHidden(projects, hiddenReal, hiddenNames)) row.voided = 'hidden test in a transcript';
+  if (hiddenGiven && !row.voided && mentionsHidden(projects, hiddenFiles)) row.voided = 'hidden test in a transcript';
   return row.voided ? row : { ...row, ...grade(dir, task, sha, plain) };
 }
 

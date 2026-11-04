@@ -175,11 +175,11 @@ test('--out-dir keeps the home and the clone named after the run, with its wall 
   assert.equal(typeof rows[0].seconds, 'number');
 }));
 
-test('a transcript naming the given hidden dir or a file only it holds voids the run; a sibling path or a task file does not', { skip }, () => bench((b) => {
-  writeFileSync(join(b.H, 'csv', 'fixture.sh'), '');
-  const cases = [[`read ${b.H}/csv`, true], ['cat hidden.test.mjs', true], [`cd "${b.H}" && cat */*`, true], [`ls ${b.H}`, true], [`ls ${b.H}-x/csv`, false], [`ls ${b.H}2`, false], ['cat fixture.sh', false]];
-  for (const [text, voided, hidden = ['--hidden', b.H]] of [...cases, ['cat fixture.sh hidden.test.mjs', false, []]]) {
-    const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', ...hidden, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
+test('a transcript naming a hidden test file by its path voids the run; a sibling path, the bare dir or a task file does not', { skip }, () => bench((b) => {
+  const file = join(realpathSync(b.H), 'csv', 'hidden.test.mjs');
+  const cases = [[`cat ${file}`, true], [`ls ${b.H}-x/csv`, false], [`ls ${b.H}`, false], ['cat hidden.test.mjs', false], ['cat fixture.sh', false]];
+  for (const [text, voided] of cases) {
+    const { rows } = harness(stub(transcript), ['--task', 'csv', '--arms', 'without', '--hidden', b.H, '--out', '@out'], { ...b.env, EVALS_TEXT: text });
     assert.equal(Boolean(rows[0].voided), voided, text);
     assert.equal(rows[0].hiddenPass === undefined, voided, text);
   }

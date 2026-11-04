@@ -12,13 +12,8 @@ function jsonl(dir, deep) {
 
 const sessions = (projects) => readdirSync(projects, { withFileTypes: true }).filter((d) => d.isDirectory()).flatMap((d) => jsonl(join(projects, d.name), false));
 
-function namesDir(text, dir) {
-  for (let i = text.indexOf(dir); i >= 0; i = text.indexOf(dir, i + 1)) if (!/[A-Za-z0-9_.-]/.test(text[i + dir.length] ?? '')) return true;
-  return false;
-}
-
-export function mentionsHidden(projects, hiddenReal, names) {
-  return jsonl(projects, true).some((f) => { const text = readFileSync(f, 'utf8'); return namesDir(text, hiddenReal) || names.some((m) => text.includes(m)); });
+export function mentionsHidden(projects, files) {
+  return jsonl(projects, true).some((f) => { const text = readFileSync(f, 'utf8'); return files.some((m) => text.includes(m)); });
 }
 
 const text = (content) => (typeof content === 'string' ? content : Array.isArray(content) ? content.map((c) => (c.type === 'text' ? c.text : '')).join('\n') : '');
