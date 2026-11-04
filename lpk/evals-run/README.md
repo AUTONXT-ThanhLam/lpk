@@ -29,6 +29,40 @@ One JSON row per run: `costUsd` (subagents included), `seconds`, `turns`, `hidde
 `hiddenFail`, `ownFail` (the repo's own tests), `commits`, `dirty`, `lpkRun` (the run state
 exists). `--keep` leaves the workspaces in `/tmp` for reading the transcripts under `home/.claude`.
 
+Flags shared by every arm: `--tasks <dir>` holds `<task>/prompt.txt` and `<task>/fixture.sh`,
+`--hidden <dir>` holds `<task>/hidden.test.mjs` (both default to this directory);
+`--out-dir <dir>` keeps each run in `<dir>/<task>-<arm>-<n>/` (`home` and the clone, named
+`<task>-<arm>-<n>-<batch id>`) and deletes nothing; `--run-timeout <seconds>` (default 2400) and
+`--max-run-usd <n>` (default the budget left) cap one run; `--max-turns` reaches `claude` only when
+given. A run whose transcripts name the `--hidden` directory or a file in it gets
+`voided: "hidden test in a transcript"` and is not graded.
+
+## Comparing two lpk versions
+
+```sh
+cc-switch run env -u ANTHROPIC_API_KEY node lpk/evals-run/run.mjs \
+  --baseline /tmp/lpk-main --candidate . --hidden /tmp/lpk-hidden --out-dir /tmp/lpk-proof \
+  --task coupon --runs 3 --max-cost-usd 20 --out /tmp/proof.jsonl
+```
+
+Each arm is a git checkout: its `lpk/bin` leads `PATH`, its `lpk` is the `--plugin-dir`, and both
+send the `flow` prompt. `--hidden` and `--out-dir` are required; `--hidden` may not equal, contain
+or lie inside either arm, this checkout or `--out-dir`. Each pair runs the two arms in a random order;
+a row adds `commit`, `pair` (the run number, one above the highest already in `--out-dir`, so a
+stopped batch never re-pairs) and `pos` (0 or 1).
+
+The batch needs the host to itself: no other lpk session, and the owner's Chrome on `--busy-port`
+(default 9333) closed. A listener on that port before a run stops the batch. After each run the
+arm's own `lpk reap --repo <clone>` stops the apps it spawned, and the clone's worktrees outside the
+run directory (`/tmp/<clone>-main`) are removed. A listener left on the port whose
+`--user-data-dir` or `HOME` lies in the run's `home` is the run's own Chrome: it is stopped and the
+row gets `ownChrome: true`. Any other listener voids the row (`voided: "a listener on the port
+after the run"`) and stops the batch; it is never stopped.
+
+`--smoke` runs one tiny task per arm instead of the tasks: its prompt asks for a background
+Workflow call. The row gets `smoke: "pass"` only when the transcript holds the `Workflow` call and,
+after it and before the last assistant message, its task notification with `completed`.
+
 ## What it showed
 
 Sonnet, `results/<task>.jsonl`, one row per run. Pass means the hidden test passed in full; cost

@@ -19,6 +19,7 @@ function harness(claudeBody, argv, extraEnv = {}) {
   writeFileSync(join(bin, 'claude'), `#!/usr/bin/env bash\ntouch ${marker}\n${claudeBody}\n`);
   chmodSync(join(bin, 'claude'), 0o755);
   const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, CLAUDE_CODE_OAUTH_TOKEN: 'dummy', ...extraEnv };
+  delete env.NODE_TEST_CONTEXT;
   const r = spawnSync(process.execPath, [script, ...argv.map((a) => (a === '@out' ? out : a))], { encoding: 'utf8', env, timeout: 120000 });
   const rows = existsSync(out) ? readFileSync(out, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const ran = existsSync(marker);
