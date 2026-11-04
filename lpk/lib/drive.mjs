@@ -28,13 +28,14 @@ export function driveReason(plan, item, me, env = process.env, deps = {}) {
   const done = doneSince(plan, me);
   if (!item || !done.length || claudePid(env, deps) === undefined) return null;
   const runs = openRuns(me);
-  return `lpk plan ${plan.name}: ${done.join(', ')} done in this session. Do not start the next item here: a fresh session takes it. Finish what the delivery leaves: ${runs.length ? `end each open run of this session (${runs.join('; ')})` : 'no run of this session is open'}; then run \`lpk reap\` and the repo's post-merge steps. Write the report in your reply, then run \`lpk plan drive\`: it ends this session and opens the next item in a fresh claude in this terminal.`;
+  return `lpk plan ${plan.name}: ${done.join(', ')} done in this session. Do not start the next item here: a fresh session takes ${item.id}. Finish what the delivery leaves: ${runs.length ? `end each open run of this session (${runs.join('; ')})` : 'no run of this session is open'}; then run \`lpk reap\` and the repo's post-merge steps. Write the report in your reply, then run \`lpk plan drive\`: it ends this session and opens the next item in a fresh claude in this terminal.`;
 }
 
 export function cardFor(plan, item, previous) {
   return [
-    'This is a plan hand-over by `lpk plan drive`, not an account move: ignore the first message that says the session moved to another account.',
-    `The previous session was ${previous}; \`claude --resume ${previous}\` reopens it. Say that session id in your first reply.`,
+    'This is a plan hand-over by `lpk plan drive`, not an account move.',
+    'This session is fresh on purpose: do not read the previous session\'s transcript. The facts are `lpk plan` and the item\'s source below. A past decision or owner\'s answer in neither is asked of the owner; what a command, the code, git or a ticket answers is read there as usual.',
+    `The previous session was ${previous}. \`claude --resume ${previous}\` is for the owner, to reopen it. Say that session id in your first reply.`,
     '',
     `Plan: ${plan.name}`,
     `Repo: ${plan.repo}`,

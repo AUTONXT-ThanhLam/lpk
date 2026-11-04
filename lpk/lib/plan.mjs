@@ -71,7 +71,8 @@ export const waitingOf = (plan) => plan.items.filter((i) => i.status === 'held' 
 export function planLines(run) {
   const sessions = [run.session, ...(run.previous || [])].filter(Boolean);
   const waiting = listPlans().plans.filter((p) => sessions.includes(p.session) && waitingOf(p).length).map((p) => `Plan waiting (${p.name}): ${waitingOf(p).join('; ')}`);
-  return [...waiting, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
+  const removed = listPlans().plans.filter((p) => sessions.includes(p.session)).flatMap((p) => (p.removed ?? []).map((r) => `Plan removed (${p.name}): ${r.id} ${r.title} (${r.why})`));
+  return [...waiting, ...removed, ...[...new Set(sessions.flatMap((s) => listPlans(s).broken))].map((file) => `plan not read: ${file}`)];
 }
 
 function thenNote(plan, item, handOver) {
@@ -97,6 +98,7 @@ export function render(plan) {
     lines.push(`  ${i.id} [${i.status}] ${i.title}${i.why ? ` (${i.why})` : ''}`, `      proof: ${i.proof}`, `      source: ${i.source || '-'} (added ${i.added || '-'})`);
     if (i.proved) lines.push(`      last proof: exit ${i.proved.exit} at ${i.proved.at}`);
   }
+  for (const r of plan.removed ?? []) lines.push(`  ${r.id} [removed] ${r.title} (${r.why})`);
   const n = nextOpen(plan);
   lines.push(n ? `next: ${n.id} ${n.title}, done when \`${n.proof}\` exits 0` : 'next: no open item');
   return lines.join('\n');
@@ -112,9 +114,9 @@ const reasonFor = (plan, item) => `lpk plan ${plan.name}: ${item.id} is open: ${
 function nudge(plan, item, drive = null) {
   const done = doneIds(plan);
   const was = readNudge(plan.name);
-  const seen = was.done === done && was.session === plan.session ? Number(was.count) || 0 : 0;
+  const seen = was.done === done && was.session === plan.session && was.next === item.id ? Number(was.count) || 0 : 0;
   if (seen >= NUDGES) return null;
-  writeAtomic(nudgeFile(plan.name), { done, session: plan.session, count: seen + 1 });
+  writeAtomic(nudgeFile(plan.name), { done, session: plan.session, next: item.id, count: seen + 1 });
   const last = seen + 1 === NUDGES ? ` This is the last nudge: no item done in ${NUDGES} turns. Send the owner a PushNotification saying what blocks ${drive ? 'the hand-over' : item.id}, then stop.` : '';
   return { decision: 'block', reason: (drive ?? reasonFor(plan, item)) + last };
 }

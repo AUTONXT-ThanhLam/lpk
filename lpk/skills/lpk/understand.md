@@ -47,6 +47,13 @@ nothing waits for an install, a database or a login later.
    item is open. Under the cc-switch launcher the next item opens in a fresh session instead: end
    the delivery, write the report, then run `lpk plan drive`. A question only the owner can answer
    goes through `lpk plan hold <id> --why "<the question>"`, and you move to the next item.
+   An order the owner sets is recorded at once with `lpk plan move <id> --before <id>`: `next:`,
+   `lpk plan drive` and the Stop hook follow the list. `lpk plan remove <id> --why "<why>"` takes out
+   an item that is not done, on the owner's words or after logging the call with `lpk decide`; a held
+   item's question goes to the owner first, and the report names each removal. The fresh session
+   does not read this one's transcript, so an owner's call a later item needs goes into the plan
+   before the hand-over: an order with `lpk plan move`, a new item's words with `lpk plan add --source`.
+   No verb rewrites the source of an item already added.
 
 Once the owner says go, or is away, decide and log each decision. The build starts after the
 design review ends and `lpk go` (`design.md` in this skill's directory says when).

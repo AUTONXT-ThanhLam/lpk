@@ -48,7 +48,7 @@ const USAGE = `usage (each command prints its own usage when called wrongly):
   lpk learn [--rule <id>]...   (records that lpk:learn ran on the run's findings)
   lpk gates  |  lpk report  |  lpk records [--kind <kind>] [--all]  |  lpk ci <pr>  |  lpk waive <id>... --why "<what stays unproved, and why going on is right>"
  the machine
-  lpk plan [show] | new <name> | add "<title>" --proof "<cmd>" --source "<words>" | prove <id> | hold|pause <id> --why "<why>" | open <id> | take <name>   (a checklist the Stop hook pursues)
+  lpk plan [show] | new <name> | add "<title>" --proof "<cmd>" --source "<words>" | prove <id> | hold|pause <id> --why "<why>" | open <id> | move <id> --before <id> | remove <id> --why "<why>" | take <name>   (a checklist the Stop hook pursues)
   lpk dev bench|meter|escapes   (measuring lpk itself)  |  lpk watch  |  lpk slot -- <command>  |  lpk doctor  |  lpk setup
   lpk version  |  lpk statusline  |  lpk push-check  |  lpk hook <name>   (hooks: JSON on stdin)
   cc-switch run node <lpk>/bin/lpk follow-account [--except <session id>]   (move every claude session on the machine to the active account)`;

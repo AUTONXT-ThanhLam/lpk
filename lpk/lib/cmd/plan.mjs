@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { sessionId } from '../host.mjs';
 import { top } from '../git.mjs';
 import { drive as handOver } from '../drive.mjs';
-import { NAME, doneIds, listPlans, move, planFile, plansDir, readPlan, render, writeAtomic } from '../plan.mjs';
+import { NAME, doneIds, listPlans, move, nextOpen, planFile, plansDir, readPlan, render, writeAtomic } from '../plan.mjs';
+import { completeIfFinished, remove, reorder } from '../plan-edit.mjs';
 import { runIn } from '../repro.mjs';
 import { sessionPid } from '../sessions.mjs';
 import { parseArgs } from '../out.mjs';
@@ -15,6 +16,8 @@ const USAGE = `usage:
   lpk plan add "<title>" --proof "<command>" --source "<the owner's words that asked for it>"
   lpk plan prove <id> [--timeout <seconds, default 540>]
   lpk plan hold <id> --why "<what the owner must answer>"  |  lpk plan pause <id> --why "<why>"  |  lpk plan open <id>
+  lpk plan move <id> --before <id>   (sets the order the plan is worked in)
+  lpk plan remove <id> --why "<why>"   (an item that is not done; its id is never given again)
   lpk plan take <name>
   lpk plan drive [--plan <name>]   (under the cc-switch launcher: end this session and open the next item in a fresh one)
   (--plan <name> names the plan when this shell holds none)`;
@@ -74,7 +77,7 @@ function add(a) {
   if (!title || a.words.length > 2 || !proof?.trim() || !source?.trim()) return fail(`add needs a title, --proof and --source\n${USAGE}`);
   const t = target(a);
   if (t.error) return fail(t.error);
-  const n = Math.max(0, ...t.plan.items.map((i) => Number(i.id.slice(1)) || 0)) + 1;
+  const n = Math.max(0, ...[...t.plan.items, ...(t.plan.removed ?? [])].map((i) => Number(i.id.slice(1)) || 0)) + 1;
   t.plan.items.push({ id: `P${n}`, title, proof, source, added: new Date().toISOString(), status: 'todo', why: '', proved: null });
   writeAtomic(planFile(t.plan.name), t.plan);
   console.log(`added P${n}`);
@@ -115,13 +118,39 @@ async function prove(a) {
   if (r.error) return fail(r.error);
   writeAtomic(planFile(fresh.plan.name), fresh.plan);
   console.log(`${id} ${proved.exit === 0 ? 'done' : `stays ${r.item.status === 'todo' ? 'open' : r.item.status}${r.item.status === 'done' ? ', its proof now failing' : ''}: \`${item.proof}\` exited ${proved.exit}`}${proved.tail ? `\n${proved.tail}` : ''}`);
-  if (fresh.plan.items.every((i) => i.status === 'done')) {
-    mkdirSync(join(plansDir(), 'done'), { recursive: true });
-    renameSync(planFile(fresh.plan.name), join(plansDir(), 'done', `${fresh.plan.name}.json`));
-    rmSync(join(plansDir(), `${fresh.plan.name}.nudge`), { force: true });
-    console.log(`plan ${fresh.plan.name} is complete: every item is done`);
-  }
+  completeIfFinished(fresh.plan);
   return proved.exit === 0 ? 0 : 1;
+}
+
+const nextLine = (plan) => {
+  const n = nextOpen(plan);
+  return n ? `next: ${n.id} ${n.title}` : 'next: no open item';
+};
+
+function order(a) {
+  const id = a.words[1], before = a.opt('--before');
+  if (!id || a.words.length > 2 || !before) return fail(`move needs an id and --before <id>\n${USAGE}`);
+  const t = target(a);
+  if (t.error) return fail(t.error);
+  const r = reorder(t.plan, id, before);
+  if (r.error) return fail(r.error);
+  writeAtomic(planFile(t.plan.name), t.plan);
+  console.log(`${id} moved before ${before}; ${nextLine(t.plan)}`);
+  return 0;
+}
+
+function drop(a) {
+  const id = a.words[1], why = String(a.opt('--why') ?? '').trim();
+  if (!id || a.words.length > 2 || !why) return fail(`remove needs an id and --why "<why>"\n${USAGE}`);
+  const t = target(a);
+  if (t.error) return fail(t.error);
+  const r = remove(t.plan, id, why);
+  if (r.error) return fail(r.error);
+  writeAtomic(planFile(t.plan.name), t.plan);
+  console.log(`removed ${id} ${r.entry.title}: ${why}`);
+  console.log('A removal rests on the owner\'s words or a call logged with `lpk decide`; a held item\'s question goes to the owner first; the report names each removal.');
+  if (!completeIfFinished(t.plan)) console.log(nextLine(t.plan));
+  return 0;
 }
 
 function take(a) {
@@ -149,10 +178,10 @@ function drive(a) {
 }
 
 export async function main(argv) {
-  const a = parseArgs(argv, ['--repo', '--proof', '--source', '--why', '--timeout', '--plan']);
+  const a = parseArgs(argv, ['--repo', '--proof', '--source', '--why', '--timeout', '--plan', '--before']);
   if (a.error) return fail(`${a.error}\n${USAGE}`);
   const verb = a.words[0] || 'show';
-  const verbs = { show, 'new': create, add, prove, take, 'drive': drive, 'hold': (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
+  const verbs = { show, 'new': create, add, prove, take, 'drive': drive, 'move': order, 'remove': drop, 'hold': (x) => change('held', x), pause: (x) => change('paused', x), open: (x) => change('todo', x) };
   if (!verbs[verb]) return fail(`unknown verb ${verb}\n${USAGE}`);
   return verbs[verb](a);
 }
